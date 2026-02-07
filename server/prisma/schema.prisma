@@ -1,0 +1,79 @@
+
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  CLIENT
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         Role     @default(CLIENT)
+  clientId     String?
+  client       Client?  @relation(fields: [clientId], references: [id])
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Client {
+  id          String            @id @default(uuid())
+  name        String
+  industry    String
+  logoUrl     String?           @db.Text
+  users       User[]
+  dnaProfiles ContentDNAProfile[]
+  variations  SavedVariation[]
+  createdAt   DateTime          @default(now())
+}
+
+model ContentDNAProfile {
+  id                   String   @id @default(uuid())
+  clientId             String
+  client               Client   @relation(fields: [clientId], references: [id])
+  name                 String
+  voice                String
+  goal                 String
+  product              String
+  targetAudience       String
+  theme                String
+  keywords             String
+  brandVoiceGuidelines String   @db.Text
+  valueProposition     String   @db.Text
+  primaryCTA           String
+  createdAt            DateTime @default(now())
+}
+
+model SavedVariation {
+  id          String   @id @default(uuid())
+  clientId    String
+  client      Client   @relation(fields: [clientId], references: [id])
+  projectId   String?
+  project     Project? @relation(fields: [projectId], references: [id])
+  platform    String
+  type        String
+  content     String   @db.Text
+  charCount   Int
+  tags        String[]
+  isApproved  Boolean  @default(false)
+  savedAt     DateTime @default(now())
+}
+
+model Project {
+  id         String           @id @default(uuid())
+  name       String
+  variations SavedVariation[]
+  createdAt  DateTime         @default(now())
+}
