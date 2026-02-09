@@ -56,7 +56,7 @@ const App: React.FC = () => {
   const [notifications, setNotifications] = React.useState<Notification[]>([]);
   const [loadingStep, setLoadingStep] = React.useState(0);
 
-  const isAdmin = currentUser?.role === 'ADMIN';
+  const isAdmin = currentUser?.role?.toUpperCase() === 'ADMIN' || currentUser?.role === 'Admin';
   const activeClient = clients.find(c => c.id === activeClientId);
 
   const loadingMessages = [
