@@ -311,6 +311,10 @@ const ClientManager: React.FC<ClientManagerProps> = ({
                 <div className="flex-1 bg-slate-50/50 rounded-[2.5rem] p-10 border border-slate-200">
                   <div className="flex justify-between items-center mb-10">
                     <h4 className="text-[11px] font-black text-slate-900 uppercase tracking-[0.2em]">Campañas Activas ({profiles.length})</h4>
+                    <button onClick={() => { setEditingClientId(client.id); resetDnaForm(); setShowDnaForm(true); }} className="text-[10px] font-black text-slate-900 hover:text-slate-600 uppercase tracking-widest flex items-center gap-2 transition-colors">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M12 4v16m8-8H4" /></svg>
+                      Nueva Campaña
+                    </button>
                   </div>
 
                   {showDnaForm && editingClientId === client.id ? (
