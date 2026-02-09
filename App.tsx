@@ -131,19 +131,41 @@ const App: React.FC = () => {
           isAdmin ? authApi.list() : Promise.resolve([])
         ]);
 
-        setClients(apiClients);
-        setSavedVariations(apiSaved);
-        setProjects(apiProjects);
+        // Normalize Clients (logoUrl -> logo, Date -> number)
+        const normalizedClients = apiClients.map((c: any) => ({
+          ...c,
+          logo: c.logoUrl || c.logo || '',
+          createdAt: typeof c.createdAt === 'string' ? new Date(c.createdAt).getTime() : c.createdAt
+        }));
+
+        setClients(normalizedClients);
+        
+        // Normalize Saved Variations
+        const normalizedSaved = apiSaved.map((v: any) => ({
+          ...v,
+          savedAt: typeof v.savedAt === 'string' ? new Date(v.savedAt).getTime() : v.savedAt
+        }));
+        setSavedVariations(normalizedSaved);
+        
+        setProjects(apiProjects.map((p: any) => ({
+          ...p,
+          createdAt: typeof p.createdAt === 'string' ? new Date(p.createdAt).getTime() : p.createdAt
+        })));
+        
         setUsers(apiUsers);
         
-        // Extract DNA profiles from clients
-        const allDNA = apiClients.flatMap((c: any) => c.dnaProfiles || []);
+        // Extract and Normalize DNA profiles from clients
+        const allDNA = normalizedClients.flatMap((c: any) => (c.dnaProfiles || []).map((p: any) => ({
+          ...p,
+          createdAt: typeof p.createdAt === 'string' ? new Date(p.createdAt).getTime() : p.createdAt
+        })));
         setDnaProfiles(allDNA);
 
-        if (apiClients.length > 0) setActiveClientId(apiClients[0].id);
+        if (normalizedClients.length > 0) setActiveClientId(normalizedClients[0].id);
 
         addNotification('Datos sincronizados con éxito', 'success');
       } catch (err: any) {
+        console.error('Fetch error:', err);
         addNotification('Error al sincronizar datos', 'error');
       }
     };
