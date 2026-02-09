@@ -426,7 +426,7 @@ const ClientManager: React.FC<ClientManagerProps> = ({
 
                       <div className="flex flex-col md:flex-row gap-4 pt-8">
                         <button onClick={() => handleSaveDNA(client.id)} className="flex-1 bg-slate-900 text-white py-6 rounded-2xl font-black uppercase tracking-widest text-[11px] hover:bg-black shadow-2xl transition-all hover:scale-[1.01] active:scale-95">
-                          {editingProfileId ? 'Actualizar Brief de Campaña' : 'Guardar Brief'}
+                          {editingProfileId ? 'Actualizar Campaña' : 'Guardar Campaña'}
                         </button>
                         <button onClick={resetDnaForm} className="px-12 bg-white text-slate-500 border border-slate-300 py-6 rounded-2xl font-black uppercase tracking-widest text-[11px] hover:bg-slate-100 transition-colors">Cancelar</button>
                       </div>
@@ -515,7 +515,7 @@ const ClientManager: React.FC<ClientManagerProps> = ({
                                   </div>
                                 </div>
                                 <div className="flex gap-1.5">
-                                  <button onClick={() => startEditProfile(profile)} className="w-10 h-10 flex items-center justify-center bg-slate-100 text-slate-500 hover:bg-slate-900 hover:text-white rounded-xl transition-all shadow-sm border border-slate-200" title="Editar Brief">
+                                  <button onClick={() => startEditProfile(profile)} className="w-10 h-10 flex items-center justify-center bg-slate-100 text-slate-500 hover:bg-slate-900 hover:text-white rounded-xl transition-all shadow-sm border border-slate-200" title="Editar Campaña">
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                                   </button>
                                   <button onClick={() => onDeleteProfile(profile.id)} className="w-10 h-10 flex items-center justify-center bg-slate-100 text-slate-400 hover:bg-red-600 hover:text-white rounded-xl transition-all shadow-sm border border-slate-200">
