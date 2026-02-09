@@ -1,12 +1,12 @@
-
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { PrismaClient } from '@prisma/client';
 
-import routes from './routes/index.js';
-
+// Configure dotenv before any other imports that might use env variables
 dotenv.config();
+
+import { PrismaClient } from '@prisma/client';
+import routes from './routes/index.js';
 
 const app = express();
 const prisma = new PrismaClient();
