@@ -10,7 +10,7 @@ import NotificationSystem, { Notification, NotificationType } from './components
 import { CopyParameters, CopyVariation, Project, SavedVariation, BrandConfig, Client, User, Role, ContentDNAProfile } from './types';
 import { VOICES, GOALS } from './constants';
 import Login from './components/Login';
-import { generationApi, clientApi, libraryApi } from './services/api';
+import { generationApi, clientApi, libraryApi, authApi } from './services/api';
 
 const MOCK_CLIENTS: Client[] = [
   { id: 'c-terpel', name: 'Terpel', industry: 'Energía y Combustibles', logo: '', createdAt: Date.now() },
@@ -56,7 +56,7 @@ const App: React.FC = () => {
   const [notifications, setNotifications] = React.useState<Notification[]>([]);
   const [loadingStep, setLoadingStep] = React.useState(0);
 
-  const isAdmin = currentUser?.role === Role.ADMIN;
+  const isAdmin = currentUser?.role === 'ADMIN';
   const activeClient = clients.find(c => c.id === activeClientId);
 
   const loadingMessages = [
@@ -86,7 +86,13 @@ const App: React.FC = () => {
     const token = localStorage.getItem('vt_token');
     const storedUser = localStorage.getItem('vt_user');
     if (token && storedUser) {
-      setCurrentUser(JSON.parse(storedUser));
+      const user = JSON.parse(storedUser);
+      // Ensure role is normalized even from older storage if necessary
+      const normalizedUser = {
+        ...user,
+        role: user.role === 'ADMIN' ? 'Admin' : (user.role === 'CLIENT' ? 'Cliente' : user.role)
+      };
+      setCurrentUser(normalizedUser);
       setIsAuthenticated(true);
     }
   }, []);
@@ -118,15 +124,17 @@ const App: React.FC = () => {
 
     const fetchData = async () => {
       try {
-        const [apiClients, apiSaved, apiProjects] = await Promise.all([
+        const [apiClients, apiSaved, apiProjects, apiUsers] = await Promise.all([
           clientApi.list(),
           libraryApi.listSaved(),
-          libraryApi.listProjects()
+          libraryApi.listProjects(),
+          isAdmin ? authApi.list() : Promise.resolve([])
         ]);
 
         setClients(apiClients);
         setSavedVariations(apiSaved);
         setProjects(apiProjects);
+        setUsers(apiUsers);
         
         // Extract DNA profiles from clients
         const allDNA = apiClients.flatMap((c: any) => c.dnaProfiles || []);
@@ -194,11 +202,15 @@ const App: React.FC = () => {
     }
   };
 
-  const handleDeleteDNAProfile = (id: string) => {
-    // Note: Delete endpoint placeholder
+  const handleDeleteDNAProfile = async (id: string) => {
     if (window.confirm('¿Eliminar este perfil de ADN?')) {
-      setDnaProfiles(prev => prev.filter(p => p.id !== id));
-      addNotification('Perfil de ADN eliminado localmente (pendiente endpoint)', 'info');
+      try {
+        await clientApi.deleteDNA(id);
+        setDnaProfiles(prev => prev.filter(p => p.id !== id));
+        addNotification('Perfil de ADN eliminado', 'success');
+      } catch (err) {
+        addNotification('Error al eliminar ADN', 'error');
+      }
     }
   };
 
@@ -218,8 +230,9 @@ const App: React.FC = () => {
     try {
       const saved = await libraryApi.saveVariation({
         ...variation,
-        projectId,
-        clientId: activeClientId
+        projectId: projectId || null,
+        clientId: activeClientId,
+        tags: []
       });
       setSavedVariations(prev => [saved, ...prev]);
       addNotification('Contenido guardado en la biblioteca', 'success');
@@ -352,16 +365,114 @@ const App: React.FC = () => {
                 setCustomVoices(VOICES.map((v, i) => ({ id: `v${i}`, name: v })));
                 setCustomGoals(GOALS.map((g, i) => ({ id: `g${i}`, name: g })));
               }}
-              onAdd={c => setClients(prev => [...prev, {...c, id: Math.random().toString(36).substr(2, 9), createdAt: Date.now()}])} 
-              onUpdate={(id, u) => setClients(prev => prev.map(c => c.id === id ? {...c, ...u} : c))} 
-              onRemove={id => setClients(prev => prev.filter(c => c.id !== id))}
+              onAdd={async c => {
+                try {
+                  const newClient = await clientApi.create(c);
+                  setClients(prev => [...prev, newClient]);
+                  addNotification('Marca registrada con éxito', 'success');
+                } catch (err) {
+                  addNotification('Error al registrar marca', 'error');
+                }
+              }} 
+              onUpdate={async (id, u) => {
+                try {
+                  const updated = await clientApi.update(id, u);
+                  setClients(prev => prev.map(c => c.id === id ? updated : c));
+                  addNotification('Marca actualizada', 'success');
+                } catch (err) {
+                  addNotification('Error al actualizar marca', 'error');
+                }
+              }} 
+              onRemove={async id => {
+                if (window.confirm('¿Eliminar esta marca y todo su ADN asociado?')) {
+                  try {
+                    await clientApi.delete(id);
+                    setClients(prev => prev.filter(c => c.id !== id));
+                    addNotification('Marca eliminada', 'success');
+                  } catch (err) {
+                    addNotification('Error al eliminar marca', 'error');
+                  }
+                }
+              }}
               onSaveProfile={handleSaveDNAProfile}
               onUpdateProfile={handleUpdateDNAProfile}
               onDeleteProfile={handleDeleteDNAProfile}
             />
           )}
-          {activeTab === 'users' && isAdmin && <UserManager users={users} clients={clients} onAdd={u => setUsers(prev => [...prev, {...u, id: Math.random().toString(36).substr(2, 9), createdAt: Date.now()}])} onUpdate={(id, u) => setUsers(prev => prev.map(usr => usr.id === id ? {...usr, ...u} : usr))} onRemove={id => setUsers(prev => prev.filter(usr => usr.id !== id))} />}
-          {activeTab === 'saved' && <SavedManager saved={currentUser?.role === Role.CLIENT && currentUser?.clientId ? savedVariations.filter(v => v.clientId === currentUser?.clientId) : savedVariations} projects={projects} clients={clients} onRemove={id => setSavedVariations(prev => prev.filter(v => v.id !== id))} onUpdate={(id, u) => setSavedVariations(prev => prev.map(v => v.id === id ? {...v, ...u} : v))} onAddTag={() => {}} onRemoveTag={() => {}} onDeleteProject={id => setProjects(prev => prev.filter(p => p.id !== id))} onCreateProject={createProject} readOnly={!isAdmin} />}
+          {activeTab === 'users' && isAdmin && (
+            <UserManager 
+              users={users} 
+              clients={clients} 
+              onAdd={async u => {
+                try {
+                  // We use register but it returns a simple message, we might want to refresh the list or the API should return the user
+                  await authApi.register({ ...u, password: 'password123' }); // Default password for new members
+                  const updatedUsers = await authApi.list();
+                  setUsers(updatedUsers);
+                  addNotification('Miembro del equipo añadido (con contraseña temporal)', 'success');
+                } catch (err) {
+                  addNotification('Error al añadir miembro', 'error');
+                }
+              }} 
+              onUpdate={(id, u) => {
+                // Update endpoint not implemented yet in backend for users, keeping local for now
+                setUsers(prev => prev.map(usr => usr.id === id ? {...usr, ...u} : usr));
+              }} 
+              onRemove={async id => {
+                if (window.confirm('¿Eliminar este acceso?')) {
+                  try {
+                    await authApi.delete(id);
+                    setUsers(prev => prev.filter(usr => usr.id !== id));
+                    addNotification('Acceso eliminado', 'success');
+                  } catch (err) {
+                    addNotification('Error al eliminar acceso', 'error');
+                  }
+                }
+              }} 
+            />
+          )}
+          {activeTab === 'saved' && (
+            <SavedManager 
+              saved={currentUser?.role === 'CLIENT' && currentUser?.clientId ? savedVariations.filter(v => v.clientId === currentUser?.clientId) : savedVariations} 
+              projects={projects} 
+              clients={clients} 
+              onRemove={async id => {
+                if (window.confirm('¿Eliminar este contenido de la biblioteca?')) {
+                  try {
+                    await libraryApi.deleteVariation(id);
+                    setSavedVariations(prev => prev.filter(v => v.id !== id));
+                    addNotification('Contenido eliminado', 'success');
+                  } catch (err) {
+                    addNotification('Error al eliminar contenido', 'error');
+                  }
+                }
+              }} 
+              onUpdate={async (id, u) => {
+                try {
+                  const updated = await libraryApi.updateVariation(id, u);
+                  setSavedVariations(prev => prev.map(v => v.id === id ? updated : v));
+                  addNotification('Contenido actualizado', 'success');
+                } catch (err) {
+                  addNotification('Error al actualizar contenido', 'error');
+                }
+              }} 
+              onAddTag={() => {}} 
+              onRemoveTag={() => {}} 
+              onDeleteProject={async id => {
+                if (window.confirm('¿Eliminar este proyecto? Los contenidos asociados permanecerán pero sin proyecto.')) {
+                  try {
+                    await libraryApi.deleteProject(id);
+                    setProjects(prev => prev.filter(p => p.id !== id));
+                    addNotification('Proyecto eliminado', 'success');
+                  } catch (err) {
+                    addNotification('Error al eliminar proyecto', 'error');
+                  }
+                }
+              }} 
+              onCreateProject={createProject} 
+              readOnly={!isAdmin} 
+            />
+          )}
         </main>
       </div>
     </div>

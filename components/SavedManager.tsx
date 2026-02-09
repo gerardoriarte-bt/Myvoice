@@ -70,7 +70,7 @@ const SavedManager: React.FC<SavedManagerProps> = ({
     setEditingId(null);
   };
 
-  const tableHeaderStyle = "px-8 py-6 text-left text-[9px] font-black text-slate-400 uppercase tracking-[0.3em]";
+  const tableHeaderStyle = "px-8 py-6 text-left text-[9px] font-black text-slate-500 uppercase tracking-[0.3em]";
 
   const renderContentPreview = (v: SavedVariation) => {
     if (editingId === v.id) {
@@ -125,21 +125,21 @@ const SavedManager: React.FC<SavedManagerProps> = ({
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="relative group">
-            <input type="text" placeholder="Buscar contenidos..." className="w-full pl-12 pr-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-slate-800 outline-none focus:border-slate-900 focus:bg-white transition-all text-sm placeholder:text-slate-300" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
-            <svg className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+            <input type="text" placeholder="Buscar contenidos..." className="w-full pl-12 pr-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-800 outline-none focus:border-slate-900 focus:bg-white transition-all text-sm placeholder:text-slate-400" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+            <svg className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
           </div>
           {!readOnly ? (
-            <select value={activeClientFilter} onChange={(e) => setActiveClientFilter(e.target.value)} className="px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-slate-800 outline-none focus:border-slate-900 transition-all text-xs appearance-none cursor-pointer">
+            <select value={activeClientFilter} onChange={(e) => setActiveClientFilter(e.target.value)} className="px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-800 outline-none focus:border-slate-900 transition-all text-xs appearance-none cursor-pointer">
               <option value="all">TODAS LAS MARCAS</option>
               {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           ) : (
-            <div className="px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl font-black text-slate-400 text-[10px] tracking-widest flex items-center gap-3 uppercase">
+            <div className="px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl font-black text-slate-500 text-[10px] tracking-widest flex items-center gap-3 uppercase">
                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
                FILTRO DE MARCA ACTIVO
             </div>
           )}
-          <select value={activeStatusFilter} onChange={(e) => setActiveStatusFilter(e.target.value as any)} className="px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-slate-800 outline-none focus:border-slate-900 transition-all text-xs appearance-none cursor-pointer">
+          <select value={activeStatusFilter} onChange={(e) => setActiveStatusFilter(e.target.value as any)} className="px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-800 outline-none focus:border-slate-900 transition-all text-xs appearance-none cursor-pointer">
             <option value="all">TODOS LOS ESTADOS</option>
             <option value="approved">LISTOS PARA PUBLICAR</option>
             <option value="pending">REVISIÓN PENDIENTE</option>
@@ -167,17 +167,17 @@ const SavedManager: React.FC<SavedManagerProps> = ({
                     <td className="px-8 py-8 align-top">
                       {client ? (
                         <div className="flex flex-col gap-3 group">
-                          <div className="w-10 h-10 rounded-xl bg-white border border-slate-100 p-1 flex items-center justify-center overflow-hidden shadow-sm group-hover:border-slate-900 transition-colors">
+                          <div className="w-10 h-10 rounded-xl bg-white border border-slate-200 p-1 flex items-center justify-center overflow-hidden shadow-sm group-hover:border-slate-900 transition-colors">
                             {client.logo ? (
                               <img src={client.logo} alt={client.name} className="w-full h-full object-contain grayscale opacity-80 group-hover:opacity-100" />
                             ) : (
-                              <span className="text-[9px] font-black text-slate-300">{client.name[0]}</span>
+                              <span className="text-[9px] font-black text-slate-500">{client.name[0]}</span>
                             )}
                           </div>
-                          <span className="text-[8px] font-black uppercase tracking-widest text-slate-400 group-hover:text-slate-900 truncate w-10">{client.name}</span>
+                          <span className="text-[8px] font-black uppercase tracking-widest text-slate-500 group-hover:text-slate-900 truncate w-10">{client.name}</span>
                         </div>
                       ) : (
-                        <div className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-100 animate-pulse"></div>
+                        <div className="w-10 h-10 rounded-xl bg-slate-100 border border-slate-200 animate-pulse"></div>
                       )}
                     </td>
                   )}
@@ -186,7 +186,7 @@ const SavedManager: React.FC<SavedManagerProps> = ({
                       <span className="px-3 py-1 rounded-lg text-[8px] font-black uppercase tracking-[0.2em] w-fit bg-slate-900 text-white">
                         {v.platform}
                       </span>
-                      <span className="px-3 py-1 rounded-lg text-[8px] font-black uppercase tracking-[0.2em] w-fit bg-white text-slate-400 border border-slate-100">
+                      <span className="px-3 py-1 rounded-lg text-[8px] font-black uppercase tracking-[0.2em] w-fit bg-white text-slate-600 border border-slate-200">
                         {v.type}
                       </span>
                     </div>
@@ -200,7 +200,7 @@ const SavedManager: React.FC<SavedManagerProps> = ({
                             Certificado
                           </span>
                         ) : (
-                          <span className="flex items-center gap-2 px-3 py-1 bg-slate-50 text-slate-300 text-[8px] font-black uppercase tracking-widest rounded-full border border-slate-100">
+                          <span className="flex items-center gap-2 px-3 py-1 bg-slate-100 text-slate-500 text-[8px] font-black uppercase tracking-widest rounded-full border border-slate-200">
                             ⏳ Pendiente
                           </span>
                         )}
@@ -211,8 +211,8 @@ const SavedManager: React.FC<SavedManagerProps> = ({
                   {!readOnly && (
                     <td className="px-8 py-8 align-top">
                       <div className="flex items-center gap-3 group">
-                         <div className={`w-1.5 h-1.5 rounded-full ${v.isApproved ? 'bg-slate-900' : 'bg-slate-200'}`}></div>
-                         <span className="text-[9px] font-black uppercase text-slate-400 group-hover:text-slate-900 tracking-[0.1em] transition-colors">{getProjectName(v.projectId)}</span>
+                         <div className={`w-1.5 h-1.5 rounded-full ${v.isApproved ? 'bg-slate-900' : 'bg-slate-300'}`}></div>
+                         <span className="text-[9px] font-black uppercase text-slate-600 group-hover:text-slate-900 tracking-[0.1em] transition-colors">{getProjectName(v.projectId)}</span>
                       </div>
                     </td>
                   )}
@@ -220,23 +220,20 @@ const SavedManager: React.FC<SavedManagerProps> = ({
                     <div className="flex items-center justify-center gap-3">
                       <button 
                         onClick={() => startEditing(v)}
-                        className={`p-3 rounded-2xl transition-all border ${editingId === v.id ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-200 border-slate-100 hover:text-slate-900 hover:border-slate-900'} active:scale-95`}
+                        className={`p-3 rounded-2xl transition-all border ${editingId === v.id ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-400 border-slate-200 hover:text-slate-900 hover:border-slate-900'} active:scale-95`}
                         title="Editar Contenido"
                       >
                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                       </button>
                       <button 
                         onClick={() => toggleApproval(v.id, !!v.isApproved)}
-                        className={`p-3 rounded-2xl transition-all border ${v.isApproved ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-200 border-slate-100 hover:text-slate-900 hover:border-slate-900'} active:scale-95`}
+                        className={`p-3 rounded-2xl transition-all border ${v.isApproved ? 'bg-green-500 text-white border-green-500 shadow-lg shadow-green-500/20' : 'bg-white text-slate-400 border-slate-200 hover:text-slate-900 hover:border-slate-900'} active:scale-95`}
                         title={v.isApproved ? "Retirar Certificación" : "Certificar Contenido"}
                       >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" /></svg>
                       </button>
-                      <button onClick={() => copyToClipboard(v.content, v.id)} className={`p-3 rounded-2xl transition-all border ${copyStatus === v.id ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-200 border-slate-100 hover:text-slate-900 hover:border-slate-900'} active:scale-95`}>
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" /></svg>
-                      </button>
                       {!readOnly && (
-                        <button disabled={v.isApproved} onClick={() => onRemove(v.id)} className={`p-3 rounded-2xl transition-all border ${v.isApproved ? 'bg-slate-50 text-slate-100 border-slate-50 cursor-not-allowed' : 'bg-white text-slate-200 border-slate-100 hover:text-red-500 hover:bg-red-50 hover:border-red-100'} active:scale-95`}>
+                        <button disabled={v.isApproved} onClick={() => onRemove(v.id)} className={`p-3 rounded-2xl transition-all border ${v.isApproved ? 'bg-slate-100 text-slate-200 border-slate-200 cursor-not-allowed' : 'bg-white text-slate-400 border-slate-200 hover:text-red-500 hover:bg-red-50 hover:border-red-100'} active:scale-95`}>
                           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                         </button>
                       )}

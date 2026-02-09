@@ -1,7 +1,7 @@
 
 import { Response } from 'express';
-import { AuthRequest } from '../middleware/auth';
-import { generateCopyWithOpenAI } from '../services/openaiService';
+import { AuthRequest } from '../middleware/auth.js';
+import { generateCopyWithOpenAI } from '../services/openaiService.js';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
@@ -37,7 +37,7 @@ export const generateCopy = async (req: AuthRequest, res: Response) => {
       primaryCTA: dnaProfile.primaryCTA,
       theme: dnaProfile.theme,
       keywords: dnaProfile.keywords,
-      feedbackExamples: dnaProfile.feedbackExamples as any[] // Needs type cast or DB mapping
+      feedbackExamples: (dnaProfile as any).feedbackExamples as any[] 
     };
 
     const result = await generateCopyWithOpenAI(generationParams);

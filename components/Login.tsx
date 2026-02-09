@@ -19,7 +19,12 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
 
     try {
       const data = await authApi.login({ email, password });
-      onLoginSuccess(data.user, data.token);
+      // Normalize role from DB (ADMIN/CLIENT) to Frontend (Admin/Cliente)
+      const normalizedUser = {
+        ...data.user,
+        role: data.user.role === 'ADMIN' ? 'Admin' : 'Cliente'
+      };
+      onLoginSuccess(normalizedUser, data.token);
     } catch (err: any) {
       setError(err.message || 'Error al iniciar sesión');
     } finally {

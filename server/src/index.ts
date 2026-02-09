@@ -4,7 +4,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { PrismaClient } from '@prisma/client';
 
-import routes from './routes';
+import routes from './routes/index.js';
 
 dotenv.config();
 

@@ -1,5 +1,5 @@
 import OpenAI from "openai";
-import { CopyParameters, GenerationResponse, CopyVariation } from "../../types";
+import { CopyParameters, GenerationResponse, CopyVariation } from "../types.js";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -34,7 +34,7 @@ export const generateCopyWithOpenAI = async (
     ${feedbackBlock}
 
     REGLAS DE FORMATO:
-    1. Email: Estructura [ASUNTO] - [HEADER] - [BODY] - [CTA].
+    1. Email: Estructura [ASUNTO] | [HEADER] | [BODY] | [CTA].
     2. Push: [Título] | [Cuerpo] (Max 45/120 carac.).
     3. WhatsApp: Negritas para énfasis, max 2 emojis.
     4. Instagram: Hook inicial, 3-5 hashtags, [IDEA VISUAL: descripción].
@@ -81,8 +81,8 @@ export const generateCopyWithOpenAI = async (
 
     const parsed = JSON.parse(content);
     return parsed as GenerationResponse;
-  } catch (error) {
-    console.error("Error in OpenAI Service:", error);
-    throw new Error("Error al generar contenido con el motor de OpenAI.");
+  } catch (ex: any) {
+    console.error("OpenAI Error:", ex);
+    throw new Error("Fallo en la generación de IA: " + ex.message);
   }
 };

@@ -27,7 +27,16 @@ export const authenticateToken = (req: AuthRequest, res: Response, next: NextFun
 
 export const authorizeRole = (roles: string[]) => {
   return (req: AuthRequest, res: Response, next: NextFunction) => {
-    if (!req.user || !roles.includes(req.user.role)) {
+    if (!req.user) {
+      return res.status(403).json({ error: 'Acceso denegado: no autenticado' });
+    }
+
+    // Map frontend roles to backend roles if necessary
+    const normalizedRoles = roles.map(r => r.toUpperCase());
+    const userRole = req.user.role.toUpperCase();
+
+    if (!normalizedRoles.includes(userRole)) {
+      console.warn(`Access denied for user ${req.user.userId}. Required: ${roles}, Has: ${req.user.role}`);
       return res.status(403).json({ error: 'Acceso denegado: permiso insuficiente' });
     }
     next();
