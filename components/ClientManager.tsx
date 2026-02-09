@@ -449,10 +449,9 @@ const ClientManager: React.FC<ClientManagerProps> = ({
                                  onClick={() => {
                                    onUpdate(client.id, {
                                       voice: client.voice,
-                                      // If updating, these values are currently bound to nothing in this scope, 
-                                      // we need state for them. See note below.
+                                      brandVoiceGuidelines: client.brandVoiceGuidelines,
+                                      valueProposition: client.valueProposition
                                    });
-                                   // Actually, we need to bind inputs here.
                                  }}
                                  className="text-[9px] font-black text-slate-900 border border-slate-900 px-4 py-2 rounded-xl hover:bg-slate-900 hover:text-white transition-all uppercase tracking-widest"
                                >
@@ -494,6 +493,19 @@ const ClientManager: React.FC<ClientManagerProps> = ({
                          </div>
                       )}
 
+                      {/* CREATE NEW BRIEF BUTTON (Only Visible When Managing) */}
+                      {isManagingThisClient && !showDnaForm && (
+                        <button 
+                          onClick={() => { setEditingClientId(client.id); resetDnaForm(); setShowDnaForm(true); }}
+                          className="w-full py-8 border-2 border-dashed border-slate-300 rounded-[2rem] hover:border-slate-900 hover:bg-slate-50 transition-all group flex flex-col items-center justify-center gap-2"
+                        >
+                          <div className="bg-slate-100 p-3 rounded-full group-hover:bg-slate-900 group-hover:text-white transition-colors">
+                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" /></svg>
+                          </div>
+                          <span className="text-[11px] font-black uppercase tracking-widest text-slate-400 group-hover:text-slate-900">Crear Nuevo Brief de Campaña</span>
+                        </button>
+                      )}
+
                       {/* BRIEFS LIST */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {profiles.map(profile => (
@@ -524,13 +536,13 @@ const ClientManager: React.FC<ClientManagerProps> = ({
                             </div>
                           </div>
                         ))}
-                        {profiles.length === 0 && (
+                        {profiles.length === 0 && !isManagingThisClient && (
                         <div className="md:col-span-2 py-20 border-2 border-dashed border-slate-300 rounded-[2.5rem] flex flex-col items-center justify-center text-center">
                            <div className="bg-slate-100 p-6 rounded-full mb-4 shadow-inner">
                               <svg className="w-8 h-8 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>
                            </div>
                            <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1">No hay Briefs de Campaña</p>
-                           <p className="text-[9px] font-bold text-slate-300 uppercase tracking-tight max-w-[240px]">Crea un Brief para que la IA pueda escribir por esta marca.</p>
+                           <p className="text-[9px] font-bold text-slate-300 uppercase tracking-tight max-w-[240px]">Configura el ADN para crear briefs.</p>
                         </div>
                         )}
                       </div>
