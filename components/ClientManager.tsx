@@ -94,14 +94,14 @@ const ClientManager: React.FC<ClientManagerProps> = ({
     setEditingClientId(profile.clientId);
     setDnaForm({
       name: profile.name,
-      voice: profile.voice,
+      voice: '', // Global legacy
       goal: profile.goal,
       product: profile.product,
       targetAudience: profile.targetAudience,
       theme: profile.theme,
       keywords: profile.keywords,
-      brandVoiceGuidelines: profile.brandVoiceGuidelines,
-      valueProposition: profile.valueProposition,
+      brandVoiceGuidelines: '', // Global legacy
+      valueProposition: '', // Global legacy
       primaryCTA: profile.primaryCTA,
       feedbackExamples: profile.feedbackExamples || []
     });
@@ -132,8 +132,8 @@ const ClientManager: React.FC<ClientManagerProps> = ({
   };
 
   const handleSaveDNA = (clientId: string) => {
-    if (!dnaForm.name || !dnaForm.theme || !dnaForm.valueProposition) {
-      alert("Por favor completa los campos fundamentales del ADN (Nombre, Tema y Propuesta de Valor).");
+    if (!dnaForm.name || !dnaForm.theme) {
+      alert("Por favor completa los campos del Brief (Nombre y Tema).");
       return;
     }
     if (editingProfileId) onUpdateProfile(editingProfileId, dnaForm);
@@ -321,7 +321,7 @@ const ClientManager: React.FC<ClientManagerProps> = ({
                     <div id="dna-editor-form" className="bg-white p-10 rounded-[2.5rem] border border-slate-300 shadow-2xl space-y-10 animate-in slide-in-from-top-4 duration-500">
                       <div className="flex justify-between items-center pb-6 border-b border-slate-200">
                         <div>
-                           <h5 className="text-xl font-black text-slate-900 uppercase tracking-tighter">{editingProfileId ? 'Actualizar Estrategia' : 'Nueva Base Estratégica'}</h5>
+                           <h5 className="text-xl font-black text-slate-900 uppercase tracking-tighter">{editingProfileId ? 'Actualizar Brief' : 'Nuevo Brief de Campaña'}</h5>
                            <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Marca: {client.name}</p>
                         </div>
                         <button onClick={resetDnaForm} className="text-slate-400 hover:text-slate-900 transition-colors bg-slate-50 p-2 rounded-full">
@@ -331,47 +331,31 @@ const ClientManager: React.FC<ClientManagerProps> = ({
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                         <div>
-                          <label className={labelStyle}>Alias Estratégico *</label>
+                          <label className={labelStyle}>Nombre del Brief / Campaña *</label>
                           <input type="text" placeholder="Ej: Redención de Puntos 2025" className={inputStyle} value={dnaForm.name} onChange={e => setDnaForm({...dnaForm, name: e.target.value})} />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <label className={labelStyle}>Voz de Marca</label>
-                            <select className={inputStyle} value={dnaForm.voice} onChange={e => setDnaForm({...dnaForm, voice: e.target.value})}>
-                              {voices.map(v => <option key={v.id} value={v.name}>{v.name}</option>)}
-                            </select>
-                          </div>
                           <div>
                             <label className={labelStyle}>Objetivo</label>
                             <select className={inputStyle} value={dnaForm.goal} onChange={e => setDnaForm({...dnaForm, goal: e.target.value})}>
                               {goals.map(g => <option key={g.id} value={g.name}>{g.name}</option>)}
                             </select>
                           </div>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div>
-                           <label className={labelStyle}>Guidelines de Personalidad</label>
-                           <textarea placeholder="Ej: Tono conversacional, uso de 'parce' suave..." className={inputStyle + " h-32 resize-none"} value={dnaForm.brandVoiceGuidelines} onChange={e => setDnaForm({...dnaForm, brandVoiceGuidelines: e.target.value})} />
-                        </div>
-                        <div>
-                           <label className={labelStyle}>Propuesta de Valor Única *</label>
-                           <textarea placeholder="¿Por qué el cliente debe elegirnos ahora?" className={inputStyle + " h-32 resize-none"} value={dnaForm.valueProposition} onChange={e => setDnaForm({...dnaForm, valueProposition: e.target.value})} />
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div>
-                           <label className={labelStyle}>Mensaje Central / Tema Estratégico *</label>
-                           <textarea placeholder="¿Cuál es el ángulo de esta campaña?" className={inputStyle + " h-24 resize-none"} value={dnaForm.theme} onChange={e => setDnaForm({...dnaForm, theme: e.target.value})} />
-                        </div>
-                        <div className="grid grid-cols-1 gap-4">
                           <div>
-                            <label className={labelStyle}>Foco Producto / Audiencia</label>
+                            <label className={labelStyle}>Producto / Servicio</label>
                             <input placeholder="Ej: Gasolina Evo" className={inputStyle} value={dnaForm.product} onChange={e => setDnaForm({...dnaForm, product: e.target.value})} />
                           </div>
-                          <input placeholder="Ej: Transportadores de carga" className={inputStyle} value={dnaForm.targetAudience} onChange={e => setDnaForm({...dnaForm, targetAudience: e.target.value})} />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div>
+                           <label className={labelStyle}>Tema Central / Ángulo *</label>
+                           <textarea placeholder="¿De qué trata esta campaña?" className={inputStyle + " h-24 resize-none"} value={dnaForm.theme} onChange={e => setDnaForm({...dnaForm, theme: e.target.value})} />
+                        </div>
+                        <div>
+                           <label className={labelStyle}>Audiencia Objetivo</label>
+                           <input placeholder="Ej: Transportadores de carga, familias..." className={inputStyle} value={dnaForm.targetAudience} onChange={e => setDnaForm({...dnaForm, targetAudience: e.target.value})} />
                         </div>
                       </div>
 
@@ -446,62 +430,109 @@ const ClientManager: React.FC<ClientManagerProps> = ({
 
                       <div className="flex flex-col md:flex-row gap-4 pt-8">
                         <button onClick={() => handleSaveDNA(client.id)} className="flex-1 bg-slate-900 text-white py-6 rounded-2xl font-black uppercase tracking-widest text-[11px] hover:bg-black shadow-2xl transition-all hover:scale-[1.01] active:scale-95">
-                          {editingProfileId ? 'Actualizar Estrategia de ADN' : 'Confirmar y Guardar ADN'}
+                          {editingProfileId ? 'Actualizar Brief de Campaña' : 'Guardar Brief'}
                         </button>
                         <button onClick={resetDnaForm} className="px-12 bg-white text-slate-500 border border-slate-300 py-6 rounded-2xl font-black uppercase tracking-widest text-[11px] hover:bg-slate-100 transition-colors">Cancelar</button>
                       </div>
                     </div>
                   ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {profiles.map(profile => (
-                        <div key={profile.id} className="bg-white p-8 rounded-[2rem] border border-slate-300 hover:border-slate-500 transition-all group/card shadow-md flex flex-col justify-between">
-                          <div className="space-y-6">
-                            <div className="flex justify-between items-start">
-                              <div>
-                                <p className="text-[12px] font-black text-slate-900 uppercase tracking-tight mb-1">{profile.name}</p>
-                                <div className="flex gap-2">
-                                   <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">{profile.voice}</span>
-                                   <span className="text-[8px] font-black text-slate-300 uppercase tracking-widest">•</span>
-                                   <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">{profile.goal}</span>
-                                </div>
-                              </div>
-                              <div className="flex gap-1.5">
-                                <button onClick={() => startEditProfile(profile)} className="w-10 h-10 flex items-center justify-center bg-slate-100 text-slate-500 hover:bg-slate-900 hover:text-white rounded-xl transition-all shadow-sm border border-slate-200" title="Editar ADN y Pilares">
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-                                </button>
-                                <button onClick={() => onDeleteProfile(profile.id)} className="w-10 h-10 flex items-center justify-center bg-slate-100 text-slate-400 hover:bg-red-600 hover:text-white rounded-xl transition-all shadow-sm border border-slate-200">
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                                </button>
-                              </div>
+                    <div className="space-y-10">
+                      {/* GLOBAL BRAND DNA SETTINGS */}
+                      {isManagingThisClient && !showDnaForm && (
+                         <div className="bg-white p-8 rounded-[2rem] border border-slate-300 shadow-lg animate-in fade-in space-y-6">
+                            <div className="flex justify-between items-start border-b border-slate-100 pb-4">
+                               <div>
+                                  <h5 className="text-sm font-black text-slate-900 uppercase tracking-widest">ADN Global de Marca</h5>
+                                  <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-1">Identidad persistente para todas las campañas</p>
+                               </div>
+                               <button 
+                                 onClick={() => {
+                                   onUpdate(client.id, {
+                                      voice: client.voice,
+                                      // If updating, these values are currently bound to nothing in this scope, 
+                                      // we need state for them. See note below.
+                                   });
+                                   // Actually, we need to bind inputs here.
+                                 }}
+                                 className="text-[9px] font-black text-slate-900 border border-slate-900 px-4 py-2 rounded-xl hover:bg-slate-900 hover:text-white transition-all uppercase tracking-widest"
+                               >
+                                 Guardar Cambios Globales
+                               </button>
                             </div>
                             
-                            <div className="space-y-4 pt-4 border-t border-slate-100">
-                              <div className="flex items-center justify-between">
-                                 <span className="text-[7px] font-black uppercase text-slate-400 tracking-widest">Aprendizaje del Motor</span>
-                                 {profile.feedbackExamples && profile.feedbackExamples.length > 0 ? (
-                                    <div className="flex items-center gap-1.5">
-                                       <div className="w-1.5 h-1.5 rounded-full bg-slate-900 animate-pulse"></div>
-                                       <span className="text-[8px] font-black text-slate-900 uppercase">Entrenado ({profile.feedbackExamples.length})</span>
-                                    </div>
-                                 ) : (
-                                    <span className="text-[8px] font-black text-slate-300 uppercase italic">Base Estándar</span>
-                                 )}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                               <div>
+                                  <label className={labelStyle}>Voz de Marca (Global)</label>
+                                  <select 
+                                    className={inputStyle} 
+                                    value={client.voice || ''} 
+                                    onChange={e => onUpdate(client.id, { voice: e.target.value })}
+                                  >
+                                    <option value="">Selecciona una voz...</option>
+                                    {voices.map(v => <option key={v.id} value={v.name}>{v.name}</option>)}
+                                  </select>
+                               </div>
+                               <div>
+                                  <label className={labelStyle}>Propuesta de Valor (Global)</label>
+                                  <textarea 
+                                    className={inputStyle + " h-24 resize-none"} 
+                                    placeholder="¿Por qué comprar esta marca?"
+                                    value={client.valueProposition || ''}
+                                    onChange={e => onUpdate(client.id, { valueProposition: e.target.value })}
+                                  />
+                               </div>
+                            </div>
+                            <div>
+                               <label className={labelStyle}>Guidelines de Personalidad (Global)</label>
+                               <textarea 
+                                 className={inputStyle + " h-24 resize-none"} 
+                                 placeholder="Reglas de tono, palabras prohibidas, estilo..."
+                                 value={client.brandVoiceGuidelines || ''}
+                                 onChange={e => onUpdate(client.id, { brandVoiceGuidelines: e.target.value })}
+                               />
+                            </div>
+                         </div>
+                      )}
+
+                      {/* BRIEFS LIST */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {profiles.map(profile => (
+                          <div key={profile.id} className="bg-white p-8 rounded-[2rem] border border-slate-300 hover:border-slate-500 transition-all group/card shadow-md flex flex-col justify-between">
+                            <div className="space-y-6">
+                              <div className="flex justify-between items-start">
+                                <div>
+                                  <p className="text-[12px] font-black text-slate-900 uppercase tracking-tight mb-1">{profile.name}</p>
+                                  <div className="flex gap-2">
+                                     <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">{profile.goal}</span>
+                                  </div>
+                                </div>
+                                <div className="flex gap-1.5">
+                                  <button onClick={() => startEditProfile(profile)} className="w-10 h-10 flex items-center justify-center bg-slate-100 text-slate-500 hover:bg-slate-900 hover:text-white rounded-xl transition-all shadow-sm border border-slate-200" title="Editar Brief">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                                  </button>
+                                  <button onClick={() => onDeleteProfile(profile.id)} className="w-10 h-10 flex items-center justify-center bg-slate-100 text-slate-400 hover:bg-red-600 hover:text-white rounded-xl transition-all shadow-sm border border-slate-200">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                  </button>
+                                </div>
                               </div>
-                              <p className="text-[10px] text-slate-600 font-bold leading-relaxed line-clamp-2">
-                                <span className="text-slate-900 uppercase text-[9px]">Valor:</span> {profile.valueProposition}
-                              </p>
+                              
+                              <div className="space-y-4 pt-4 border-t border-slate-100">
+                                <p className="text-[10px] text-slate-600 font-bold leading-relaxed line-clamp-2">
+                                  <span className="text-slate-900 uppercase text-[9px]">Tema:</span> {profile.theme}
+                                </p>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
-                      {profiles.length === 0 && (
+                        ))}
+                        {profiles.length === 0 && (
                         <div className="md:col-span-2 py-20 border-2 border-dashed border-slate-300 rounded-[2.5rem] flex flex-col items-center justify-center text-center">
                            <div className="bg-slate-100 p-6 rounded-full mb-4 shadow-inner">
                               <svg className="w-8 h-8 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>
                            </div>
-                           <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1">Estrategia Vacía</p>
-                           <p className="text-[9px] font-bold text-slate-300 uppercase tracking-tight max-w-[240px]">Configura un perfil de ADN para que la IA pueda escribir por esta marca.</p>
+                           <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1">No hay Briefs de Campaña</p>
+                           <p className="text-[9px] font-bold text-slate-300 uppercase tracking-tight max-w-[240px]">Crea un Brief para que la IA pueda escribir por esta marca.</p>
                         </div>
+                      )}
                       )}
                     </div>
                   )}

@@ -25,12 +25,18 @@ export const generateCopy = async (req: AuthRequest, res: Response) => {
     }
 
     // 2. Generate copy using our service
+    // Global DNA (Client) > Profile DNA (Brief)
+    const client = dnaProfile.client;
+    
     const generationParams = {
       ...params,
-      clientName: dnaProfile.client.name,
-      valueProposition: dnaProfile.valueProposition,
-      brandVoiceGuidelines: dnaProfile.brandVoiceGuidelines,
-      voice: dnaProfile.voice,
+      clientName: client.name,
+      // Priority: Client Global DNA > Brief DNA (Fallback)
+      valueProposition: client.valueProposition || dnaProfile.valueProposition,
+      brandVoiceGuidelines: client.brandVoiceGuidelines || dnaProfile.brandVoiceGuidelines,
+      voice: client.voice || dnaProfile.voice,
+      
+      // Brief Specifics
       product: dnaProfile.product,
       targetAudience: dnaProfile.targetAudience,
       goal: dnaProfile.goal,

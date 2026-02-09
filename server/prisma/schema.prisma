@@ -28,10 +28,15 @@ model User {
 }
 
 model Client {
-  id          String              @id @default(uuid())
-  name        String
-  industry    String
-  logoUrl     String?             @db.Text
+  id                   String  @id @default(uuid())
+  name                 String
+  industry             String
+  logoUrl              String? @db.Text
+  // ADN Global de Marca
+  voice                String?
+  brandVoiceGuidelines String? @db.Text
+  valueProposition     String? @db.Text
+
   users       User[]
   dnaProfiles ContentDNAProfile[]
   variations  SavedVariation[]

@@ -27,6 +27,9 @@ export interface Client {
   name: string;
   industry: string;
   logo: string; // Base64
+  voice?: string;
+  brandVoiceGuidelines?: string;
+  valueProposition?: string;
   createdAt: number;
 }
 

@@ -21,10 +21,17 @@ export const getClients = async (req: AuthRequest, res: Response) => {
 };
 
 export const createClient = async (req: AuthRequest, res: Response) => {
-  const { name, industry, logoUrl, logo } = req.body;
+  const { name, industry, logoUrl, logo, voice, brandVoiceGuidelines, valueProposition } = req.body;
   try {
     const client = await prisma.client.create({
-      data: { name, industry, logoUrl: logoUrl || logo }
+      data: { 
+        name, 
+        industry, 
+        logoUrl: logoUrl || logo,
+        voice,
+        brandVoiceGuidelines,
+        valueProposition
+      }
     });
     res.status(201).json(client);
   } catch (error) {
