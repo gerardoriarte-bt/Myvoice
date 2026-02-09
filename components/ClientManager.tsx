@@ -310,18 +310,14 @@ const ClientManager: React.FC<ClientManagerProps> = ({
 
                 <div className="flex-1 bg-slate-50/50 rounded-[2.5rem] p-10 border border-slate-200">
                   <div className="flex justify-between items-center mb-10">
-                    <h4 className="text-[11px] font-black text-slate-900 uppercase tracking-[0.2em]">Estrategias de ADN Activas ({profiles.length})</h4>
-                    <button onClick={() => { setEditingClientId(client.id); resetDnaForm(); setShowDnaForm(true); }} className="text-[10px] font-black text-slate-900 hover:text-slate-600 uppercase tracking-widest flex items-center gap-2 transition-colors">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M12 4v16m8-8H4" /></svg>
-                      Nuevo Perfil
-                    </button>
+                    <h4 className="text-[11px] font-black text-slate-900 uppercase tracking-[0.2em]">Campañas Activas ({profiles.length})</h4>
                   </div>
 
                   {showDnaForm && editingClientId === client.id ? (
                     <div id="dna-editor-form" className="bg-white p-10 rounded-[2.5rem] border border-slate-300 shadow-2xl space-y-10 animate-in slide-in-from-top-4 duration-500">
                       <div className="flex justify-between items-center pb-6 border-b border-slate-200">
                         <div>
-                           <h5 className="text-xl font-black text-slate-900 uppercase tracking-tighter">{editingProfileId ? 'Actualizar Brief' : 'Nuevo Brief de Campaña'}</h5>
+                           <h5 className="text-xl font-black text-slate-900 uppercase tracking-tighter">{editingProfileId ? 'Actualizar Campaña' : 'Nueva Campaña'}</h5>
                            <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Marca: {client.name}</p>
                         </div>
                         <button onClick={resetDnaForm} className="text-slate-400 hover:text-slate-900 transition-colors bg-slate-50 p-2 rounded-full">
@@ -331,7 +327,7 @@ const ClientManager: React.FC<ClientManagerProps> = ({
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                         <div>
-                          <label className={labelStyle}>Nombre del Brief / Campaña *</label>
+                          <label className={labelStyle}>Nombre de la Campaña *</label>
                           <input type="text" placeholder="Ej: Redención de Puntos 2025" className={inputStyle} value={dnaForm.name} onChange={e => setDnaForm({...dnaForm, name: e.target.value})} />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
@@ -502,7 +498,7 @@ const ClientManager: React.FC<ClientManagerProps> = ({
                           <div className="bg-slate-100 p-3 rounded-full group-hover:bg-slate-900 group-hover:text-white transition-colors">
                             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" /></svg>
                           </div>
-                          <span className="text-[11px] font-black uppercase tracking-widest text-slate-400 group-hover:text-slate-900">Crear Nuevo Brief de Campaña</span>
+                          <span className="text-[11px] font-black uppercase tracking-widest text-slate-400 group-hover:text-slate-900">Crear Nueva Campaña</span>
                         </button>
                       )}
 
@@ -541,8 +537,8 @@ const ClientManager: React.FC<ClientManagerProps> = ({
                            <div className="bg-slate-100 p-6 rounded-full mb-4 shadow-inner">
                               <svg className="w-8 h-8 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>
                            </div>
-                           <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1">No hay Briefs de Campaña</p>
-                           <p className="text-[9px] font-bold text-slate-300 uppercase tracking-tight max-w-[240px]">Configura el ADN para crear briefs.</p>
+                           <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1">No hay Campañas Activas</p>
+                           <p className="text-[9px] font-bold text-slate-300 uppercase tracking-tight max-w-[240px]">Configura el ADN para crear campañas.</p>
                         </div>
                         )}
                       </div>
