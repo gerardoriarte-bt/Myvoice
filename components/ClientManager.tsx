@@ -533,7 +533,6 @@ const ClientManager: React.FC<ClientManagerProps> = ({
                            <p className="text-[9px] font-bold text-slate-300 uppercase tracking-tight max-w-[240px]">Crea un Brief para que la IA pueda escribir por esta marca.</p>
                         </div>
                       )}
-                      )}
                     </div>
                   )}
                 </div>
