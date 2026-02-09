@@ -40,7 +40,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
             MY <span className="text-gradient">VOICE</span>
           </h1>
           <p className="text-slate-500 font-bold uppercase tracking-[0.3em] text-[10px]">
-            Strategic Copy Engine
+            Strategic Copywriting
           </p>
         </div>
 

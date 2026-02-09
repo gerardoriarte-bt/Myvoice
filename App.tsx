@@ -290,7 +290,7 @@ const App: React.FC = () => {
             MY <span className="text-gradient">VOICE</span>
           </h1>
           <p className="text-slate-500 font-bold uppercase tracking-[0.4em] text-[10px]">
-            Strategic Copy Engine by Grupo LoBueno
+            Strategic Copywriting by Grupo LoBueno
           </p>
         </header>
 
