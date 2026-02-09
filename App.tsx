@@ -11,6 +11,7 @@ import { CopyParameters, CopyVariation, Project, SavedVariation, BrandConfig, Cl
 import { VOICES, GOALS } from './constants';
 import Login from './components/Login';
 import { generationApi, clientApi, libraryApi, authApi } from './services/api';
+import WorkflowHelpSidebar from './components/WorkflowHelpSidebar';
 
 const MOCK_CLIENTS: Client[] = [
   { id: 'c-terpel', name: 'Terpel', industry: 'Energía y Combustibles', logo: '', createdAt: Date.now() },
@@ -497,6 +498,7 @@ const App: React.FC = () => {
           )}
         </main>
       </div>
+      <WorkflowHelpSidebar />
     </div>
   );
 };

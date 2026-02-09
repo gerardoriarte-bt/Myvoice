@@ -186,51 +186,7 @@ const ClientManager: React.FC<ClientManagerProps> = ({
         </div>
       </div>
 
-      {/* WORKFLOW GUIDE - STEP BY STEP */}
-      {!showGlobalSettings && !isAddingClient && (
-        <div className="bg-white/50 border border-slate-200 rounded-[2.5rem] p-8 animate-in fade-in slide-in-from-top-2">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-6 relative">
-             {/* Connection Line (Desktop) */}
-             <div className="hidden md:block absolute top-1/2 left-10 right-10 h-0.5 bg-slate-200 -z-10"></div>
 
-             {/* Step 1 */}
-             <div className="flex flex-col items-center gap-3 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm relative z-10 w-full md:w-auto">
-                <div className="w-10 h-10 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center font-black border border-slate-200">1</div>
-                <div className="text-center">
-                   <p className="text-[10px] font-black uppercase tracking-widest text-slate-900">Registrar Marca</p>
-                   <p className="text-[9px] text-slate-400 font-bold">Crea tu identidad comercial</p>
-                </div>
-             </div>
-
-             {/* Step 2 */}
-             <div className="flex flex-col items-center gap-3 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm relative z-10 w-full md:w-auto">
-                <div className="w-10 h-10 rounded-full bg-slate-900 text-white flex items-center justify-center font-black border border-slate-900">2</div>
-                <div className="text-center">
-                   <p className="text-[10px] font-black uppercase tracking-widest text-slate-900">Configurar ADN</p>
-                   <p className="text-[9px] text-slate-400 font-bold">Define Voz y Propuesta Global</p>
-                </div>
-             </div>
-
-             {/* Step 3 */}
-             <div className="flex flex-col items-center gap-3 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm relative z-10 w-full md:w-auto">
-                <div className="w-10 h-10 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center font-black border border-slate-200">3</div>
-                <div className="text-center">
-                   <p className="text-[10px] font-black uppercase tracking-widest text-slate-900">Crear Campaña</p>
-                   <p className="text-[9px] text-slate-400 font-bold">Objetivos específicos</p>
-                </div>
-             </div>
-
-             {/* Step 4 */}
-             <div className="flex flex-col items-center gap-3 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm relative z-10 w-full md:w-auto">
-                <div className="w-10 h-10 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center font-black border border-indigo-100">4</div>
-                <div className="text-center">
-                   <p className="text-[10px] font-black uppercase tracking-widest text-indigo-600">Generar Contenido</p>
-                   <p className="text-[9px] text-slate-400 font-bold">Usa la IA entrenada</p>
-                </div>
-             </div>
-          </div>
-        </div>
-      )}
 
       {/* GLOBAL STRATEGY CATALOG SECTION */}
       {showGlobalSettings && (
