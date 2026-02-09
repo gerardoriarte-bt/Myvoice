@@ -537,6 +537,7 @@ const ClientManager: React.FC<ClientManagerProps> = ({
                    </div>
                  )}
               </div>
+              </div>
             </div>
           );
         })}
