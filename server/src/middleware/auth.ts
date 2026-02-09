@@ -16,10 +16,15 @@ export const authenticateToken = (req: AuthRequest, res: Response, next: NextFun
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
 
-  if (!token) return res.sendStatus(401);
+  if (!token) {
+    return res.status(401).json({ error: 'Token no proporcionado' });
+  }
 
   jwt.verify(token, JWT_SECRET, (err: any, user: any) => {
-    if (err) return res.sendStatus(403);
+    if (err) {
+      console.error('JWT Verify Error:', err.message);
+      return res.status(403).json({ error: 'Token inválido o expirado' });
+    }
     req.user = user;
     next();
   });
