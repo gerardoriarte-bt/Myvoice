@@ -326,11 +326,23 @@ const ClientManager: React.FC<ClientManagerProps> = ({
                 const profilesCount = dnaProfiles.filter(p => p.clientId === client.id).length;
                 return (
                   <div key={client.id} onClick={() => enterHub(client.id)} className="bg-white rounded-[2.5rem] p-8 border border-slate-200 shadow-sm hover:shadow-2xl hover:border-slate-900 transition-all cursor-pointer group hover:-translate-y-1 duration-300 flex flex-col h-full">
-                     <div className="flex justify-between items-start mb-8">
+                     <div className="flex justify-between items-start mb-8 relative">
                        <div className="w-16 h-16 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center overflow-hidden shadow-inner group-hover:scale-110 transition-transform">
                           {client.logo ? <img src={client.logo} className="w-full h-full object-contain p-1" /> : <div className="text-slate-300 font-black text-2xl">{client.name[0]}</div>}
                        </div>
-                       <span className="bg-slate-50 text-slate-500 border border-slate-200 px-3 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest">{client.industry}</span>
+                       <div className="flex flex-col items-end gap-2">
+                         <span className="bg-slate-50 text-slate-500 border border-slate-200 px-3 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest">{client.industry}</span>
+                         <button 
+                           onClick={(e) => { 
+                             e.stopPropagation(); 
+                             if(window.confirm(`¿Eliminar la marca ${client.name} y todas sus campañas?`)) onRemove(client.id); 
+                           }} 
+                           className="bg-white text-slate-300 border border-slate-200 hover:text-red-500 hover:border-red-200 hover:bg-red-50 p-2 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                           title="Eliminar Marca"
+                         >
+                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                         </button>
+                       </div>
                      </div>
                      <div className="flex-1">
                         <h3 className="text-2xl font-black text-slate-900 leading-none mb-2 truncate">{client.name}</h3>

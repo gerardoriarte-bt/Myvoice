@@ -12,11 +12,9 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUser, onLogout }) => {
 
   return (
     <div className="glass-header text-slate-900 px-8 py-4 flex justify-between items-center sticky top-0 z-[100] border-b border-slate-100">
-      <div className="flex items-center gap-4">
-        <div className="flex bg-slate-900 px-3 py-2 rounded-xl shadow-lg shadow-slate-900/10 items-center justify-center">
-          <img src="/LobuenoLogo.png" alt="Grupo LoBueno" className="h-4 object-contain brightness-0 invert" />
+        <div className="flex items-center justify-center">
+          <img src="/LobuenoLogo.png" alt="Grupo LoBueno" className="h-5 object-contain" />
         </div>
-      </div>
 
       <div className="relative">
         <button 
