@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Client, ContentDNAProfile, BrandConfig, FeedbackExample, Platform } from '../types';
 
@@ -35,7 +34,7 @@ const ClientManager: React.FC<ClientManagerProps> = ({
 }) => {
   const [isAddingClient, setIsAddingClient] = React.useState(false);
   const [showGlobalSettings, setShowGlobalSettings] = React.useState(false);
-  const [editingClientId, setEditingClientId] = React.useState<string | null>(null);
+  const [activeClientHub, setActiveClientHub] = React.useState<string | null>(null);
   const [editingProfileId, setEditingProfileId] = React.useState<string | null>(null);
   const [clientForm, setClientForm] = React.useState({ name: '', industry: '', logo: '' });
   
@@ -91,7 +90,6 @@ const ClientManager: React.FC<ClientManagerProps> = ({
   };
 
   const startEditProfile = (profile: ContentDNAProfile) => {
-    setEditingClientId(profile.clientId);
     setDnaForm({
       name: profile.name,
       voice: '', // Global legacy
@@ -108,7 +106,7 @@ const ClientManager: React.FC<ClientManagerProps> = ({
     setEditingProfileId(profile.id);
     setShowDnaForm(true);
     setTimeout(() => {
-      document.getElementById('dna-editor-form')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      document.getElementById('dna-editor-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 150);
   };
 
@@ -131,13 +129,14 @@ const ClientManager: React.FC<ClientManagerProps> = ({
     }
   };
 
-  const handleSaveDNA = (clientId: string) => {
+  const handleSaveDNA = () => {
+    if (!activeClientHub) return;
     if (!dnaForm.name || !dnaForm.theme) {
       alert("Por favor completa los campos del Brief (Nombre y Tema).");
       return;
     }
     if (editingProfileId) onUpdateProfile(editingProfileId, dnaForm);
-    else onSaveProfile({ ...dnaForm, clientId });
+    else onSaveProfile({ ...dnaForm, clientId: activeClientHub });
     resetDnaForm();
   };
 
@@ -159,403 +158,455 @@ const ClientManager: React.FC<ClientManagerProps> = ({
     setShowDnaForm(false);
   };
 
+  const enterHub = (clientId: string) => {
+    setActiveClientHub(clientId);
+    resetDnaForm();
+    setShowGlobalSettings(false);
+  };
+
+  const exitHub = () => {
+    setActiveClientHub(null);
+    resetDnaForm();
+  };
+
   const inputStyle = "w-full px-5 py-4 bg-white border border-slate-300 rounded-2xl font-bold text-slate-800 focus:border-slate-900 outline-none transition-all placeholder:text-slate-300 text-sm shadow-sm";
   const labelStyle = "block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3";
 
   return (
     <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-1000">
-      {/* Header with Sub-Nav */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <div>
-          <h2 className="text-4xl font-black text-slate-900 uppercase tracking-tighter">Gestión de <span className="text-gradient">Marcas</span></h2>
-          <p className="text-slate-500 font-bold uppercase text-[10px] tracking-[0.3em]">Portfolio y Arquitectura Estratégica</p>
-        </div>
-        <div className="flex gap-3">
-          <button 
-            onClick={() => { setShowGlobalSettings(!showGlobalSettings); setIsAddingClient(false); }} 
-            className={`px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border ${showGlobalSettings ? 'bg-slate-100 border-slate-900 text-slate-900' : 'bg-white border-slate-300 text-slate-500 hover:border-slate-900 hover:text-slate-900'}`}
-          >
-            CATÁLOGO ESTRATÉGICO
-          </button>
-          <button 
-            onClick={() => { setIsAddingClient(!isAddingClient); setShowGlobalSettings(false); setEditingClientId(null); }} 
-            className="bg-slate-900 text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-2xl hover:bg-black transition-all hover:scale-[1.02] active:scale-95"
-          >
-            {isAddingClient ? 'CANCELAR' : 'REGISTRAR MARCA'}
-          </button>
-        </div>
-      </div>
-
-
-
+      
       {/* GLOBAL STRATEGY CATALOG SECTION */}
-      {showGlobalSettings && (
-        <div className="bg-slate-50 p-10 rounded-[3rem] border border-slate-300 shadow-xl animate-in slide-in-from-top-4 duration-500 space-y-10">
-          <div className="flex justify-between items-center pb-6 border-b border-slate-200">
-            <div>
-              <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">Arquitectura de ADN Global</h3>
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Define las voces y objetivos disponibles para todas las marcas.</p>
-            </div>
-            <button onClick={onResetDefaults} className="text-[10px] font-black text-slate-400 hover:text-slate-900 flex items-center gap-2 uppercase">
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-              Restaurar Defaults
-            </button>
-          </div>
+      {showGlobalSettings && !activeClientHub && (
+        <div className="bg-slate-50 p-10 rounded-[3rem] border border-slate-300 shadow-xl animate-in slide-in-from-top-4 duration-500 space-y-10 fixed inset-0 z-[200] overflow-y-auto m-6 md:m-12">
+           <div className="absolute inset-0 bg-slate-900/40 -z-10" onClick={() => setShowGlobalSettings(false)}></div>
+           <div className="relative bg-white rounded-[3rem] p-10 shadow-2xl z-10 max-w-5xl mx-auto space-y-10 border border-slate-200">
+              <div className="flex justify-between items-center pb-6 border-b border-slate-200">
+                <div>
+                  <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">Arquitectura de ADN Global</h3>
+                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Define las voces y objetivos disponibles para todas las marcas.</p>
+                </div>
+                <div className="flex items-center gap-6">
+                   <button onClick={onResetDefaults} className="text-[10px] font-black text-slate-400 hover:text-slate-900 flex items-center gap-2 uppercase">
+                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                     Restaurar Defaults
+                   </button>
+                   <button onClick={() => setShowGlobalSettings(false)} className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center font-black text-slate-500 hover:text-slate-900 transition-colors">×</button>
+                </div>
+              </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-            {/* Voices List */}
-            <div className="space-y-6">
-              <label className={labelStyle}>Voces de Marca Disponibles</label>
-              <div className="flex gap-2">
-                <input type="text" placeholder="Ej: Rebelde e Irreverente" className={inputStyle} value={newVoice} onChange={e => setNewVoice(e.target.value)} onKeyDown={e => e.key === 'Enter' && addCatalogItem('voice')} />
-                <button onClick={() => addCatalogItem('voice')} className="bg-slate-900 text-white px-6 rounded-2xl font-black transition-all hover:bg-black shrink-0 shadow-lg">+</button>
-              </div>
-              <div className="grid grid-cols-1 gap-2 max-h-60 overflow-y-auto custom-scrollbar pr-2">
-                {voices.map(v => (
-                  <div key={v.id} className="flex items-center justify-between p-4 bg-white border border-slate-200 rounded-xl group hover:border-slate-900 transition-all">
-                    {editingCatalogItem?.id === v.id ? (
-                      <input className="flex-1 font-bold text-xs outline-none" value={editingCatalogItem.value} onChange={e => setEditingCatalogItem({...editingCatalogItem, value: e.target.value})} onKeyDown={e => e.key === 'Enter' && saveCatalogEdit()} autoFocus />
-                    ) : (
-                      <span className="text-[10px] font-black uppercase tracking-tight text-slate-700">{v.name}</span>
-                    )}
-                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button onClick={() => editingCatalogItem ? saveCatalogEdit() : setEditingCatalogItem({type: 'voice', id: v.id, value: v.name})} className="p-1.5 text-slate-400 hover:text-slate-900">{editingCatalogItem?.id === v.id ? 'OK' : '✎'}</button>
-                      <button onClick={() => removeCatalogItem('voice', v.id)} className="p-1.5 text-slate-400 hover:text-red-600">×</button>
-                    </div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                {/* Voices List */}
+                <div className="space-y-6">
+                  <label className={labelStyle}>Voces de Marca Disponibles</label>
+                  <div className="flex gap-2">
+                    <input type="text" placeholder="Ej: Rebelde e Irreverente" className={inputStyle} value={newVoice} onChange={e => setNewVoice(e.target.value)} onKeyDown={e => e.key === 'Enter' && addCatalogItem('voice')} />
+                    <button onClick={() => addCatalogItem('voice')} className="bg-slate-900 text-white px-6 rounded-2xl font-black transition-all hover:bg-black shrink-0 shadow-lg">+</button>
                   </div>
-                ))}
-              </div>
-            </div>
+                  <div className="grid grid-cols-1 gap-2 max-h-60 overflow-y-auto custom-scrollbar pr-2">
+                    {voices.map(v => (
+                      <div key={v.id} className="flex items-center justify-between p-4 bg-white border border-slate-200 rounded-xl group hover:border-slate-900 transition-all">
+                        {editingCatalogItem?.id === v.id ? (
+                          <input className="flex-1 font-bold text-xs outline-none" value={editingCatalogItem.value} onChange={e => setEditingCatalogItem({...editingCatalogItem, value: e.target.value})} onKeyDown={e => e.key === 'Enter' && saveCatalogEdit()} autoFocus />
+                        ) : (
+                          <span className="text-[10px] font-black uppercase tracking-tight text-slate-700">{v.name}</span>
+                        )}
+                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button onClick={() => editingCatalogItem ? saveCatalogEdit() : setEditingCatalogItem({type: 'voice', id: v.id, value: v.name})} className="p-1.5 text-slate-400 hover:text-slate-900">{editingCatalogItem?.id === v.id ? 'OK' : '✎'}</button>
+                          <button onClick={() => removeCatalogItem('voice', v.id)} className="p-1.5 text-slate-400 hover:text-red-600">×</button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
 
-            {/* Goals List */}
-            <div className="space-y-6">
-              <label className={labelStyle}>Objetivos de Negocio</label>
-              <div className="flex gap-2">
-                <input type="text" placeholder="Ej: Captación Directa" className={inputStyle} value={newGoal} onChange={e => setNewGoal(e.target.value)} onKeyDown={e => e.key === 'Enter' && addCatalogItem('goal')} />
-                <button onClick={() => addCatalogItem('goal')} className="bg-slate-900 text-white px-6 rounded-2xl font-black transition-all hover:bg-black shrink-0 shadow-lg">+</button>
-              </div>
-              <div className="grid grid-cols-1 gap-2 max-h-60 overflow-y-auto custom-scrollbar pr-2">
-                {goals.map(g => (
-                  <div key={g.id} className="flex items-center justify-between p-4 bg-white border border-slate-200 rounded-xl group hover:border-slate-900 transition-all">
-                    {editingCatalogItem?.id === g.id ? (
-                      <input className="flex-1 font-bold text-xs outline-none" value={editingCatalogItem.value} onChange={e => setEditingCatalogItem({...editingCatalogItem, value: e.target.value})} onKeyDown={e => e.key === 'Enter' && saveCatalogEdit()} autoFocus />
-                    ) : (
-                      <span className="text-[10px] font-black uppercase tracking-tight text-slate-700">{g.name}</span>
-                    )}
-                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button onClick={() => editingCatalogItem ? saveCatalogEdit() : setEditingCatalogItem({type: 'goal', id: g.id, value: g.name})} className="p-1.5 text-slate-400 hover:text-slate-900">{editingCatalogItem?.id === g.id ? 'OK' : '✎'}</button>
-                      <button onClick={() => removeCatalogItem('goal', g.id)} className="p-1.5 text-slate-400 hover:text-red-600">×</button>
-                    </div>
+                {/* Goals List */}
+                <div className="space-y-6">
+                  <label className={labelStyle}>Objetivos de Negocio</label>
+                  <div className="flex gap-2">
+                    <input type="text" placeholder="Ej: Captación Directa" className={inputStyle} value={newGoal} onChange={e => setNewGoal(e.target.value)} onKeyDown={e => e.key === 'Enter' && addCatalogItem('goal')} />
+                    <button onClick={() => addCatalogItem('goal')} className="bg-slate-900 text-white px-6 rounded-2xl font-black transition-all hover:bg-black shrink-0 shadow-lg">+</button>
                   </div>
-                ))}
+                  <div className="grid grid-cols-1 gap-2 max-h-60 overflow-y-auto custom-scrollbar pr-2">
+                    {goals.map(g => (
+                      <div key={g.id} className="flex items-center justify-between p-4 bg-white border border-slate-200 rounded-xl group hover:border-slate-900 transition-all">
+                        {editingCatalogItem?.id === g.id ? (
+                          <input className="flex-1 font-bold text-xs outline-none" value={editingCatalogItem.value} onChange={e => setEditingCatalogItem({...editingCatalogItem, value: e.target.value})} onKeyDown={e => e.key === 'Enter' && saveCatalogEdit()} autoFocus />
+                        ) : (
+                          <span className="text-[10px] font-black uppercase tracking-tight text-slate-700">{g.name}</span>
+                        )}
+                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button onClick={() => editingCatalogItem ? saveCatalogEdit() : setEditingCatalogItem({type: 'goal', id: g.id, value: g.name})} className="p-1.5 text-slate-400 hover:text-slate-900">{editingCatalogItem?.id === g.id ? 'OK' : '✎'}</button>
+                          <button onClick={() => removeCatalogItem('goal', g.id)} className="p-1.5 text-slate-400 hover:text-red-600">×</button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
+           </div>
         </div>
       )}
 
+      {/* REGISTRATION MODAL */}
       {isAddingClient && (
-        <div className="bg-white p-10 rounded-[2.5rem] shadow-xl border border-slate-300 animate-in slide-in-from-top-4 duration-500">
-          <form onSubmit={(e) => { e.preventDefault(); onAdd(clientForm); setIsAddingClient(false); setClientForm({name:'', industry:'', logo:''}); }} className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-end">
-            <div className="space-y-6">
-              <div>
-                <label className={labelStyle}>NOMBRE COMERCIAL</label>
-                <input required type="text" className={inputStyle} value={clientForm.name} onChange={e => setClientForm({...clientForm, name: e.target.value})} />
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 md:p-12 animate-in fade-in duration-300">
+           <div className="absolute inset-0 bg-slate-900/90 backdrop-blur-sm" onClick={() => setIsAddingClient(false)}></div>
+           <div className="relative z-10 w-full max-w-3xl bg-white p-10 rounded-[3rem] shadow-2xl border border-slate-100 animate-in zoom-in-95 duration-500">
+              <div className="flex justify-between items-center mb-10 pb-6 border-b border-slate-100">
+                 <div>
+                    <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tighter">Registrar <span className="text-gradient">Marca</span></h3>
+                    <p className="text-slate-500 font-bold uppercase text-[9px] tracking-widest mt-1">Paso 1: Identidad Corporativa</p>
+                 </div>
+                 <button onClick={() => setIsAddingClient(false)} className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center font-black text-slate-500 hover:text-slate-900 hover:bg-slate-200 transition-all">×</button>
               </div>
-              <div>
-                <label className={labelStyle}>SECTOR ECONÓMICO</label>
-                <input required type="text" className={inputStyle} value={clientForm.industry} onChange={e => setClientForm({...clientForm, industry: e.target.value})} />
-              </div>
-            </div>
-            <div className="space-y-6">
-              <div className="flex items-center gap-6">
-                <div className="w-24 h-24 bg-slate-50 rounded-3xl border border-slate-300 flex items-center justify-center overflow-hidden shrink-0 shadow-inner">
-                  {clientForm.logo ? <img src={clientForm.logo} className="w-full h-full object-contain" /> : <span className="text-xl grayscale opacity-20 font-black">LOGO</span>}
+
+              <form onSubmit={(e) => { e.preventDefault(); onAdd(clientForm); setIsAddingClient(false); setClientForm({name:'', industry:'', logo:''}); }} className="grid grid-cols-1 md:grid-cols-2 gap-10 items-start">
+                <div className="space-y-8">
+                  <div>
+                    <label className={labelStyle}>NOMBRE COMERCIAL *</label>
+                    <input required type="text" className={inputStyle} value={clientForm.name} onChange={e => setClientForm({...clientForm, name: e.target.value})} />
+                  </div>
+                  <div>
+                    <label className={labelStyle}>SECTOR ECONÓMICO *</label>
+                    <input required type="text" className={inputStyle} placeholder="Ej: Energía, Alimentos..." value={clientForm.industry} onChange={e => setClientForm({...clientForm, industry: e.target.value})} />
+                  </div>
                 </div>
-                <div className="flex-1">
-                  <label className={labelStyle}>IDENTIDAD VISUAL</label>
-                  <input type="file" accept="image/*" onChange={handleImageChange} className="w-full text-[10px] font-black text-slate-400 cursor-pointer" />
+                <div className="space-y-8 flex flex-col items-center">
+                  <div className="w-32 h-32 bg-slate-50 rounded-[2rem] border border-slate-300 flex items-center justify-center overflow-hidden shrink-0 shadow-inner group relative cursor-pointer" onClick={() => document.getElementById('logo-upload')?.click()}>
+                    {clientForm.logo ? (
+                      <img src={clientForm.logo} className="w-full h-full object-contain" />
+                    ) : (
+                      <div className="flex flex-col items-center justify-center text-slate-300 group-hover:text-slate-500 transition-colors">
+                        <svg className="w-8 h-8 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                        <span className="text-[9px] font-black uppercase">Subir Logo</span>
+                      </div>
+                    )}
+                    <input id="logo-upload" type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
+                  </div>
+                  <div className="w-full">
+                     <button type="submit" className="w-full bg-slate-900 text-white py-5 rounded-2xl font-black uppercase text-[11px] tracking-[0.2em] hover:bg-black transition-all shadow-xl active:scale-95">CREAR EN PORTAFOLIO</button>
+                  </div>
                 </div>
-              </div>
-              <button type="submit" className="w-full bg-slate-900 text-white py-5 rounded-2xl font-black uppercase tracking-widest hover:bg-black transition-all shadow-lg">GUARDAR REGISTRO</button>
-            </div>
-          </form>
+              </form>
+           </div>
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-12">
-        {clients.map(client => {
+
+      {/* MAIN VIEW SWITCHER */}
+      {!activeClientHub ? (
+        // VIEW: PORTFOLIO GRID
+        <div className="space-y-10 animate-in fade-in duration-500">
+           {/* Header Portfolio */}
+           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+              <div>
+                <h2 className="text-4xl font-black text-slate-900 uppercase tracking-tighter">Portafolio de <span className="text-gradient">Marcas</span></h2>
+                <p className="text-slate-500 font-bold uppercase text-[10px] tracking-[0.3em] mt-1">Selecciona una marca para gestionar su ADN y campañas</p>
+              </div>
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => setShowGlobalSettings(true)} 
+                  className="px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border bg-white border-slate-300 text-slate-500 hover:border-slate-900 hover:text-slate-900 shadow-sm"
+                >
+                  <svg className="w-4 h-4 inline-block mr-2 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                  Catálogo
+                </button>
+                <button 
+                  onClick={() => setIsAddingClient(true)} 
+                  className="bg-slate-900 text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl hover:bg-black transition-all hover:shadow-2xl hover:-translate-y-0.5"
+                >
+                  + NUEVA MARCA
+                </button>
+              </div>
+           </div>
+
+           {/* Grid Layout */}
+           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+             {clients.map(client => {
+                const profilesCount = dnaProfiles.filter(p => p.clientId === client.id).length;
+                return (
+                  <div key={client.id} onClick={() => enterHub(client.id)} className="bg-white rounded-[2.5rem] p-8 border border-slate-200 shadow-sm hover:shadow-2xl hover:border-slate-900 transition-all cursor-pointer group hover:-translate-y-1 duration-300 flex flex-col h-full">
+                     <div className="flex justify-between items-start mb-8">
+                       <div className="w-16 h-16 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center overflow-hidden shadow-inner group-hover:scale-110 transition-transform">
+                          {client.logo ? <img src={client.logo} className="w-full h-full object-contain p-1" /> : <div className="text-slate-300 font-black text-2xl">{client.name[0]}</div>}
+                       </div>
+                       <span className="bg-slate-50 text-slate-500 border border-slate-200 px-3 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest">{client.industry}</span>
+                     </div>
+                     <div className="flex-1">
+                        <h3 className="text-2xl font-black text-slate-900 leading-none mb-2 truncate">{client.name}</h3>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                          <span className="w-1.5 h-1.5 rounded-full bg-green-400"></span>
+                          {profilesCount} Campaña{profilesCount !== 1 ? 's' : ''} activa{profilesCount !== 1 ? 's' : ''}
+                        </p>
+                     </div>
+                     <div className="mt-8 pt-6 border-t border-slate-100 flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-slate-400 group-hover:text-slate-900 transition-colors">
+                        <span>Gestionar Marca</span>
+                        <svg className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+                     </div>
+                  </div>
+                );
+             })}
+             {clients.length === 0 && (
+                <div className="col-span-full py-24 border-2 border-dashed border-slate-300 rounded-[3rem] flex flex-col items-center justify-center text-center bg-white/50">
+                   <div className="bg-slate-100 p-6 rounded-full mb-4 shadow-inner">
+                      <svg className="w-10 h-10 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+                   </div>
+                   <p className="text-[14px] font-black text-slate-400 uppercase tracking-widest mb-1">Portafolio Vacío</p>
+                   <p className="text-[10px] font-bold text-slate-300 uppercase tracking-tight">Comienza registrando tu primera marca.</p>
+                </div>
+             )}
+           </div>
+        </div>
+      ) : (
+        // VIEW: BRAND HUB (Master-Detail)
+        (() => {
+          const client = clients.find(c => c.id === activeClientHub);
+          if (!client) return null;
           const profiles = dnaProfiles.filter(p => p.clientId === client.id);
-          const isManagingThisClient = editingClientId === client.id;
 
           return (
-            <div key={client.id} className="bg-white rounded-[3rem] shadow-md border border-slate-200 overflow-hidden group hover:border-slate-400 transition-all">
-              <div className="p-10 flex flex-col lg:flex-row gap-12">
-                <div className="lg:w-1/4 space-y-8">
-                  <div className="w-28 h-28 rounded-3xl bg-slate-50 border border-slate-200 overflow-hidden shadow-inner flex items-center justify-center mx-auto lg:mx-0">
-                    {client.logo ? <img src={client.logo} className="w-full h-full object-contain" /> : <div className="text-slate-300 font-black text-4xl">{client.name[0]}</div>}
-                  </div>
-                  <div className="text-center lg:text-left">
-                    <h3 className="text-2xl font-black text-slate-900 mb-2 leading-none">{client.name}</h3>
-                    <span className="px-4 py-2 bg-slate-100 text-slate-600 text-[9px] font-black uppercase tracking-widest rounded-xl border border-slate-300">{client.industry}</span>
-                  </div>
-                  <div className="flex flex-col gap-3">
-                    <button 
-                      onClick={() => { setEditingClientId(isManagingThisClient ? null : client.id); resetDnaForm(); }}
-                      className={`w-full py-4 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all shadow-sm ${isManagingThisClient ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-700 border border-slate-300 hover:border-slate-900 hover:bg-slate-50'}`}
-                    >
-                      {isManagingThisClient ? 'Cerrar ADN' : 'Configurar ADN'}
-                    </button>
-                    <button onClick={() => onRemove(client.id)} className="w-full py-4 rounded-xl font-black text-[10px] uppercase tracking-widest text-slate-400 hover:text-red-600 transition-colors">Eliminar Marca</button>
-                  </div>
-                </div>
+            <div className="animate-in slide-in-from-right-4 duration-500">
+               {/* Nav To Portfolio Component */}
+               <button onClick={exitHub} className="mb-8 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-900 transition-colors">
+                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+                 Volver al Portafolio
+               </button>
 
-                <div className="flex-1 bg-slate-50/50 rounded-[2.5rem] p-10 border border-slate-200">
-                  <div className="flex justify-between items-center mb-10">
-                    <h4 className="text-[11px] font-black text-slate-900 uppercase tracking-[0.2em]">Campañas Activas ({profiles.length})</h4>
-                    <button onClick={() => { setEditingClientId(client.id); resetDnaForm(); setShowDnaForm(true); }} className="text-[10px] font-black text-slate-900 hover:text-slate-600 uppercase tracking-widest flex items-center gap-2 transition-colors">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M12 4v16m8-8H4" /></svg>
-                      Nueva Campaña
-                    </button>
-                  </div>
-
-                  {showDnaForm && editingClientId === client.id ? (
-                    <div id="dna-editor-form" className="bg-white p-10 rounded-[2.5rem] border border-slate-300 shadow-2xl space-y-10 animate-in slide-in-from-top-4 duration-500">
-                      <div className="flex justify-between items-center pb-6 border-b border-slate-200">
-                        <div>
-                           <h5 className="text-xl font-black text-slate-900 uppercase tracking-tighter">{editingProfileId ? 'Actualizar Campaña' : 'Nueva Campaña'}</h5>
-                           <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Marca: {client.name}</p>
-                        </div>
-                        <button onClick={resetDnaForm} className="text-slate-400 hover:text-slate-900 transition-colors bg-slate-50 p-2 rounded-full">
-                           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" /></svg>
-                        </button>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div>
-                          <label className={labelStyle}>Nombre de la Campaña *</label>
-                          <input type="text" placeholder="Ej: Redención de Puntos 2025" className={inputStyle} value={dnaForm.name} onChange={e => setDnaForm({...dnaForm, name: e.target.value})} />
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <label className={labelStyle}>Objetivo</label>
-                            <select className={inputStyle} value={dnaForm.goal} onChange={e => setDnaForm({...dnaForm, goal: e.target.value})}>
-                              {goals.map(g => <option key={g.id} value={g.name}>{g.name}</option>)}
-                            </select>
-                          </div>
-                          <div>
-                            <label className={labelStyle}>Producto / Servicio</label>
-                            <input placeholder="Ej: Gasolina Evo" className={inputStyle} value={dnaForm.product} onChange={e => setDnaForm({...dnaForm, product: e.target.value})} />
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div>
-                           <label className={labelStyle}>Tema Central / Ángulo *</label>
-                           <textarea placeholder="¿De qué trata esta campaña?" className={inputStyle + " h-24 resize-none"} value={dnaForm.theme} onChange={e => setDnaForm({...dnaForm, theme: e.target.value})} />
-                        </div>
-                        <div>
-                           <label className={labelStyle}>Audiencia Objetivo</label>
-                           <input placeholder="Ej: Transportadores de carga, familias..." className={inputStyle} value={dnaForm.targetAudience} onChange={e => setDnaForm({...dnaForm, targetAudience: e.target.value})} />
-                        </div>
-                      </div>
-
-                      <div className="pt-10 border-t border-slate-200 space-y-6">
-                         <div className="bg-slate-50 rounded-[2.5rem] border border-slate-300 p-10 space-y-8">
-                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                               <div>
-                                  <h6 className="text-sm font-black text-slate-900 uppercase tracking-widest">Módulo: Pilares de Éxito</h6>
-                                  <p className="text-[9px] font-bold text-slate-500 uppercase tracking-[0.2em] mt-1">Mensajes históricos que funcionaron (Aprendizaje opcional)</p>
-                               </div>
-                               {dnaForm.feedbackExamples.length > 0 && (
-                                  <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-full border border-slate-300 shadow-sm animate-in zoom-in">
-                                     <div className="w-1.5 h-1.5 rounded-full bg-slate-900 animate-pulse"></div>
-                                     <span className="text-[8px] font-black text-slate-900 uppercase tracking-widest">Motor Entrenado ({dnaForm.feedbackExamples.length})</span>
-                                  </div>
-                               )}
-                            </div>
-
-                            <div className="flex flex-col md:flex-row gap-4 items-stretch">
-                               <div className="md:w-64 shrink-0">
-                                  <select 
-                                    className="w-full px-5 py-4 bg-white border border-slate-300 rounded-2xl font-bold text-slate-800 text-[10px] uppercase outline-none focus:border-slate-900 transition-all shadow-sm"
-                                    value={newFeedback.platform} 
-                                    onChange={e => setNewFeedback({ ...newFeedback, platform: e.target.value })}
-                                  >
-                                    {Object.values(Platform).map(p => <option key={p} value={p}>{p}</option>)}
-                                  </select>
-                               </div>
-                               <div className="flex-1 flex gap-3">
-                                  <input 
-                                    placeholder="Contenido exitoso..." 
-                                    className="flex-1 px-6 py-4 bg-white border border-slate-300 rounded-2xl text-xs font-bold text-slate-800 outline-none focus:border-slate-900 transition-all placeholder:text-slate-400 shadow-sm" 
-                                    value={newFeedback.content} 
-                                    onChange={e => setNewFeedback({...newFeedback, content: e.target.value})} 
-                                    onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addFeedback())}
-                                  />
-                                  <button 
-                                    type="button" 
-                                    onClick={addFeedback} 
-                                    className="bg-slate-900 text-white px-10 rounded-2xl flex items-center justify-center font-black text-[10px] uppercase tracking-widest hover:bg-black transition-all shadow-xl active:scale-95"
-                                  >
-                                    AÑADIR
-                                  </button>
-                               </div>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-80 overflow-y-auto custom-scrollbar pr-2">
-                               {dnaForm.feedbackExamples.map((ex, i) => (
-                                 <div key={i} className="flex flex-col justify-between p-6 bg-white rounded-[1.75rem] border border-slate-300 group shadow-sm hover:border-slate-900 transition-all relative">
-                                   <div className="mb-4">
-                                     <span className="inline-block px-3 py-1 bg-slate-900 text-white text-[7px] font-black uppercase rounded-lg mb-3 tracking-widest">{ex.platform}</span>
-                                     <p className="text-[10px] font-bold text-slate-700 leading-relaxed italic line-clamp-4">"{ex.content}"</p>
-                                   </div>
-                                   <button 
-                                      type="button" 
-                                      onClick={() => removeFeedback(i)} 
-                                      className="absolute top-4 right-4 text-slate-300 hover:text-red-600 transition-colors p-1"
-                                   >
-                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" /></svg>
-                                   </button>
-                                 </div>
-                               ))}
-                               {dnaForm.feedbackExamples.length === 0 && (
-                                  <div className="md:col-span-2 lg:col-span-3 py-16 border-2 border-dashed border-slate-300 rounded-[2rem] flex flex-col items-center justify-center bg-white/60">
-                                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Módulo de aprendizaje vacío</p>
-                                     <p className="text-[8px] font-bold text-slate-300 uppercase mt-1">Este paso es opcional para mejorar la precisión del copy</p>
-                                  </div>
-                               )}
-                            </div>
-                         </div>
-                      </div>
-
-                      <div className="flex flex-col md:flex-row gap-4 pt-8">
-                        <button onClick={() => handleSaveDNA(client.id)} className="flex-1 bg-slate-900 text-white py-6 rounded-2xl font-black uppercase tracking-widest text-[11px] hover:bg-black shadow-2xl transition-all hover:scale-[1.01] active:scale-95">
-                          {editingProfileId ? 'Actualizar Campaña' : 'Guardar Campaña'}
-                        </button>
-                        <button onClick={resetDnaForm} className="px-12 bg-white text-slate-500 border border-slate-300 py-6 rounded-2xl font-black uppercase tracking-widest text-[11px] hover:bg-slate-100 transition-colors">Cancelar</button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="space-y-10">
-                      {/* GLOBAL BRAND DNA SETTINGS */}
-                      {isManagingThisClient && !showDnaForm && (
-                         <div className="bg-white p-8 rounded-[2rem] border border-slate-300 shadow-lg animate-in fade-in space-y-6">
-                            <div className="flex justify-between items-start border-b border-slate-100 pb-4">
-                               <div>
-                                  <h5 className="text-sm font-black text-slate-900 uppercase tracking-widest">ADN Global de Marca</h5>
-                                  <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-1">Identidad persistente para todas las campañas</p>
-                               </div>
-                               <button 
-                                 onClick={() => {
-                                   onUpdate(client.id, {
-                                      voice: client.voice,
-                                      brandVoiceGuidelines: client.brandVoiceGuidelines,
-                                      valueProposition: client.valueProposition
-                                   });
-                                 }}
-                                 className="text-[9px] font-black text-slate-900 border border-slate-900 px-4 py-2 rounded-xl hover:bg-slate-900 hover:text-white transition-all uppercase tracking-widest"
-                               >
-                                 Guardar Cambios Globales
-                               </button>
-                            </div>
-                            
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                               <div>
-                                  <label className={labelStyle}>Voz de Marca (Global)</label>
-                                  <select 
-                                    className={inputStyle} 
-                                    value={client.voice || ''} 
-                                    onChange={e => onUpdate(client.id, { voice: e.target.value })}
-                                  >
-                                    <option value="">Selecciona una voz...</option>
-                                    {voices.map(v => <option key={v.id} value={v.name}>{v.name}</option>)}
-                                  </select>
-                               </div>
-                               <div>
-                                  <label className={labelStyle}>Propuesta de Valor (Global)</label>
-                                  <textarea 
-                                    className={inputStyle + " h-24 resize-none"} 
-                                    placeholder="¿Por qué comprar esta marca?"
-                                    value={client.valueProposition || ''}
-                                    onChange={e => onUpdate(client.id, { valueProposition: e.target.value })}
-                                  />
-                               </div>
-                            </div>
-                            <div>
-                               <label className={labelStyle}>Guidelines de Personalidad (Global)</label>
-                               <textarea 
-                                 className={inputStyle + " h-24 resize-none"} 
-                                 placeholder="Reglas de tono, palabras prohibidas, estilo..."
-                                 value={client.brandVoiceGuidelines || ''}
-                                 onChange={e => onUpdate(client.id, { brandVoiceGuidelines: e.target.value })}
-                               />
-                            </div>
-                         </div>
-                      )}
-
-                      {/* CREATE NEW BRIEF BUTTON (Only Visible When Managing) */}
-                      {isManagingThisClient && !showDnaForm && (
-                        <button 
-                          onClick={() => { setEditingClientId(client.id); resetDnaForm(); setShowDnaForm(true); }}
-                          className="w-full py-8 border-2 border-dashed border-slate-300 rounded-[2rem] hover:border-slate-900 hover:bg-slate-50 transition-all group flex flex-col items-center justify-center gap-2"
-                        >
-                          <div className="bg-slate-100 p-3 rounded-full group-hover:bg-slate-900 group-hover:text-white transition-colors">
-                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" /></svg>
-                          </div>
-                          <span className="text-[11px] font-black uppercase tracking-widest text-slate-400 group-hover:text-slate-900">Crear Nueva Campaña</span>
-                        </button>
-                      )}
-
-                      {/* BRIEFS LIST */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {profiles.map(profile => (
-                          <div key={profile.id} className="bg-white p-8 rounded-[2rem] border border-slate-300 hover:border-slate-500 transition-all group/card shadow-md flex flex-col justify-between">
-                            <div className="space-y-6">
-                              <div className="flex justify-between items-start">
-                                <div>
-                                  <p className="text-[12px] font-black text-slate-900 uppercase tracking-tight mb-1">{profile.name}</p>
-                                  <div className="flex gap-2">
-                                     <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">{profile.goal}</span>
-                                  </div>
-                                </div>
-                                <div className="flex gap-1.5">
-                                  <button onClick={() => startEditProfile(profile)} className="w-10 h-10 flex items-center justify-center bg-slate-100 text-slate-500 hover:bg-slate-900 hover:text-white rounded-xl transition-all shadow-sm border border-slate-200" title="Editar Campaña">
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-                                  </button>
-                                  <button onClick={() => onDeleteProfile(profile.id)} className="w-10 h-10 flex items-center justify-center bg-slate-100 text-slate-400 hover:bg-red-600 hover:text-white rounded-xl transition-all shadow-sm border border-slate-200">
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                                  </button>
-                                </div>
-                              </div>
-                              
-                              <div className="space-y-4 pt-4 border-t border-slate-100">
-                                <p className="text-[10px] text-slate-600 font-bold leading-relaxed line-clamp-2">
-                                  <span className="text-slate-900 uppercase text-[9px]">Tema:</span> {profile.theme}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                        {profiles.length === 0 && !isManagingThisClient && (
-                        <div className="md:col-span-2 py-20 border-2 border-dashed border-slate-300 rounded-[2.5rem] flex flex-col items-center justify-center text-center">
-                           <div className="bg-slate-100 p-6 rounded-full mb-4 shadow-inner">
-                              <svg className="w-8 h-8 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>
+               <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
+                  {/* DETAIL LEFT: CONSTITUCION DE MARCA (GLOBAL DNA) */}
+                  <div className="xl:col-span-4 xl:sticky xl:top-28 space-y-6">
+                     <div className="bg-slate-900 rounded-[2.5rem] p-8 shadow-2xl relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none"></div>
+                        <div className="flex items-center gap-5 mb-8 relative z-10">
+                           <div className="w-16 h-16 rounded-2xl bg-white flex items-center justify-center p-1.5">
+                              {client.logo ? <img src={client.logo} className="w-full h-full object-contain grayscale opacity-90" /> : <span className="text-xl font-black text-slate-900">{client.name[0]}</span>}
                            </div>
-                           <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1">No hay Campañas Activas</p>
-                           <p className="text-[9px] font-bold text-slate-300 uppercase tracking-tight max-w-[240px]">Configura el ADN para crear campañas.</p>
+                           <div>
+                              <h3 className="text-2xl font-black text-white leading-none tracking-tight">{client.name}</h3>
+                              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1">{client.industry}</p>
+                           </div>
                         </div>
+
+                        <div className="pt-6 border-t border-white/10 space-y-6 relative z-10">
+                           <div>
+                              <div className="flex justify-between items-center mb-3">
+                                <label className={labelStyle + " !text-slate-400 !mb-0"}>Voz Global</label>
+                              </div>
+                              <select 
+                                className="w-full bg-white/10 border border-white/20 text-white rounded-xl px-4 py-3 text-[11px] font-bold outline-none focus:border-white transition-all appearance-none"
+                                value={client.voice || ''} 
+                                onChange={e => onUpdate(client.id, { voice: e.target.value })}
+                              >
+                                <option value="" className="text-slate-900">Seleccionar voz...</option>
+                                {voices.map(v => <option key={v.id} value={v.name} className="text-slate-900">{v.name}</option>)}
+                              </select>
+                           </div>
+                           <div>
+                              <label className={labelStyle + " !text-slate-400"}>Propuesta de Valor Core</label>
+                              <textarea 
+                                className="w-full bg-white/10 border border-white/20 text-white rounded-xl px-4 py-3 text-[11px] font-bold outline-none focus:border-white transition-all resize-none h-24 placeholder:text-slate-500"
+                                placeholder="¿Cuál es el ADN inamovible de la marca?"
+                                value={client.valueProposition || ''}
+                                onChange={e => onUpdate(client.id, { valueProposition: e.target.value })}
+                              />
+                           </div>
+                           <div>
+                              <label className={labelStyle + " !text-slate-400"}>Reglas y Estilo (Guidelines)</label>
+                              <textarea 
+                                className="w-full bg-white/10 border border-white/20 text-white rounded-xl px-4 py-3 text-[11px] font-bold outline-none focus:border-white transition-all resize-none h-24 placeholder:text-slate-500"
+                                placeholder="Palabras bloqueadas, estilo gramatical..."
+                                value={client.brandVoiceGuidelines || ''}
+                                onChange={e => onUpdate(client.id, { brandVoiceGuidelines: e.target.value })}
+                              />
+                           </div>
+                           <button 
+                             onClick={() => alert('Modificaciones del ADN Global guardadas exitosamente.')}
+                             className="w-full py-4 bg-white text-slate-900 rounded-xl font-black uppercase text-[10px] tracking-widest hover:bg-slate-200 transition-all mt-4 flex items-center justify-center gap-2"
+                           >
+                             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" /></svg>
+                             Guardar Persistencia
+                           </button>
+                        </div>
+                     </div>
+
+                     <button onClick={() => { if(window.confirm('¿Eliminar marca?')) { onRemove(client.id); exitHub(); } }} className="w-full py-4 text-center text-[9px] font-black uppercase tracking-widest text-slate-400 hover:text-red-600 transition-colors">
+                        Eliminar Registro de Marca
+                     </button>
+                  </div>
+
+                  {/* DETAIL RIGHT: WORKSPACE CAMPAÑAS */}
+                  <div className="xl:col-span-8 space-y-8">
+                     {/* Dashboard Header Campañas */}
+                     <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm">
+                        <div>
+                          <h4 className="text-2xl font-black text-slate-900 uppercase tracking-tighter flex items-center gap-3">
+                             {showDnaForm ? (editingProfileId ? 'Editor Estratégico' : 'Nueva Campaña') : 'Líneas de Negocio'}
+                          </h4>
+                          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">
+                             {showDnaForm ? 'Parametrización Específica del Brief' : `Total: ${profiles.length} Campañas parametrizadas`}
+                          </p>
+                        </div>
+                        {!showDnaForm && (
+                          <button 
+                            onClick={() => { resetDnaForm(); setShowDnaForm(true); }}
+                            className="bg-slate-900 text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl hover:bg-black transition-all"
+                          >
+                            + CREAR CAMPAÑA
+                          </button>
                         )}
-                      </div>
-                   </div>
-                 )}
-              </div>
-              </div>
+                     </div>
+
+                     {/* Area de Trabajo Dinámica */}
+                     {!showDnaForm ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                           {profiles.map(profile => (
+                             <div key={profile.id} className="bg-white p-8 rounded-[2rem] border border-slate-200 hover:border-slate-400 hover:shadow-xl transition-all group/camp flex flex-col justify-between h-full">
+                               <div className="space-y-4 relative">
+                                  <div className="pr-12">
+                                     <span className="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1 block">Campaña</span>
+                                     <h5 className="text-lg font-black text-slate-900 leading-tight tracking-tight mb-2">{profile.name}</h5>
+                                     <span className="inline-block bg-slate-50 text-slate-600 text-[8px] font-black uppercase tracking-widest px-2.5 py-1 rounded-md border border-slate-200">{profile.goal}</span>
+                                  </div>
+                                  <div className="absolute top-0 right-0 flex flex-col gap-2">
+                                     <button onClick={() => startEditProfile(profile)} className="w-10 h-10 flex items-center justify-center bg-slate-50 text-slate-600 hover:bg-slate-900 hover:text-white rounded-xl transition-all border border-slate-200">
+                                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                                     </button>
+                                     <button onClick={() => { if(window.confirm('¿Eliminar campaña?')) onDeleteProfile(profile.id); }} className="w-10 h-10 flex items-center justify-center bg-transparent text-slate-300 hover:text-red-500 rounded-xl transition-colors">
+                                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                     </button>
+                                  </div>
+                               </div>
+                               <div className="pt-6 mt-6 border-t border-slate-100">
+                                  <p className="text-[11px] font-bold text-slate-600 line-clamp-2 leading-relaxed italic pr-2">"{profile.theme}"</p>
+                                  {profile.feedbackExamples && profile.feedbackExamples.length > 0 && (
+                                     <div className="flex items-center gap-1.5 mt-4">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-slate-900"></div>
+                                        <span className="text-[8px] font-black uppercase tracking-widest text-slate-400">Motor Entrenado</span>
+                                     </div>
+                                  )}
+                               </div>
+                             </div>
+                           ))}
+                           {profiles.length === 0 && (
+                              <div className="col-span-full py-16 border-2 border-dashed border-slate-200 rounded-[2.5rem] flex flex-col items-center justify-center text-center bg-white/50">
+                                 <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1">Sin Campañas</p>
+                                 <p className="text-[9px] font-bold text-slate-300 uppercase tracking-tight">Crea una campaña para empezar a generar copy.</p>
+                              </div>
+                           )}
+                        </div>
+                     ) : (
+                        // WORKSPACE: FORMULARIO DE CAMPAÑA
+                        <div id="dna-editor-form" className="bg-white p-10 rounded-[2.5rem] border border-slate-200 shadow-xl space-y-10 animate-in zoom-in-95 duration-300">
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div>
+                              <label className={labelStyle}>NOMBRE DE LA CAMPAÑA *</label>
+                              <input type="text" placeholder="Ej: Black Friday 2025" className={inputStyle} value={dnaForm.name} onChange={e => setDnaForm({...dnaForm, name: e.target.value})} />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <label className={labelStyle}>OBJETIVO TÁCTICO</label>
+                                <select className={inputStyle} value={dnaForm.goal} onChange={e => setDnaForm({...dnaForm, goal: e.target.value})}>
+                                  {goals.map(g => <option key={g.id} value={g.name}>{g.name}</option>)}
+                                </select>
+                              </div>
+                              <div>
+                                <label className={labelStyle}>PRODUCTO / SERVICIO</label>
+                                <input placeholder="¿Qué vendemos?" className={inputStyle} value={dnaForm.product} onChange={e => setDnaForm({...dnaForm, product: e.target.value})} />
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 gap-8">
+                            <div>
+                               <label className={labelStyle}>TEMA CENTRAL / BRIEF *</label>
+                               <textarea placeholder="Contexto, oferta, qué queremos comunicar..." className={inputStyle + " h-28 resize-none text-[13px] leading-relaxed"} value={dnaForm.theme} onChange={e => setDnaForm({...dnaForm, theme: e.target.value})} />
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                               <div>
+                                  <label className={labelStyle}>AUDIENCIA ESPECÍFICA</label>
+                                  <input placeholder="¿A quién le hablamos hoy?" className={inputStyle} value={dnaForm.targetAudience} onChange={e => setDnaForm({...dnaForm, targetAudience: e.target.value})} />
+                               </div>
+                               <div>
+                                  <label className={labelStyle}>LLAMADO A LA ACCIÓN (CTA)</label>
+                                  <input placeholder="Ej: Compra ahora, Descarga la App" className={inputStyle} value={dnaForm.primaryCTA} onChange={e => setDnaForm({...dnaForm, primaryCTA: e.target.value})} />
+                               </div>
+                            </div>
+                          </div>
+
+                          <div className="pt-10 border-t border-slate-200 space-y-6">
+                             <div className="bg-slate-50 rounded-[2.5rem] p-10 space-y-8">
+                                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                   <div>
+                                      <h6 className="text-[12px] font-black text-slate-900 uppercase tracking-widest">Ejemplos Exitosos (Opcional)</h6>
+                                      <p className="text-[9px] font-bold text-slate-500 uppercase tracking-[0.2em] mt-1">Alimenta la IA con copys pasados que quieres imitar</p>
+                                   </div>
+                                </div>
+
+                                <div className="flex flex-col md:flex-row gap-4 items-stretch">
+                                   <div className="md:w-48 shrink-0">
+                                      <select 
+                                        className="w-full px-5 py-4 bg-white border border-slate-300 rounded-2xl font-bold text-slate-800 text-[10px] uppercase outline-none focus:border-slate-900 transition-all shadow-sm"
+                                        value={newFeedback.platform} 
+                                        onChange={e => setNewFeedback({ ...newFeedback, platform: e.target.value })}
+                                      >
+                                        {Object.values(Platform).map(p => <option key={p} value={p}>{p}</option>)}
+                                      </select>
+                                   </div>
+                                   <div className="flex-1 flex gap-3">
+                                      <input 
+                                        placeholder="Escribe o pega el copy aquí..." 
+                                        className="flex-1 px-6 py-4 bg-white border border-slate-300 rounded-2xl text-xs font-bold text-slate-800 outline-none focus:border-slate-900 transition-all shadow-sm" 
+                                        value={newFeedback.content} 
+                                        onChange={e => setNewFeedback({...newFeedback, content: e.target.value})} 
+                                        onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addFeedback())}
+                                      />
+                                      <button 
+                                        type="button" 
+                                        onClick={addFeedback} 
+                                        className="bg-slate-900 text-white px-8 rounded-2xl flex items-center justify-center font-black text-[10px] uppercase tracking-widest hover:bg-black transition-all shadow-xl active:scale-95"
+                                      >
+                                        Agregar
+                                      </button>
+                                   </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-64 overflow-y-auto custom-scrollbar pr-2">
+                                   {dnaForm.feedbackExamples.map((ex, i) => (
+                                     <div key={i} className="flex flex-col justify-between p-6 bg-white rounded-2xl border border-slate-200 group relative shadow-sm">
+                                       <div className="mb-2">
+                                         <span className="inline-block px-3 py-1 bg-slate-100 text-slate-500 text-[7px] font-black uppercase rounded-lg mb-2 tracking-widest border border-slate-200">{ex.platform}</span>
+                                         <p className="text-[10px] font-bold text-slate-700 leading-relaxed italic pr-4">"{ex.content}"</p>
+                                       </div>
+                                       <button 
+                                          type="button" 
+                                          onClick={() => removeFeedback(i)} 
+                                          className="absolute top-4 right-4 text-slate-300 hover:text-red-500 transition-colors p-1"
+                                       >
+                                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" /></svg>
+                                       </button>
+                                     </div>
+                                   ))}
+                                </div>
+                             </div>
+                          </div>
+
+                          <div className="flex gap-4 pt-6 mt-6 border-t border-slate-100">
+                            <button onClick={handleSaveDNA} className="flex-1 bg-slate-900 text-white py-5 rounded-2xl font-black uppercase tracking-widest text-[11px] hover:bg-black shadow-xl transition-all">
+                              {editingProfileId ? 'Actualizar Campaña' : 'Guardar Campaña'}
+                            </button>
+                            <button onClick={() => setShowDnaForm(false)} className="px-10 bg-slate-100 text-slate-500 py-5 rounded-2xl font-black uppercase tracking-widest text-[11px] hover:bg-slate-200 transition-colors">
+                              Cancelar
+                            </button>
+                          </div>
+                        </div>
+                     )}
+                  </div>
+               </div>
             </div>
           );
-        })}
-      </div>
+        })()
+      )}
     </div>
   );
 };
