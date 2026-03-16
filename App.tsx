@@ -286,12 +286,13 @@ const App: React.FC = () => {
       <NotificationSystem notifications={notifications} onDismiss={dismissNotification} />
       
       <div className="max-w-7xl mx-auto px-6 py-12 md:py-20">
-        <header className="text-center mb-16 space-y-4">
-          <h1 className="text-5xl md:text-7xl font-black text-slate-900 tracking-tighter uppercase">
+        <header className="flex flex-col items-center text-center mb-16 space-y-4">
+          <img src="/LobuenoLogo.png" alt="Grupo LoBueno" className="h-6 md:h-8 mb-2 opacity-90" />
+          <h1 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tighter uppercase">
             MY <span className="text-gradient">VOICE</span>
           </h1>
-          <p className="text-slate-500 font-bold uppercase tracking-[0.4em] text-[10px]">
-            Strategic Copywriting by Grupo LoBueno
+          <p className="text-slate-500 font-bold uppercase tracking-[0.2em] text-[9px] max-w-lg mx-auto">
+            Motor generativo de copy estratégico hiper-parametrizado y basado en el ADN de tus marcas
           </p>
         </header>
 
