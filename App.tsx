@@ -199,7 +199,15 @@ const App: React.FC = () => {
       setVariations(result.variations);
       addNotification('Estrategia generada con OpenAI', 'success');
     } catch (err: any) {
-      addNotification(err.message || 'Error en el motor OpenAI', 'error');
+      const errorMessage = err.message || 'Error en el motor OpenAI';
+      
+      if (errorMessage.includes('ALERTA_CREDITOS')) {
+        // Show an explicit and longer lasting warning for empty quota
+        addNotification(errorMessage.replace('ALERTA_CREDITOS:', '').trim(), 'warning');
+        alert("⚠️ CRÉDITOS IA AGOTADOS ⚠️\n\n" + errorMessage.replace('ALERTA_CREDITOS:', '').trim());
+      } else {
+        addNotification(errorMessage, 'error');
+      }
     } finally {
       setIsLoading(false);
     }

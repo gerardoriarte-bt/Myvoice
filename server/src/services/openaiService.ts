@@ -81,8 +81,14 @@ export const generateCopyWithOpenAI = async (
 
     const parsed = JSON.parse(content);
     return parsed as GenerationResponse;
-  } catch (ex: any) {
-    console.error("OpenAI Error:", ex);
-    throw new Error("Fallo en la generación de IA: " + ex.message);
+  } catch (error: any) {
+    console.error("OpenAI Error:", error);
+
+    // Detección específica de errores de facturación/créditos de OpenAI
+    if (error?.status === 429 || error?.code === 'insufficient_quota' || error?.message?.includes('insufficient_quota')) {
+      throw new Error("ALERTA_CREDITOS: Tu cuenta de OpenAI se ha quedado sin créditos o límite de cuota. Por favor recarga tu saldo de OpenAI para seguir generando copy.");
+    }
+    
+    throw new Error("Fallo en la generación de IA: " + (error?.message || 'Error desconocido'));
   }
 };
