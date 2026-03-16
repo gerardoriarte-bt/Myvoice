@@ -13,14 +13,8 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUser, onLogout }) => {
   return (
     <div className="glass-header text-slate-900 px-8 py-4 flex justify-between items-center sticky top-0 z-[100] border-b border-slate-100">
       <div className="flex items-center gap-4">
-        <div className="bg-slate-900 p-2.5 rounded-xl shadow-lg shadow-slate-900/10">
-          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M13 10V3L4 14h7v7l9-11h-7z" />
-          </svg>
-        </div>
-        <div>
-          <span className="text-[9px] font-black uppercase tracking-[0.4em] text-slate-400 block leading-none mb-1">GRUPO LOBUENO</span>
-          <span className="text-xs font-black uppercase tracking-[0.1em] text-slate-900">MY VOICE <span className="text-slate-400">STRATEGIC</span></span>
+        <div className="flex bg-slate-900 px-3 py-2 rounded-xl shadow-lg shadow-slate-900/10 items-center justify-center">
+          <img src="/LobuenoLogo.png" alt="Grupo LoBueno" className="h-4 object-contain brightness-0 invert" />
         </div>
       </div>
 

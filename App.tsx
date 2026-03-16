@@ -286,9 +286,12 @@ const App: React.FC = () => {
       <NotificationSystem notifications={notifications} onDismiss={dismissNotification} />
       
       <div className="max-w-7xl mx-auto px-6 py-12 md:py-20">
-        <header className="flex flex-col items-center text-center mb-16 space-y-5">
-          <img src="/LobuenoLogo.png" alt="My Voice - Grupo LoBueno" className="h-[4.5rem] md:h-[6rem] object-contain opacity-95" />
-          <p className="text-slate-500 font-bold uppercase tracking-[0.2em] text-[9px] max-w-lg mx-auto">
+        <header className="flex flex-col items-center text-center mb-16 space-y-3">
+          <h1 className="text-5xl md:text-7xl font-black text-slate-900 tracking-tighter uppercase relative">
+            MY <span className="text-gradient">VOICE</span>
+            <span className="absolute -top-4 -right-16 text-[9px] font-black text-white bg-slate-900 px-2 py-0.5 rounded-full uppercase tracking-widest rotate-6 shadow-sm">BETA</span>
+          </h1>
+          <p className="text-slate-500 font-bold uppercase tracking-[0.2em] text-[10px] max-w-lg mx-auto leading-relaxed">
             Motor generativo de copy estratégico hiper-parametrizado y basado en el ADN de tus marcas
           </p>
         </header>
