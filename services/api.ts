@@ -15,14 +15,14 @@ export const apiRequest = async (endpoint: string, options: RequestInit = {}) =>
     headers,
   });
 
-  if (response.status === 401) {
-    localStorage.removeItem('vt_token');
-    window.location.reload();
-    throw new Error('Sesión expirada');
-  }
-
   if (!response.ok) {
     const error = await response.json();
+    if (response.status === 401 || error.error === 'Token inválido o expirado' || error.error === 'Token no proporcionado') {
+      localStorage.removeItem('vt_token');
+      localStorage.removeItem('vt_user');
+      window.location.reload();
+      throw new Error('Sesión expirada');
+    }
     throw new Error(error.error || 'Error en la petición');
   }
 
