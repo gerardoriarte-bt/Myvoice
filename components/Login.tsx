@@ -36,7 +36,10 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
     <div className="min-h-screen flex items-center justify-center bg-slate-50 px-6">
       <div className="max-w-md w-full">
         <div className="text-center mb-10">
-          <img src="/LobuenoLogo.png" alt="My Voice - Grupo LoBueno" className="h-[4.5rem] md:h-[5.5rem] object-contain mx-auto opacity-95" />
+          <div className="text-4xl md:text-5xl font-black text-slate-900 tracking-tighter uppercase relative inline-block">
+            MY <span className="text-gradient">VOICE</span>
+            <span className="absolute -top-3 -right-12 text-[7px] font-black text-white bg-slate-900 px-1.5 py-0.5 rounded-full uppercase tracking-widest rotate-6 shadow-sm">BETA</span>
+          </div>
         </div>
 
         <div className="bg-white p-10 rounded-[2.5rem] shadow-2xl border border-slate-200">

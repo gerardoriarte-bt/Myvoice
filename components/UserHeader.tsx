@@ -13,7 +13,9 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUser, onLogout }) => {
   return (
     <div className="glass-header text-slate-900 px-8 py-4 flex justify-between items-center sticky top-[38px] z-[100] border-b border-slate-100">
         <div className="flex items-center justify-center">
-          <img src="/LobuenoLogo.png" alt="Grupo LoBueno" className="h-5 object-contain" />
+          <div className="text-sm font-black text-slate-900 tracking-tighter uppercase">
+            MY <span className="text-gradient">VOICE</span>
+          </div>
         </div>
 
       <div className="relative">
