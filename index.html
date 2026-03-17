@@ -23,6 +23,7 @@
       .text-gradient {
         background: linear-gradient(180deg, #0f172a 0%, #64748b 100%);
         -webkit-background-clip: text;
+        background-clip: text;
         -webkit-text-fill-color: transparent;
       }
       .custom-scrollbar::-webkit-scrollbar {
@@ -63,8 +64,20 @@
       }
     </script>
     <link rel="stylesheet" href="/index.css" />
+    <link rel="stylesheet" href="/lobueno-header.css" />
   </head>
   <body class="text-slate-900 min-h-screen selection:bg-slate-200">
+    <!-- Lobueno Header -->
+    <header class="lb-header">
+        <div class="lb-nav-container">
+            <a href="/" class="lb-logo">
+                <img src="/LobuenoLogo.png" alt="Grupo Lobueno Logo">
+            </a>
+        </div>
+    </header>
+    <!-- Spacer (importante para que el contenido no se oculte) -->
+    <div class="lb-header-spacer"></div>
+
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
   </body>

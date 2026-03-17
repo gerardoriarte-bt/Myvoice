@@ -11,7 +11,7 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUser, onLogout }) => {
   const [isOpen, setIsOpen] = React.useState(false);
 
   return (
-    <div className="glass-header text-slate-900 px-8 py-4 flex justify-between items-center sticky top-0 z-[100] border-b border-slate-100">
+    <div className="glass-header text-slate-900 px-8 py-4 flex justify-between items-center sticky top-[38px] z-[100] border-b border-slate-100">
         <div className="flex items-center justify-center">
           <img src="/LobuenoLogo.png" alt="Grupo LoBueno" className="h-5 object-contain" />
         </div>

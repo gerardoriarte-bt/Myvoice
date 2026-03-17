@@ -24,7 +24,7 @@ const WorkflowHelpSidebar: React.FC = () => {
       )}
 
       {/* SIDEBAR PANEL */}
-      <div className={`fixed top-0 right-0 h-full w-80 bg-white border-l border-slate-200 shadow-2xl z-50 transform transition-transform duration-300 ease-out overflow-y-auto ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+      <div className={`fixed top-[38px] right-0 h-[calc(100%-38px)] w-80 bg-white border-l border-slate-200 shadow-2xl z-50 transform transition-transform duration-300 ease-out overflow-y-auto ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
         <div className="p-8 space-y-10">
           <div>
             <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter">Guía de Flujo</h3>
