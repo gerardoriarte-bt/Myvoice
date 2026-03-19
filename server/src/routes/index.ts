@@ -11,6 +11,7 @@ const router = Router();
 // Auth & User Routes
 router.post('/auth/register', authController.register);
 router.post('/auth/login', authController.login);
+router.post('/auth/google', authController.googleLogin);
 router.get('/users', authenticateToken, authorizeRole(['ADMIN']), authController.getUsers);
 router.delete('/users/:id', authenticateToken, authorizeRole(['ADMIN']), authController.deleteUser);
 

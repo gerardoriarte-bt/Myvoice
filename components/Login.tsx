@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { authApi } from '../services/api';
+import { GoogleLogin } from '@react-oauth/google';
 
 interface LoginProps {
   onLoginSuccess: (user: any, token: string) => void;
@@ -91,6 +92,41 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
               )}
             </button>
           </form>
+
+          <div className="relative my-8 text-center">
+            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-100"></div></div>
+            <span className="relative px-4 bg-white text-[9px] font-black text-slate-300 uppercase tracking-widest">o bien</span>
+          </div>
+
+          <div className="flex justify-center">
+            <GoogleLogin
+              onSuccess={async (credentialResponse) => {
+                if (credentialResponse.credential) {
+                  setIsLoading(true);
+                  setError('');
+                  try {
+                    const data = await authApi.googleLogin(credentialResponse.credential);
+                    const normalizedUser = {
+                      ...data.user,
+                      role: data.user.role === 'ADMIN' ? 'Admin' : 'Cliente'
+                    };
+                    onLoginSuccess(normalizedUser, data.token);
+                  } catch (err: any) {
+                    setError(err.message || 'Error en autenticación con Google');
+                  } finally {
+                    setIsLoading(false);
+                  }
+                }
+              }}
+              onError={() => {
+                setError('Error al iniciar sesión con Google');
+              }}
+              useOneTap
+              theme="outline"
+              shape="pill"
+              text="signin_with"
+            />
+          </div>
         </div>
 
         <p className="text-center mt-8 text-slate-400 font-bold uppercase text-[9px] tracking-widest">
