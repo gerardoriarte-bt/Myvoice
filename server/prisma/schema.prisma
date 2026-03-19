@@ -40,7 +40,26 @@ model Client {
   users       User[]
   dnaProfiles ContentDNAProfile[]
   variations  SavedVariation[]
+  
+  // Quota Management
+  quotaLimit  Int      @default(100)
+  quotaUsed   Int      @default(0)
+  
+  generationLogs GenerationLog[]
+
   createdAt   DateTime            @default(now())
+}
+
+model GenerationLog {
+  id           String   @id @default(uuid())
+  clientId     String
+  client       Client   @relation(fields: [clientId], references: [id])
+  userId       String
+  dnaProfileId String
+  platforms    String[]
+  promptTokens Int?
+  completionTokens Int?
+  createdAt    DateTime @default(now())
 }
 
 model ContentDNAProfile {

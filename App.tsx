@@ -195,14 +195,27 @@ const App: React.FC = () => {
       const profile = dnaProfiles.find(p => p.clientId === params.clientId);
       if (!profile) throw new Error("No se encontró el ADN de esta marca");
 
-      const result = await generationApi.generate(profile.id, params);
-      setVariations(result.variations);
-      addNotification('Estrategia generada con OpenAI', 'success');
+      let finalRawContent = "";
+      await generationApi.generateStream(profile.id, params, (fullText) => {
+        finalRawContent = fullText;
+        // Optional: show partial results if we can parse incomplete JSON
+        // For now we wait for completion to avoid flickering
+      });
+
+      const parsedResult = JSON.parse(finalRawContent);
+      setVariations(parsedResult.variations);
+      
+      // Calculate average score for the "Strategic Analysis" notice
+      if (parsedResult.variations.length > 0) {
+        const avgScore = parsedResult.variations.reduce((acc: number, v: any) => acc + (v.score || 0), 0) / parsedResult.variations.length;
+        addNotification(`Análisis completo. Coherencia estratégica: ${avgScore.toFixed(1)}/10`, avgScore > 8 ? 'success' : 'info');
+      }
+
+      addNotification('Estrategia generada con éxito', 'success');
     } catch (err: any) {
       const errorMessage = err.message || 'Error en el motor OpenAI';
       
       if (errorMessage.includes('ALERTA_CREDITOS')) {
-        // Show an explicit and longer lasting warning for empty quota
         addNotification(errorMessage.replace('ALERTA_CREDITOS:', '').trim(), 'warning');
         alert("⚠️ CRÉDITOS IA AGOTADOS ⚠️\n\n" + errorMessage.replace('ALERTA_CREDITOS:', '').trim());
       } else {

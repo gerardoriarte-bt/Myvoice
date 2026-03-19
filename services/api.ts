@@ -51,6 +51,50 @@ export const generationApi = {
     method: 'POST',
     body: JSON.stringify({ dnaProfileId, params }),
   }),
+  generateStream: async (dnaProfileId: string, params: any, onChunk: (chunk: string) => void) => {
+    const token = localStorage.getItem('vt_token');
+    const response = await fetch(`${API_URL}/generate/stream`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({ dnaProfileId, params }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Error en la generación');
+    }
+
+    const reader = response.body?.getReader();
+    const decoder = new TextDecoder();
+    let fullText = "";
+
+    while (true) {
+      const { done, value } = await reader!.read();
+      if (done) break;
+
+      const chunk = decoder.decode(value);
+      const lines = chunk.split('\n');
+      
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          const data = line.slice(6);
+          if (data === '[DONE]') break;
+          try {
+            const parsed = JSON.parse(data);
+            if (parsed.chunk) {
+              fullText += parsed.chunk;
+              onChunk(fullText);
+            }
+          } catch (e) {
+            // Partial JSON chunk, ignore and wait for next
+          }
+        }
+      }
+    }
+  }
 };
 
 export const clientApi = {

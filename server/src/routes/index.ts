@@ -17,6 +17,7 @@ router.delete('/users/:id', authenticateToken, authorizeRole(['ADMIN']), authCon
 
 // Generation Routes
 router.post('/generate', authenticateToken, generateController.generateCopy);
+router.post('/generate/stream', authenticateToken, generateController.generateCopyStream);
 
 // Client/Brand Routes
 router.get('/clients', authenticateToken, clientController.getClients);

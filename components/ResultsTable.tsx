@@ -403,9 +403,16 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ variations, projects, activ
                         <span className="text-[8px] font-black uppercase tracking-widest text-slate-500 bg-slate-100 px-3 py-1 rounded-lg">
                           {v.type}
                         </span>
-                        <div className="flex items-center gap-2">
-                           <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></div>
-                           <span className="text-slate-500 font-bold text-[8px] uppercase tracking-widest">DNA Verified</span>
+                        <div className="flex flex-col items-end gap-1">
+                           <div className="flex items-center gap-2">
+                              <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></div>
+                              <span className="text-slate-500 font-bold text-[8px] uppercase tracking-widest">DNA Verified</span>
+                           </div>
+                           {v.score && (
+                             <span className={`text-[10px] font-black ${String(v.score) === '10' ? 'text-green-600' : 'text-slate-400'}`}>
+                               SC: {v.score}/10
+                             </span>
+                           )}
                         </div>
                       </div>
 

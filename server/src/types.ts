@@ -75,6 +75,7 @@ export interface CopyVariation {
   type: 'Beneficio' | 'Curiosidad' | 'Urgencia';
   content: string;
   charCount: number;
+  score?: number;
 }
 
 export interface Project {
