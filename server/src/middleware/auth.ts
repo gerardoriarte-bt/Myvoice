@@ -9,25 +9,30 @@ export interface AuthRequest extends Request {
     userId: string;
     role: string;
     clientId?: string;
+    workspaceId?: string;
   };
 }
 
 export const authenticateToken = (req: AuthRequest, res: Response, next: NextFunction) => {
   const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
+  const token = authHeader?.split(' ')[1];
 
   if (!token) {
     return res.status(401).json({ error: 'Token no proporcionado' });
   }
 
-  jwt.verify(token, JWT_SECRET, (err: any, user: any) => {
-    if (err) {
-      console.error('JWT Verify Error:', err.message);
-      return res.status(401).json({ error: 'Token inválido o expirado' });
-    }
-    req.user = user;
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET) as {
+      userId: string;
+      role: string;
+      clientId?: string;
+      workspaceId?: string;
+    };
+    req.user = decoded;
     next();
-  });
+  } catch {
+    return res.status(401).json({ error: 'Token inválido o expirado' });
+  }
 };
 
 export const authorizeRole = (roles: string[]) => {

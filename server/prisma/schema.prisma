@@ -15,27 +15,61 @@ enum Role {
   CLIENT
 }
 
+model Workspace {
+  id          String    @id @default(uuid())
+  name        String
+  slug        String    @unique
+  plan        String    @default("agency")
+
+  // AI provider config (optional — falls back to server env vars)
+  aiProvider  String?   // "openai" | "anthropic" | "gemini"
+  aiApiKey    String?   @db.Text
+  aiModel     String?   // optional model override
+
+  users       User[]
+  clients     Client[]
+  projects    Project[]
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
 model User {
-  id           String   @id @default(uuid())
-  email        String   @unique
+  id           String     @id @default(uuid())
+  email        String     @unique
   passwordHash String
   name         String
-  role         Role     @default(CLIENT)
+  role         Role       @default(CLIENT)
+  
+  workspaceId  String?
+  workspace    Workspace? @relation(fields: [workspaceId], references: [id])
+  
   clientId     String?
-  client       Client?  @relation(fields: [clientId], references: [id])
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  client       Client?    @relation(fields: [clientId], references: [id])
+  
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
 }
 
 model Client {
-  id                   String  @id @default(uuid())
+  id                   String    @id @default(uuid())
+  workspaceId          String?
+  workspace            Workspace? @relation(fields: [workspaceId], references: [id])
+
   name                 String
   industry             String
-  logoUrl              String? @db.Text
+  logoUrl              String?   @db.Text
   // ADN Global de Marca
   voice                String?
-  brandVoiceGuidelines String? @db.Text
-  valueProposition     String? @db.Text
+  brandVoiceGuidelines String?   @db.Text
+  valueProposition     String?   @db.Text
+  brandGuidelinePdfUrl    String?  @db.Text
+  brandGuidelineFileName  String?
+  brandGuidelineExtractedAt DateTime?
+  brandKeywords        String?  @db.Text
+  brandProhibitions    String?  @db.Text
+  brandFingerprint     Json?
+  brandFingerprintAt   DateTime?
 
   users       User[]
   dnaProfiles ContentDNAProfile[]
@@ -45,21 +79,25 @@ model Client {
   quotaLimit  Int      @default(100)
   quotaUsed   Int      @default(0)
   
-  generationLogs GenerationLog[]
+  generationLogs    GenerationLog[]
+  negativeFeedbacks NegativeFeedback[]
 
-  createdAt   DateTime            @default(now())
+  createdAt   DateTime @default(now())
 }
 
 model GenerationLog {
-  id           String   @id @default(uuid())
-  clientId     String
-  client       Client   @relation(fields: [clientId], references: [id])
-  userId       String
-  dnaProfileId String
-  platforms    String[]
-  promptTokens Int?
+  id               String   @id @default(uuid())
+  clientId         String
+  client           Client   @relation(fields: [clientId], references: [id])
+  userId           String
+  dnaProfileId     String
+  platforms        String[]
+  promptTokens     Int?
   completionTokens Int?
-  createdAt    DateTime @default(now())
+  funnelStage      String?
+  spineJson        Json?
+  outputJson       Json?
+  createdAt        DateTime @default(now())
 }
 
 model ContentDNAProfile {
@@ -67,12 +105,14 @@ model ContentDNAProfile {
   clientId             String
   client               Client   @relation(fields: [clientId], references: [id])
   name                 String
+  campaignConcept      String?  @db.Text
   voice                String
   goal                 String
   product              String
   targetAudience       String
   theme                String
   keywords             String
+  prohibitions         String?
   brandVoiceGuidelines String   @db.Text
   valueProposition     String   @db.Text
   primaryCTA           String
@@ -96,8 +136,21 @@ model SavedVariation {
 }
 
 model Project {
-  id         String           @id @default(uuid())
-  name       String
-  variations SavedVariation[]
-  createdAt  DateTime         @default(now())
+  id          String           @id @default(uuid())
+  workspaceId String?
+  workspace   Workspace?       @relation(fields: [workspaceId], references: [id])
+
+  name        String
+  variations  SavedVariation[]
+  createdAt   DateTime         @default(now())
+}
+
+model NegativeFeedback {
+  id        String   @id @default(uuid())
+  clientId  String
+  client    Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  platform  String
+  content   String   @db.Text
+  reason    String
+  createdAt DateTime @default(now())
 }

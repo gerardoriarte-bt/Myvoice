@@ -7,7 +7,11 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev"
+    "prisma:migrate": "prisma migrate dev",
+    "seed": "tsx scripts/seed.ts",
+    "seed:workspaces": "tsx scripts/seedWorkspaces.ts",
+    "eval": "tsx scripts/eval.ts",
+    "seed:mock-brands": "tsx scripts/seedMockBrands.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.10.0",
@@ -17,13 +21,16 @@
     "express": "^4.18.3",
     "google-auth-library": "^10.6.2",
     "jsonwebtoken": "^9.0.2",
-    "openai": "^4.28.0"
+    "multer": "^2.1.1",
+    "openai": "^4.28.0",
+    "pdf-parse": "^2.4.5"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
     "@types/jsonwebtoken": "^9.0.6",
+    "@types/multer": "^2.1.0",
     "@types/node": "^20.11.24",
     "prisma": "^5.10.0",
     "tsx": "^4.21.0",

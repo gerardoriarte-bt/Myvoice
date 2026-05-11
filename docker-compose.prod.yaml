@@ -1,0 +1,39 @@
+services:
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: myvoice_frontend
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      # Certbot certificates (HTTPS)
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - /var/www/certbot:/var/www/certbot:ro
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: myvoice_backend
+    env_file: ./server/.env.production
+    expose:
+      - "3001"
+    volumes:
+      # Persist uploads folder (si no migraste a S3 todavía)
+      - uploads_data:/app/uploads
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+volumes:
+  uploads_data:

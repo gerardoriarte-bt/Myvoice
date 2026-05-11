@@ -1,6 +1,14 @@
 
 import React from 'react';
-import { CopyVariation, Project, Platform, Client } from '../types';
+import { Lock, Unlock, RefreshCw, FileSpreadsheet } from 'lucide-react';
+import { CopyVariation, Project, Platform, Client, CoherenceReport, CampaignSpine, UsageReport } from '../types';
+import CoherenceBanner from './CoherenceBanner';
+import SpineHero from './SpineHero';
+import UsageBadge from './UsageBadge';
+import { PlatformIcon, getPlatformLabel } from './ui/platformIcons';
+import ScoreCircle from './ui/ScoreCircle';
+import { exportCampaignToExcel } from '../services/exportToExcel';
+import { negativeFeedbackApi } from '../services/api';
 
 interface ResultsTableProps {
   variations: CopyVariation[];
@@ -9,18 +17,66 @@ interface ResultsTableProps {
   onSave: (variation: CopyVariation, projectId: string) => void;
   onCreateProject: (name: string) => string;
   savedContentList: string[];
+  coherence?: CoherenceReport | null;
+  spine?: CampaignSpine | null;
+  usage?: UsageReport | null;
+  onRegenerate?: (lockedKeys: Set<string>) => void;
+  isLoading?: boolean;
 }
 
-const ResultsTable: React.FC<ResultsTableProps> = ({ variations, projects, activeClient, onSave, onCreateProject, savedContentList }) => {
+const variationKey = (v: CopyVariation) =>
+  `${v.platform}::${v.slot || '_default'}::${v.variationIndex ?? 0}`;
+
+const ResultsTable: React.FC<ResultsTableProps> = ({ variations, projects, activeClient, onSave, onCreateProject, savedContentList, coherence, spine, usage, onRegenerate, isLoading }) => {
   const [savingId, setSavingId] = React.useState<string | null>(null);
   const [editingId, setEditingId] = React.useState<string | null>(null);
   const [mockupId, setMockupId] = React.useState<string | null>(null);
   const [editBuffer, setEditBuffer] = React.useState('');
   const [localVariations, setLocalVariations] = React.useState<CopyVariation[]>(variations);
   const [newProjectName, setNewProjectName] = React.useState('');
+  const [collapsedSlots, setCollapsedSlots] = React.useState<Set<string>>(new Set());
+  const [lockedKeys, setLockedKeys] = React.useState<Set<string>>(new Set());
+  const [negativeFeedbackTarget, setNegativeFeedbackTarget] = React.useState<CopyVariation | null>(null);
+  const [negativeReason, setNegativeReason] = React.useState('');
+  const [negativeSaving, setNegativeSaving] = React.useState(false);
+  const [negativeSavedIds, setNegativeSavedIds] = React.useState<Set<string>>(new Set());
+
+  const isLocked = (v: CopyVariation) => lockedKeys.has(variationKey(v));
+  const toggleLock = (v: CopyVariation) => {
+    const key = variationKey(v);
+    setLockedKeys(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
+  };
+
+  const slotKey = (platform: string, slot?: string) => `${platform}::${slot || '_default'}`;
+  const isCollapsed = (platform: string, slot?: string) => collapsedSlots.has(slotKey(platform, slot));
+  const toggleSlot = (platform: string, slot?: string) => {
+    const key = slotKey(platform, slot);
+    setCollapsedSlots(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
+  };
 
   React.useEffect(() => {
     setLocalVariations(variations);
+    // Default: collapse all slots except the first per platform.
+    const seenFirst = new Set<string>();
+    const next = new Set<string>();
+    variations.forEach(v => {
+      const platform = String(v.platform);
+      const firstSeen = seenFirst.has(platform);
+      if (!firstSeen) {
+        seenFirst.add(platform);
+        return; // first slot of platform stays expanded
+      }
+      next.add(`${platform}::${v.slot || '_default'}`);
+    });
+    setCollapsedSlots(next);
   }, [variations]);
 
   const isSaved = (content: string) => savedContentList.includes(content);
@@ -48,26 +104,14 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ variations, projects, activ
     setSavingId(null);
   };
 
-  // Fix: Added missing exportToCSV function
-  const exportToCSV = () => {
-    const headers = ['Plataforma', 'Tipo', 'Contenido', 'Caracteres'];
-    const rows = localVariations.map(v => [
-      v.platform,
-      v.type,
-      `"${v.content.replace(/"/g, '""')}"`,
-      v.charCount
-    ]);
-    
-    const csvContent = [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', `estrategia_${activeClient?.name?.replace(/\s+/g, '_') || 'myvoice'}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(url);
+  const exportToExcel = () => {
+    exportCampaignToExcel({
+      variations: localVariations,
+      spine,
+      client: activeClient,
+      coherence,
+      usage,
+    });
   };
 
   const cleanText = (text: string) => {
@@ -108,30 +152,7 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ variations, projects, activ
           </div>
         );
 
-      case Platform.WHATSAPP:
-        return (
-          <div className="bg-[#efe7dd] p-4 rounded-[3rem] w-full max-w-[320px] mx-auto shadow-2xl border-[12px] border-slate-800 h-[600px] flex flex-col relative pt-16">
-            <div className="absolute top-0 left-0 right-0 h-16 bg-[#075e54] rounded-t-xl flex items-center px-6 gap-3">
-               <div className="w-8 h-8 rounded-full bg-slate-200"></div>
-               <div className="flex-1">
-                  <p className="text-white font-black text-[12px] uppercase">{activeClient?.name || 'Marca'}</p>
-                  <p className="text-white/60 text-[8px] font-bold uppercase tracking-widest">en línea</p>
-               </div>
-            </div>
-            <div className="flex-1 flex flex-col justify-end gap-4 p-4">
-              <div className="bg-white rounded-2xl rounded-tr-none p-4 shadow-md relative animate-in zoom-in-95 self-end max-w-[90%]">
-                <p className="text-[12px] font-medium text-slate-800 whitespace-pre-wrap leading-relaxed">{cleanText(contentWithoutVisual)}</p>
-                <div className="flex items-center justify-end gap-1 mt-2">
-                  <span className="text-[9px] text-slate-400 font-bold uppercase">10:45</span>
-                  <svg className="w-3.5 h-3.5 text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M5 13l4 4L19 7m-14 6l4 4L19 7" /></svg>
-                </div>
-                <div className="absolute top-0 -right-2 w-3 h-3 bg-white" style={{ clipPath: 'polygon(0 0, 0% 100%, 100% 0)' }}></div>
-              </div>
-            </div>
-          </div>
-        );
-
-      case Platform.INSTAGRAM:
+      case Platform.INSTAGRAM_POST:
         return (
           <div className="bg-white border border-slate-200 rounded-[3rem] w-full max-w-[340px] mx-auto shadow-2xl overflow-hidden flex flex-col h-[600px]">
             <div className="p-4 flex items-center gap-3 border-b border-slate-50">
@@ -183,45 +204,7 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ variations, projects, activ
           </div>
         );
 
-      case Platform.EMAIL:
-        const emailParts = splitContent(contentWithoutVisual);
-        const [subject, header, body, cta] = emailParts;
-        return (
-          <div className="bg-white rounded-[3rem] w-full max-w-[480px] mx-auto shadow-2xl border border-slate-100 overflow-hidden flex flex-col h-[600px] animate-in fade-in zoom-in-95 duration-700">
-            <div className="bg-slate-900 p-8 flex items-center gap-6 relative overflow-hidden">
-               <div className="absolute inset-0 bg-gradient-to-r from-slate-900 to-slate-800"></div>
-               <div className="w-14 h-14 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center font-black text-white text-xl border border-white/20 relative z-10">
-                 {activeClient?.name[0]}
-               </div>
-               <div className="flex-1 overflow-hidden relative z-10">
-                  <div className="flex items-center gap-2 mb-1">
-                     <span className="bg-white/10 text-white/60 px-2 py-0.5 rounded text-[7px] font-black uppercase tracking-widest">Asunto</span>
-                     <p className="text-[14px] font-black text-white truncate tracking-tight">{subject || 'Sin Asunto'}</p>
-                  </div>
-                  <p className="text-[10px] font-bold text-white/40 uppercase tracking-[0.2em]">{activeClient?.name} <span className="lowercase">&lt;info@{activeClient?.name?.toLowerCase().replace(/\s/g, '')}.com&gt;</span></p>
-               </div>
-            </div>
-            <div className="flex-1 p-10 overflow-y-auto custom-scrollbar flex flex-col">
-               <div className="flex-1 space-y-10 py-6">
-                  <div className="space-y-4 text-center md:text-left">
-                     <h5 className="text-3xl font-black text-slate-900 leading-[1.1] tracking-tighter uppercase italic">{header}</h5>
-                     <div className="w-12 h-1 bg-slate-900 rounded-full"></div>
-                  </div>
-                  <p className="text-[14px] font-bold text-slate-600 leading-[1.6] whitespace-pre-wrap">{body}</p>
-               </div>
-               <div className="pt-8 mt-auto">
-                  <button className="w-full py-5 bg-slate-900 text-white rounded-[1.5rem] text-[11px] font-black uppercase tracking-[0.3em] shadow-2xl shadow-slate-900/40 hover:scale-[1.02] active:scale-95 transition-all">
-                    {cta || 'Hacer click aquí'}
-                  </button>
-               </div>
-            </div>
-            <div className="p-8 bg-slate-50 text-center border-t border-slate-100">
-               <p className="text-[9px] font-black text-slate-300 uppercase tracking-[0.4em]">© 2025 {activeClient?.name} • Propiedad de Grupo LoBueno</p>
-            </div>
-          </div>
-        );
-
-      case Platform.POPUP:
+      case Platform.POP_UP:
         const popParts = splitContent(contentWithoutVisual);
         const [popTitle, popBody, popCta] = popParts;
         return (
@@ -279,32 +262,7 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ variations, projects, activ
       return [text];
     };
 
-    if (v.platform === Platform.EMAIL) {
-      const parts = splitFn(contentWithoutVisual);
-      const labels = ["Asunto", "Header", "Body", "CTA"];
-      return (
-        <div className="space-y-4 group/content relative">
-        <button 
-          onClick={() => startEditing(v)} 
-          className="absolute -right-2 -top-2 flex items-center gap-2 px-3 py-2 bg-slate-900 shadow-xl shadow-slate-900/10 rounded-xl text-white hover:bg-black transition-all z-10 group/editbtn"
-          title="Editar Contenido"
-        >
-          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-          <span className="text-[9px] font-black uppercase tracking-widest hidden group-hover/editbtn:block animate-in fade-in slide-in-from-right-1 duration-200">Editar</span>
-        </button>
-          {parts.map((part, i) => (
-            <div key={i} className="space-y-1">
-              {labels[i] && (
-                <span className="text-[7px] font-black uppercase text-slate-300 tracking-[0.2em]">{labels[i]}</span>
-              )}
-              <p className="text-slate-800 font-bold text-sm leading-relaxed">{cleanText(part)}</p>
-            </div>
-          ))}
-        </div>
-      );
-    }
-
-    const isSegmented = [Platform.PUSH, Platform.GOOGLE_ADS, Platform.POPUP].includes(v.platform);
+    const isSegmented = [Platform.PUSH, Platform.GOOGLE_ADS, Platform.POP_UP].includes(v.platform as Platform);
     
     return (
       <div className="space-y-4 group/content relative">
@@ -344,6 +302,15 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ variations, projects, activ
              </p>
           </div>
         )}
+        
+        {v.scoreRationale && (
+          <div className="mt-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+             <span className="text-[7px] font-black uppercase text-slate-400 tracking-[0.2em] block mb-2">Autoevaluación IA ({v.score}/10)</span>
+             <p className="text-[10px] text-slate-500 italic font-medium leading-relaxed">
+               "{v.scoreRationale}"
+             </p>
+          </div>
+        )}
       </div>
     );
   };
@@ -355,128 +322,433 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ variations, projects, activ
     return acc;
   }, {} as Record<string, CopyVariation[]>);
 
+  const SLOT_ORDER = ['hook', 'narrative', 'narrativa', 'opening', 'caption', 'cta', 'title', 'titulo', 'subject', 'asunto', 'body', 'cuerpo', 'description', 'descripcion', 'header'];
+
+  const groupByVariationIndex = (items: CopyVariation[]): { variationIndex: number; type: string; slots: CopyVariation[] }[] => {
+    const map = new Map<number, CopyVariation[]>();
+    items.forEach(v => {
+      const idx = v.variationIndex ?? 0;
+      if (!map.has(idx)) map.set(idx, []);
+      map.get(idx)!.push(v);
+    });
+    return Array.from(map.entries())
+      .sort(([a], [b]) => a - b)
+      .map(([variationIndex, slots]) => ({
+        variationIndex,
+        type: slots[0]?.type || 'Standard',
+        slots: [...slots].sort((a, b) => {
+          const ai = SLOT_ORDER.findIndex(s => (a.slot || '').toLowerCase().includes(s));
+          const bi = SLOT_ORDER.findIndex(s => (b.slot || '').toLowerCase().includes(s));
+          return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+        }),
+      }));
+  };
+
+  const renderVariationCard = (v: CopyVariation, idx: number) => {
+    const saved = isSaved(v.content);
+    const hasIssue = v.budgetOk === false || (v.prohibitionsHit && v.prohibitionsHit.length > 0);
+    return (
+      <div key={`${v.id}-${idx}`} className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow flex flex-col group overflow-hidden">
+        <div className="p-5 flex-1 flex flex-col">
+          <div className="flex justify-between items-start mb-4">
+            <div className="flex flex-wrap items-center gap-1.5">
+              {typeof v.variationIndex === 'number' && (
+                <span className="text-[11px] font-medium text-gray-700 bg-white px-2 py-0.5 rounded border border-gray-200">
+                  #{v.variationIndex}
+                </span>
+              )}
+              <span className="text-[11px] font-medium text-gray-600 bg-gray-100 px-2 py-0.5 rounded border border-gray-200">
+                {v.type}
+              </span>
+              {v.budget !== undefined && (
+                <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded border ${
+                  v.budgetOk === false
+                    ? 'bg-red-50 text-red-700 border-red-200'
+                    : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                }`}>
+                  {v.charCount}/{v.budget} {v.budgetUnit === 'word' ? 'pal' : 'car'}
+                </span>
+              )}
+              {v.prohibitionsHit && v.prohibitionsHit.length > 0 && (
+                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded border bg-red-50 text-red-700 border-red-200" title={`Prohibición detectada: ${v.prohibitionsHit.join(', ')}`}>
+                  ⚠ Prohibición
+                </span>
+              )}
+              {v.editorFlags && v.editorFlags.length > 0 && v.editorFlags.map(flag => (
+                <span key={flag} className="text-[10px] font-medium px-1.5 py-0.5 rounded border bg-amber-50 text-amber-800 border-amber-200" title="Detectado por el editor IA">
+                  {flag}
+                </span>
+              ))}
+              {typeof v.writerScore === 'number' && typeof v.score === 'number' && v.writerScore !== v.score && (
+                <span className="text-[10px] font-medium text-gray-500" title={`Writer score: ${v.writerScore} → Editor score: ${v.score}`}>
+                  ✎ {v.writerScore}→{v.score}
+                </span>
+              )}
+              {v.autofixed && (
+                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded border bg-blue-50 text-blue-700 border-blue-200" title="Auto-corregida después de detectar violación de regla">
+                  🔧 auto-fix
+                </span>
+              )}
+              {isLocked(v) && (
+                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded border bg-amber-50 text-amber-800 border-amber-200 inline-flex items-center gap-1" title="Esta variación está lockeada">
+                  <Lock className="w-2.5 h-2.5" /> lockeada
+                </span>
+              )}
+            </div>
+            <div className="flex flex-col items-end gap-1.5">
+               <div className="flex items-center gap-1.5">
+                  <div className={`w-1.5 h-1.5 rounded-full ${hasIssue ? 'bg-red-500' : 'bg-green-500'}`}></div>
+                  <span className="text-gray-500 font-medium text-[10px]">{hasIssue ? 'Revisar' : 'Verificado'}</span>
+               </div>
+               {v.score !== undefined && (
+                 <div className="flex gap-0.5 mt-1" title={`Calificación: ${v.score}/10`}>
+                   {Array.from({ length: 10 }).map((_, i) => (
+                     <div key={i} className={`w-1.5 h-1.5 rounded-full ${i < v.score! ? 'bg-green-500' : 'bg-gray-200'}`} />
+                   ))}
+                 </div>
+               )}
+            </div>
+          </div>
+
+          <div className="flex-1">
+            {renderContent(v)}
+          </div>
+
+          <div className="pt-4 border-t border-gray-100 mt-4 flex gap-2">
+            <button
+              onClick={() => toggleLock(v)}
+              className={`shrink-0 w-9 h-9 rounded-lg flex items-center justify-center transition-colors border ${
+                isLocked(v)
+                  ? 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
+                  : 'bg-white text-gray-400 border-gray-200 hover:text-gray-700 hover:bg-gray-50'
+              }`}
+              title={isLocked(v) ? 'Lockeada — protegida en próxima regeneración' : 'Lockear esta variación'}
+            >
+              {isLocked(v) ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
+            </button>
+            <button
+              onClick={() => { setNegativeFeedbackTarget(v); setNegativeReason(''); }}
+              className={`shrink-0 w-9 h-9 rounded-lg flex items-center justify-center transition-colors border text-[14px] ${
+                negativeSavedIds.has(v.id)
+                  ? 'bg-red-50 text-red-500 border-red-200'
+                  : 'bg-white text-gray-400 border-gray-200 hover:text-red-500 hover:bg-red-50 hover:border-red-200'
+              }`}
+              title={negativeSavedIds.has(v.id) ? 'Feedback negativo enviado' : 'Marcar como mala variación (enseña al motor qué evitar)'}
+              disabled={negativeSavedIds.has(v.id)}
+            >
+              👎
+            </button>
+            <button
+              onClick={() => setMockupId(mockupId === v.id ? null : v.id)}
+              className={`flex-1 py-2 rounded-lg text-[12px] font-medium transition-colors flex items-center justify-center gap-1.5 border ${mockupId === v.id ? 'bg-gray-100 text-gray-900 border-gray-300' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+              Mockup
+            </button>
+
+            {saved ? (
+              <div className="flex-1 flex items-center justify-center gap-1.5 bg-gray-50 text-gray-500 font-medium text-[12px] py-2 rounded-lg border border-gray-200">
+                <svg className="w-3.5 h-3.5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" /></svg>
+                Guardado
+              </div>
+            ) : (
+              <button
+                onClick={() => setSavingId(v.id)}
+                className="flex-1 bg-gray-900 text-white py-2 rounded-lg text-[12px] font-medium hover:bg-gray-800 transition-colors flex items-center justify-center shadow-sm"
+              >
+                Guardar
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
-    <div className="space-y-16 animate-in fade-in slide-in-from-bottom-4 duration-1000">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
-        <div className="flex items-center gap-6">
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      {spine && <SpineHero spine={spine} client={activeClient} />}
+
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+        <div className="flex items-center gap-4">
           {activeClient && (
-            <div className="w-12 h-12 rounded-xl bg-slate-50 border border-slate-100 p-1 flex items-center justify-center overflow-hidden shadow-inner shrink-0">
+            <div className="w-10 h-10 rounded-lg bg-gray-50 border border-gray-100 p-1 flex items-center justify-center overflow-hidden shrink-0">
               {activeClient.logo ? (
-                <img src={activeClient.logo} alt={activeClient.name} className="w-full h-full object-contain grayscale" />
+                <img src={activeClient.logo} alt={activeClient.name} className="w-full h-full object-contain" />
               ) : (
-                <span className="text-lg font-black text-slate-200">{activeClient.name[0]}</span>
+                <span className="text-sm font-medium text-gray-400">{activeClient.name.substring(0, 2).toUpperCase()}</span>
               )}
             </div>
           )}
           <div>
-            <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tighter leading-none mb-1">Resultados <span className="text-gradient">Estratégicos</span></h2>
-            <p className="text-slate-500 font-bold uppercase text-[8px] tracking-[0.3em]">IA Engine Output • ADN Strict Mode</p>
+            <h2 className="text-[18px] font-medium text-gray-900 leading-tight">Resultados de Campaña</h2>
+            <p className="text-gray-500 text-[12px] mt-0.5">Generaciones del Motor IA</p>
           </div>
         </div>
         
-        <button 
-          onClick={exportToCSV}
-          className="flex items-center gap-3 px-6 py-3 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-slate-200"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-          Exportar Estrategia
-        </button>
+        <div className="flex items-center gap-2">
+          {onRegenerate && (
+            <button
+              onClick={() => onRegenerate(lockedKeys)}
+              disabled={isLoading}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-[13px] font-medium transition-colors border ${
+                isLoading
+                  ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
+                  : lockedKeys.size > 0
+                    ? 'bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100'
+                    : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+              }`}
+              title={lockedKeys.size > 0 ? `Regenerar manteniendo ${lockedKeys.size} lockeada${lockedKeys.size === 1 ? '' : 's'}` : 'Regenerar deck completo'}
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
+              {lockedKeys.size > 0 ? `Regenerar (${lockedKeys.size} 🔒)` : 'Regenerar'}
+            </button>
+          )}
+          <button
+            onClick={exportToExcel}
+            className="flex items-center gap-2 px-4 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-lg text-[13px] font-medium transition-colors border border-emerald-200"
+            title="Excel multi-hoja: Resumen + 1 hoja por canal con slots, char counts, scores y flags"
+          >
+            <FileSpreadsheet className="w-4 h-4" />
+            Exportar Excel
+          </button>
+        </div>
       </div>
 
-      <div className="space-y-20">
-        {(Object.entries(groupedVariations) as [string, CopyVariation[]][]).map(([platform, items]) => (
-          <div key={platform} className="space-y-10">
-            <div className="flex items-center gap-6">
-              <span className="px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] bg-slate-900 text-white">
-                {platform}
-              </span>
-              <div className="h-px flex-1 bg-slate-200"></div>
-            </div>
+      {coherence && <CoherenceBanner report={coherence} />}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {items.map((v, idx) => {
-                const saved = isSaved(v.content);
-                return (
-                  <div key={`${v.id}-${idx}`} className="bg-white rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-md transition-all duration-500 flex flex-col group overflow-hidden">
-                    <div className="p-8 flex-1 flex flex-col">
-                      <div className="flex justify-between items-center mb-6">
-                        <span className="text-[8px] font-black uppercase tracking-widest text-slate-500 bg-slate-100 px-3 py-1 rounded-lg">
-                          {v.type}
-                        </span>
-                        <div className="flex flex-col items-end gap-1">
-                           <div className="flex items-center gap-2">
-                              <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></div>
-                              <span className="text-slate-500 font-bold text-[8px] uppercase tracking-widest">DNA Verified</span>
-                           </div>
-                           {v.score && (
-                             <span className={`text-[10px] font-black ${String(v.score) === '10' ? 'text-green-600' : 'text-slate-400'}`}>
-                               SC: {v.score}/10
-                             </span>
-                           )}
+      {usage && <UsageBadge usage={usage} />}
+
+      <div className="space-y-8">
+        {(Object.entries(groupedVariations) as [string, CopyVariation[]][]).map(([platform, items]) => {
+          const variationGroups = groupByVariationIndex(items);
+          const totalIssues = items.filter(v => v.budgetOk === false || (v.prohibitionsHit && v.prohibitionsHit.length > 0) || (v.editorFlags && v.editorFlags.length > 0)).length;
+          const scored = items.filter(v => typeof v.score === 'number');
+          const avgScore = scored.length > 0 ? scored.reduce((a, v) => a + (v.score || 0), 0) / scored.length : 0;
+          const slotsPerVariation = variationGroups[0]?.slots.length ?? 1;
+          return (
+            <section key={platform} className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+              {/* PLATFORM HEADER */}
+              <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-100 bg-gray-50/40">
+                <PlatformIcon platform={platform} size="md" />
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-[15px] font-medium text-gray-900 leading-tight truncate">{platform}</h3>
+                  <p className="text-[11px] text-gray-500 mt-0.5">
+                    {variationGroups.length} variación{variationGroups.length !== 1 ? 'es' : ''}
+                    {slotsPerVariation > 1 ? ` · ${slotsPerVariation} componentes` : ''}
+                  </p>
+                </div>
+                {totalIssues > 0 && (
+                  <span className="text-[11px] font-medium text-amber-700 bg-amber-50 border border-amber-200 px-2 py-1 rounded-md">
+                    {totalIssues} a revisar
+                  </span>
+                )}
+                {scored.length > 0 && <ScoreCircle score={avgScore} size="sm" />}
+              </div>
+
+              {/* VARIATION CARDS — agrupadas por variationIndex */}
+              <div className="p-4 space-y-3 bg-gray-50/30">
+                {variationGroups.map(({ variationIndex, type, slots }) => {
+                  const hasAnyIssue = slots.some(v => v.budgetOk === false || (v.prohibitionsHit?.length ?? 0) > 0);
+                  const vScores = slots.filter(v => typeof v.score === 'number').map(v => v.score!);
+                  const vAvg = vScores.length ? vScores.reduce((a, b) => a + b, 0) / vScores.length : null;
+                  const rationaleSlots = slots.filter(v => v.scoreRationale);
+                  const visualIdea = slots.flatMap(v => { const m = v.content.match(/\[IDEA VISUAL:? (.*?)\]/i); return m ? [m[1]] : []; })[0];
+                  const hasIA = rationaleSlots.length > 0 || !!visualIdea;
+
+                  return (
+                    <div key={`vi-${variationIndex}`} className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+
+                      {/* VARIATION HEADER */}
+                      <div className="flex items-center justify-between px-4 py-2.5 bg-gray-50/70 border-b border-gray-100">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-[10px] font-mono font-semibold text-gray-500 bg-white border border-gray-200 px-2 py-0.5 rounded">
+                            #{variationIndex}
+                          </span>
+                          {type && type !== 'Standard' && (
+                            <span className="text-[12px] font-medium text-gray-800">{type}</span>
+                          )}
+                          {hasAnyIssue && (
+                            <span className="text-[10px] font-medium text-red-600 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded">Revisar</span>
+                          )}
+                          {slots.some(v => v.autofixed) && (
+                            <span className="text-[10px] font-medium text-blue-600 bg-blue-50 border border-blue-200 px-1.5 py-0.5 rounded">🔧 auto-fix</span>
+                          )}
+                          {slots.some(v => isLocked(v)) && (
+                            <span className="text-[10px] font-medium text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded inline-flex items-center gap-1">
+                              <Lock className="w-2.5 h-2.5" /> lockeada
+                            </span>
+                          )}
                         </div>
+                        {vAvg !== null && <ScoreCircle score={vAvg} size="sm" />}
                       </div>
 
-                      <div className="flex-1">
-                        {renderContent(v)}
+                      {/* SLOTS — PROPUESTA */}
+                      <div className="divide-y divide-gray-50">
+                        {slots.map(v => {
+                          const contentWithoutVisual = v.content.replace(/\[IDEA VISUAL:? (.*?)\]/i, '').trim();
+                          const hasSlotIssue = v.budgetOk === false || (v.prohibitionsHit?.length ?? 0) > 0;
+                          const slotSaved = isSaved(v.content);
+                          return (
+                            <div key={v.id} className="px-4 py-3 group/slot">
+                              {/* ETIQUETA DE HERRAMIENTA — slot label + métricas */}
+                              <div className="flex items-center justify-between mb-1.5">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="text-[9px] font-semibold uppercase tracking-widest text-gray-400">
+                                    {v.slot || 'copy'}
+                                  </span>
+                                  {v.budget !== undefined && (
+                                    <span className={`text-[9px] font-medium px-1.5 py-0.5 rounded ${
+                                      hasSlotIssue ? 'text-red-600 bg-red-50 border border-red-200' : 'text-gray-400 bg-gray-50'
+                                    }`}>
+                                      {v.charCount}/{v.budget} {v.budgetUnit === 'word' ? 'pal' : 'car'}
+                                    </span>
+                                  )}
+                                  {v.prohibitionsHit && v.prohibitionsHit.length > 0 && (
+                                    <span className="text-[9px] text-red-600 font-medium" title={v.prohibitionsHit.join(', ')}>⚠ prohibición</span>
+                                  )}
+                                  {v.editorFlags && v.editorFlags.length > 0 && (
+                                    <span className="text-[9px] text-amber-700 font-medium">{v.editorFlags.join(', ')}</span>
+                                  )}
+                                </div>
+                                {/* PER-SLOT ACTIONS */}
+                                <div className="flex items-center gap-1">
+                                  <button
+                                    onClick={() => toggleLock(v)}
+                                    className={`w-6 h-6 rounded flex items-center justify-center transition-colors ${
+                                      isLocked(v) ? 'text-amber-600 bg-amber-50' : 'text-gray-300 hover:text-gray-600 hover:bg-gray-50'
+                                    }`}
+                                    title={isLocked(v) ? 'Desbloquear slot' : 'Lockear slot'}
+                                  >
+                                    {isLocked(v) ? <Lock className="w-3 h-3" /> : <Unlock className="w-3 h-3" />}
+                                  </button>
+                                  {slotSaved ? (
+                                    <span className="flex items-center gap-1 text-[10px] text-green-600 font-medium px-2 py-0.5 bg-green-50 rounded border border-green-200">
+                                      <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" /></svg>
+                                      Guardado
+                                    </span>
+                                  ) : (
+                                    <button
+                                      onClick={() => setSavingId(v.id)}
+                                      className="text-[10px] font-medium text-gray-500 hover:text-gray-900 px-2 py-0.5 bg-white border border-gray-200 rounded hover:border-gray-400 transition-colors"
+                                    >
+                                      Guardar
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* PROPUESTA — el copy */}
+                              {editingId === v.id ? (
+                                <div className="space-y-2">
+                                  <textarea
+                                    className="w-full p-3 bg-gray-50 border border-gray-300 rounded-lg text-[13px] font-medium text-gray-900 outline-none min-h-[80px] resize-none"
+                                    value={editBuffer}
+                                    onChange={e => setEditBuffer(e.target.value)}
+                                    autoFocus
+                                  />
+                                  <div className="flex justify-between items-center">
+                                    <span className="text-[10px] text-gray-400">{editBuffer.length} car</span>
+                                    <div className="flex gap-2">
+                                      <button onClick={() => setEditingId(null)} className="text-[11px] text-gray-400 hover:text-gray-700 px-2 py-1">Cancelar</button>
+                                      <button onClick={() => saveEdit(v.id)} className="text-[11px] font-medium text-white bg-gray-900 px-3 py-1 rounded-md">Aplicar</button>
+                                    </div>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="relative group/copy">
+                                  <p className="text-[14px] font-medium text-gray-900 leading-relaxed pr-6">
+                                    {cleanText(contentWithoutVisual)}
+                                  </p>
+                                  <button
+                                    onClick={() => startEditing(v)}
+                                    className="absolute top-0 right-0 p-1 bg-gray-900 text-white rounded-md opacity-0 group-hover/copy:opacity-100 transition-opacity"
+                                    title="Editar"
+                                  >
+                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
 
-                      <div className="pt-6 border-t border-slate-50 mt-6 grid grid-cols-2 gap-3">
-                        <button 
-                          onClick={() => setMockupId(mockupId === v.id ? null : v.id)}
-                          className={`flex-1 py-4 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 active:scale-95 border ${mockupId === v.id ? 'bg-slate-100 text-slate-900 border-slate-900' : 'bg-white text-slate-600 border-slate-300 hover:border-slate-900 hover:text-slate-900'}`}
+                      {/* RECOMENDACIÓN DEL MOTOR — visualmente separada de la propuesta */}
+                      {hasIA && (
+                        <div className="px-4 py-3 bg-slate-50 border-t border-slate-100">
+                          <div className="flex items-center gap-1.5 mb-2">
+                            <svg className="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                            </svg>
+                            <span className="text-[9px] font-semibold uppercase tracking-widest text-slate-400">Evaluación del motor</span>
+                          </div>
+                          {visualIdea && (
+                            <p className="text-[11px] text-slate-500 leading-relaxed mb-1.5">
+                              <span className="font-semibold text-slate-600">Visual sugerido:</span> {visualIdea}
+                            </p>
+                          )}
+                          {rationaleSlots.map(v => (
+                            <p key={v.id} className="text-[11px] text-slate-500 leading-relaxed mb-1">
+                              {slots.length > 1 && (
+                                <span className="text-[9px] font-semibold uppercase text-slate-400 mr-1.5">{v.slot}:</span>
+                              )}
+                              {v.scoreRationale}
+                            </p>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* FOOTER — acciones a nivel de variación */}
+                      <div className="px-4 py-2.5 border-t border-gray-100 flex items-center gap-2 bg-white">
+                        <button
+                          onClick={() => { setNegativeFeedbackTarget(slots[0]); setNegativeReason(''); }}
+                          disabled={slots.some(v => negativeSavedIds.has(v.id))}
+                          className={`shrink-0 w-8 h-8 rounded-lg flex items-center justify-center transition-colors border text-[12px] ${
+                            slots.some(v => negativeSavedIds.has(v.id))
+                              ? 'bg-red-50 text-red-500 border-red-200'
+                              : 'bg-white text-gray-400 border-gray-200 hover:text-red-500 hover:bg-red-50 hover:border-red-200'
+                          }`}
+                          title="Marcar variación como mala — enseña al motor qué evitar"
                         >
-                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
-                          Mockup
+                          👎
                         </button>
-                        
-                        {saved ? (
-                          <div className="flex-1 flex items-center justify-center gap-2 bg-slate-100 text-slate-600 font-black text-[9px] uppercase py-4 rounded-xl border border-slate-200 italic">
-                            ✓ Guardado
-                          </div>
-                        ) : (
-                          <div className="relative flex-1">
-                            <button 
-                              onClick={() => setSavingId(v.id)}
-                              className="w-full bg-slate-900 text-white py-4 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-black transition-all flex items-center justify-center gap-2 active:scale-95 shadow-lg shadow-slate-900/10"
-                            >
-                              Guardar
-                            </button>
-                          </div>
+                        {[Platform.PUSH, Platform.INSTAGRAM_POST, Platform.GOOGLE_ADS, Platform.POP_UP].includes(platform as Platform) && (
+                          <button
+                            onClick={() => setMockupId(slots[0].id)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                          >
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                            Mockup
+                          </button>
                         )}
                       </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        ))}
+                  );
+                })}
+              </div>
+            </section>
+          );
+        })}
       </div>
 
       {/* MODAL PARA MOCKUP */}
       {mockupId && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 md:p-12 animate-in fade-in duration-300">
-           <div className="absolute inset-0 bg-slate-900/95 backdrop-blur-xl" onClick={() => setMockupId(null)}></div>
-           <div className="relative z-10 w-full max-w-4xl bg-slate-50/10 p-4 md:p-12 rounded-[4rem] border border-white/10 shadow-2xl animate-in zoom-in-95 duration-500">
-              <div className="flex flex-col md:flex-row gap-12 items-center">
-                 <div className="flex-1 w-full flex items-center justify-center">
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 md:p-12 animate-in fade-in duration-200">
+           <div className="absolute inset-0 bg-gray-900/80 backdrop-blur-sm" onClick={() => setMockupId(null)}></div>
+           <div className="relative z-10 w-full max-w-4xl bg-white p-8 rounded-2xl border border-gray-200 shadow-xl animate-in zoom-in-95 duration-300">
+              <div className="flex flex-col md:flex-row gap-8 items-center">
+                 <div className="flex-1 w-full flex items-center justify-center bg-gray-50 rounded-xl p-6 border border-gray-100">
                     {renderMockup(localVariations.find(v => v.id === mockupId)!)}
                  </div>
-                 <div className="md:w-1/3 space-y-8 text-center md:text-left">
-                    <div className="space-y-2">
-                       <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em]">Simulator v1.0</span>
-                       <h3 className="text-3xl font-black text-white uppercase tracking-tighter">Realidad <span className="text-slate-400">Estratégica</span></h3>
-                    </div>
-                    <div className="p-6 bg-white/5 border border-white/10 rounded-3xl space-y-4">
-                       <p className="text-xs font-bold text-slate-300 leading-relaxed italic opacity-80">
-                         "Esta previsualización muestra cómo se renderizará el contenido en la interfaz nativa del canal seleccionado."
+                 <div className="md:w-1/3 space-y-6">
+                    <div>
+                       <h3 className="text-[20px] font-medium text-gray-900">Simulador de Interfaz</h3>
+                       <p className="text-[13px] text-gray-500 mt-1">
+                         Previsualización del contenido en la interfaz nativa del canal seleccionado.
                        </p>
-                       <div className="flex items-center gap-3 pt-4 border-t border-white/5">
-                          <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
-                          <span className="text-[9px] font-black text-white uppercase tracking-widest">Contraste Certificado</span>
-                       </div>
                     </div>
-                    <button onClick={() => setMockupId(null)} className="w-full py-5 bg-white text-slate-900 rounded-[1.5rem] font-black uppercase text-[11px] tracking-widest hover:bg-slate-200 transition-all shadow-xl">
+                    <button onClick={() => setMockupId(null)} className="w-full py-2 bg-gray-100 text-gray-700 rounded-lg font-medium text-[13px] hover:bg-gray-200 transition-colors">
                        Cerrar Simulador
                     </button>
                  </div>
@@ -485,42 +757,110 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ variations, projects, activ
         </div>
       )}
 
+      {/* MODAL NEGATIVE FEEDBACK */}
+      {negativeFeedbackTarget && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 animate-in fade-in duration-200">
+          <div className="absolute inset-0 bg-gray-900/40 backdrop-blur-sm" onClick={() => setNegativeFeedbackTarget(null)} />
+          <div className="relative z-10 w-full max-w-sm bg-white p-6 rounded-xl shadow-xl border border-gray-200 animate-in zoom-in-95 duration-300">
+            <div className="flex justify-between items-center mb-4">
+              <div>
+                <h3 className="text-[15px] font-medium text-gray-900">¿Por qué no sirve?</h3>
+                <p className="text-[11px] text-gray-500 mt-0.5">El motor evitará este patrón en próximas generaciones</p>
+              </div>
+              <button onClick={() => setNegativeFeedbackTarget(null)} className="p-1 text-gray-400 hover:text-gray-900 rounded-md transition-colors">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+
+            <div className="space-y-2 mb-4">
+              {['Muy genérico', 'Tono equivocado', 'Fuera de marca', 'Idea ya usada', 'No conecta con la audiencia'].map(r => (
+                <button
+                  key={r}
+                  onClick={() => setNegativeReason(r)}
+                  className={`w-full text-left px-3 py-2 rounded-lg text-[12px] font-medium border transition-colors ${
+                    negativeReason === r
+                      ? 'bg-red-50 text-red-700 border-red-300'
+                      : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+                  }`}
+                >
+                  {r}
+                </button>
+              ))}
+              <input
+                type="text"
+                placeholder="Otro motivo..."
+                className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-[12px] outline-none focus:border-gray-400 transition-colors"
+                value={['Muy genérico', 'Tono equivocado', 'Fuera de marca', 'Idea ya usada', 'No conecta con la audiencia'].includes(negativeReason) ? '' : negativeReason}
+                onChange={e => setNegativeReason(e.target.value)}
+              />
+            </div>
+
+            <button
+              disabled={!negativeReason.trim() || negativeSaving}
+              onClick={async () => {
+                if (!negativeReason.trim() || !negativeFeedbackTarget || !activeClient) return;
+                setNegativeSaving(true);
+                try {
+                  await negativeFeedbackApi.save({
+                    clientId: activeClient.id,
+                    platform: String(negativeFeedbackTarget.platform),
+                    content: negativeFeedbackTarget.content,
+                    reason: negativeReason,
+                  });
+                  setNegativeSavedIds(prev => new Set(prev).add(negativeFeedbackTarget.id));
+                  setNegativeFeedbackTarget(null);
+                } catch {
+                  // silently fail — UX not blocked
+                } finally {
+                  setNegativeSaving(false);
+                }
+              }}
+              className="w-full bg-red-600 text-white py-2 rounded-lg text-[13px] font-medium hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+            >
+              {negativeSaving ? 'Guardando...' : 'Enviar feedback al motor'}
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* MODAL PARA GUARDAR */}
       {savingId && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 animate-in fade-in duration-300">
-           <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-sm" onClick={() => setSavingId(null)}></div>
-           <div className="relative z-10 w-full max-w-md bg-white p-10 rounded-[3rem] shadow-2xl border border-slate-100 animate-in zoom-in-95 duration-500">
-              <div className="flex justify-between items-center mb-8">
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 animate-in fade-in duration-200">
+           <div className="absolute inset-0 bg-gray-900/40 backdrop-blur-sm" onClick={() => setSavingId(null)}></div>
+           <div className="relative z-10 w-full max-w-md bg-white p-6 rounded-xl shadow-xl border border-gray-200 animate-in zoom-in-95 duration-300">
+              <div className="flex justify-between items-center mb-6">
                 <div>
-                   <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tighter leading-none mb-1">BIBLIOTECA</h3>
-                   <p className="text-slate-500 font-bold uppercase text-[8px] tracking-[0.3em]">Seleccionar Proyecto Destino</p>
+                   <h3 className="text-[16px] font-medium text-gray-900">Guardar en Biblioteca</h3>
+                   <p className="text-gray-500 text-[12px] mt-0.5">Selecciona el proyecto de destino</p>
                 </div>
-                <button onClick={() => setSavingId(null)} className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center font-black text-slate-500 hover:text-slate-900 transition-colors">×</button>
+                <button onClick={() => setSavingId(null)} className="p-1 text-gray-400 hover:text-gray-900 rounded-md transition-colors">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
               </div>
 
-              <div className="space-y-2 max-h-60 overflow-y-auto custom-scrollbar mb-8 pr-2">
+              <div className="space-y-2 max-h-60 overflow-y-auto custom-scrollbar mb-6 pr-2">
                 {projects.length === 0 && (
-                  <p className="text-center py-8 text-slate-300 font-bold uppercase text-[9px] tracking-widest border-2 border-dashed border-slate-50 rounded-2xl">No hay proyectos activos</p>
+                  <p className="text-center py-6 text-gray-400 text-[12px] border border-dashed border-gray-200 rounded-lg">No hay proyectos activos</p>
                 )}
                 {projects.map(p => (
                   <button 
                     key={p.id}
                     onClick={() => handleSave(localVariations.find(v => v.id === savingId)!, p.id)}
-                    className="w-full text-left p-5 hover:bg-slate-900 hover:text-white rounded-2xl text-[12px] font-black text-slate-500 transition-all flex items-center justify-between group/project border border-slate-50 hover:border-slate-900 shadow-sm hover:shadow-xl"
+                    className="w-full text-left p-3 hover:bg-gray-50 rounded-lg text-[13px] font-medium text-gray-700 transition-colors flex items-center justify-between border border-gray-200"
                   >
-                    <span className="uppercase tracking-tight">{p.name}</span>
-                    <svg className="w-4 h-4 opacity-0 group-hover/project:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M9 5l7 7-7 7" /></svg>
+                    <span>{p.name}</span>
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg>
                   </button>
                 ))}
               </div>
 
-              <div className="border-t border-slate-200 pt-8 space-y-4">
-                <div className="relative">
-                   <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.25em] mb-3 ml-1">O crear nuevo proyecto</p>
+              <div className="border-t border-gray-100 pt-6 space-y-4">
+                <div>
+                   <label className="block text-[12px] font-medium text-gray-700 mb-1">O crear nuevo proyecto</label>
                    <input 
                       type="text" 
                       placeholder="Nombre del proyecto..."
-                      className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-sm font-bold text-slate-900 focus:ring-2 focus:ring-slate-900 focus:bg-white outline-none transition-all placeholder:text-slate-400"
+                      className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-[13px] outline-none focus:border-gray-400 transition-colors"
                       value={newProjectName}
                       onChange={(e) => setNewProjectName(e.target.value)}
                    />
@@ -528,7 +868,7 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ variations, projects, activ
                 <button 
                   onClick={() => handleCreateAndSave(localVariations.find(v => v.id === savingId)!)}
                   disabled={!newProjectName.trim()}
-                  className="w-full bg-slate-900 text-white py-5 rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] hover:bg-black transition-all shadow-xl disabled:opacity-30 disabled:pointer-events-none"
+                  className="w-full bg-gray-900 text-white py-2 rounded-lg text-[13px] font-medium hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
                 >
                   Confirmar y Guardar
                 </button>
