@@ -22,15 +22,15 @@ export const DEFAULT_MODELS: Record<AIProvider, string> = {
   openai:     "gpt-4o",
   anthropic:  "claude-sonnet-4-6",
   gemini:     "gemini-2.0-flash",
-  openrouter: "google/gemini-2.0-flash",
+  openrouter: "google/gemini-2.5-flash",
 };
 
 // Cheaper / faster models for critic / director roles
 export const MINI_MODELS: Record<AIProvider, string> = {
   openai:     "gpt-4o-mini",
   anthropic:  "claude-haiku-4-5-20251001",
-  gemini:     "gemini-2.0-flash",
-  openrouter: "openai/gpt-4o-mini",
+  gemini:     "gemini-2.5-flash-lite",
+  openrouter: "google/gemini-2.5-flash-lite",
 };
 
 
