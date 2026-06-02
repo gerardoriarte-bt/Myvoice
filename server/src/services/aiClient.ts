@@ -22,7 +22,7 @@ export const DEFAULT_MODELS: Record<AIProvider, string> = {
   openai:     "gpt-4o",
   anthropic:  "claude-sonnet-4-6",
   gemini:     "gemini-2.0-flash",
-  openrouter: "google/gemini-2.0-flash-001",
+  openrouter: "google/gemini-2.0-flash",
 };
 
 // Cheaper / faster models for critic / director roles
