@@ -3,54 +3,136 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>My Voice - Strategic Copywriting</title>
+    <title>My Voice</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
-      rel="stylesheet"
-    />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['-apple-system', 'BlinkMacSystemFont', '"Inter"', 'sans-serif'],
+            },
+            colors: {
+              apple: {
+                bg: '#F5F5F7',
+                text: '#1D1D1F',
+                secondary: '#6E6E73',
+                tertiary: '#86868B',
+                border: 'rgba(0,0,0,0.08)',
+                fill: 'rgba(0,0,0,0.05)',
+                blue: '#0071E3',
+              }
+            }
+          }
+        }
+      }
+    </script>
     <style>
+      *, *::before, *::after { box-sizing: border-box; }
+
       body {
-        font-family: "Plus Jakarta Sans", sans-serif;
-        background-color: #f8fafc; /* Fondo ligeramente más oscuro para resaltar tarjetas blancas */
+        font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
+        background-color: #F5F5F7;
+        color: #1D1D1F;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
       }
-      /* Degradado de grises premium */
-      .accent-gradient {
-        background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+
+      /* Scrollbar Apple-style */
+      ::-webkit-scrollbar { width: 5px; height: 5px; }
+      ::-webkit-scrollbar-track { background: transparent; }
+      ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 10px; }
+      ::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.25); }
+
+      /* Selection */
+      ::selection { background: rgba(0,113,227,0.15); }
+
+      /* Apple card */
+      .apple-card {
+        background: #ffffff;
+        border: 1px solid rgba(0,0,0,0.08);
+        border-radius: 12px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
       }
+
+      /* Apple sidebar glass */
+      .apple-sidebar {
+        background: rgba(246,246,248,0.97);
+        backdrop-filter: saturate(200%) blur(20px);
+        -webkit-backdrop-filter: saturate(200%) blur(20px);
+        border-right: 1px solid rgba(0,0,0,0.08);
+      }
+
+      /* Apple header glass */
+      .apple-header {
+        background: rgba(255,255,255,0.88);
+        backdrop-filter: saturate(180%) blur(20px);
+        -webkit-backdrop-filter: saturate(180%) blur(20px);
+        border-bottom: 1px solid rgba(0,0,0,0.07);
+      }
+
+      /* Input Apple-style */
+      .apple-input {
+        background: rgba(0,0,0,0.04);
+        border: 1px solid transparent;
+        border-radius: 8px;
+        transition: all 0.15s ease;
+        font-size: 14px;
+        color: #1D1D1F;
+      }
+      .apple-input:focus {
+        outline: none;
+        background: #fff;
+        border-color: rgba(0,113,227,0.5);
+        box-shadow: 0 0 0 3px rgba(0,113,227,0.12);
+      }
+      .apple-input::placeholder { color: #86868B; }
+
+      /* Button Apple-style */
+      .apple-btn-primary {
+        background: #1D1D1F;
+        color: white;
+        border-radius: 980px;
+        font-size: 14px;
+        font-weight: 500;
+        letter-spacing: -0.01em;
+        transition: all 0.15s ease;
+        border: none;
+        cursor: pointer;
+      }
+      .apple-btn-primary:hover { background: #333; }
+      .apple-btn-primary:active { transform: scale(0.98); }
+      .apple-btn-primary:disabled { background: #86868B; cursor: not-allowed; }
+
+      .apple-btn-secondary {
+        background: rgba(0,0,0,0.06);
+        color: #1D1D1F;
+        border-radius: 980px;
+        font-size: 14px;
+        font-weight: 500;
+        transition: all 0.15s ease;
+        border: none;
+        cursor: pointer;
+      }
+      .apple-btn-secondary:hover { background: rgba(0,0,0,0.1); }
+
+      /* Gradient text */
       .text-gradient {
-        background: linear-gradient(180deg, #0f172a 0%, #64748b 100%);
+        background: linear-gradient(135deg, #1D1D1F 0%, #6E6E73 100%);
         -webkit-background-clip: text;
         background-clip: text;
         -webkit-text-fill-color: transparent;
       }
-      .custom-scrollbar::-webkit-scrollbar {
-        width: 4px;
-      }
-      .custom-scrollbar::-webkit-scrollbar-track {
-        background: #f1f5f9;
-      }
-      .custom-scrollbar::-webkit-scrollbar-thumb {
-        background: #cbd5e1;
-        border-radius: 10px;
-      }
-      .glass-header {
-        background: rgba(255, 255, 255, 0.95);
-        backdrop-filter: blur(20px);
-        border-bottom: 1px solid #e2e8f0;
-      }
-      /* Botón con alto contraste */
-      .btn-subtle {
-        transition: all 0.2s ease;
-        border: 1px solid #cbd5e1; /* Contraste aumentado */
-        background-color: #ffffff;
-      }
-      .btn-subtle:hover {
-        background-color: #f1f5f9;
-        border-color: #64748b;
-        transform: translateY(-1px);
+
+      /* Section label */
+      .section-label {
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: #86868B;
       }
     </style>
     <script type="importmap">
@@ -63,21 +145,8 @@
         }
       }
     </script>
-    <link rel="stylesheet" href="/index.css" />
-    <link rel="stylesheet" href="/lobueno-header.css" />
   </head>
-  <body class="text-slate-900 min-h-screen selection:bg-slate-200">
-    <!-- Lobueno Header -->
-    <header class="lb-header">
-        <div class="lb-nav-container">
-            <a href="/" class="lb-logo">
-                <img src="/LobuenoLogo.png" alt="Grupo Lobueno Logo">
-            </a>
-        </div>
-    </header>
-    <!-- Spacer (importante para que el contenido no se oculte) -->
-    <div class="lb-header-spacer"></div>
-
+  <body class="min-h-screen">
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
   </body>

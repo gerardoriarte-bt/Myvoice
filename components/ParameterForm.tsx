@@ -1,9 +1,11 @@
-
 import React from 'react';
-import { Platform, CopyParameters, BrandConfig, Client, ContentDNAProfile } from '../types';
+import { Building2, Layers, Target, Radio, Zap, Check, Loader2, Sparkles, ChevronRight, BookOpen } from 'lucide-react';
+import { Platform, PLATFORM_GROUPS, FunnelStage, FUNNEL_STAGE_DESCRIPTIONS, CopyParameters, BrandConfig, Client, ContentDNAProfile } from '../types';
+import { PlatformIcon } from './ui/platformIcons';
 
 interface ParameterFormProps {
   onSubmit: (params: CopyParameters) => void;
+  onDemoSubmit?: (params: CopyParameters) => void;
   isLoading: boolean;
   clients: Client[];
   dnaProfiles: ContentDNAProfile[];
@@ -11,17 +13,19 @@ interface ParameterFormProps {
   onNavigateToClients: () => void;
 }
 
-const ParameterForm: React.FC<ParameterFormProps> = ({ 
-  onSubmit, 
-  isLoading, 
-  clients, 
+const ParameterForm: React.FC<ParameterFormProps> = ({
+  onSubmit,
+  onDemoSubmit,
+  isLoading,
+  clients,
   dnaProfiles,
   defaultClientId,
-  onNavigateToClients
+  onNavigateToClients,
 }) => {
   const [clientId, setClientId] = React.useState(defaultClientId || '');
   const [activeProfileId, setActiveProfileId] = React.useState<string | null>(null);
   const [selectedPlatforms, setSelectedPlatforms] = React.useState<Platform[]>([]);
+  const [funnelStage, setFunnelStage] = React.useState<FunnelStage>(FunnelStage.CONVERSION);
 
   React.useEffect(() => {
     if (clients.length > 0) {
@@ -36,175 +40,283 @@ const ParameterForm: React.FC<ParameterFormProps> = ({
   }, [clientId]);
 
   const togglePlatform = (p: Platform) => {
-    setSelectedPlatforms(prev => 
-      prev.includes(p) ? prev.filter(item => item !== p) : [...prev, p]
-    );
+    setSelectedPlatforms(prev => prev.includes(p) ? prev.filter(item => item !== p) : [...prev, p]);
+  };
+
+  const buildParams = (): CopyParameters | null => {
+    const activeClient = clients.find(c => c.id === clientId);
+    const profile = dnaProfiles.find(p => p.id === activeProfileId);
+    if (!profile || selectedPlatforms.length === 0 || !clientId) return null;
+    return {
+      voice: profile.voice,
+      goal: profile.goal,
+      theme: profile.theme,
+      product: profile.product,
+      targetAudience: profile.targetAudience,
+      keywords: profile.keywords,
+      prohibitions: profile.prohibitions,
+      brandVoiceGuidelines: profile.brandVoiceGuidelines,
+      valueProposition: profile.valueProposition,
+      primaryCTA: profile.primaryCTA,
+      funnelStage,
+      feedbackExamples: profile.feedbackExamples,
+      platforms: selectedPlatforms,
+      clientId,
+      clientName: activeClient?.name,
+      clientIndustry: activeClient?.industry,
+    };
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const activeClient = clients.find(c => c.id === clientId);
-    const profile = dnaProfiles.find(p => p.id === activeProfileId);
-    
-    if (!profile || selectedPlatforms.length === 0 || !clientId) return;
-    
-    onSubmit({ 
-      voice: profile.voice, 
-      goal: profile.goal, 
-      theme: profile.theme, 
-      product: profile.product,
-      targetAudience: profile.targetAudience,
-      keywords: profile.keywords,
-      brandVoiceGuidelines: profile.brandVoiceGuidelines,
-      valueProposition: profile.valueProposition,
-      primaryCTA: profile.primaryCTA,
-      feedbackExamples: profile.feedbackExamples, // Inyectamos el aprendizaje
-      platforms: selectedPlatforms, 
-      clientId,
-      clientName: activeClient?.name,
-      clientIndustry: activeClient?.industry
-    });
+    const p = buildParams();
+    if (p) onSubmit(p);
+  };
+
+  const handleDemo = () => {
+    const p = buildParams();
+    if (p && onDemoSubmit) onDemoSubmit(p);
   };
 
   const clientProfiles = dnaProfiles.filter(p => p.clientId === clientId);
   const activeClient = clients.find(c => c.id === clientId);
-
-  const inputStyle = "w-full px-5 py-4 bg-white border border-slate-200 rounded-2xl font-bold text-slate-800 focus:border-slate-900 outline-none transition-all placeholder:text-slate-300 text-sm";
-  const labelStyle = "block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4";
+  const activeProfile = clientProfiles.find(p => p.id === activeProfileId);
+  const canSubmit = !isLoading && !!activeProfileId && selectedPlatforms.length > 0;
 
   return (
-    <div className="space-y-6">
-      <form onSubmit={handleSubmit} className="bg-white p-10 rounded-[2.5rem] border border-slate-100 space-y-10 shadow-sm animate-in fade-in duration-700">
-        <div className="space-y-5">
-          <label className={labelStyle}>1. Marca</label>
-          <select 
-            value={clientId} 
-            onChange={(e) => setClientId(e.target.value)} 
-            className={inputStyle + " appearance-none cursor-pointer pr-10 bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke%3D%22%2394a3b8%22%20stroke-width%3D%222%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%22%20d%3D%22m19.5%208.25-7.5%207.5-7.5-7.5%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25em_1.25em] bg-[right_1.25rem_center] bg-no-repeat"}
-          >
-            {clients.length === 0 && <option value="">Sin marcas registradas</option>}
-            {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </select>
-          
-          {activeClient && (
-            <div className="flex items-center gap-4 p-5 bg-slate-50/50 rounded-2xl border border-slate-100 animate-in slide-in-from-left-2">
-              <div className="w-10 h-10 bg-white rounded-xl overflow-hidden shadow-sm shrink-0 border border-slate-100">
-                {activeClient.logo ? (
-                  <img src={activeClient.logo} className="w-full h-full object-contain" alt={activeClient.name} />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center font-black text-slate-300 bg-slate-50 text-xs">
-                    {activeClient.name[0]}
-                  </div>
-                )}
-              </div>
-              <div>
-                <p className="text-[11px] font-black uppercase text-slate-900 leading-none mb-1">{activeClient.name}</p>
-                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{activeClient.industry}</p>
-              </div>
-            </div>
-          )}
-        </div>
+    <form
+      onSubmit={handleSubmit}
+      className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden animate-in fade-in duration-300 sticky top-6"
+    >
+      {/* MARCA */}
+      <Section icon={<Building2 className="w-3.5 h-3.5" />} label="Marca">
+        <select
+          value={clientId}
+          onChange={e => setClientId(e.target.value)}
+          className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-gray-900 focus:border-gray-400 outline-none transition-colors text-[13px]"
+        >
+          {clients.length === 0 && <option value="">Sin marcas registradas</option>}
+          {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+        </select>
 
-        <div className="space-y-5 pt-6 border-t border-slate-50">
-          <div className="flex justify-between items-center">
-            <label className={labelStyle}>2. ADN Estratégico</label>
-            {clientProfiles.length > 0 && (
-              <span className="text-[8px] font-black text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full uppercase tracking-tighter">Selección</span>
+        {activeClient && (
+          <div className="mt-2 flex items-center gap-3 p-2.5 bg-gray-50 rounded-lg border border-gray-100">
+            <div className="w-8 h-8 bg-white rounded-md overflow-hidden border border-gray-100 flex items-center justify-center shrink-0">
+              {activeClient.logo
+                ? <img src={activeClient.logo} className="w-full h-full object-contain p-1" alt={activeClient.name} />
+                : <span className="font-medium text-gray-400 text-[10px]">{activeClient.name.substring(0, 2).toUpperCase()}</span>}
+            </div>
+            <div className="min-w-0">
+              <p className="text-[12px] font-medium text-gray-900 leading-none mb-0.5 truncate">{activeClient.name}</p>
+              <p className="text-[10px] text-gray-500">{activeClient.industry}</p>
+            </div>
+            {activeClient.brandFingerprint && (
+              <span className="ml-auto text-[10px] font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded-full" title="Voice fingerprint calculado">
+                ◉ FP
+              </span>
             )}
           </div>
-          
-          {clientId && clientProfiles.length > 0 ? (
-            <div className="grid grid-cols-1 gap-3">
-              {clientProfiles.map(profile => (
+        )}
+      </Section>
+
+      {/* CAMPAÑA */}
+      <Section icon={<Layers className="w-3.5 h-3.5" />} label="Campaña" hint="ADN estratégico" required={!activeProfileId}>
+        {clientId && clientProfiles.length > 0 ? (
+          <div className="space-y-1.5">
+            {clientProfiles.map(profile => {
+              const active = activeProfileId === profile.id;
+              const trained = (profile.feedbackExamples?.length || 0) > 0;
+              return (
                 <button
                   key={profile.id}
                   type="button"
                   onClick={() => setActiveProfileId(profile.id)}
-                  className={`p-5 rounded-2xl border text-left transition-all duration-300 relative group/dna ${
-                    activeProfileId === profile.id 
-                    ? 'bg-slate-900 text-white border-slate-900 shadow-xl scale-[1.02] z-10' 
-                    : 'bg-white text-slate-500 border-slate-200 hover:border-slate-400 opacity-70 hover:opacity-100'
+                  className={`w-full text-left p-3 rounded-lg border transition-all ${
+                    active
+                      ? 'bg-blue-50 border-blue-300 shadow-[0_0_0_3px_rgba(59,130,246,0.08)]'
+                      : 'bg-white border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                   }`}
                 >
-                  {activeProfileId === profile.id && (
-                    <div className="absolute -right-2 -top-2 w-6 h-6 bg-slate-900 border-2 border-white rounded-full flex items-center justify-center text-[10px] animate-in zoom-in-50">
-                       ✓
+                  <div className="flex justify-between items-start gap-2">
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-[12px] font-medium leading-tight ${active ? 'text-blue-900' : 'text-gray-900'}`}>{profile.name}</p>
+                      {profile.campaignConcept && (
+                        <p className={`text-[10px] mt-1 leading-snug italic ${active ? 'text-blue-700/80' : 'text-gray-500'} line-clamp-2`}>
+                          "{profile.campaignConcept}"
+                        </p>
+                      )}
                     </div>
-                  )}
-                  <div className="flex justify-between items-start mb-1">
-                    <p className="text-[10px] font-black uppercase tracking-[0.15em]">{profile.name}</p>
-                    {profile.feedbackExamples && profile.feedbackExamples.length > 0 && (
-                       <span className="text-[7px] font-black px-1.5 py-0.5 bg-green-500 text-white rounded-md uppercase animate-pulse">DNA Trained</span>
+                    {active && (
+                      <div className="w-4 h-4 rounded-full bg-blue-600 flex items-center justify-center text-white shrink-0 mt-0.5">
+                        <Check className="w-2.5 h-2.5" strokeWidth={3} />
+                      </div>
                     )}
                   </div>
-                  <div className="flex flex-wrap gap-1 mb-2">
-                     <span className={`text-[7px] font-black px-1.5 py-0.5 rounded-md uppercase border ${activeProfileId === profile.id ? 'border-white/20 bg-white/10' : 'border-slate-100 bg-slate-50'}`}>
-                       {profile.voice}
-                     </span>
-                     <span className={`text-[7px] font-black px-1.5 py-0.5 rounded-md uppercase border ${activeProfileId === profile.id ? 'border-white/20 bg-white/10' : 'border-slate-100 bg-slate-50'}`}>
-                       {profile.goal}
-                     </span>
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    <Pill>{profile.goal}</Pill>
+                    {trained && <Pill variant="info">◉ Entrenada ({profile.feedbackExamples!.length})</Pill>}
                   </div>
-                  <p className={`text-[9px] font-bold uppercase tracking-tight line-clamp-1 opacity-60`}>
-                    Tema: {profile.theme}
-                  </p>
                 </button>
-              ))}
-            </div>
-          ) : (
-            <div className="p-10 border border-dashed border-slate-200 rounded-3xl text-center bg-slate-50/20 space-y-5">
-              <div className="space-y-1">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Falta ADN</p>
-                <p className="text-[9px] font-bold text-slate-300 uppercase leading-relaxed max-w-[200px] mx-auto">
-                  Configura el ADN de la marca para activar el motor.
-                </p>
-              </div>
-              {clientId && (
-                <button 
-                  type="button"
-                  onClick={onNavigateToClients}
-                  className="bg-white border border-slate-200 text-slate-900 text-[9px] font-black px-6 py-3 rounded-xl uppercase tracking-widest hover:bg-slate-50 transition-all inline-flex items-center gap-2 shadow-sm"
-                >
-                  Configurar ADN
-                </button>
-              )}
-            </div>
-          )}
-        </div>
-
-        <div className="space-y-5 pt-6 border-t border-slate-50">
-          <label className={labelStyle}>3. Canales</label>
-          <div className="flex flex-wrap gap-2">
-            {Object.values(Platform).map(p => (
+              );
+            })}
+          </div>
+        ) : (
+          <div className="p-5 border border-dashed border-gray-200 rounded-lg text-center bg-gray-50/50">
+            <BookOpen className="w-5 h-5 text-gray-300 mx-auto mb-2" />
+            <p className="text-[12px] font-medium text-gray-900 mb-0.5">Sin campañas</p>
+            <p className="text-[11px] text-gray-500 mb-3 leading-relaxed">Configura el ADN de una campaña para activar el motor.</p>
+            {clientId && (
               <button
-                key={p}
                 type="button"
-                onClick={() => togglePlatform(p)}
-                className={`px-5 py-3 rounded-xl border text-[10px] font-black transition-all uppercase tracking-widest ${
-                  selectedPlatforms.includes(p) 
-                  ? 'bg-slate-100 text-slate-900 border-slate-900' 
-                  : 'bg-white text-slate-400 border-slate-200 hover:border-slate-900 hover:text-slate-900'
+                onClick={onNavigateToClients}
+                className="inline-flex items-center gap-1 bg-white border border-gray-200 text-gray-700 text-[11px] font-medium px-3 py-1.5 rounded-md hover:bg-gray-50 transition-colors"
+              >
+                Configurar campaña
+                <ChevronRight className="w-3 h-3" />
+              </button>
+            )}
+          </div>
+        )}
+      </Section>
+
+      {/* FUNNEL */}
+      <Section icon={<Target className="w-3.5 h-3.5" />} label="Etapa del funnel" hint="Condiciona tono e intención">
+        <div className="grid grid-cols-2 gap-1.5">
+          {Object.values(FunnelStage).map(stage => {
+            const active = funnelStage === stage;
+            return (
+              <button
+                key={stage}
+                type="button"
+                onClick={() => setFunnelStage(stage)}
+                className={`text-left p-2.5 rounded-lg border transition-all ${
+                  active
+                    ? 'bg-blue-50 border-blue-300 shadow-[0_0_0_3px_rgba(59,130,246,0.08)]'
+                    : 'bg-white border-gray-200 hover:border-gray-300'
                 }`}
               >
-                {p}
+                <div className="flex items-center justify-between mb-0.5">
+                  <span className={`text-[11px] font-medium ${active ? 'text-blue-900' : 'text-gray-900'}`}>{stage}</span>
+                  {active && (
+                    <div className="w-3.5 h-3.5 rounded-full bg-blue-600 flex items-center justify-center text-white shrink-0">
+                      <Check className="w-2.5 h-2.5" strokeWidth={3} />
+                    </div>
+                  )}
+                </div>
+                <span className={`text-[9.5px] leading-tight block ${active ? 'text-blue-700/80' : 'text-gray-500'}`}>
+                  {FUNNEL_STAGE_DESCRIPTIONS[stage]}
+                </span>
               </button>
-            ))}
-          </div>
+            );
+          })}
         </div>
+      </Section>
 
+      {/* CANALES */}
+      <Section icon={<Radio className="w-3.5 h-3.5" />} label="Canales" hint={selectedPlatforms.length === 0 ? 'Selecciona al menos uno' : `${selectedPlatforms.length} seleccionado${selectedPlatforms.length === 1 ? '' : 's'}`} required={selectedPlatforms.length === 0}>
+        <div className="space-y-3">
+          {Object.entries(PLATFORM_GROUPS).map(([groupName, platforms]) => (
+            <div key={groupName}>
+              <div className="text-[9px] font-medium uppercase tracking-[0.15em] text-gray-400 mb-1.5">{groupName}</div>
+              <div className="flex flex-wrap gap-1.5">
+                {platforms.map(p => {
+                  const active = selectedPlatforms.includes(p);
+                  return (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() => togglePlatform(p)}
+                      className={`inline-flex items-center gap-1.5 pl-1.5 pr-2.5 py-1 rounded-full border text-[11px] font-medium transition-all ${
+                        active
+                          ? 'bg-gray-900 text-white border-gray-900 shadow-sm'
+                          : 'bg-white text-gray-700 border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <span className={`shrink-0 transition-opacity ${active ? 'opacity-100' : 'opacity-70'}`}>
+                        <PlatformIcon platform={p} size="sm" />
+                      </span>
+                      <span>{p}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      </Section>
+
+      {/* CTA */}
+      <div className="px-5 py-4 bg-gray-50/50 border-t border-gray-100 space-y-2">
         <button
           type="submit"
-          disabled={isLoading || !activeProfileId || selectedPlatforms.length === 0}
-          className={`w-full py-5 rounded-2xl font-black text-xs transition-all flex items-center justify-center gap-4 uppercase tracking-[0.25em] ${
-            isLoading 
-              ? 'bg-slate-100 text-slate-300 cursor-not-allowed border border-slate-200' 
-              : 'bg-slate-900 text-white hover:bg-black active:scale-[0.98] shadow-xl shadow-slate-900/10'
+          disabled={!canSubmit}
+          className={`w-full py-2.5 rounded-lg font-medium text-[13px] transition-all flex items-center justify-center gap-2 ${
+            !canSubmit
+              ? 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200'
+              : 'bg-gray-900 text-white hover:bg-black shadow-sm hover:shadow-md'
           }`}
         >
-          {isLoading ? 'ESCRIBIENDO...' : 'EJECUTAR MOTOR'}
+          {isLoading
+            ? <><Loader2 className="w-3.5 h-3.5 animate-spin" />Generando…</>
+            : <><Sparkles className="w-3.5 h-3.5" />Generar campaña{selectedPlatforms.length > 0 ? ` (${selectedPlatforms.length} canal${selectedPlatforms.length === 1 ? '' : 'es'})` : ''}</>}
         </button>
-      </form>
+
+        {onDemoSubmit && (
+          <button
+            type="button"
+            onClick={handleDemo}
+            disabled={!activeProfileId || selectedPlatforms.length === 0 || isLoading}
+            className={`w-full py-2 rounded-lg font-medium text-[12px] transition-all flex items-center justify-center gap-2 border ${
+              !activeProfileId || selectedPlatforms.length === 0 || isLoading
+                ? 'bg-gray-50 text-gray-400 cursor-not-allowed border-gray-200'
+                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+            }`}
+            title="Genera con datos mock — no consume créditos OpenAI"
+          >
+            <span className="text-[10px] font-medium uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-200">Demo</span>
+            Vista previa sin API
+          </button>
+        )}
+
+        {activeProfile && (
+          <div className="pt-1 flex items-center justify-center gap-1.5 text-[10px] text-gray-500">
+            <Zap className="w-3 h-3" />
+            <span>Director + {selectedPlatforms.length} especialistas + editor + auditoría</span>
+          </div>
+        )}
+      </div>
+    </form>
+  );
+};
+
+const Section: React.FC<{
+  icon: React.ReactNode;
+  label: string;
+  hint?: string;
+  required?: boolean;
+  children: React.ReactNode;
+}> = ({ icon, label, hint, required, children }) => (
+  <div className="px-5 py-4 border-b border-gray-100 last:border-b-0">
+    <div className="flex items-center gap-2 mb-3">
+      <span className="text-gray-500">{icon}</span>
+      <span className="text-[11px] font-medium text-gray-900 uppercase tracking-[0.08em]">{label}</span>
+      {required && (
+        <span className="text-[9px] font-medium text-blue-700 bg-blue-50 border border-blue-100 px-1.5 py-0.5 rounded uppercase tracking-wider">
+          requerido
+        </span>
+      )}
+      {hint && !required && <span className="text-[10px] text-gray-400 ml-auto truncate">{hint}</span>}
     </div>
+    {children}
+  </div>
+);
+
+const Pill: React.FC<{ children: React.ReactNode; variant?: 'default' | 'info' }> = ({ children, variant = 'default' }) => {
+  const cls = variant === 'info'
+    ? 'bg-blue-50 text-blue-700 border-blue-100'
+    : 'bg-gray-100 text-gray-600 border-gray-200';
+  return (
+    <span className={`text-[9.5px] font-medium px-1.5 py-0.5 rounded border ${cls}`}>{children}</span>
   );
 };
 

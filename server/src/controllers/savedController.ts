@@ -8,8 +8,11 @@ const prisma = new PrismaClient();
 export const getSavedVariations = async (req: AuthRequest, res: Response) => {
   const user = req.user;
   try {
+    const where = user?.role === 'CLIENT'
+      ? { clientId: user.clientId! }
+      : { client: { workspaceId: user?.workspaceId } };
     const variations = await prisma.savedVariation.findMany({
-      where: user?.role === 'CLIENT' ? { clientId: user.clientId! } : {},
+      where,
       include: { project: true, client: true },
       orderBy: { savedAt: 'desc' }
     });
@@ -42,8 +45,10 @@ export const saveVariation = async (req: AuthRequest, res: Response) => {
 };
 
 export const getProjects = async (req: AuthRequest, res: Response) => {
+  const user = req.user;
   try {
     const projects = await prisma.project.findMany({
+      where: { workspaceId: user?.workspaceId },
       orderBy: { createdAt: 'desc' }
     });
     res.json(projects);
@@ -54,10 +59,14 @@ export const getProjects = async (req: AuthRequest, res: Response) => {
 };
 
 export const createProject = async (req: AuthRequest, res: Response) => {
+  const user = req.user;
   const { name } = req.body;
   try {
     const project = await prisma.project.create({
-      data: { name }
+      data: { 
+        name,
+        workspaceId: user?.workspaceId
+      }
     });
     res.status(201).json(project);
   } catch (error) {
@@ -101,5 +110,21 @@ export const deleteProject = async (req: AuthRequest, res: Response) => {
   } catch (error) {
     console.error('deleteProject error:', error);
     res.status(500).json({ error: 'Error al eliminar proyecto' });
+  }
+};
+
+export const saveNegativeFeedback = async (req: AuthRequest, res: Response) => {
+  const { clientId, platform, content, reason } = req.body;
+  if (!clientId || !content || !reason) {
+    return res.status(400).json({ error: 'clientId, content y reason son obligatorios' });
+  }
+  try {
+    const entry = await prisma.negativeFeedback.create({
+      data: { clientId, platform: platform || '', content, reason }
+    });
+    res.status(201).json(entry);
+  } catch (error) {
+    console.error('saveNegativeFeedback error:', error);
+    res.status(500).json({ error: 'Error al guardar feedback negativo' });
   }
 };

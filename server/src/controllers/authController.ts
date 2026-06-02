@@ -4,22 +4,48 @@ import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { OAuth2Client } from 'google-auth-library';
+import { AuthRequest } from '../middleware/auth.js';
 
 const prisma = new PrismaClient();
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret';
 const MASTER_PASSWORD = process.env.MASTER_PASSWORD || 'Lobueno2025*';
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
-const authorizedDomains = ['buentipo.com', 'hermano.com', 'lobueno.co', 'antpack.co'];
+
+const DOMAIN_WORKSPACE: Record<string, { name: string; slug: string }> = {
+  'buentipo.com': { name: 'Buentipo', slug: 'buentipo' },
+  'hermano.com':  { name: 'Hermano',  slug: 'hermano'  },
+  'antpack.co':   { name: 'Antpack',  slug: 'antpack'  },
+  'lobueno.co':   { name: 'Lobueno',  slug: 'lobueno'  },
+};
+
+const authorizedDomains = Object.keys(DOMAIN_WORKSPACE);
+
+const resolveWorkspace = async (email: string) => {
+  const domain = email.split('@')[1];
+  const spec = DOMAIN_WORKSPACE[domain];
+  if (!spec) return null;
+  const existing = await prisma.workspace.findUnique({ where: { slug: spec.slug } });
+  if (existing) return existing;
+  return prisma.workspace.create({ data: { name: spec.name, slug: spec.slug, plan: 'agency' } });
+};
+
+const signToken = (user: { id: string; role: string; clientId: string | null; workspaceId: string | null }) =>
+  jwt.sign(
+    { userId: user.id, role: user.role, clientId: user.clientId, workspaceId: user.workspaceId },
+    JWT_SECRET,
+    { expiresIn: '24h' }
+  );
 
 const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
 
 export const register = async (req: Request, res: Response) => {
   const { email, password, name, role, clientId } = req.body;
-  
+
   try {
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) return res.status(400).json({ error: 'El usuario ya existe' });
 
+    const workspace = await resolveWorkspace(email);
     const isInternalDomain = authorizedDomains.some(domain => email.endsWith(`@${domain}`));
     const finalRole = isInternalDomain ? 'ADMIN' : (role || 'CLIENT');
 
@@ -30,7 +56,8 @@ export const register = async (req: Request, res: Response) => {
         passwordHash,
         name,
         role: finalRole,
-        clientId: isInternalDomain ? null : clientId
+        clientId: isInternalDomain ? null : clientId,
+        workspaceId: workspace?.id ?? null,
       }
     });
 
@@ -91,12 +118,13 @@ export const login = async (req: Request, res: Response) => {
       }
     }
 
-    const token = jwt.sign(
-      { userId: user.id, role: user.role, clientId: user.clientId },
-      JWT_SECRET,
-      { expiresIn: '24h' }
-    );
+    const workspace = await resolveWorkspace(user.email);
+    if (workspace && user.workspaceId !== workspace.id) {
+      await prisma.user.update({ where: { id: user.id }, data: { workspaceId: workspace.id } });
+      (user as any).workspaceId = workspace.id;
+    }
 
+    const token = signToken(user);
     res.json({
       token,
       user: {
@@ -104,6 +132,8 @@ export const login = async (req: Request, res: Response) => {
         name: user.name,
         email: user.email,
         role: user.role,
+        workspaceId: (user as any).workspaceId,
+        workspaceName: workspace?.name,
         client: user.client
       }
     });
@@ -164,12 +194,13 @@ export const googleLogin = async (req: Request, res: Response) => {
       });
     }
 
-    const token = jwt.sign(
-      { userId: user.id, role: user.role, clientId: user.clientId },
-      JWT_SECRET,
-      { expiresIn: '24h' }
-    );
+    const workspace = await resolveWorkspace(user.email);
+    if (workspace && user.workspaceId !== workspace.id) {
+      await prisma.user.update({ where: { id: user.id }, data: { workspaceId: workspace.id } });
+      (user as any).workspaceId = workspace.id;
+    }
 
+    const token = signToken(user);
     res.json({
       token,
       user: {
@@ -177,6 +208,8 @@ export const googleLogin = async (req: Request, res: Response) => {
         name: user.name,
         email: user.email,
         role: user.role,
+        workspaceId: (user as any).workspaceId,
+        workspaceName: workspace?.name,
         client: user.client
       }
     });
@@ -187,9 +220,10 @@ export const googleLogin = async (req: Request, res: Response) => {
   }
 };
 
-export const getUsers = async (req: Request, res: Response) => {
+export const getUsers = async (req: AuthRequest, res: Response) => {
   try {
     const users = await prisma.user.findMany({
+      where: { workspaceId: req.user?.workspaceId },
       include: { client: true },
       orderBy: { createdAt: 'desc' }
     });

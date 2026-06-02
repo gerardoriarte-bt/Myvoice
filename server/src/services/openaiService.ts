@@ -1,161 +1,199 @@
 import OpenAI from "openai";
-import { CopyParameters, GenerationResponse } from "../types.js";
-import {
-  buildLocaleRulesBlock,
-  buildSystemMessage,
-  resolveMarketLocale,
-} from "./localeRules.js";
+import { randomUUID } from "node:crypto";
+import { CopyParameters, GenerationResponse, CopyVariation, CampaignSpine, CoherenceReport } from "../types.js";
+import { getChannelSpec } from "../channels/registry.js";
+import { ChannelBrief, ChannelSpec } from "../channels/types.js";
+import { buildSystemPrompt, buildUserPrompt } from "../channels/promptBuilder.js";
+import { validateBatch } from "../channels/validators.js";
+import { buildCampaignSpine } from "./directorService.js";
+import { runCritic } from "./criticService.js";
+import { runAutoFix } from "./fixerService.js";
+import { runSuperCritic } from "./superCriticService.js";
+import { UsageEntry, extractUsage, aggregateUsage } from "./pricing.js";
+import { WorkspaceAIConfig, createAIClient, resolveModel } from "./aiClient.js";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+const buildBrief = (params: CopyParameters, spine: CampaignSpine): ChannelBrief => ({
+  spine,
+  funnelStage: params.funnelStage,
+  brand: {
+    name: params.clientName || "Cliente",
+    industry: params.clientIndustry || "",
+    voice: params.voice || "",
+    valueProposition: params.valueProposition || "",
+    brandVoiceGuidelines: params.brandVoiceGuidelines || "",
+    fingerprint: (params as any).brandFingerprint,
+  },
+  campaign: {
+    name: "",
+    product: params.product || "",
+    targetAudience: params.targetAudience || "",
+    goal: params.goal || "",
+    theme: params.theme || "",
+    keywords: params.keywords || "",
+    prohibitions: params.prohibitions || "",
+    primaryCTA: params.primaryCTA || "",
+  },
+  examples: (params.feedbackExamples || []).map(e => ({
+    platform: e.platform || "",
+    content: e.content || "",
+  })),
+  negativeExamples: (params.negativeExamples || []).map(e => ({
+    content: e.content,
+    reason: e.reason,
+  })),
 });
 
-const buildGenerationPrompt = (
-  params: CopyParameters,
-  options: { includeScore: boolean },
-): { prompt: string; systemMessage: string } => {
-  const locale = params.marketLocale ?? resolveMarketLocale(params);
-  const localeRules = buildLocaleRulesBlock(locale);
+const generateForChannel = async (
+  spec: ChannelSpec,
+  brief: ChannelBrief,
+  client: OpenAI,
+  writerModel: string,
+  miniModel: string,
+  usage?: UsageEntry[]
+): Promise<CopyVariation[]> => {
+  const system = buildSystemPrompt(brief);
+  const user = buildUserPrompt(brief, spec);
 
-  const feedbackBlock =
-    params.feedbackExamples && params.feedbackExamples.length > 0
-      ? `
-    HISTÓRICO DE ÉXITO (USA ESTOS EJEMPLOS COMO GUÍA DE ESTILO Y EFECTIVIDAD):
-    ${params.feedbackExamples.map((ex) => `- [${ex.platform}]: "${ex.content}"`).join("\n")}
-    `
-      : "";
-
-  const scoreBlock = options.includeScore
-    ? `
-    ESTRUCTURA DE RESPUESTA:
-    Debes responder con un objeto JSON válido que contenga un array "variations".
-    Cada variación DEBE incluir un "score" (1-10) que indique qué tan alineada está con el ADN estratégico.
-    `
-    : "";
-
-  const scoreField = options.includeScore ? '\n          "score": number' : "";
-
-  const prompt = `
-    Actúa como "My Voice", el motor de copy estratégico de Grupo LoBueno.
-    Tu misión es generar contenido para "${params.clientName}" basándote EXCLUSIVAMENTE en su ADN Estratégico.
-
-    ${scoreBlock}
-
-    ADN ESTRATÉGICO (PARÁMETROS OBLIGATORIOS):
-    - Propuesta de Valor: ${params.valueProposition}
-    - Guías de Voz: ${params.brandVoiceGuidelines}
-    - Tono: ${params.voice}
-    - Producto: ${params.product}
-    - Público: ${params.targetAudience}
-    - Objetivo: ${params.goal}
-    - CTA Principal: ${params.primaryCTA}
-    - Mensaje Central: ${params.theme}
-    - Keywords: ${params.keywords}
-
-    ${localeRules}
-
-    ${feedbackBlock}
-
-    REGLAS DE FORMATO:
-    1. Email: Estructura [ASUNTO] | [HEADER] | [BODY] | [CTA].
-    2. Push: [Título] | [Cuerpo] (Max 45/120 carac.).
-    3. WhatsApp: Negritas para énfasis, max 2 emojis.
-    4. Instagram: Hook inicial, 3-5 hashtags, [IDEA VISUAL: descripción]. Max 124 carac. (sin contar hashtags ni idea visual).
-    5. Google Ads: [Título] | [Descripción] (Max 30/90 carac.).
-    6. Pop up: [TÍTULO] | [CUERPO] | [CTA].
-
-    Genera exactamente 3 variaciones por cada una de estas plataformas: ${params.platforms.join(", ")}.
-    V1: Beneficio Directo.
-    V2: Curiosidad/Storytelling.
-    V3: Urgencia/Conversión.
-
-    Responde estrictamente en formato JSON con la siguiente estructura:
-    {
-      "variations": [
-        {
-          "id": "string",
-          "platform": "string",
-          "type": "Beneficio" | "Curiosidad" | "Urgencia",
-          "content": "string",
-          "charCount": number${scoreField}
-        }
-      ]
+  let raw: string | null = null;
+  try {
+    const response = await client.chat.completions.create({
+      model: writerModel,
+      messages: [
+        { role: "system", content: system },
+        { role: "user", content: user },
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.8,
+    });
+    const u = extractUsage(response, writerModel, `writer:${spec.id}`);
+    if (u && usage) usage.push(u);
+    raw = response.choices[0].message.content;
+  } catch (error: any) {
+    if (error?.status === 429 || error?.code === "insufficient_quota" || error?.message?.includes("insufficient_quota")) {
+      throw new Error("ALERTA_CREDITOS: Tu cuenta de OpenAI se quedó sin créditos o cuota.");
     }
-  `;
+    throw new Error(`Fallo en canal "${spec.id}": ${error?.message || "error desconocido"}`);
+  }
 
-  return { prompt, systemMessage: buildSystemMessage(locale) };
+  if (!raw) throw new Error(`Canal "${spec.id}" devolvió respuesta vacía.`);
+
+  let parsed: any;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    throw new Error(`Canal "${spec.id}" devolvió JSON inválido.`);
+  }
+
+  const items: any[] = Array.isArray(parsed.variations) ? parsed.variations : [];
+
+  const variations: CopyVariation[] = items.map((item, idx) => ({
+    id: randomUUID(),
+    platform: spec.id,
+    type: item.type || "Standard",
+    slot: item.slot || undefined,
+    variationIndex: typeof item.variationIndex === "number" ? item.variationIndex : idx + 1,
+    content: typeof item.content === "string" ? item.content : "",
+    charCount: typeof item.content === "string" ? item.content.length : 0,
+    score: typeof item.score === "number" ? item.score : undefined,
+    scoreRationale: typeof item.scoreRationale === "string" ? item.scoreRationale : undefined,
+  }));
+
+  const validated = validateBatch(variations, spec, brief.campaign.prohibitions);
+  const critiqued = await runCritic(brief, spec, validated, client, miniModel, usage);
+  const autofixed = await runAutoFix(brief, spec, critiqued, client, miniModel, usage);
+  return autofixed;
+};
+
+export type StreamEvent =
+  | { type: "spine"; payload: CampaignSpine }
+  | { type: "channel"; payload: { platform: string; variations: CopyVariation[] } }
+  | { type: "channel-error"; payload: { platform: string; message: string } }
+  | { type: "coherence"; payload: CoherenceReport }
+  | { type: "usage"; payload: ReturnType<typeof aggregateUsage> }
+  | { type: "done" };
+
+const runGeneration = async (
+  params: CopyParameters,
+  aiConfig: WorkspaceAIConfig,
+  emit: (event: StreamEvent) => void
+): Promise<void> => {
+  const requested = (params.platforms || []) as unknown as string[];
+  if (!requested.length) throw new Error("No se seleccionaron canales.");
+
+  const specs = requested
+    .map(id => getChannelSpec(id))
+    .filter((s): s is ChannelSpec => Boolean(s));
+
+  if (specs.length === 0) throw new Error("Ninguno de los canales seleccionados está soportado.");
+
+  const client = createAIClient(aiConfig);
+  const writerModel = resolveModel(aiConfig, false);
+  const miniModel = resolveModel(aiConfig, true);
+
+  const usage: UsageEntry[] = [];
+
+  const spine = await buildCampaignSpine(params, client, miniModel, usage);
+  const brief = buildBrief(params, spine);
+  emit({ type: "spine", payload: spine });
+
+  const allVariations: CopyVariation[] = [];
+  await Promise.all(
+    specs.map(async spec => {
+      try {
+        const variations = await generateForChannel(spec, brief, client, writerModel, miniModel, usage);
+        allVariations.push(...variations);
+        emit({ type: "channel", payload: { platform: spec.id, variations } });
+      } catch (error: any) {
+        emit({
+          type: "channel-error",
+          payload: { platform: spec.id, message: error?.message || "Error desconocido" },
+        });
+      }
+    })
+  );
+
+  if (allVariations.length > 0) {
+    const coherence = await runSuperCritic(brief.brand.name, spine, allVariations, brief.campaign.prohibitions, client, miniModel, usage);
+    if (coherence) emit({ type: "coherence", payload: coherence });
+  }
+
+  emit({ type: "usage", payload: aggregateUsage(usage) });
+  emit({ type: "done" });
 };
 
 export const generateCopyWithOpenAI = async (
   params: CopyParameters,
+  aiConfig: WorkspaceAIConfig
 ): Promise<GenerationResponse> => {
-  const { prompt, systemMessage } = buildGenerationPrompt(params, {
-    includeScore: false,
+  const collected: CopyVariation[] = [];
+  let spine: CampaignSpine | undefined;
+  let coherence: CoherenceReport | undefined;
+  let usageReport: any | undefined;
+
+  await runGeneration(params, aiConfig, event => {
+    if (event.type === "spine") spine = event.payload;
+    else if (event.type === "channel") collected.push(...event.payload.variations);
+    else if (event.type === "coherence") coherence = event.payload;
+    else if (event.type === "usage") usageReport = event.payload;
+    else if (event.type === "channel-error") {
+      if (event.payload.message.includes("ALERTA_CREDITOS")) {
+        throw new Error(event.payload.message);
+      }
+    }
   });
 
-  try {
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        { role: "system", content: systemMessage },
-        { role: "user", content: prompt },
-      ],
-      response_format: { type: "json_object" },
-    });
-
-    const content = response.choices[0].message.content;
-    if (!content) {
-      throw new Error("No content received from OpenAI");
-    }
-
-    const parsed = JSON.parse(content);
-    return parsed as GenerationResponse;
-  } catch (error: any) {
-    console.error("OpenAI Error:", error);
-
-    if (
-      error?.status === 429 ||
-      error?.code === "insufficient_quota" ||
-      error?.message?.includes("insufficient_quota")
-    ) {
-      throw new Error(
-        "ALERTA_CREDITOS: Tu cuenta de OpenAI se ha quedado sin créditos o límite de cuota. Por favor recarga tu saldo de OpenAI para seguir generando copy.",
-      );
-    }
-
-    throw new Error(
-      "Fallo en la generación de IA: " + (error?.message || "Error desconocido"),
-    );
-  }
+  return { variations: collected, spine, coherence, usage: usageReport };
 };
 
 export const streamGenerateCopyWithOpenAI = async (
   params: CopyParameters,
-  onChunk: (chunk: string) => void,
+  aiConfig: WorkspaceAIConfig,
+  emitEvent: (event: StreamEvent) => void
 ): Promise<void> => {
-  const { prompt, systemMessage } = buildGenerationPrompt(params, {
-    includeScore: true,
-  });
-
   try {
-    const stream = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        { role: "system", content: systemMessage },
-        { role: "user", content: prompt },
-      ],
-      stream: true,
-      response_format: { type: "json_object" },
-    });
-
-    for await (const chunk of stream) {
-      const content = chunk.choices[0]?.delta?.content || "";
-      if (content) {
-        onChunk(content);
-      }
-    }
+    await runGeneration(params, aiConfig, emitEvent);
   } catch (error: any) {
-    console.error("OpenAI Stream Error:", error);
+    console.error("Orchestrator error:", error);
     throw error;
   }
 };

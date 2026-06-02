@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { authApi } from '../services/api';
 import { GoogleLogin } from '@react-oauth/google';
@@ -17,87 +16,41 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
-
     try {
       const data = await authApi.login({ email, password });
-      // Normalize role from DB (ADMIN/CLIENT) to Frontend (Admin/Cliente)
       const normalizedUser = {
         ...data.user,
         role: data.user.role === 'ADMIN' ? 'Admin' : 'Cliente'
       };
       onLoginSuccess(normalizedUser, data.token);
     } catch (err: any) {
-      setError(err.message || 'Error al iniciar sesión');
+      setError(err.message || 'Credenciales incorrectas');
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 px-6">
-      <div className="max-w-md w-full">
-        <div className="text-center mb-10">
-          <div className="text-4xl md:text-5xl font-black text-slate-900 tracking-tighter uppercase relative inline-block">
-            MY <span className="text-gradient">VOICE</span>
-            <span className="absolute -top-3 -right-12 text-[7px] font-black text-white bg-slate-900 px-1.5 py-0.5 rounded-full uppercase tracking-widest rotate-6 shadow-sm">BETA</span>
+    <div className="min-h-screen flex flex-col items-center justify-center px-6" style={{ background: '#F5F5F7' }}>
+
+      {/* Card */}
+      <div className="w-full max-w-[340px]">
+
+        {/* Logo mark */}
+        <div className="flex flex-col items-center mb-8">
+          <div className="w-12 h-12 rounded-[13px] bg-[#1D1D1F] flex items-center justify-center mb-4 shadow-lg">
+            <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+            </svg>
           </div>
+          <h1 className="text-[22px] font-semibold text-[#1D1D1F] tracking-[-0.02em] leading-tight">My Voice</h1>
+          <p className="text-[13px] text-[#6E6E73] mt-1">Accedé con tu cuenta corporativa</p>
         </div>
 
-        <div className="bg-white p-10 rounded-[2.5rem] shadow-2xl border border-slate-200">
-          <h2 className="text-2xl font-black text-slate-900 mb-8 uppercase tracking-tight">Acceso al Motor</h2>
-          
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Email corporativo</label>
-              <input
-                type="email"
-                required
-                className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-sm font-medium focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all outline-none"
-                placeholder="nombre@grupolobueno.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
-            
-            <div>
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Contraseña</label>
-              <input
-                type="password"
-                required
-                className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-sm font-medium focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all outline-none"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-            </div>
+        {/* Form card */}
+        <div className="apple-card p-6 space-y-4">
 
-            {error && (
-              <div className="bg-red-50 text-red-600 text-[11px] font-bold px-4 py-3 rounded-xl border border-red-100 uppercase tracking-wide">
-                {error}
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full bg-slate-900 text-white rounded-2xl py-4 text-[11px] font-black uppercase tracking-[0.2em] shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:scale-100"
-            >
-              {isLoading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <div className="w-3 h-3 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
-                  Iniciando...
-                </span>
-              ) : (
-                'Entrar al Engine'
-              )}
-            </button>
-          </form>
-
-          <div className="relative my-8 text-center">
-            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-100"></div></div>
-            <span className="relative px-4 bg-white text-[9px] font-black text-slate-300 uppercase tracking-widest">o bien</span>
-          </div>
-
+          {/* Google */}
           <div className="flex justify-center">
             <GoogleLogin
               onSuccess={async (credentialResponse) => {
@@ -118,20 +71,74 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                   }
                 }
               }}
-              onError={() => {
-                setError('Error al iniciar sesión con Google');
-              }}
+              onError={() => setError('Error al iniciar sesión con Google')}
               useOneTap
               theme="outline"
               shape="pill"
               text="signin_with"
+              width="288"
             />
           </div>
+
+          {/* Divider */}
+          <div className="flex items-center gap-3">
+            <div className="flex-1 h-px bg-[rgba(0,0,0,0.07)]" />
+            <span className="text-[11px] text-[#86868B]">o</span>
+            <div className="flex-1 h-px bg-[rgba(0,0,0,0.07)]" />
+          </div>
+
+          {/* Email + password */}
+          <form onSubmit={handleSubmit} className="space-y-3">
+            <div className="space-y-2">
+              <input
+                type="email"
+                required
+                autoComplete="email"
+                placeholder="Email corporativo"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="apple-input w-full px-4 py-2.5"
+              />
+              <input
+                type="password"
+                required
+                autoComplete="current-password"
+                placeholder="Contraseña"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="apple-input w-full px-4 py-2.5"
+              />
+            </div>
+
+            {error && (
+              <div className="text-[12px] text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2.5 leading-snug">
+                {error}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="apple-btn-primary w-full py-2.5 flex items-center justify-center gap-2"
+            >
+              {isLoading ? (
+                <>
+                  <svg className="w-3.5 h-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3"/>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                  </svg>
+                  Ingresando...
+                </>
+              ) : 'Ingresar'}
+            </button>
+          </form>
         </div>
 
-        <p className="text-center mt-8 text-slate-400 font-bold uppercase text-[9px] tracking-widest">
-          Propiedad Exclusiva de Grupo LoBueno
-        </p>
+        {/* Powered by */}
+        <div className="flex flex-col items-center gap-2 mt-8">
+          <span className="text-[10px] uppercase tracking-[0.12em] text-[#86868B]">Powered by</span>
+          <img src="/LobuenoLogo.png" alt="LoBueno" className="h-[14px] w-auto opacity-50" />
+        </div>
       </div>
     </div>
   );
