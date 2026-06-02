@@ -29,11 +29,17 @@ export const generateCopyVariations = async (params: CopyParameters): Promise<Ge
 
     ${feedbackBlock}
 
+    REGLAS DE IDIOMA (OBLIGATORIO):
+    - Español de Colombia / latino neutro profesional. Audiencia principal: Colombia.
+    - PROHIBIDO voseo y modismos argentinos (vos, andás, querés, che, boludo, laburo, etc.).
+    - PROHIBIDO modismos mexicanos o español de España (vosotros, ordenador).
+    - Usa léxico natural en Colombia: tú/usted según marca, celular, gasolina/combustible, redimir, acumular.
+
     REGLAS DE FORMATO (STRICT):
     1. Email: Estructura de 4 bloques separados por guiones: [ASUNTO] - [HEADER] - [BODY] - [CTA]. 
     2. Push: [Título] | [Cuerpo] (Max 45/120 carac.).
     3. WhatsApp: Negritas para énfasis, max 2 emojis, CTA basado en "${params.primaryCTA}".
-    4. Instagram: Hook en línea 1, 3-5 hashtags, Idea visual en [IDEA VISUAL: descripción].
+    4. Instagram: Hook en línea 1, 3-5 hashtags, Idea visual en [IDEA VISUAL: descripción]. Max 124 carac. (sin contar hashtags ni idea visual).
     5. Google Ads: [Título] | [Descripción] (Max 30/90 carac.).
     6. Pop up: [TÍTULO] | [CUERPO] | [CTA].
 

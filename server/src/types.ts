@@ -66,6 +66,7 @@ export interface CopyParameters {
   clientId: string;
   clientName?: string;
   clientIndustry?: string;
+  marketLocale?: 'es-CO' | 'es-AR' | 'es-MX' | 'es-419';
   feedbackExamples?: FeedbackExample[];
 }
 

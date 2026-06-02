@@ -426,7 +426,7 @@ const ClientManager: React.FC<ClientManagerProps> = ({
                               <label className={labelStyle + " !text-slate-400"}>Reglas y Estilo (Guidelines)</label>
                               <textarea 
                                 className="w-full bg-white/10 border border-white/20 text-white rounded-xl px-4 py-3 text-[11px] font-bold outline-none focus:border-white transition-all resize-none h-24 placeholder:text-slate-500"
-                                placeholder="Palabras bloqueadas, estilo gramatical..."
+                                placeholder="Palabras bloqueadas, estilo gramatical. Ej: español Colombia, sin voseo ni modismos argentinos..."
                                 value={client.brandVoiceGuidelines || ''}
                                 onChange={e => onUpdate(client.id, { brandVoiceGuidelines: e.target.value })}
                               />

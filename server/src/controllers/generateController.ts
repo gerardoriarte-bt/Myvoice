@@ -31,6 +31,7 @@ export const generateCopy = async (req: AuthRequest, res: Response) => {
     const generationParams = {
       ...params,
       clientName: client.name,
+      clientIndustry: client.industry,
       // Priority: Client Global DNA > Brief DNA (Fallback)
       valueProposition: client.valueProposition || dnaProfile.valueProposition,
       brandVoiceGuidelines: client.brandVoiceGuidelines || dnaProfile.brandVoiceGuidelines,
@@ -81,6 +82,7 @@ export const generateCopyStream = async (req: AuthRequest, res: Response) => {
     const generationParams = {
       ...params,
       clientName: client.name,
+      clientIndustry: client.industry,
       valueProposition: client.valueProposition || dnaProfile.valueProposition,
       brandVoiceGuidelines: client.brandVoiceGuidelines || dnaProfile.brandVoiceGuidelines,
       voice: client.voice || dnaProfile.voice,
