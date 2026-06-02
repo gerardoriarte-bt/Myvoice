@@ -246,9 +246,7 @@ export default function HelpGuide() {
         <p style={{ margin: 0, fontSize: 14, color: '#3D3D3F', lineHeight: 1.65 }}>
           Todo el sistema opera sobre el ADN de tu marca — voz, propuesta de valor, guías, prohibiciones — para que el output siempre suene <em>inconfundiblemente</em> a tu marca, no a copy genérico de agencia.
         </p>
-        <Tip>
-          Para generar contenido real necesitás configurar una API Key en la sección Settings. Sin API key, podés explorar la herramienta con el modo <strong>Vista previa demo</strong> en la pestaña Generate.
-        </Tip>
+
       </Section>
 
       {/* ── 2. El motor en 5 capas ── */}
@@ -375,10 +373,7 @@ export default function HelpGuide() {
           ))}
         </div>
 
-        <h3 style={{ fontSize: 14, fontWeight: 700, color: '#1D1D1F', margin: '20px 0 10px' }}>Vista previa demo</h3>
-        <p style={{ margin: '0 0 8px', fontSize: 14, color: '#3D3D3F', lineHeight: 1.65 }}>
-          Usá el botón <strong>"Vista previa demo"</strong> para generar contenido de ejemplo con datos ficticios, sin consumir créditos de API. Útil para mostrar la herramienta a clientes o explorar el formato de salida.
-        </p>
+
 
         <h3 style={{ fontSize: 14, fontWeight: 700, color: '#1D1D1F', margin: '20px 0 10px' }}>Barra de progreso en tiempo real</h3>
         <p style={{ margin: 0, fontSize: 14, color: '#3D3D3F', lineHeight: 1.65 }}>

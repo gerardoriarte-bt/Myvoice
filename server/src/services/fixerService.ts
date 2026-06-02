@@ -32,7 +32,7 @@ const buildFixPrompt = (
   if (v.editorFlags?.includes("prohibition-paraphrase")) issues.push(`Usa una paráfrasis cercana de una prohibición (zona semántica vetada): ${brief.campaign.prohibitions}.`);
 
   return `
-Sos editor de copy. Una variación rompe reglas duras y hay que reescribirla SIN cambiar su intent.
+Eres editor de copy. Una variación rompe reglas duras y hay que reescribirla SIN cambiar su intent.
 
 ## MARCA Y CAMPAÑA
 - Marca: "${brief.brand.name}"
@@ -76,7 +76,7 @@ const fixOne = async (
     const response = await client.chat.completions.create({
       model,
       messages: [
-        { role: "system", content: "Sos editor de copy especializado en respetar restricciones duras. Respondés SOLO en JSON válido." },
+        { role: "system", content: "Eres editor de copy especializado en respetar restricciones duras. Respondés SOLO en JSON válido." },
         { role: "user", content: buildFixPrompt(brief, spec, v) },
       ],
       response_format: { type: "json_object" },

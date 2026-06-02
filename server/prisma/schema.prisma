@@ -22,7 +22,7 @@ model Workspace {
   plan        String    @default("agency")
 
   // AI provider config (optional — falls back to server env vars)
-  aiProvider  String?   // "openai" | "anthropic" | "gemini"
+  aiProvider  String?   // "openai" | "anthropic" | "gemini" | "openrouter"
   aiApiKey    String?   @db.Text
   aiModel     String?   // optional model override
 

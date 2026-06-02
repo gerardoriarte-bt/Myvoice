@@ -5,7 +5,6 @@ import { PlatformIcon } from './ui/platformIcons';
 
 interface ParameterFormProps {
   onSubmit: (params: CopyParameters) => void;
-  onDemoSubmit?: (params: CopyParameters) => void;
   isLoading: boolean;
   clients: Client[];
   dnaProfiles: ContentDNAProfile[];
@@ -15,13 +14,14 @@ interface ParameterFormProps {
 
 const ParameterForm: React.FC<ParameterFormProps> = ({
   onSubmit,
-  onDemoSubmit,
   isLoading,
   clients,
   dnaProfiles,
   defaultClientId,
   onNavigateToClients,
 }) => {
+
+
   const [clientId, setClientId] = React.useState(defaultClientId || '');
   const [activeProfileId, setActiveProfileId] = React.useState<string | null>(null);
   const [selectedPlatforms, setSelectedPlatforms] = React.useState<Platform[]>([]);
@@ -73,12 +73,8 @@ const ParameterForm: React.FC<ParameterFormProps> = ({
     if (p) onSubmit(p);
   };
 
-  const handleDemo = () => {
-    const p = buildParams();
-    if (p && onDemoSubmit) onDemoSubmit(p);
-  };
-
   const clientProfiles = dnaProfiles.filter(p => p.clientId === clientId);
+
   const activeClient = clients.find(c => c.id === clientId);
   const activeProfile = clientProfiles.find(p => p.id === activeProfileId);
   const canSubmit = !isLoading && !!activeProfileId && selectedPlatforms.length > 0;
@@ -261,24 +257,8 @@ const ParameterForm: React.FC<ParameterFormProps> = ({
             : <><Sparkles className="w-3.5 h-3.5" />Generar campaña{selectedPlatforms.length > 0 ? ` (${selectedPlatforms.length} canal${selectedPlatforms.length === 1 ? '' : 'es'})` : ''}</>}
         </button>
 
-        {onDemoSubmit && (
-          <button
-            type="button"
-            onClick={handleDemo}
-            disabled={!activeProfileId || selectedPlatforms.length === 0 || isLoading}
-            className={`w-full py-2 rounded-lg font-medium text-[12px] transition-all flex items-center justify-center gap-2 border ${
-              !activeProfileId || selectedPlatforms.length === 0 || isLoading
-                ? 'bg-gray-50 text-gray-400 cursor-not-allowed border-gray-200'
-                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-            }`}
-            title="Genera con datos mock — no consume créditos OpenAI"
-          >
-            <span className="text-[10px] font-medium uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-200">Demo</span>
-            Vista previa sin API
-          </button>
-        )}
-
         {activeProfile && (
+
           <div className="pt-1 flex items-center justify-center gap-1.5 text-[10px] text-gray-500">
             <Zap className="w-3 h-3" />
             <span>Director + {selectedPlatforms.length} especialistas + editor + auditoría</span>

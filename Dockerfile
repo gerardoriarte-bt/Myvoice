@@ -2,12 +2,14 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
 
+ARG VITE_GOOGLE_CLIENT_ID
+ENV VITE_GOOGLE_CLIENT_ID=$VITE_GOOGLE_CLIENT_ID
+
 COPY package*.json ./
 RUN npm ci
 
 COPY . .
 
-# VITE_API_URL queda como /api por defecto — nginx hace el proxy
 RUN npm run build
 
 # ── Stage 2: nginx ──────────────────────────────────────────────

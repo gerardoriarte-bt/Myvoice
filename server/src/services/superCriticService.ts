@@ -28,7 +28,7 @@ const buildPrompt = (
     .join("\n\n");
 
   return `
-Sos director creativo. Tu trabajo es auditar la COHERENCIA de campaña ENTRE canales — no la calidad pieza por pieza.
+Eres director creativo. Tu trabajo es auditar la COHERENCIA de campaña ENTRE canales — no la calidad pieza por pieza.
 
 La pregunta clave: ¿este deck se siente como UNA campaña, o como N marcas distintas hablando del mismo producto?
 
@@ -95,7 +95,7 @@ export const runSuperCritic = async (
     const response = await client.chat.completions.create({
       model,
       messages: [
-        { role: "system", content: "Sos director creativo senior. Auditás coherencia entre canales. Severo pero justo. Respondés SOLO en JSON válido." },
+        { role: "system", content: "Eres director creativo senior. Auditas coherencia entre canales. Severo pero justo. Respondés SOLO en JSON válido." },
         { role: "user", content: buildPrompt(brandName, spine, variations, prohibitions) },
       ],
       response_format: { type: "json_object" },

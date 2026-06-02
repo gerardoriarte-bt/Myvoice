@@ -4,14 +4,11 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        VITE_GOOGLE_CLIENT_ID: 551023116121-vc95tnddq6h1944gi4hbgjobj04884ot.apps.googleusercontent.com
     container_name: myvoice_frontend
     ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      # Certbot certificates (HTTPS)
-      - /etc/letsencrypt:/etc/letsencrypt:ro
-      - /var/www/certbot:/var/www/certbot:ro
+      - "127.0.0.1:8080:80"
     depends_on:
       - backend
     restart: unless-stopped
@@ -22,18 +19,26 @@ services:
       dockerfile: Dockerfile
     container_name: myvoice_backend
     env_file: ./server/.env.production
-    expose:
-      - "3001"
+    ports:
+      - "127.0.0.1:3001:3001"
     volumes:
-      # Persist uploads folder (si no migraste a S3 todavía)
       - uploads_data:/app/uploads
+    networks:
+      - default
+      - postgres_net
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:3001/health"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 20s
+      start_period: 40s
 
 volumes:
   uploads_data:
+
+networks:
+  default:
+  postgres_net:
+    external: true
+    name: my-voice_default

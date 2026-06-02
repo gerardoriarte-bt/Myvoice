@@ -17,7 +17,7 @@ export interface ExtractedBrand {
 const MAX_CHARS = 18000; // ~5k tokens, suficiente para guidelines típicos
 
 const buildExtractionPrompt = (text: string, clientName: string, industry: string) => `
-Sos un analista de marca. Recibís el documento de "Brand Guidelines" / "Manual de Marca" de ${clientName} (rubro: ${industry}) y debés extraer SOLO la información que sirve para generar copy alineado.
+Eres un analista de marca. Recibes el documento de "Brand Guidelines" / "Manual de Marca" de ${clientName} (rubro: ${industry}) y debes extraer SOLO la información que sirve para generar copy alineado.
 
 NO inventes nada. Si un campo no está claro en el documento, devolvé string vacío. Es preferible vacío a especulativo.
 
@@ -60,7 +60,7 @@ export const extractBrandFromPdf = async (
   const response = await openai.chat.completions.create({
     model: "gpt-4o",
     messages: [
-      { role: "system", content: "Sos un analista de marca. Extraés información estructurada de manuales de marca. Respondés SOLO en JSON válido." },
+      { role: "system", content: "Eres un analista de marca. Extraes información estructurada de manuales de marca. Respondés SOLO en JSON válido." },
       { role: "user", content: buildExtractionPrompt(text, clientName, industry) },
     ],
     response_format: { type: "json_object" },

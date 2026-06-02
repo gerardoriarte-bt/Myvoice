@@ -68,7 +68,7 @@ const computeStats = (texts: string[]): DeterministicStats => {
 };
 
 const buildQualPrompt = (texts: string[], stats: DeterministicStats): string => `
-Sos lingüista de marca. Analizá esta muestra de copy aprobado y devolvé el fingerprint cualitativo.
+Eres lingüista de marca. Analiza esta muestra de copy aprobado y devolvé el fingerprint cualitativo.
 
 ## MÉTRICAS DETERMINÍSTICAS YA CALCULADAS (usalas como contexto, no las recalcules)
 - Muestra: ${stats.sampleSize} textos, ${stats.totalChars} caracteres
@@ -83,7 +83,7 @@ ${texts.map((t, i) => `[${i + 1}] "${t.replace(/"/g, '\\"')}"`).join("\n")}
 ## DEVOLVÉ JSON con:
 - "archetype": 1 de los 12 arquetipos clásicos (Sabio, Inocente, Explorador, Rebelde, Mago, Héroe, Amante, Bufón, Hombre Común, Cuidador, Gobernante, Creador). Elegí EL que mejor describe esta marca según el copy.
 - "archetypeRationale": 1 línea explicando por qué — citando un ejemplo concreto del copy.
-- "personaGramatical": qué persona usa la marca ("1ra plural — 'creemos', 'hicimos'", "2da informal — 'vos sabés'", "3ra omnisciente", o "mixta — describir cuál mezcla").
+- "personaGramatical": qué persona usa la marca ("1ra plural — 'creemos', 'hicimos'", "2da informal — tú/usted según marca", "3ra omnisciente", o "mixta — describir cuál mezcla").
 - "toneSummary": 1-2 líneas describiendo el tono de manera CONCRETA (no "cercano y profesional"). Ej: "ritmo entrecortado, frases de 5-7 palabras, repetición intencional, tendencia a la confesión negativa".
 - "linguisticTics": array de 3-5 tics OBSERVABLES en el copy. Ej: "abre con negación ('No inventamos…')", "usa repetición rítmica ('Hoy. Hoy.')", "termina con preguntas retóricas". Citá ejemplos.
 - "favoriteWords": array de 5-10 palabras/expresiones que la marca usa repetidamente (no genéricas — específicas).
@@ -114,7 +114,7 @@ export const computeBrandFingerprint = async (
   const response = await openai.chat.completions.create({
     model: "gpt-4o",
     messages: [
-      { role: "system", content: "Sos lingüista de marca. Tu output siempre es JSON válido." },
+      { role: "system", content: "Eres lingüista de marca. Tu output siempre es JSON válido." },
       { role: "user", content: buildQualPrompt(cleaned, stats) },
     ],
     response_format: { type: "json_object" },

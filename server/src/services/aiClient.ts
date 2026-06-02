@@ -1,6 +1,6 @@
 import OpenAI from "openai";
 
-export type AIProvider = "openai" | "anthropic" | "gemini";
+export type AIProvider = "openai" | "anthropic" | "gemini" | "openrouter";
 
 export interface WorkspaceAIConfig {
   provider: AIProvider;
@@ -8,27 +8,31 @@ export interface WorkspaceAIConfig {
   model?: string; // override default model
 }
 
-// All three providers expose an OpenAI-compatible REST API,
+// All providers expose an OpenAI-compatible REST API,
 // so we can use the OpenAI SDK for all of them — just swap baseURL + apiKey.
 const BASE_URLS: Record<AIProvider, string | undefined> = {
-  openai:    undefined, // SDK default (api.openai.com)
-  anthropic: "https://api.anthropic.com/v1",
-  gemini:    "https://generativelanguage.googleapis.com/v1beta/openai",
+  openai:     undefined, // SDK default (api.openai.com)
+  anthropic:  "https://api.anthropic.com/v1",
+  gemini:     "https://generativelanguage.googleapis.com/v1beta/openai",
+  openrouter: "https://openrouter.ai/api/v1",
 };
 
 // Default models per provider (writer quality)
 export const DEFAULT_MODELS: Record<AIProvider, string> = {
-  openai:    "gpt-4o",
-  anthropic: "claude-sonnet-4-6",
-  gemini:    "gemini-2.0-flash",
+  openai:     "gpt-4o",
+  anthropic:  "claude-sonnet-4-6",
+  gemini:     "gemini-2.0-flash",
+  openrouter: "google/gemini-2.0-flash-001",
 };
 
 // Cheaper / faster models for critic / director roles
 export const MINI_MODELS: Record<AIProvider, string> = {
-  openai:    "gpt-4o-mini",
-  anthropic: "claude-haiku-4-5-20251001",
-  gemini:    "gemini-2.0-flash",
+  openai:     "gpt-4o-mini",
+  anthropic:  "claude-haiku-4-5-20251001",
+  gemini:     "gemini-2.0-flash",
+  openrouter: "openai/gpt-4o-mini",
 };
+
 
 export const createAIClient = (config: WorkspaceAIConfig): OpenAI =>
   new OpenAI({
@@ -47,8 +51,22 @@ export const resolveModel = (config: WorkspaceAIConfig, mini = false): string =>
 };
 
 // Fallback: server-level config from env vars (used when workspace has no custom key)
-export const serverAIConfig = (): WorkspaceAIConfig => ({
-  provider: (process.env.AI_PROVIDER as AIProvider) || "openai",
-  apiKey:   process.env.OPENAI_API_KEY || "",
-  model:    process.env.AI_MODEL,
-});
+export const serverAIConfig = (): WorkspaceAIConfig => {
+  const provider = (process.env.AI_PROVIDER as AIProvider) || "openai";
+  let apiKey = process.env.OPENAI_API_KEY || "";
+  
+  if (provider === "openrouter") {
+    apiKey = process.env.OPENROUTER_API_KEY || apiKey;
+  } else if (provider === "anthropic") {
+    apiKey = process.env.ANTHROPIC_API_KEY || apiKey;
+  } else if (provider === "gemini") {
+    apiKey = process.env.GEMINI_API_KEY || apiKey;
+  }
+
+  return {
+    provider,
+    apiKey,
+    model: process.env.AI_MODEL,
+  };
+};
+

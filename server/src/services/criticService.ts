@@ -20,7 +20,7 @@ const buildCriticPrompt = (
     .join("\n\n");
 
   return `
-Sos editor senior de marca. Tu trabajo es re-evaluar el copy que escribió el copywriter.
+Eres editor senior de marca. Tu trabajo es re-evaluar el copy que escribió el copywriter.
 El score que él se puso es típicamente generoso. Tu trabajo es ser severo pero justo.
 
 ## MARCA
@@ -87,7 +87,7 @@ export const runCritic = async (
     const response = await client.chat.completions.create({
       model,
       messages: [
-        { role: "system", content: "Sos editor senior de marca. Severo pero justo. Respondés SOLO en JSON válido." },
+        { role: "system", content: "Eres editor senior de marca. Severo pero justo. Respondés SOLO en JSON válido." },
         { role: "user", content: prompt },
       ],
       response_format: { type: "json_object" },

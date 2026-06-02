@@ -4,14 +4,15 @@ import { renderFingerprintForPrompt } from "../services/voiceFingerprintService.
 
 const FUNNEL_HINT: Record<FunnelStage, string> = {
   [FunnelStage.AWARENESS]:
-    "Awareness — el público NO conoce todavía. Educá / revelá. Sin CTAs duros de compra.",
+    "Awareness — el público NO conoce todavía. Educa / revela. Sin CTAs duros de compra.",
   [FunnelStage.CONSIDERATION]:
-    "Consideración — el público compara. Diferenciá vs alternativas. CTAs intermedios (probá / simulá).",
+    "Consideración — el público compara. Diferencia vs alternativas. CTAs intermedios (prueba / simula).",
   [FunnelStage.CONVERSION]:
-    "Conversión — el público está listo. Empujá la decisión: urgencia real, garantía, manejo de objeción.",
+    "Conversión — el público está listo. Empuja la decisión: urgencia real, garantía, manejo de objeción.",
   [FunnelStage.RETENTION]:
-    "Retención — el cliente ya compró. Reforzá decisión, abrí cross-sell, premiá fidelidad."
+    "Retención — el público ya compró. Refuerza decisión, abre cross-sell, premia fidelidad."
 };
+
 
 const renderSlotSpec = (slot: SlotSpec): string => {
   const range =
@@ -45,7 +46,7 @@ const renderNegativeExamples = (brief: ChannelBrief): string => {
 ${items.join("\n")}
 
 Estos son fallos reales rechazados por el equipo. NO reproduzcas su tono, estructura ni gancho.
-Si una variación tuya recuerda a alguno de estos, descartá y reescribí desde otra premisa.
+Si una variación tuya recuerda a alguno de estos, descarta y reescribe desde otra premisa.
 `;
 };
 
@@ -80,14 +81,15 @@ ${own.slice(0, 4).map(e => `- "${e.content}"`).join("\n")}
  * Cacheable prefix.
  */
 export const buildSystemPrompt = (brief: ChannelBrief): string => `
-Sos copywriter especialista. Conocés los límites técnicos y la lógica nativa de cada canal al milímetro.
-Trabajás para "${brief.brand.name}" — y tu única vara es: el copy debe sonar inconfundiblemente como esta marca.
+Eres un copywriter especialista con estilo de redacción de Colombia.
+Conoces los límites técnicos y la lógica nativa de cada canal al milímetro.
+Trabajas para "${brief.brand.name}" y tu lenguaje debe ser natural, cercano y utilizar el español de Colombia (evitando modismos de otros países como Argentina o España, a menos que se especifique lo contrario).
 
-TEST OBLIGATORIO antes de devolver cada variación: ¿esto suena a alguien de "${brief.brand.name}" hablándole a un amigo, o a una agencia escribiendo para un cliente? Si es lo segundo, descartá y reescribí.
+TEST OBLIGATORIO antes de devolver cada variación: ¿Esto suena a alguien de "${brief.brand.name}" hablándole a un amigo en Colombia, o a una agencia escribiendo para un cliente? Si es lo segundo, descarta y reescribe.
 
-Si una variación rompe un límite de caracteres/palabras, contá de nuevo y acortá. Si usa una palabra prohibida (o paráfrasis cercana), reescribilo.
+Si una variación rompe un límite de caracteres/palabras, cuenta de nuevo y acorta. Si usa una palabra prohibida, reescribe.
 
-Respondés SOLO en JSON válido. Sin texto fuera del JSON.
+Respondes SOLO en JSON válido. Sin texto fuera del JSON.
 `.trim();
 
 /**
@@ -161,15 +163,15 @@ ${conceptLiteralRule}
 ${slotBlock}
 
 ## REGLAS — ORDEN DE PRIORIDAD (si hay conflicto, gana la regla más arriba)
-1. **Límites de caracteres/palabras** del slot. Contá ANTES de devolver. Si te pasás, acortá.
+1. **Límites de caracteres/palabras** del slot. Cuenta ANTES de devolver. Si te pasas, acorta.
 2. **Prohibiciones**: las palabras listadas y sus paráfrasis cercanas (zona semántica) están prohibidas.
 3. **Concepto creativo**: literal en slots cortos según la regla declarada arriba; expansión coherente en slots largos.
 4. **Tono y guías de voz** de la marca.
 5. **Ángulo asignado** a cada variación.
 
 ## SCORING (rúbrica 1-10) por variación
-- 5 pts — ¿Inconfundiblemente "${brief.brand.name}"? Si podría ser otra marca del rubro, restá puntos.
-- 3 pts — ¿Cumple budget de slot Y respeta prohibiciones? Si no, máx 5 puntos en esta variación.
+- 5 pts — ¿Inconfundiblemente "${brief.brand.name}"? Si podría ser otra marca del rubro, resta puntos.
+- 3 pts — ¿Cumple presupuesto de slot Y respeta prohibiciones? Si no, máx 5 puntos en esta variación.
 - 2 pts — ¿Aporta una idea distinta a las otras variaciones del mismo slot?
 
 Devolver score + scoreRationale CONCRETO (1 línea, citando un detalle específico — no "buen tono").

@@ -296,49 +296,7 @@ const App: React.FC = () => {
     }
   };
 
-  const handleDemoGenerate = async (params: CopyParameters) => {
-    setIsLoading(true);
-    setLastParams(params);
-    setVariations([]);
-    setCoherence(null);
-    setSpine(null);
-    setUsage(null);
 
-    const platforms = (params.platforms || []) as unknown as string[];
-    setProgressPlatforms(platforms);
-    setProgressSpineDone(false);
-    setProgressChannelStatus(Object.fromEntries(platforms.map(p => [p, 'pending'])));
-    setProgressCoherenceStatus(platforms.length >= 2 ? 'pending' : 'done');
-
-    addNotification('Vista previa demo — sin API', 'info');
-    const collected: any[] = [];
-
-    try {
-      await runMockGeneration(params, (event) => {
-        if (event.type === 'spine') {
-          setSpine(event.payload);
-          setProgressSpineDone(true);
-          setProgressChannelStatus(prev => {
-            const next = { ...prev };
-            Object.keys(next).forEach(k => { if (next[k] === 'pending') next[k] = 'active'; });
-            return next;
-          });
-        } else if (event.type === 'channel') {
-          collected.push(...event.payload.variations);
-          setVariations([...collected]);
-          setProgressChannelStatus(prev => ({ ...prev, [event.payload.platform]: 'done' }));
-        } else if (event.type === 'coherence') {
-          setCoherence(event.payload);
-          setProgressCoherenceStatus('done');
-        } else if (event.type === 'usage') {
-          setUsage(event.payload);
-        }
-      });
-      addNotification('Demo completada', 'success');
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleRegenerate = (lockedKeys: Set<string>) => {
     if (!lastParams) return;
@@ -547,7 +505,6 @@ const App: React.FC = () => {
               <div className="lg:col-span-3 lg:sticky lg:top-[76px]">
                 <ParameterForm
                   onSubmit={handleGenerate}
-                  onDemoSubmit={handleDemoGenerate} 
                   isLoading={isLoading} 
                   clients={clients} 
                   dnaProfiles={dnaProfiles}

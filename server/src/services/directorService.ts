@@ -1,25 +1,27 @@
 import type OpenAI from "openai";
 import { CampaignSpine, CopyParameters, FunnelStage } from "../types.js";
 import { UsageEntry, extractUsage } from "./pricing.js";
+import { buildLocaleRulesBlock, resolveMarketLocale } from "./localeRules.js";
 
 const FUNNEL_GUIDANCE: Record<FunnelStage, string> = {
   [FunnelStage.AWARENESS]:
-    "Awareness (TOFU) — el público todavía NO conoce la marca o el problema. Los ángulos deben EDUCAR o REVELAR. Evitar CTAs de compra directa; preferir 'descubrí', 'mirá esto', 'sabías que…'. Tono curioso, casi periodístico.",
+    "Awareness (TOFU) — el público todavía NO conoce la marca o el problema. Los ángulos deben EDUCAR o REVELAR. Evitar CTAs de compra directa; preferir 'descubre', 'mira esto', '¿sabías que…?'. Tono curioso, casi periodístico.",
   [FunnelStage.CONSIDERATION]:
-    "Consideración (MOFU) — el público conoce el problema y compara opciones. Los ángulos deben DIFERENCIAR vs. competidores y reforzar prueba (testimonios, datos). CTAs intermedios: 'comparalo', 'simulá', 'probalo gratis'.",
+    "Consideración (MOFU) — el público conoce el problema y compara opciones. Los ángulos deben DIFERENCIAR vs. competidores y reforzar prueba (testimonios, datos). CTAs intermedios: 'compara', 'simula', 'pruébalo gratis'.",
   [FunnelStage.CONVERSION]:
-    "Conversión (BOFU) — el público está listo para decidir. Los ángulos deben EMPUJAR la decisión: urgencia real, manejo de objeción final, garantía. CTAs de cierre: 'comprá ahora', 'aprovechá', 'reservá'.",
+    "Conversión (BOFU) — el público está listo para decidir. Los ángulos deben EMPUJAR la decisión: urgencia real, manejo de objeción final, garantía. CTAs de cierre: 'compra ahora', 'aprovecha', 'reserva'.",
   [FunnelStage.RETENTION]:
-    "Retención (post-compra) — el cliente ya compró. Los ángulos deben REFORZAR la decisión, premiar fidelidad, abrir cross-sell. CTAs blandos: 'descubrí lo nuevo', 'gracias por confiar'."
+    "Retención (post-compra) — el cliente ya compró. Los ángulos deben REFORZAR la decisión, premiar fidelidad, abrir cross-sell. CTAs blandos: 'descubre lo nuevo', 'gracias por confiar'."
 };
 
-const SYSTEM_PROMPT = `
-Sos director de campaña — estratega senior con 15 años en agencia, no copywriter.
+const buildDirectorSystemPrompt = (params: CopyParameters) => `
+Eres director de campaña — estratega senior con 15 años en agencia, no copywriter.
 Tu trabajo NO es escribir copy: es decidir el anclaje creativo que mantendrá una campaña coherente entre canales.
+${buildLocaleRulesBlock(resolveMarketLocale(params))}
 
-TEST OBLIGATORIO antes de responder: ¿esta espina aplicaría a cualquier marca del mismo rubro, o se siente inconfundiblemente de ESTA marca? Si es lo primero, reformulá hasta que sea lo segundo.
+TEST OBLIGATORIO antes de responder: ¿esta espina aplicaría a cualquier marca del mismo rubro, o se siente inconfundiblemente de ESTA marca? Si es lo primero, reformula hasta que sea lo segundo.
 
-Respondés SOLO en JSON válido. Sin texto fuera del JSON. Sin comentarios.
+Respondes SOLO en JSON válido. Sin texto fuera del JSON. Sin comentarios.
 `.trim();
 
 const buildDirectorPrompt = (params: CopyParameters): string => {
@@ -32,7 +34,7 @@ Este concepto ya fue decidido por el equipo creativo. Lo vas a usar TEXTUALMENTE
 Tu trabajo es derivar keyMessage / tone / heroCTA / angles que SOSTENGAN este concepto en todos los canales.
 `
     : `## CONCEPTO DE CAMPAÑA
-No fue provisto. Derivá un concepto memorable, específico, que pueda funcionar como tagline raíz de toda la campaña.
+No fue provisto. Deriva un concepto memorable, específico, que pueda funcionar como tagline raíz de toda la campaña.
 `;
 
   const stage = params.funnelStage;
@@ -63,7 +65,7 @@ ${stageBlock}
 ---
 
 ## TAREA
-Devolvé un JSON con la espina de la campaña.
+Devuelve un JSON con la espina de la campaña.
 
 REGLAS DE LOS 3 ÁNGULOS:
 1. Los 3 ángulos deben ser SUSTANTIVAMENTE distintos — un lector debería pensar que vienen de 3 estrategias diferentes, no 3 redacciones del mismo brief.
@@ -101,7 +103,7 @@ export const buildCampaignSpine = async (
   const response = await client.chat.completions.create({
     model,
     messages: [
-      { role: "system", content: SYSTEM_PROMPT },
+      { role: "system", content: buildDirectorSystemPrompt(params) },
       { role: "user", content: prompt },
     ],
     response_format: { type: "json_object" },
@@ -127,6 +129,6 @@ export const buildCampaignSpine = async (
 };
 
 export const renderDirectorPromptForPreview = (params: CopyParameters): { system: string; user: string } => ({
-  system: SYSTEM_PROMPT,
+  system: buildDirectorSystemPrompt(params),
   user: buildDirectorPrompt(params),
 });
