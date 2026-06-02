@@ -7,8 +7,8 @@ export const instagramPost: ChannelSpec = {
   slots: [
     { id: "hook", label: "Hook (línea 1)", count: 3, unit: "char", max: 80, varyByAngle: true,
       guidance: "Primera línea SIN truncar. Stop-scroll obligatorio." },
-    { id: "body", label: "Cuerpo del caption", count: 3, unit: "char", max: 1500, varyByAngle: true,
-      guidance: "2-4 párrafos cortos. Incluir CTA explícito al final." },
+    { id: "body", label: "Cuerpo del caption", count: 3, unit: "char", max: 124, varyByAngle: true,
+      guidance: "Máximo 124 caracteres (sin hashtags ni idea visual). CTA explícito al final." },
     { id: "hashtags", label: "Hashtags", count: 1, unit: "char",
       guidance: "3-5 hashtags relevantes, sin spam de marcas." },
     { id: "visualBrief", label: "Idea visual", count: 1, unit: "char",
