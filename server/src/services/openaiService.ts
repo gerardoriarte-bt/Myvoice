@@ -11,6 +11,7 @@ import { runAutoFix } from "./fixerService.js";
 import { runSuperCritic } from "./superCriticService.js";
 import { UsageEntry, extractUsage, aggregateUsage } from "./pricing.js";
 import { WorkspaceAIConfig, createAIClient, resolveModel } from "./aiClient.js";
+import { resolveMarketLocale, requiresVoseo } from "./localeRules.js";
 
 const buildBrief = (params: CopyParameters, spine: CampaignSpine): ChannelBrief => ({
   spine,
@@ -41,6 +42,7 @@ const buildBrief = (params: CopyParameters, spine: CampaignSpine): ChannelBrief 
     content: e.content,
     reason: e.reason,
   })),
+  checkVoseo: requiresVoseo(resolveMarketLocale(params)),
 });
 
 const generateForChannel = async (
@@ -98,7 +100,7 @@ const generateForChannel = async (
     scoreRationale: typeof item.scoreRationale === "string" ? item.scoreRationale : undefined,
   }));
 
-  const validated = validateBatch(variations, spec, brief.campaign.prohibitions);
+  const validated = validateBatch(variations, spec, brief.campaign.prohibitions, brief.checkVoseo);
   const critiqued = await runCritic(brief, spec, validated, client, miniModel, usage);
   const autofixed = await runAutoFix(brief, spec, critiqued, client, miniModel, usage);
   return autofixed;

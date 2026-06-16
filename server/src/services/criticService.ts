@@ -16,13 +16,21 @@ const buildCriticPrompt = (
   variations: CopyVariation[]
 ): string => {
   const items = variations
-    .map(v => `- id: ${v.id}\n  slot: ${v.slot || "(default)"} #${v.variationIndex ?? "?"} | tipo: ${v.type}\n  content: "${v.content.replace(/"/g, '\\"')}"\n  writer-score: ${v.score ?? "?"}\n  budget: ${v.charCount} ${v.budgetUnit === "word" ? "pal" : "car"} (límite: ${v.budget ?? "—"})${v.prohibitionsHit && v.prohibitionsHit.length ? `\n  prohibitions hit: ${v.prohibitionsHit.join(", ")}` : ""}`)
+    .map(v => {
+      let line = `- id: ${v.id}\n  slot: ${v.slot || "(default)"} #${v.variationIndex ?? "?"} | tipo: ${v.type}\n  content: "${v.content.replace(/"/g, '\\"')}"\n  writer-score: ${v.score ?? "?"}\n  budget: ${v.charCount} ${v.budgetUnit === "word" ? "pal" : "car"} (límite: ${v.budget ?? "—"})`;
+      if (v.prohibitionsHit && v.prohibitionsHit.length) line += `\n  prohibitions hit: ${v.prohibitionsHit.join(", ")}`;
+      if (v.tuteoHits && v.tuteoHits.length) line += `\n  tuteo detectado (VIOLACIÓN): ${v.tuteoHits.join(" | ")}`;
+      return line;
+    })
     .join("\n\n");
+  const voseoBlock = brief.checkVoseo
+    ? `\n## VERIFICACIÓN DE VOSEO (es-CO obligatorio)\nEste copy es para Colombia. Usa SIEMPRE "vos" (nunca "tú"). Formas correctas: hablás/comés/vivís/tenés/podés/querés/sabés/hacés/venís/sos. Imperativos: hablá/comé/viví/tené/vení. Detectar y penalizar: tú (pronombre), eres, tienes, puedes, quieres, sabes, haces, vienes.\n`
+    : "";
 
   return `
 Eres editor senior de marca. Tu trabajo es re-evaluar el copy que escribió el copywriter.
 El score que él se puso es típicamente generoso. Tu trabajo es ser severo pero justo.
-
+${voseoBlock}
 ## MARCA
 - Nombre: ${brief.brand.name}
 - Voz: ${brief.brand.voice || "—"}
@@ -46,18 +54,19 @@ Para cada variación devolvé:
 - "id": el id literal recibido.
 - "score": 1-10. Rúbrica:
    • 5 pts máximo: ¿inconfundiblemente "${brief.brand.name}"? Si podría ser otra marca del rubro, restá puntos. Si suena a "agencia escribiendo para cliente", máx 2 pts en este renglón.
-   • 3 pts máximo: ¿cumple budget del slot Y respeta prohibiciones (incluyendo paráfrasis cercanas)? Si rompe budget o usa prohibición, máx 1 pt.
+   • 3 pts máximo: ¿cumple budget del slot, respeta prohibiciones (incluyendo paráfrasis) Y usa voseo colombiano correcto (si aplica)? Si falla alguno, máx 1 pt en este renglón.
    • 2 pts máximo: ¿aporta una idea distinta a las otras variaciones del mismo slot, o es redundante?
 - "scoreRationale": 1 línea CONCRETA. Cita un detalle específico (palabra, frase, recurso). NO digas "buen tono" o "claro y conciso".
 - "editorFlags": array de strings con problemas detectados. Tags válidas:
-   "generic"          → podría ser de otra marca
-   "concept-drift"    → no se siente hijo del concepto de campaña
-   "tone-mismatch"    → tono no coincide con la voz/guías
-   "prohibition-paraphrase" → usa una paráfrasis cercana de una prohibición
-   "budget-violation" → excede el límite de chars/palabras
-   "redundant"        → demasiado parecido a otra variación del mismo slot
-   "weak-cta"         → CTA blando o genérico
-   "agency-speak"     → suena a copy de agencia / corporate
+   "generic"               → podría ser de otra marca
+   "concept-drift"         → no se siente hijo del concepto de campaña
+   "tone-mismatch"         → tono no coincide con la voz/guías
+   "prohibition-paraphrase"→ usa una paráfrasis cercana de una prohibición
+   "budget-violation"      → excede el límite de chars/palabras
+   "redundant"             → demasiado parecido a otra variación del mismo slot
+   "weak-cta"              → CTA blando o genérico
+   "agency-speak"          → suena a copy de agencia / corporate
+   "tuteo-violation"       → usa tuteo (tú/eres/tienes/puedes…) en copy colombiano — debe ser voseo
   Vacío si está limpio.
 
 REGLA: si una variación es buena, decilo (8-10). No infles, pero tampoco castigues por castigar.

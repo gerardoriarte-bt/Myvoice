@@ -103,6 +103,7 @@ export interface CopyVariation {
   budgetUnit?: 'char' | 'word';
   budgetOk?: boolean;
   prohibitionsHit?: string[];
+  tuteoHits?: string[];        // e.g. ["tienes → tenés", "eres → sos"]
   score?: number;
   scoreRationale?: string;
   writerScore?: number;

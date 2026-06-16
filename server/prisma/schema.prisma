@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,28 +7,19 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum Role {
-  ADMIN
-  CLIENT
-}
-
 model Workspace {
-  id          String    @id @default(uuid())
-  name        String
-  slug        String    @unique
-  plan        String    @default("agency")
-
-  // AI provider config (optional — falls back to server env vars)
-  aiProvider  String?   // "openai" | "anthropic" | "gemini" | "openrouter"
-  aiApiKey    String?   @db.Text
-  aiModel     String?   // optional model override
-
-  users       User[]
-  clients     Client[]
-  projects    Project[]
-
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id         String    @id @default(uuid())
+  name       String
+  slug       String    @unique
+  plan       String    @default("agency")
+  aiProvider String?
+  aiApiKey   String?
+  aiModel    String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @default(now()) @updatedAt
+  clients    Client[]
+  projects   Project[]
+  users      User[]
 }
 
 model User {
@@ -40,117 +28,111 @@ model User {
   passwordHash String
   name         String
   role         Role       @default(CLIENT)
-  
-  workspaceId  String?
-  workspace    Workspace? @relation(fields: [workspaceId], references: [id])
-  
   clientId     String?
-  client       Client?    @relation(fields: [clientId], references: [id])
-  
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
+  workspaceId  String?
+  client       Client?    @relation(fields: [clientId], references: [id])
+  workspace    Workspace? @relation(fields: [workspaceId], references: [id])
 }
 
 model Client {
-  id                   String    @id @default(uuid())
-  workspaceId          String?
-  workspace            Workspace? @relation(fields: [workspaceId], references: [id])
-
-  name                 String
-  industry             String
-  logoUrl              String?   @db.Text
-  // ADN Global de Marca
-  voice                String?
-  brandVoiceGuidelines String?   @db.Text
-  valueProposition     String?   @db.Text
-  brandGuidelinePdfUrl    String?  @db.Text
-  brandGuidelineFileName  String?
+  id                        String              @id @default(uuid())
+  name                      String
+  industry                  String
+  logoUrl                   String?
+  createdAt                 DateTime            @default(now())
+  brandVoiceGuidelines      String?
+  quotaLimit                Int                 @default(100)
+  quotaUsed                 Int                 @default(0)
+  valueProposition          String?
+  voice                     String?
+  brandGuidelinePdfUrl      String?
+  brandGuidelineFileName    String?
   brandGuidelineExtractedAt DateTime?
-  brandKeywords        String?  @db.Text
-  brandProhibitions    String?  @db.Text
-  brandFingerprint     Json?
-  brandFingerprintAt   DateTime?
-
-  users       User[]
-  dnaProfiles ContentDNAProfile[]
-  variations  SavedVariation[]
-  
-  // Quota Management
-  quotaLimit  Int      @default(100)
-  quotaUsed   Int      @default(0)
-  
-  generationLogs    GenerationLog[]
-  negativeFeedbacks NegativeFeedback[]
-
-  createdAt   DateTime @default(now())
+  brandKeywords             String?
+  brandProhibitions         String?
+  brandFingerprint          Json?
+  brandFingerprintAt        DateTime?
+  workspaceId               String?
+  workspace                 Workspace?          @relation(fields: [workspaceId], references: [id])
+  dnaProfiles               ContentDNAProfile[]
+  generationLogs            GenerationLog[]
+  negativeFeedbacks         NegativeFeedback[]
+  variations                SavedVariation[]
+  users                     User[]
 }
 
 model GenerationLog {
   id               String   @id @default(uuid())
   clientId         String
-  client           Client   @relation(fields: [clientId], references: [id])
   userId           String
   dnaProfileId     String
   platforms        String[]
   promptTokens     Int?
   completionTokens Int?
+  createdAt        DateTime @default(now())
   funnelStage      String?
   spineJson        Json?
   outputJson       Json?
-  createdAt        DateTime @default(now())
+  client           Client   @relation(fields: [clientId], references: [id])
 }
 
 model ContentDNAProfile {
   id                   String   @id @default(uuid())
   clientId             String
-  client               Client   @relation(fields: [clientId], references: [id])
   name                 String
-  campaignConcept      String?  @db.Text
   voice                String
   goal                 String
   product              String
   targetAudience       String
   theme                String
   keywords             String
-  prohibitions         String?
-  brandVoiceGuidelines String   @db.Text
-  valueProposition     String   @db.Text
+  brandVoiceGuidelines String
+  valueProposition     String
   primaryCTA           String
-  feedbackExamples     Json?
   createdAt            DateTime @default(now())
+  feedbackExamples     Json?
+  prohibitions         String?
+  campaignConcept      String?
+  client               Client   @relation(fields: [clientId], references: [id])
 }
 
 model SavedVariation {
   id         String   @id @default(uuid())
   clientId   String
-  client     Client   @relation(fields: [clientId], references: [id])
   projectId  String?
-  project    Project? @relation(fields: [projectId], references: [id])
   platform   String
   type       String
-  content    String   @db.Text
+  content    String
   charCount  Int
   tags       String[]
   isApproved Boolean  @default(false)
   savedAt    DateTime @default(now())
+  client     Client   @relation(fields: [clientId], references: [id])
+  project    Project? @relation(fields: [projectId], references: [id])
 }
 
 model Project {
   id          String           @id @default(uuid())
+  name        String
+  createdAt   DateTime         @default(now())
   workspaceId String?
   workspace   Workspace?       @relation(fields: [workspaceId], references: [id])
-
-  name        String
   variations  SavedVariation[]
-  createdAt   DateTime         @default(now())
 }
 
 model NegativeFeedback {
   id        String   @id @default(uuid())
   clientId  String
-  client    Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
   platform  String
-  content   String   @db.Text
+  content   String
   reason    String
   createdAt DateTime @default(now())
+  client    Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+}
+
+enum Role {
+  ADMIN
+  CLIENT
 }

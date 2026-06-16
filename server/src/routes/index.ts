@@ -38,6 +38,7 @@ router.delete('/clients/:id', authenticateToken, authorizeRole(['ADMIN']), clien
 router.post('/clients/:id/brand-guideline', authenticateToken, authorizeRole(['ADMIN']), pdfUpload.single('pdf'), clientController.uploadBrandGuideline);
 router.post('/clients/:id/fingerprint', authenticateToken, authorizeRole(['ADMIN']), clientController.computeFingerprint);
 router.post('/dna-profiles', authenticateToken, authorizeRole(['ADMIN']), clientController.saveDNAProfile);
+router.post('/dna-profiles/:id/duplicate', authenticateToken, authorizeRole(['ADMIN']), clientController.duplicateDNAProfile);
 router.put('/dna-profiles/:id', authenticateToken, authorizeRole(['ADMIN']), clientController.updateDNAProfile);
 router.delete('/dna-profiles/:id', authenticateToken, authorizeRole(['ADMIN']), clientController.deleteDNAProfile);
 

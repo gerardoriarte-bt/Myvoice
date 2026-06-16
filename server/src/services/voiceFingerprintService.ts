@@ -1,6 +1,4 @@
-import OpenAI from "openai";
-
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+import { createAIClient, resolveModel, serverAIConfig, WorkspaceAIConfig } from "./aiClient.js";
 
 export interface DeterministicStats {
   sampleSize: number;          // # de textos analizados
@@ -102,7 +100,8 @@ Formato:
 `.trim();
 
 export const computeBrandFingerprint = async (
-  texts: string[]
+  texts: string[],
+  aiConfig?: WorkspaceAIConfig
 ): Promise<BrandFingerprint> => {
   const cleaned = texts.map(t => (t || "").trim()).filter(Boolean);
   if (cleaned.length < 3) {
@@ -110,9 +109,12 @@ export const computeBrandFingerprint = async (
   }
 
   const stats = computeStats(cleaned);
+  const config = aiConfig || serverAIConfig();
+  const openai = createAIClient(config);
+  const model = resolveModel(config, false);
 
   const response = await openai.chat.completions.create({
-    model: "gpt-4o",
+    model,
     messages: [
       { role: "system", content: "Eres lingüista de marca. Tu output siempre es JSON válido." },
       { role: "user", content: buildQualPrompt(cleaned, stats) },

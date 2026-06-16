@@ -6,6 +6,7 @@ import path from 'node:path';
 import fs from 'node:fs/promises';
 import { extractBrandFromPdf } from '../services/brandExtractionService.js';
 import { computeBrandFingerprint } from '../services/voiceFingerprintService.js';
+import { serverAIConfig } from '../services/aiClient.js';
 
 const prisma = new PrismaClient();
 const UPLOAD_DIR = path.resolve(process.cwd(), 'uploads');
@@ -131,7 +132,7 @@ export const uploadBrandGuideline = async (req: AuthRequest & { file?: Express.M
     await fs.writeFile(fullPath, req.file.buffer);
     const publicUrl = `/uploads/${safeName}`;
 
-    const extracted = await extractBrandFromPdf(req.file.buffer, client.name, client.industry);
+    const extracted = await extractBrandFromPdf(req.file.buffer, client.name, client.industry, serverAIConfig());
 
     const updated = await prisma.client.update({
       where: { id },
@@ -183,7 +184,7 @@ export const computeFingerprint = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    const fingerprint = await computeBrandFingerprint(allTexts);
+    const fingerprint = await computeBrandFingerprint(allTexts, serverAIConfig());
     const updated = await prisma.client.update({
       where: { id },
       data: {
@@ -195,6 +196,26 @@ export const computeFingerprint = async (req: AuthRequest, res: Response) => {
   } catch (error: any) {
     console.error('computeFingerprint error:', error);
     res.status(500).json({ error: error?.message || 'Error calculando fingerprint' });
+  }
+};
+
+export const duplicateDNAProfile = async (req: AuthRequest, res: Response) => {
+  const { id } = req.params;
+  try {
+    const original = await prisma.contentDNAProfile.findUnique({ where: { id } });
+    if (!original) return res.status(404).json({ error: 'Campaña no encontrada' });
+
+    const { id: _id, createdAt: _createdAt, ...fields } = original;
+    const copy = await prisma.contentDNAProfile.create({
+      data: {
+        ...fields,
+        name: `Copia de ${original.name}`,
+      },
+    });
+    res.status(201).json(copy);
+  } catch (error) {
+    console.error('duplicateDNAProfile error:', error);
+    res.status(500).json({ error: 'Error al duplicar la campaña' });
   }
 };
 

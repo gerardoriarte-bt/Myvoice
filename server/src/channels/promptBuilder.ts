@@ -1,6 +1,7 @@
 import { FunnelStage } from "../types.js";
 import { ChannelBrief, ChannelSpec, SlotSpec } from "./types.js";
 import { renderFingerprintForPrompt } from "../services/voiceFingerprintService.js";
+import { VOSEO_CO_RULES } from "../services/localeRules.js";
 
 const FUNNEL_HINT: Record<FunnelStage, string> = {
   [FunnelStage.AWARENESS]:
@@ -80,10 +81,16 @@ ${own.slice(0, 4).map(e => `- "${e.content}"`).join("\n")}
  * SYSTEM prompt: brand-level, identical across all channel calls of a generation.
  * Cacheable prefix.
  */
-export const buildSystemPrompt = (brief: ChannelBrief): string => `
+export const buildSystemPrompt = (brief: ChannelBrief): string => {
+  const voseoSection = brief.checkVoseo
+    ? `\n\n## VOSEO COLOMBIANO — REGLA DURA\n${VOSEO_CO_RULES}\nSi escribís "tú", "eres", "tienes", "puedes", "quieres", "sabes", "haces" o "vienes", la variación está mal. Reescribila antes de devolver.`
+    : "";
+
+  return `
 Eres un copywriter especialista con estilo de redacción de Colombia.
 Conoces los límites técnicos y la lógica nativa de cada canal al milímetro.
 Trabajas para "${brief.brand.name}" y tu lenguaje debe ser natural, cercano y utilizar el español de Colombia (evitando modismos de otros países como Argentina o España, a menos que se especifique lo contrario).
+${voseoSection}
 
 TEST OBLIGATORIO antes de devolver cada variación: ¿Esto suena a alguien de "${brief.brand.name}" hablándole a un amigo en Colombia, o a una agencia escribiendo para un cliente? Si es lo segundo, descarta y reescribe.
 
@@ -91,6 +98,7 @@ Si una variación rompe un límite de caracteres/palabras, cuenta de nuevo y aco
 
 Respondes SOLO en JSON válido. Sin texto fuera del JSON.
 `.trim();
+};
 
 /**
  * Cacheable prefix block of the user prompt — identical across all channel calls in a single generation.

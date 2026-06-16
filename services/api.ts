@@ -106,6 +106,7 @@ export const clientApi = {
   update: (id: string, data: any) => apiRequest(`/clients/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   delete: (id: string) => apiRequest(`/clients/${id}`, { method: 'DELETE' }),
   saveDNA: (data: any) => apiRequest('/dna-profiles', { method: 'POST', body: JSON.stringify(data) }),
+  duplicateDNA: (id: string) => apiRequest(`/dna-profiles/${id}/duplicate`, { method: 'POST' }),
   updateDNA: (id: string, data: any) => apiRequest(`/dna-profiles/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteDNA: (id: string) => apiRequest(`/dna-profiles/${id}`, { method: 'DELETE' }),
   computeFingerprint: (id: string) =>

@@ -23,6 +23,7 @@ interface ClientManagerProps {
   onSaveProfile: (profile: Omit<ContentDNAProfile, 'id' | 'createdAt'>) => void;
   onUpdateProfile: (id: string, updates: Partial<ContentDNAProfile>) => void;
   onDeleteProfile: (id: string) => void;
+  onDuplicateProfile: (profile: ContentDNAProfile) => void;
 }
 
 const ClientManager: React.FC<ClientManagerProps> = ({
@@ -39,7 +40,8 @@ const ClientManager: React.FC<ClientManagerProps> = ({
   onRemove,
   onSaveProfile,
   onUpdateProfile,
-  onDeleteProfile
+  onDeleteProfile,
+  onDuplicateProfile
 }) => {
   const [isAddingClient, setIsAddingClient] = React.useState(false);
   const [showGlobalSettings, setShowGlobalSettings] = React.useState(false);
@@ -80,6 +82,21 @@ const ClientManager: React.FC<ClientManagerProps> = ({
   const [computingFingerprint, setComputingFingerprint] = React.useState(false);
   const [fingerprintError, setFingerprintError] = React.useState<string | null>(null);
 
+  // Duplicate campaign state
+  const [duplicatingId, setDuplicatingId] = React.useState<string | null>(null);
+
+  const handleDuplicateProfile = async (profile: ContentDNAProfile) => {
+    setDuplicatingId(profile.id);
+    try {
+      const copy = await clientApi.duplicateDNA(profile.id);
+      onDuplicateProfile(copy);
+    } catch (err: any) {
+      alert(err?.message || 'Error al duplicar la campaña');
+    } finally {
+      setDuplicatingId(null);
+    }
+  };
+
   const handleComputeFingerprint = async (clientId: string) => {
     setFingerprintError(null);
     setComputingFingerprint(true);
@@ -99,6 +116,17 @@ const ClientManager: React.FC<ClientManagerProps> = ({
   const handleUploadGuideline = async (clientId: string, file: File) => {
     setUploadError(null);
     setExtractedSummary(null);
+
+    const MAX_MB = 15;
+    if (file.size > MAX_MB * 1024 * 1024) {
+      setUploadError(`El archivo pesa ${(file.size / 1024 / 1024).toFixed(1)} MB. El límite es ${MAX_MB} MB.`);
+      return;
+    }
+    if (file.type !== 'application/pdf') {
+      setUploadError('Solo se aceptan archivos PDF.');
+      return;
+    }
+
     setUploadingGuideline(true);
     try {
       const result = await clientApi.uploadBrandGuideline(clientId, file);
@@ -555,7 +583,7 @@ const ClientManager: React.FC<ClientManagerProps> = ({
                         <div className="flex items-center justify-between">
                            <div>
                               <h4 className="text-[13px] font-medium text-gray-900">Manual de Marca</h4>
-                              <p className="text-[11px] text-gray-500 mt-0.5">PDF — la IA extrae voz, propuesta y guías.</p>
+                              <p className="text-[11px] text-gray-500 mt-0.5">PDF · Máx. 15 MB — la IA extrae voz, propuesta y guías.</p>
                            </div>
                            {client.brandGuidelinePdfUrl && (
                               <a
@@ -666,10 +694,21 @@ const ClientManager: React.FC<ClientManagerProps> = ({
                                      <span className="inline-block bg-gray-100 text-gray-600 text-[11px] font-medium px-2 py-0.5 rounded border border-gray-200">{profile.goal}</span>
                                   </div>
                                   <div className="absolute top-0 right-0 flex flex-col gap-1">
-                                     <button onClick={() => startEditProfile(profile)} className="p-1.5 text-gray-400 hover:text-gray-900 rounded-md hover:bg-gray-50 transition-colors">
+                                     <button onClick={() => startEditProfile(profile)} title="Editar" className="p-1.5 text-gray-400 hover:text-gray-900 rounded-md hover:bg-gray-50 transition-colors">
                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                                      </button>
-                                     <button onClick={() => { if(window.confirm('¿Eliminar campaña?')) onDeleteProfile(profile.id); }} className="p-1.5 text-gray-300 hover:text-red-500 rounded-md hover:bg-red-50 transition-colors">
+                                     <button
+                                       onClick={() => handleDuplicateProfile(profile)}
+                                       disabled={duplicatingId === profile.id}
+                                       title="Duplicar campaña"
+                                       className="p-1.5 text-gray-300 hover:text-blue-500 rounded-md hover:bg-blue-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                     >
+                                       {duplicatingId === profile.id
+                                         ? <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+                                         : <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                                       }
+                                     </button>
+                                     <button onClick={() => { if(window.confirm('¿Eliminar campaña?')) onDeleteProfile(profile.id); }} title="Eliminar" className="p-1.5 text-gray-300 hover:text-red-500 rounded-md hover:bg-red-50 transition-colors">
                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                                      </button>
                                   </div>

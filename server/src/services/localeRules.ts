@@ -25,7 +25,7 @@ export const resolveMarketLocale = (params: CopyParameters): MarketLocale => {
     .join(" ")
     .toLowerCase();
 
-  if (/\b(argentin|argentina|buenos aires|caba|rioplatense|voseo)\b/.test(haystack)) {
+  if (/\b(argentin|argentina|buenos aires|caba|rioplatense|lunfardo)\b/.test(haystack)) {
     return "es-AR";
   }
   if (/\b(méxico|mexico|cdmx|latam mex)\b/.test(haystack)) {
@@ -38,24 +38,42 @@ export const resolveMarketLocale = (params: CopyParameters): MarketLocale => {
   return "es-CO";
 };
 
+/**
+ * Reglas de voseo colombiano (paisa/andino) — inyectadas en prompts para es-CO.
+ * El voseo colombiano NO es igual al rioplatense: comparte la morfología (-ás/-és/-ís)
+ * pero carece del lunfardo argentino (che, boludo, laburo, mina, pibe).
+ */
+export const VOSEO_CO_RULES = `
+VOSEO COLOMBIANO — OBLIGATORIO para es-CO (paisa/andino):
+- Usa SIEMPRE "vos" como pronombre de 2ª persona informal (nunca "tú").
+- Presente indicativo: hablás, comés, vivís, tenés, podés, querés, sabés, hacés, venís, sos (ser), vas (ir — irregular).
+- Imperativo afirmativo: hablá, comé, viví, tené, podé, queré, sabé, hacé, vení — acento en la última sílaba.
+- Los posesivos siguen siendo "tu/tuyo" (no cambian con el voseo).
+- PROHIBIDO tuteo: tú (pronombre), eres, tienes, puedes, quieres, sabes, haces, vienes.
+- PROHIBIDO lunfardo/rioplatense: che, boludo, mina, pibe, laburo, bondi, birra (por cerveza), plata (si es exclusivamente rioplatense).
+- OK usar "usted" cuando la marca o el contexto exige formalidad — nunca mezclar usted + vos en la misma pieza.
+- Léxico natural colombiano: celular, computador, gasolina, parqueadero, manejar, redimir, acumular, beneficio, bacano, chévere, parce (solo si el ADN lo permite).
+`.trim();
+
 export const buildLocaleRulesBlock = (locale: MarketLocale): string => {
   const label = LOCALE_LABELS[locale];
 
-  const forbiddenByLocale: Record<MarketLocale, string> = {
+  const rulesBlock: Record<MarketLocale, string> = {
     "es-CO": `
-    - Voseo y formas rioplatenses: vos, andás, querés, podés, tenés, salí, vení, che, boludo, laburo, mina, pibe, plata (por dinero), bondi, colectivo.
-    - Modismos mexicanos: chido, padre (por cool), celular→móvil español, etc.
-    - Español de España: vosotros, ordenador, móvil, coger (evitar ambigüedad), vale.
-    - Prefiere léxico natural en Colombia: tú/usted según marca, celular, computador, gasolina/combustible, parqueadero, manejar, redimir, acumular, beneficio.`,
+    OBLIGATORIO — voseo colombiano (paisa/andino):
+    ${VOSEO_CO_RULES}`,
     "es-AR": `
+    PROHIBIDO:
     - Mezclar voseo con tuteo en la misma pieza.
     - Modismos colombianos o mexicanos que rompan coherencia rioplatense.
     - Español de España: vosotros, ordenador.`,
     "es-MX": `
+    PROHIBIDO:
     - Voseo argentino y modismos colombianos aislados.
     - Español de España: vosotros, ordenador.`,
     "es-419": `
-    - Regionalismos fuertes (voseo, lunfardo, modismos locales).
+    PROHIBIDO:
+    - Regionalismos fuertes (voseo marcado, lunfardo, modismos locales).
     - Español de España: vosotros, ordenador.`,
   };
 
@@ -63,11 +81,13 @@ export const buildLocaleRulesBlock = (locale: MarketLocale): string => {
     REGLAS DE IDIOMA Y VARIANTE (OBLIGATORIO — prioridad sobre estilo genérico):
     - Escribe en ${label}.
     - El copy debe sonar nativo para ese mercado, no traducido ni mezclado entre países.
-    - PROHIBIDO usar expresiones fuera del mercado definido:
-    ${forbiddenByLocale[locale]}
+    ${rulesBlock[locale]}
     - Si las guías de voz del ADN piden un registro distinto, respétalo sin cambiar de país/variante.
   `;
 };
+
+/** Indica si el locale exige voseo activo (para validators y fixer). */
+export const requiresVoseo = (locale: MarketLocale): boolean => locale === "es-CO";
 
 export const buildSystemMessage = (locale: MarketLocale): string => {
   const label = LOCALE_LABELS[locale];

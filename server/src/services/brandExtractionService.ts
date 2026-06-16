@@ -1,9 +1,6 @@
-import OpenAI from "openai";
-// pdf-parse v2 doesn't ship its own type declarations
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const pdfParse: (data: Buffer) => Promise<{ text: string; numpages: number }> = require("pdf-parse");
-
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+// pdf-parse v2 uses a class-based API: PDFParse({ data }) + .getText()
+import { PDFParse } from "pdf-parse";
+import { createAIClient, resolveModel, serverAIConfig, WorkspaceAIConfig } from "./aiClient.js";
 
 export interface ExtractedBrand {
   voice: string;
@@ -48,17 +45,23 @@ Formato:
 export const extractBrandFromPdf = async (
   buffer: Buffer,
   clientName: string,
-  industry: string
+  industry: string,
+  aiConfig?: WorkspaceAIConfig
 ): Promise<ExtractedBrand> => {
-  const parsed = await pdfParse(buffer);
+  const parser = new PDFParse({ data: new Uint8Array(buffer) });
+  const parsed = await parser.getText();
   const text = (parsed.text || "").trim();
 
   if (!text) {
     throw new Error("No se pudo extraer texto del PDF (¿es un PDF escaneado sin OCR?).");
   }
 
+  const config = aiConfig || serverAIConfig();
+  const openai = createAIClient(config);
+  const model = resolveModel(config, false);
+
   const response = await openai.chat.completions.create({
-    model: "gpt-4o",
+    model,
     messages: [
       { role: "system", content: "Eres un analista de marca. Extraes información estructurada de manuales de marca. Respondés SOLO en JSON válido." },
       { role: "user", content: buildExtractionPrompt(text, clientName, industry) },

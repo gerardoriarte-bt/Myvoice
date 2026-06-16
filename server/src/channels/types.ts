@@ -44,6 +44,7 @@ export interface ChannelBrief {
   };
   examples: { platform: string; content: string }[];
   negativeExamples: { content: string; reason: string }[];
+  checkVoseo: boolean;
 }
 
 export interface ChannelSpec {
