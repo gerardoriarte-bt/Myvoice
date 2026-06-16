@@ -1,7 +1,7 @@
 
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth.js';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import path from 'node:path';
 import fs from 'node:fs/promises';
 import { extractBrandFromPdf } from '../services/brandExtractionService.js';
@@ -205,11 +205,12 @@ export const duplicateDNAProfile = async (req: AuthRequest, res: Response) => {
     const original = await prisma.contentDNAProfile.findUnique({ where: { id } });
     if (!original) return res.status(404).json({ error: 'Campaña no encontrada' });
 
-    const { id: _id, createdAt: _createdAt, ...fields } = original;
+    const { id: _id, createdAt: _createdAt, feedbackExamples, ...fields } = original;
     const copy = await prisma.contentDNAProfile.create({
       data: {
         ...fields,
         name: `Copia de ${original.name}`,
+        feedbackExamples: feedbackExamples ?? Prisma.JsonNull,
       },
     });
     res.status(201).json(copy);
