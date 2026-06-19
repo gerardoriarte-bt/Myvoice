@@ -75,6 +75,7 @@ const ClientManager: React.FC<ClientManagerProps> = ({
 
   // Brand-guideline PDF upload state
   const [uploadingGuideline, setUploadingGuideline] = React.useState(false);
+  const [deletingGuideline, setDeletingGuideline] = React.useState(false);
   const [uploadError, setUploadError] = React.useState<string | null>(null);
   const [extractedSummary, setExtractedSummary] = React.useState<string | null>(null);
 
@@ -113,18 +114,47 @@ const ClientManager: React.FC<ClientManagerProps> = ({
     }
   };
 
+  const handleDeleteGuideline = async (clientId: string) => {
+    if (!window.confirm('¿Eliminar el manual de marca? Se perderá la extracción de IA guardada.')) return;
+    setDeletingGuideline(true);
+    setUploadError(null);
+    setExtractedSummary(null);
+    try {
+      await clientApi.update(clientId, {
+        brandGuidelinePdfUrl: null,
+        brandGuidelineFileName: null,
+        brandGuidelineExtractedAt: null,
+      });
+      onUpdate(clientId, {
+        brandGuidelinePdfUrl: null,
+        brandGuidelineFileName: null,
+        brandGuidelineExtractedAt: null,
+      } as Partial<Client>);
+    } catch (err: any) {
+      setUploadError(err?.message || 'Error al eliminar el manual');
+    } finally {
+      setDeletingGuideline(false);
+    }
+  };
+
   const handleUploadGuideline = async (clientId: string, file: File) => {
     setUploadError(null);
     setExtractedSummary(null);
 
     const MAX_MB = 15;
-    if (file.size > MAX_MB * 1024 * 1024) {
-      setUploadError(`El archivo pesa ${(file.size / 1024 / 1024).toFixed(1)} MB. El límite es ${MAX_MB} MB.`);
+    const IDEAL_MB = 5;
+    if (file.type !== 'application/pdf') {
+      setUploadError(`Formato no válido: "${file.name}" no es un PDF. Solo se aceptan archivos .pdf.`);
       return;
     }
-    if (file.type !== 'application/pdf') {
-      setUploadError('Solo se aceptan archivos PDF.');
+    const fileMb = file.size / 1024 / 1024;
+    if (fileMb > MAX_MB) {
+      setUploadError(`El archivo pesa ${fileMb.toFixed(1)} MB y supera el límite de ${MAX_MB} MB. Comprimí el PDF antes de subirlo.`);
       return;
+    }
+    if (fileMb > IDEAL_MB) {
+      // Warn but allow — just clear previous error
+      setUploadError(null);
     }
 
     setUploadingGuideline(true);
@@ -580,26 +610,19 @@ const ClientManager: React.FC<ClientManagerProps> = ({
 
                      {/* BRAND GUIDELINE PDF UPLOADER */}
                      <div className="bg-white rounded-xl p-5 border border-gray-200 shadow-sm space-y-3">
-                        <div className="flex items-center justify-between">
-                           <div>
-                              <h4 className="text-[13px] font-medium text-gray-900">Manual de Marca</h4>
-                              <p className="text-[11px] text-gray-500 mt-0.5">PDF · Máx. 15 MB — la IA extrae voz, propuesta y guías.</p>
-                           </div>
-                           {client.brandGuidelinePdfUrl && (
-                              <a
-                                href={client.brandGuidelinePdfUrl}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="text-[11px] font-medium text-blue-600 hover:text-blue-700"
-                              >
-                                Ver PDF
-                              </a>
-                           )}
+                        <div>
+                           <h4 className="text-[13px] font-medium text-gray-900">Manual de Marca</h4>
+                           <p className="text-[11px] text-gray-500 mt-0.5">
+                             Solo PDF · Ideal: menos de 5 MB · Máximo: 15 MB
+                           </p>
+                           <p className="text-[10px] text-gray-400 mt-0.5">
+                             La IA extrae automáticamente voz de marca, propuesta de valor y guías de tono.
+                           </p>
                         </div>
 
-                        {client.brandGuidelineFileName && (
+                        {client.brandGuidelineFileName ? (
                            <div className="flex items-center gap-2 p-2.5 bg-gray-50 rounded-lg border border-gray-100">
-                              <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                              <svg className="w-4 h-4 text-red-400 shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm-1 1.5L18.5 9H13V3.5zM9.5 17l-1.5-1.5L10.5 13 8 10.5 9.5 9l2.5 2.5L14.5 9l1.5 1.5L13.5 13l2.5 2.5-1.5 1.5L12 14.5 9.5 17z" opacity=".3"/><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zM13 3.5L18.5 9H13V3.5zM15 17h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
                               <div className="flex-1 min-w-0">
                                  <p className="text-[12px] font-medium text-gray-700 truncate">{client.brandGuidelineFileName}</p>
                                  {client.brandGuidelineExtractedAt && (
@@ -608,6 +631,33 @@ const ClientManager: React.FC<ClientManagerProps> = ({
                                    </p>
                                  )}
                               </div>
+                              {client.brandGuidelinePdfUrl && (
+                                <a
+                                  href={client.brandGuidelinePdfUrl}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  title="Ver PDF"
+                                  className="p-1 text-blue-500 hover:text-blue-700 shrink-0"
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                                </a>
+                              )}
+                              <button
+                                onClick={() => handleDeleteGuideline(client.id)}
+                                disabled={deletingGuideline || uploadingGuideline}
+                                title="Eliminar manual"
+                                className="p-1 text-gray-300 hover:text-red-500 transition-colors shrink-0 disabled:opacity-40"
+                              >
+                                {deletingGuideline
+                                  ? <span className="w-4 h-4 border-2 border-gray-300 border-t-red-400 rounded-full animate-spin block" />
+                                  : <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                }
+                              </button>
+                           </div>
+                        ) : (
+                           <div className="flex items-center gap-2 p-2.5 bg-gray-50 rounded-lg border border-dashed border-gray-200 text-[11px] text-gray-400">
+                             <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
+                             Sin manual cargado
                            </div>
                         )}
 
@@ -628,7 +678,7 @@ const ClientManager: React.FC<ClientManagerProps> = ({
                              type="file"
                              accept="application/pdf"
                              className="hidden"
-                             disabled={uploadingGuideline}
+                             disabled={uploadingGuideline || deletingGuideline}
                              onChange={e => {
                                const file = e.target.files?.[0];
                                if (file) handleUploadGuideline(client.id, file);
@@ -638,8 +688,9 @@ const ClientManager: React.FC<ClientManagerProps> = ({
                         </label>
 
                         {uploadError && (
-                          <div className="text-[11px] text-red-700 bg-red-50 border border-red-200 rounded-lg p-2.5">
-                            {uploadError}
+                          <div className="flex items-start gap-2 text-[11px] text-red-700 bg-red-50 border border-red-200 rounded-lg p-2.5">
+                            <svg className="w-3.5 h-3.5 mt-0.5 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" /></svg>
+                            <span>{uploadError}</span>
                           </div>
                         )}
                         {extractedSummary && !uploadError && (
