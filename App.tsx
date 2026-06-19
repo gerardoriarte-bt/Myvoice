@@ -632,6 +632,18 @@ const App: React.FC = () => {
               onSaveProfile={handleSaveDNAProfile}
               onUpdateProfile={handleUpdateDNAProfile}
               onDeleteProfile={handleDeleteDNAProfile}
+              onDuplicateProfile={copy => {
+                const normalized = {
+                  ...copy,
+                  createdAt: typeof copy.createdAt === 'string' ? new Date(copy.createdAt).getTime() : copy.createdAt,
+                };
+                setDnaProfiles(prev => [...prev, normalized]);
+                setClients(prev => prev.map(c =>
+                  c.id === copy.clientId
+                    ? { ...c, dnaProfiles: [...(c.dnaProfiles || []), normalized] }
+                    : c
+                ));
+              }}
             />
           )}
           {activeTab === 'users' && isAdmin && (
