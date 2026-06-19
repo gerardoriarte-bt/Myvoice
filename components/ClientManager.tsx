@@ -495,6 +495,23 @@ const ClientManager: React.FC<ClientManagerProps> = ({
                             </span>
                           </div>
                         )}
+                        {(() => {
+                          const score = [
+                            !!client.voice,
+                            !!client.valueProposition,
+                            !!client.brandVoiceGuidelines,
+                            !!client.brandGuidelinePdfUrl,
+                            profilesCount > 0,
+                          ].filter(Boolean).length
+                          return (
+                            <div className="flex items-center gap-1 mt-1.5">
+                              {[0,1,2,3,4].map(i => (
+                                <div key={i} className={`w-4 h-1 rounded-full ${i < score ? 'bg-gray-900' : 'bg-gray-200'}`} />
+                              ))}
+                              <span className="text-[9px] text-gray-400 ml-1">ADN {score}/5</span>
+                            </div>
+                          )
+                        })()}
                      </div>
                      <div className="mt-4 flex items-center justify-between text-[11px] text-gray-500">
                         <span className="flex items-center gap-1.5">
@@ -572,32 +589,35 @@ const ClientManager: React.FC<ClientManagerProps> = ({
                         <div className="space-y-4 pt-4 border-t border-gray-100">
                            <div>
                               <label className="block text-[12px] font-medium text-gray-700 mb-1">Voz Global</label>
-                              <select 
+                              <select
                                 className="w-full bg-white border border-gray-200 text-gray-900 rounded-lg px-3 py-2 text-[13px] outline-none focus:border-gray-400 transition-colors"
-                                value={client.voice || ''} 
+                                value={client.voice || ''}
                                 onChange={e => onUpdate(client.id, { voice: e.target.value })}
                               >
                                 <option value="">Seleccionar voz...</option>
                                 {voices.map(v => <option key={v.id} value={v.name}>{v.name}</option>)}
                               </select>
+                              {!client.voice && <p className="text-[10px] text-amber-600 mt-0.5 flex items-center gap-1"><svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd"/></svg>Sin esto el copy será genérico</p>}
                            </div>
                            <div>
                               <label className="block text-[12px] font-medium text-gray-700 mb-1">Propuesta de Valor</label>
-                              <textarea 
+                              <textarea
                                 className="w-full bg-white border border-gray-200 text-gray-900 rounded-lg px-3 py-2 text-[13px] outline-none focus:border-gray-400 transition-colors resize-none h-20 placeholder:text-gray-400"
                                 placeholder="ADN inamovible de la marca"
                                 value={client.valueProposition || ''}
                                 onChange={e => onUpdate(client.id, { valueProposition: e.target.value })}
                               />
+                              {!client.valueProposition && <p className="text-[10px] text-amber-600 mt-0.5 flex items-center gap-1"><svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd"/></svg>Sin esto el copy será genérico</p>}
                            </div>
                            <div>
                               <label className="block text-[12px] font-medium text-gray-700 mb-1">Guidelines</label>
-                              <textarea 
+                              <textarea
                                 className="w-full bg-white border border-gray-200 text-gray-900 rounded-lg px-3 py-2 text-[13px] outline-none focus:border-gray-400 transition-colors resize-none h-20 placeholder:text-gray-400"
                                 placeholder="Reglas y estilo gramatical"
                                 value={client.brandVoiceGuidelines || ''}
                                 onChange={e => onUpdate(client.id, { brandVoiceGuidelines: e.target.value })}
                               />
+                              {!client.brandVoiceGuidelines && <p className="text-[10px] text-amber-600 mt-0.5 flex items-center gap-1"><svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd"/></svg>Sin esto el copy será genérico</p>}
                            </div>
                            <button 
                              onClick={() => alert('Modificaciones del ADN Global guardadas exitosamente.')}
@@ -742,7 +762,14 @@ const ClientManager: React.FC<ClientManagerProps> = ({
                                <div className="space-y-3 relative">
                                   <div className="pr-10">
                                      <h5 className="text-[14px] font-medium text-gray-900 leading-tight mb-1">{profile.name}</h5>
-                                     <span className="inline-block bg-gray-100 text-gray-600 text-[11px] font-medium px-2 py-0.5 rounded border border-gray-200">{profile.goal}</span>
+                                     {(() => {
+                                       const hasGoal = !!profile.goal
+                                       const hasExamples = (profile.feedbackExamples?.length ?? 0) > 0
+                                       if (hasGoal && hasExamples) return <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">Completa</span>
+                                       if (!hasGoal) return <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">Sin objetivo</span>
+                                       return <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">Sin ejemplos</span>
+                                     })()}
+                                     <span className="inline-block bg-gray-100 text-gray-600 text-[11px] font-medium px-2 py-0.5 rounded border border-gray-200 mt-1.5">{profile.goal}</span>
                                   </div>
                                   <div className="absolute top-0 right-0 flex flex-col gap-1">
                                      <button onClick={() => startEditProfile(profile)} title="Editar" className="p-1.5 text-gray-400 hover:text-gray-900 rounded-md hover:bg-gray-50 transition-colors">

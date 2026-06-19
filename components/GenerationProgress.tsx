@@ -23,7 +23,7 @@ interface Props {
 const StageRow: React.FC<{ stage: Stage }> = ({ stage }) => {
   const ringColor =
     stage.status === 'done'   ? 'border-emerald-300 bg-emerald-50 text-emerald-700' :
-    stage.status === 'active' ? 'border-blue-300 bg-blue-50 text-blue-700' :
+    stage.status === 'active' ? 'border-blue-400 bg-blue-50 text-blue-700 ring-2 ring-blue-100 ring-offset-1' :
     stage.status === 'error'  ? 'border-red-300 bg-red-50 text-red-700' :
     'border-gray-200 bg-gray-50 text-gray-400';
 
@@ -86,7 +86,7 @@ const GenerationProgress: React.FC<Props> = ({
         <Layers className="w-4 h-4 text-gray-700" />
         <h3 className="text-[14px] font-medium text-gray-900">Generando campaña</h3>
         <div className="ml-auto text-[11px] text-gray-500">
-          {selectedPlatforms.filter(p => channelStatus[p] === 'done').length}/{selectedPlatforms.length} canales
+          {selectedPlatforms.filter(p => channelStatus[p] === 'done').length}/{selectedPlatforms.length} canales · ~{Math.max(30, selectedPlatforms.length * 18)}s
         </div>
       </div>
 
@@ -105,6 +105,17 @@ const GenerationProgress: React.FC<Props> = ({
           <StageRow stage={coherenceStage} />
         )}
       </div>
+
+      {selectedPlatforms.length > 0 && (
+        <div className="pt-1">
+          <div className="h-1 bg-gray-100 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-gray-900 rounded-full transition-all duration-500"
+              style={{ width: `${Math.round((selectedPlatforms.filter(p => channelStatus[p] === 'done').length / selectedPlatforms.length) * 100)}%` }}
+            />
+          </div>
+        </div>
+      )}
 
       <div className="flex items-center gap-2 text-[10px] text-gray-400 pt-3 border-t border-gray-100">
         <ScanSearch className="w-3 h-3" />

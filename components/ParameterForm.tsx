@@ -84,6 +84,34 @@ const ParameterForm: React.FC<ParameterFormProps> = ({
       onSubmit={handleSubmit}
       className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden animate-in fade-in duration-300 sticky top-6"
     >
+      {/* STEPPER */}
+      <div className="px-5 pt-4 pb-2">
+        <div className="flex items-center gap-0">
+          {[
+            { n: 1, label: 'Marca',    done: !!clientId },
+            { n: 2, label: 'Campaña',  done: !!activeProfileId },
+            { n: 3, label: 'Funnel',   done: true },
+            { n: 4, label: 'Canales',  done: selectedPlatforms.length > 0 },
+          ].map((step, i, arr) => (
+            <React.Fragment key={step.n}>
+              <div className="flex flex-col items-center gap-1">
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-semibold border-2 transition-colors ${
+                  step.done
+                    ? 'bg-gray-900 border-gray-900 text-white'
+                    : 'bg-white border-gray-300 text-gray-400'
+                }`}>
+                  {step.done ? <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"/></svg> : step.n}
+                </div>
+                <span className={`text-[9px] font-medium ${step.done ? 'text-gray-900' : 'text-gray-400'}`}>{step.label}</span>
+              </div>
+              {i < arr.length - 1 && (
+                <div className={`flex-1 h-0.5 mb-3 mx-1 ${step.done ? 'bg-gray-900' : 'bg-gray-200'}`} />
+              )}
+            </React.Fragment>
+          ))}
+        </div>
+      </div>
+
       {/* MARCA */}
       <Section icon={<Building2 className="w-3.5 h-3.5" />} label="Marca">
         <select
@@ -170,6 +198,20 @@ const ParameterForm: React.FC<ParameterFormProps> = ({
                 Configurar campaña
                 <ChevronRight className="w-3 h-3" />
               </button>
+            )}
+          </div>
+        )}
+        {activeProfile && (
+          <div className="mt-2 p-3 bg-blue-50 border border-blue-100 rounded-lg space-y-1.5 animate-in fade-in duration-200">
+            <p className="text-[9px] font-semibold uppercase tracking-wider text-blue-500">Vista previa del ADN</p>
+            {activeProfile.product && (
+              <p className="text-[11px] text-blue-900"><span className="font-medium">Producto:</span> {activeProfile.product}</p>
+            )}
+            {activeProfile.targetAudience && (
+              <p className="text-[11px] text-blue-900"><span className="font-medium">Audiencia:</span> {activeProfile.targetAudience}</p>
+            )}
+            {(activeProfile.feedbackExamples?.length ?? 0) > 0 && (
+              <p className="text-[11px] text-blue-700">◉ {activeProfile.feedbackExamples!.length} ejemplo{activeProfile.feedbackExamples!.length !== 1 ? 's' : ''} de entrenamiento</p>
             )}
           </div>
         )}
@@ -261,7 +303,17 @@ const ParameterForm: React.FC<ParameterFormProps> = ({
 
           <div className="pt-1 flex items-center justify-center gap-1.5 text-[10px] text-gray-500">
             <Zap className="w-3 h-3" />
-            <span>Director + {selectedPlatforms.length} especialistas + editor + auditoría</span>
+            <span className="flex items-center gap-1 flex-wrap justify-center">
+              <span>Director</span>
+              <span className="text-gray-300">→</span>
+              <span>{selectedPlatforms.length > 0 ? selectedPlatforms.length : '?'} escritor{selectedPlatforms.length !== 1 ? 'es' : ''}</span>
+              <span className="text-gray-300">→</span>
+              <span>Validador</span>
+              <span className="text-gray-300">→</span>
+              <span>Editor IA</span>
+              <span className="text-gray-300">→</span>
+              <span>Auditoría</span>
+            </span>
           </div>
         )}
       </div>
