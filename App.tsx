@@ -19,6 +19,8 @@ import { generationApi, clientApi, libraryApi, authApi } from './services/api';
 import CollaborationHub from './components/CollaborationHub';
 import ReviewPortal from './components/ReviewPortal';
 import Analytics from './components/Analytics';
+import GenerationHistory from './components/GenerationHistory';
+import ClientPortal from './components/ClientPortal';
 import WorkflowHelpSidebar from './components/WorkflowHelpSidebar';
 
 const MOCK_CLIENTS: Client[] = [
@@ -50,7 +52,7 @@ const MOCK_DNA: ContentDNAProfile[] = [
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = React.useState(false);
-  const [activeTab, setActiveTab] = React.useState<'generator' | 'saved' | 'clients' | 'users' | 'settings' | 'help' | 'collaboration' | 'analytics'>('clients');
+  const [activeTab, setActiveTab] = React.useState<'generator' | 'saved' | 'clients' | 'users' | 'settings' | 'help' | 'collaboration' | 'analytics' | 'history'>('clients');
   const [reviewToken, setReviewToken] = React.useState(() => new URLSearchParams(window.location.search).get('review'));
   const [completedSessionsCount, setCompletedSessionsCount] = React.useState(0);
   const [variations, setVariations] = React.useState<CopyVariation[]>([]);
@@ -392,6 +394,7 @@ const App: React.FC = () => {
     { id: 'generator', label: 'Generate', icon: '⚡', adminOnly: true },
     { id: 'saved', label: 'Content Selection', icon: '📚', adminOnly: false },
     { id: 'analytics', label: 'Analytics', icon: '📊', adminOnly: true },
+    { id: 'history', label: 'Historial', icon: '🕓', adminOnly: true },
     { id: 'collaboration', label: 'Collaboration', icon: '🤝', adminOnly: true },
     { id: 'users', label: 'Team', icon: '🛡️', adminOnly: true },
     { id: 'settings', label: 'Settings', icon: '⚙️', adminOnly: true },
@@ -407,6 +410,23 @@ const App: React.FC = () => {
           window.history.replaceState({}, '', window.location.pathname);
         }}
       />
+    );
+  }
+
+  if (isAuthenticated && currentUser && !isAdmin) {
+    const myVariations = currentUser.clientId
+      ? savedVariations.filter(v => v.clientId === currentUser.clientId)
+      : savedVariations;
+    return (
+      <>
+        <NotificationSystem notifications={notifications} onDismiss={dismissNotification} />
+        <ClientPortal
+          currentUser={currentUser}
+          savedVariations={myVariations}
+          clients={clients}
+          onLogout={handleLogout}
+        />
+      </>
     );
   }
 
@@ -449,6 +469,11 @@ const App: React.FC = () => {
     help: (
       <svg className="w-[15px] h-[15px]" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+      </svg>
+    ),
+    history: (
+      <svg className="w-[15px] h-[15px]" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
       </svg>
     ),
     analytics: (
@@ -769,6 +794,7 @@ const App: React.FC = () => {
               readOnly={!isAdmin}
             />
           )}
+          {activeTab === 'history' && isAdmin && <GenerationHistory clients={clients} dnaProfiles={dnaProfiles} />}
           {activeTab === 'analytics' && isAdmin && <Analytics />}
           {activeTab === 'collaboration' && isAdmin && (
             <CollaborationHub

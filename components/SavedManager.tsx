@@ -39,17 +39,33 @@ const SavedManager: React.FC<SavedManagerProps> = ({
   const [copyStatus, setCopyStatus] = React.useState<string | null>(null);
   const [editingId, setEditingId] = React.useState<string | null>(null);
   const [editBuffer, setEditBuffer] = React.useState('');
-  
-  const filteredVariations = saved.filter(v => {
-    const matchesProject = activeProjectFilter === 'all' || v.projectId === activeProjectFilter;
-    const matchesClient = readOnly || activeClientFilter === 'all' || v.clientId === activeClientFilter;
-    const matchesStatus = activeStatusFilter === 'all' || 
-                         (activeStatusFilter === 'approved' && v.isApproved) ||
-                         (activeStatusFilter === 'pending' && !v.isApproved);
-    const matchesPlatform = activePlatformFilter === 'all' || v.platform === activePlatformFilter;
-    const matchesSearch = v.content.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesProject && matchesClient && matchesStatus && matchesSearch && matchesPlatform;
-  });
+  const [sortOrder, setSortOrder] = React.useState<'newest' | 'oldest' | 'approved'>('newest');
+
+  const filteredVariations = React.useMemo(() => {
+    const base = saved.filter(v => {
+      const matchesProject = activeProjectFilter === 'all' || v.projectId === activeProjectFilter;
+      const matchesClient = readOnly || activeClientFilter === 'all' || v.clientId === activeClientFilter;
+      const matchesStatus = activeStatusFilter === 'all' ||
+                           (activeStatusFilter === 'approved' && v.isApproved) ||
+                           (activeStatusFilter === 'pending' && !v.isApproved);
+      const matchesPlatform = activePlatformFilter === 'all' || v.platform === activePlatformFilter;
+      const matchesSearch = !searchQuery || v.content.toLowerCase().includes(searchQuery.toLowerCase());
+      return matchesProject && matchesClient && matchesStatus && matchesSearch && matchesPlatform;
+    });
+    if (sortOrder === 'oldest')  return [...base].sort((a, b) => (a.savedAt ?? 0) - (b.savedAt ?? 0));
+    if (sortOrder === 'approved') return [...base].sort((a, b) => (b.isApproved ? 1 : 0) - (a.isApproved ? 1 : 0));
+    return [...base].sort((a, b) => (b.savedAt ?? 0) - (a.savedAt ?? 0));
+  }, [saved, activeProjectFilter, activeClientFilter, activeStatusFilter, activePlatformFilter, searchQuery, sortOrder]);
+
+  const hasActiveFilters = activeProjectFilter !== 'all' || activeClientFilter !== 'all' || activeStatusFilter !== 'all' || activePlatformFilter !== 'all' || !!searchQuery;
+
+  const clearFilters = () => {
+    setActiveProjectFilter('all');
+    setActiveClientFilter('all');
+    setActiveStatusFilter('all');
+    setActivePlatformFilter('all');
+    setSearchQuery('');
+  };
 
   const getProjectName = (id?: string) => projects.find(p => p.id === id)?.name || 'Sin Proyecto';
   const getClientInfo = (id?: string) => clients.find(c => c.id === id);
@@ -171,8 +187,25 @@ const SavedManager: React.FC<SavedManagerProps> = ({
             <option value="approved">Aprobados</option>
             <option value="pending">Pendientes</option>
           </select>
+          <select value={sortOrder} onChange={e => setSortOrder(e.target.value as any)} className="px-3 py-2 bg-white border border-gray-200 rounded-lg text-[13px] font-medium text-gray-700 outline-none focus:border-gray-400 transition-colors appearance-none cursor-pointer pr-8 bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke%3D%22%239ca3af%22%20stroke-width%3D%222%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%22%20d%3D%22m19.5%208.25-7.5%207.5-7.5-7.5%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1em_1em] bg-[right_0.5rem_center] bg-no-repeat min-w-[140px]">
+            <option value="newest">Más reciente</option>
+            <option value="oldest">Más antiguo</option>
+            <option value="approved">Aprobadas primero</option>
+          </select>
+          {hasActiveFilters && (
+            <button onClick={clearFilters} className="px-3 py-2 text-[13px] font-medium text-gray-400 hover:text-gray-700 transition-colors whitespace-nowrap">
+              Limpiar
+            </button>
+          )}
         </div>
       </div>
+      {hasActiveFilters && (
+        <div className="px-6 pb-3 -mt-2">
+          <p className="text-[11px] text-gray-400">
+            Mostrando <span className="font-semibold text-gray-600">{filteredVariations.length}</span> de <span className="font-semibold text-gray-600">{saved.length}</span> variaciones
+          </p>
+        </div>
+      )}
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">

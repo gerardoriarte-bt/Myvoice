@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { AuthRequest } from '../middleware/auth.js';
 import { prisma } from '../lib/prisma.js';
+import { notifyReviewCompleted } from '../services/notificationService.js';
 
 export const createReviewSession = async (req: AuthRequest, res: Response) => {
   const user = req.user;
@@ -206,6 +207,14 @@ export const submitReview = async (req: Request, res: Response) => {
         data: { status: 'COMPLETED' },
       }),
     ]);
+
+    // Fire-and-forget — no bloquea la respuesta al cliente
+    notifyReviewCompleted({
+      sessionTitle: session.title,
+      reviewerName,
+      approvedCount: approvedIds.length,
+      rejectedCount: rejectedFeedbacks.length,
+    }).catch(() => {});
 
     res.status(201).json({ message: 'Revisión enviada con éxito' });
   } catch (error) {

@@ -1,142 +1,208 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { Client, ContentDNAProfile, CopyVariation } from '../types';
 import { generationApi } from '../services/api';
 
-interface HistoryEntry {
+interface GenerationLog {
   id: string;
   clientId: string;
   dnaProfileId: string;
   platforms: string[];
-  funnelStage?: string | null;
-  spineJson?: { concept?: string; tone?: string } | null;
-  outputJson?: { variations: any[] } | null;
+  funnelStage?: string;
+  spineJson?: { concept?: string; keyMessage?: string; tone?: string; heroCTA?: string } | null;
+  outputJson?: CopyVariation[] | null;
   createdAt: string;
 }
 
-interface Props {
-  clientId: string;
-  reloadKey?: number;
+interface GenerationHistoryProps {
+  clients: Client[];
+  dnaProfiles: ContentDNAProfile[];
 }
 
-const GenerationHistory: React.FC<Props> = ({ clientId, reloadKey }) => {
-  const [entries, setEntries] = React.useState<HistoryEntry[] | null>(null);
-  const [loading, setLoading] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
-  const [expandedId, setExpandedId] = React.useState<string | null>(null);
-
-  const fetchHistory = React.useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await generationApi.history(clientId);
-      setEntries(data);
-    } catch (err: any) {
-      setError(err?.message || 'Error cargando historial');
-    } finally {
-      setLoading(false);
-    }
-  }, [clientId]);
-
-  React.useEffect(() => {
-    fetchHistory();
-  }, [fetchHistory, reloadKey]);
-
-  return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-      <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-        <div>
-          <h4 className="text-[14px] font-medium text-gray-900">Historial de Generaciones</h4>
-          <p className="text-[12px] text-gray-500 mt-0.5">Últimas 50 corridas para esta marca.</p>
-        </div>
-        <button
-          onClick={fetchHistory}
-          disabled={loading}
-          className="text-[11px] font-medium text-gray-500 hover:text-gray-900 disabled:opacity-50"
-        >
-          {loading ? '…' : 'Refrescar'}
-        </button>
-      </div>
-
-      <div className="p-5 space-y-2">
-        {error && <div className="text-[12px] text-red-700 bg-red-50 border border-red-200 rounded-lg p-2.5">{error}</div>}
-        {!error && entries && entries.length === 0 && (
-          <div className="text-center py-6 text-[12px] text-gray-400 border border-dashed border-gray-200 rounded-lg">
-            Sin generaciones registradas todavía.
-          </div>
-        )}
-        {entries && entries.map(entry => {
-          const isExpanded = expandedId === entry.id;
-          const variations = entry.outputJson?.variations || [];
-          const dt = new Date(entry.createdAt);
-          return (
-            <div key={entry.id} className="border border-gray-200 rounded-lg overflow-hidden">
-              <button
-                onClick={() => setExpandedId(isExpanded ? null : entry.id)}
-                className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors text-left"
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <svg
-                    className={`w-3.5 h-3.5 text-gray-400 transition-transform shrink-0 ${isExpanded ? 'rotate-90' : ''}`}
-                    fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                  </svg>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[13px] font-medium text-gray-900 truncate">
-                      {entry.spineJson?.concept || '— sin concepto —'}
-                    </p>
-                    <div className="flex items-center gap-2 mt-0.5 text-[11px] text-gray-500">
-                      <span>{dt.toLocaleString()}</span>
-                      <span>·</span>
-                      <span>{entry.platforms.length} canal{entry.platforms.length === 1 ? '' : 'es'}</span>
-                      <span>·</span>
-                      <span>{variations.length} piezas</span>
-                      {entry.funnelStage && (
-                        <>
-                          <span>·</span>
-                          <span className="font-medium">{entry.funnelStage}</span>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </button>
-              {isExpanded && (
-                <div className="border-t border-gray-100 bg-gray-50/40 p-4 space-y-3">
-                  {entry.spineJson?.tone && (
-                    <div className="text-[11px] text-gray-600">
-                      <span className="font-medium">Tono:</span> {entry.spineJson.tone}
-                    </div>
-                  )}
-                  <div className="flex flex-wrap gap-1.5">
-                    {entry.platforms.map(p => (
-                      <span key={p} className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-white border border-gray-200 text-gray-700">
-                        {p}
-                      </span>
-                    ))}
-                  </div>
-                  <details className="text-[11px] text-gray-600">
-                    <summary className="cursor-pointer font-medium text-gray-700 hover:text-gray-900">Ver variaciones ({variations.length})</summary>
-                    <div className="mt-2 space-y-2 max-h-72 overflow-y-auto custom-scrollbar pr-2">
-                      {variations.map((v: any, i: number) => (
-                        <div key={i} className="p-2 bg-white border border-gray-100 rounded text-[11px]">
-                          <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-                            <span className="font-medium text-gray-700">{v.platform}</span>
-                            {v.slot && <span className="text-gray-500">· {v.slot} #{v.variationIndex}</span>}
-                            {typeof v.score === 'number' && <span className="text-gray-500">· {v.score}/10</span>}
-                          </div>
-                          <p className="text-gray-700 leading-relaxed">{v.content}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </details>
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
+const FUNNEL_COLORS: Record<string, string> = {
+  Awareness:       'bg-blue-50 text-blue-700 border-blue-200',
+  Consideración:   'bg-purple-50 text-purple-700 border-purple-200',
+  Conversión:      'bg-orange-50 text-orange-700 border-orange-200',
+  Retención:       'bg-emerald-50 text-emerald-700 border-emerald-200',
 };
 
-export default GenerationHistory;
+const PLATFORM_COLORS: Record<string, string> = {
+  'Instagram Post':    'bg-pink-50 text-pink-700',
+  'Instagram Historia':'bg-purple-50 text-purple-700',
+  'Instagram Carrusel':'bg-fuchsia-50 text-fuchsia-700',
+  'Instagram Reel':    'bg-violet-50 text-violet-700',
+  'TikTok':            'bg-gray-800 text-white',
+  'YouTube':           'bg-red-50 text-red-700',
+  'Email':             'bg-blue-50 text-blue-700',
+  'WhatsApp':          'bg-green-50 text-green-700',
+  'Google Ads':        'bg-yellow-50 text-yellow-700',
+};
+
+function formatRelative(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const m = Math.floor(diff / 60000);
+  if (m < 1)  return 'Ahora mismo';
+  if (m < 60) return `Hace ${m} min`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `Hace ${h}h`;
+  const d = Math.floor(h / 24);
+  if (d < 7)  return `Hace ${d}d`;
+  return new Date(iso).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+function groupByDate(logs: GenerationLog[]): [string, GenerationLog[]][] {
+  const map = new Map<string, GenerationLog[]>();
+  logs.forEach(log => {
+    const key = new Date(log.createdAt).toLocaleDateString('es-CO', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
+    if (!map.has(key)) map.set(key, []);
+    map.get(key)!.push(log);
+  });
+  return Array.from(map.entries());
+}
+
+export default function GenerationHistory({ clients, dnaProfiles }: GenerationHistoryProps) {
+  const [logs, setLogs] = useState<GenerationLog[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [clientFilter, setClientFilter] = useState('');
+
+  useEffect(() => {
+    setIsLoading(true);
+    generationApi.history(clientFilter || undefined)
+      .then((data: GenerationLog[]) => setLogs(Array.isArray(data) ? data : []))
+      .catch(() => setLogs([]))
+      .finally(() => setIsLoading(false));
+  }, [clientFilter]);
+
+  const clientName = (id: string) => clients.find(c => c.id === id)?.name ?? id;
+  const dnaName = (id: string) => dnaProfiles.find(p => p.id === id)?.name ?? 'Perfil ADN';
+  const grouped = groupByDate(logs);
+
+  return (
+    <div className="space-y-6 pb-8">
+      {/* Header */}
+      <div className="flex items-start justify-between">
+        <div>
+          <h2 className="text-[15px] font-semibold text-gray-900">Historial de Generaciones</h2>
+          <p className="text-[12px] text-gray-500 mt-0.5">Últimas 50 campañas generadas con spine y variaciones.</p>
+        </div>
+        <select
+          value={clientFilter}
+          onChange={e => setClientFilter(e.target.value)}
+          className="px-3 py-1.5 border border-gray-200 rounded-md text-[12px] bg-white focus:outline-none focus:border-gray-400"
+        >
+          <option value="">Todas las marcas</option>
+          {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+        </select>
+      </div>
+
+      {isLoading ? (
+        <div className="flex items-center justify-center h-40">
+          <div className="w-6 h-6 border-2 border-gray-300 border-t-gray-700 rounded-full animate-spin" />
+        </div>
+      ) : logs.length === 0 ? (
+        <div className="bg-white border border-gray-200 rounded-xl p-12 text-center shadow-sm">
+          <p className="text-[13px] text-gray-400">
+            {clientFilter ? 'No hay generaciones para esta marca.' : 'Aún no hay generaciones registradas.'}
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-8">
+          {grouped.map(([date, dayLogs]) => (
+            <div key={date}>
+              <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-3 capitalize">{date}</p>
+              <div className="space-y-3">
+                {dayLogs.map(log => {
+                  const isExpanded = expandedId === log.id;
+                  const variations: CopyVariation[] = Array.isArray(log.outputJson) ? log.outputJson : [];
+                  const funnelCls = FUNNEL_COLORS[log.funnelStage ?? ''] ?? 'bg-gray-50 text-gray-600 border-gray-200';
+
+                  return (
+                    <div key={log.id} className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+                      <button
+                        onClick={() => setExpandedId(isExpanded ? null : log.id)}
+                        className="w-full flex items-start gap-4 px-5 py-4 hover:bg-gray-50 transition-colors text-left"
+                      >
+                        <svg className={`w-3.5 h-3.5 text-gray-300 shrink-0 mt-0.5 transition-transform ${isExpanded ? 'rotate-90' : ''}`} fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                        </svg>
+
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap mb-2">
+                            <span className="text-[13px] font-semibold text-gray-900">{clientName(log.clientId)}</span>
+                            <span className="text-[11px] text-gray-400">·</span>
+                            <span className="text-[11px] text-gray-500">{dnaName(log.dnaProfileId)}</span>
+                            <span className="text-[11px] text-gray-300 ml-auto shrink-0">{formatRelative(log.createdAt)}</span>
+                          </div>
+
+                          {log.spineJson?.concept && (
+                            <p className="text-[12px] text-gray-500 mb-2 line-clamp-1 italic">"{log.spineJson.concept}"</p>
+                          )}
+
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            {log.funnelStage && (
+                              <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium border ${funnelCls}`}>
+                                {log.funnelStage}
+                              </span>
+                            )}
+                            {log.platforms.map(p => (
+                              <span key={p} className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${PLATFORM_COLORS[p] ?? 'bg-gray-100 text-gray-500'}`}>
+                                {p}
+                              </span>
+                            ))}
+                            {variations.length > 0 && (
+                              <span className="text-[10px] text-gray-400 ml-1">{variations.length} variaciones</span>
+                            )}
+                          </div>
+                        </div>
+                      </button>
+
+                      {isExpanded && (
+                        <div className="border-t border-gray-100 bg-gray-50/50 p-5 space-y-4">
+                          {log.spineJson && (log.spineJson.concept || log.spineJson.keyMessage) && (
+                            <div className="bg-white border border-gray-200 rounded-lg p-4 space-y-1.5">
+                              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-2">Campaign Spine</p>
+                              {log.spineJson.concept    && <p className="text-[12px] text-gray-800"><span className="font-medium">Concepto:</span> {log.spineJson.concept}</p>}
+                              {log.spineJson.keyMessage && <p className="text-[12px] text-gray-700"><span className="font-medium">Mensaje clave:</span> {log.spineJson.keyMessage}</p>}
+                              {log.spineJson.tone       && <p className="text-[12px] text-gray-700"><span className="font-medium">Tono:</span> {log.spineJson.tone}</p>}
+                              {log.spineJson.heroCTA    && <p className="text-[12px] text-gray-700"><span className="font-medium">CTA:</span> {log.spineJson.heroCTA}</p>}
+                            </div>
+                          )}
+
+                          {variations.length > 0 && (
+                            <div className="space-y-3">
+                              {Object.entries(
+                                variations.reduce((acc, v) => {
+                                  if (!acc[v.platform]) acc[v.platform] = [];
+                                  acc[v.platform].push(v);
+                                  return acc;
+                                }, {} as Record<string, CopyVariation[]>)
+                              ).map(([platform, pvs]) => (
+                                <div key={platform}>
+                                  <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium mb-2 ${PLATFORM_COLORS[platform] ?? 'bg-gray-100 text-gray-600'}`}>
+                                    {platform}
+                                  </span>
+                                  <div className="space-y-1.5">
+                                    {pvs.map((v, i) => (
+                                      <div key={i} className="bg-white border border-gray-100 rounded-lg px-3 py-2">
+                                        {v.slot && <span className="text-[9px] font-semibold uppercase tracking-widest text-gray-400 block mb-0.5">{v.slot}</span>}
+                                        <p className="text-[12px] text-gray-700 leading-snug line-clamp-2">{v.content}</p>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
