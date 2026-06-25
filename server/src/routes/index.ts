@@ -8,6 +8,7 @@ import * as savedController from '../controllers/savedController.js';
 import * as workspaceController from '../controllers/workspaceController.js';
 import * as reviewController from '../controllers/reviewController.js';
 import * as analyticsController from '../controllers/analyticsController.js';
+import * as presetController from '../controllers/presetController.js';
 import { authenticateToken, authorizeRole } from '../middleware/auth.js';
 
 const router = Router();
@@ -45,9 +46,15 @@ router.post('/dna-profiles/:id/duplicate', authenticateToken, authorizeRole(['AD
 router.put('/dna-profiles/:id', authenticateToken, authorizeRole(['ADMIN']), clientController.updateDNAProfile);
 router.delete('/dna-profiles/:id', authenticateToken, authorizeRole(['ADMIN']), clientController.deleteDNAProfile);
 
+// Generation Presets (ADMIN only)
+router.get('/presets', authenticateToken, authorizeRole(['ADMIN']), presetController.listPresets);
+router.post('/presets', authenticateToken, authorizeRole(['ADMIN']), presetController.createPreset);
+router.delete('/presets/:id', authenticateToken, authorizeRole(['ADMIN']), presetController.deletePreset);
+
 // Saved Variations & Projects
 router.get('/saved', authenticateToken, savedController.getSavedVariations);
 router.post('/saved', authenticateToken, savedController.saveVariation);
+router.post('/saved/bulk-delete', authenticateToken, savedController.bulkDeleteSaved);
 router.put('/saved/:id', authenticateToken, savedController.updateVariation);
 router.delete('/saved/:id', authenticateToken, savedController.deleteVariation);
 router.get('/projects', authenticateToken, savedController.getProjects);

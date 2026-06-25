@@ -9,6 +9,7 @@ import { PlatformIcon, getPlatformLabel } from './ui/platformIcons';
 import ScoreCircle from './ui/ScoreCircle';
 import { exportCampaignToExcel } from '../services/exportToExcel';
 import { negativeFeedbackApi } from '../services/api';
+import PrintPreview from './PrintPreview';
 
 interface ResultsTableProps {
   variations: CopyVariation[];
@@ -23,12 +24,13 @@ interface ResultsTableProps {
   onRegenerate?: (lockedKeys: Set<string>) => void;
   onRegenerateChannel?: (platform: string) => Promise<void>;
   isLoading?: boolean;
+  onBulkSave?: (variations: CopyVariation[]) => Promise<void>;
 }
 
 const variationKey = (v: CopyVariation) =>
   `${v.platform}::${v.slot || '_default'}::${v.variationIndex ?? 0}`;
 
-const ResultsTable: React.FC<ResultsTableProps> = ({ variations, projects, activeClient, onSave, onCreateProject, savedContentList, coherence, spine, usage, onRegenerate, onRegenerateChannel, isLoading }) => {
+const ResultsTable: React.FC<ResultsTableProps> = ({ variations, projects, activeClient, onSave, onCreateProject, savedContentList, coherence, spine, usage, onRegenerate, onRegenerateChannel, isLoading, onBulkSave }) => {
   const [savingId, setSavingId] = React.useState<string | null>(null);
   const [editingId, setEditingId] = React.useState<string | null>(null);
   const [mockupId, setMockupId] = React.useState<string | null>(null);
@@ -37,11 +39,16 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ variations, projects, activ
   const [newProjectName, setNewProjectName] = React.useState('');
   const [collapsedSlots, setCollapsedSlots] = React.useState<Set<string>>(new Set());
   const [lockedKeys, setLockedKeys] = React.useState<Set<string>>(new Set());
+  const [lockedPlatforms, setLockedPlatforms] = React.useState<Set<string>>(new Set());
   const [regeneratingChannels, setRegeneratingChannels] = React.useState<Set<string>>(new Set());
   const [negativeFeedbackTarget, setNegativeFeedbackTarget] = React.useState<CopyVariation | null>(null);
   const [negativeReason, setNegativeReason] = React.useState('');
   const [negativeSaving, setNegativeSaving] = React.useState(false);
   const [negativeSavedIds, setNegativeSavedIds] = React.useState<Set<string>>(new Set());
+  const [selectedVariationKeys, setSelectedVariationKeys] = React.useState<Set<string>>(new Set());
+  const [isBulkSaving, setIsBulkSaving] = React.useState(false);
+  const [bulkSavedFeedback, setBulkSavedFeedback] = React.useState(false);
+  const [showPrintPreview, setShowPrintPreview] = React.useState(false);
 
   const isLocked = (v: CopyVariation) => lockedKeys.has(variationKey(v));
   const toggleLock = (v: CopyVariation) => {
@@ -81,7 +88,96 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ variations, projects, activ
     setCollapsedSlots(next);
   }, [variations]);
 
+  // 1C — Load default locked platforms from localStorage
+  React.useEffect(() => {
+    try {
+      const stored = localStorage.getItem('vt_default_locked_platforms');
+      if (!stored) return;
+      const defaults: string[] = JSON.parse(stored);
+      if (!Array.isArray(defaults)) return;
+      const uniquePlatforms = Array.from(new Set(variations.map(v => String(v.platform))));
+      const matching = defaults.filter(p => uniquePlatforms.includes(p));
+      if (matching.length === 0) return;
+      setLockedPlatforms(prev => {
+        const next = new Set(prev);
+        matching.forEach(p => next.add(p));
+        return next;
+      });
+    } catch {
+      // silently ignore parse errors
+    }
+  }, [variations.length]);
+
   const isSaved = (content: string) => savedContentList.includes(content);
+
+  // 1B — selection key: platform + "_" + variationIndex
+  const selectionKey = (v: CopyVariation) => `${String(v.platform)}_${v.variationIndex ?? 0}`;
+
+  const isSelected = (v: CopyVariation) => selectedVariationKeys.has(selectionKey(v));
+
+  const toggleSelected = (v: CopyVariation) => {
+    const key = selectionKey(v);
+    setSelectedVariationKeys(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
+  };
+
+  const selectAllForPlatform = (platform: string) => {
+    const keys = localVariations
+      .filter(v => String(v.platform) === platform)
+      .map(selectionKey);
+    setSelectedVariationKeys(prev => {
+      const next = new Set(prev);
+      keys.forEach(k => next.add(k));
+      return next;
+    });
+  };
+
+  const deselectAllForPlatform = (platform: string) => {
+    const keys = new Set(
+      localVariations
+        .filter(v => String(v.platform) === platform)
+        .map(selectionKey)
+    );
+    setSelectedVariationKeys(prev => {
+      const next = new Set(prev);
+      keys.forEach(k => next.delete(k));
+      return next;
+    });
+  };
+
+  const allSelectedForPlatform = (platform: string) => {
+    const keys = localVariations
+      .filter(v => String(v.platform) === platform)
+      .map(selectionKey);
+    return keys.length > 0 && keys.every(k => selectedVariationKeys.has(k));
+  };
+
+  const getSelectedVariations = (): CopyVariation[] => {
+    const seen = new Set<string>();
+    return localVariations.filter(v => {
+      const key = selectionKey(v);
+      if (!selectedVariationKeys.has(key) || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  };
+
+  const handleBulkSave = async (all: boolean) => {
+    if (!onBulkSave) return;
+    const toSave = all ? localVariations : getSelectedVariations();
+    setIsBulkSaving(true);
+    try {
+      await onBulkSave(toSave);
+      setSelectedVariationKeys(new Set());
+      setBulkSavedFeedback(true);
+      setTimeout(() => setBulkSavedFeedback(false), 2000);
+    } finally {
+      setIsBulkSaving(false);
+    }
+  };
 
   const startEditing = (v: CopyVariation) => {
     setEditingId(v.id);
@@ -513,6 +609,16 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ variations, projects, activ
               {lockedKeys.size > 0 ? `Regenerar (${lockedKeys.size} 🔒)` : 'Regenerar'}
             </button>
           )}
+          {variations.length > 0 && !isLoading && (
+            <button
+              onClick={() => setShowPrintPreview(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-violet-50 hover:bg-violet-100 text-violet-800 rounded-lg text-[13px] font-medium transition-colors border border-violet-200"
+              title="Exportar resultados como PDF"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
+              Exportar PDF
+            </button>
+          )}
           <button
             onClick={exportToExcel}
             className="flex items-center gap-2 px-4 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-lg text-[13px] font-medium transition-colors border border-emerald-200"
@@ -552,10 +658,32 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ variations, projects, activ
                 <PlatformIcon platform={platform} size="md" />
                 <div className="flex-1 min-w-0">
                   <h3 className="text-[15px] font-medium text-gray-900 leading-tight truncate">{platform}</h3>
-                  <p className="text-[11px] text-gray-500 mt-0.5">
-                    {variationGroups.length} variación{variationGroups.length !== 1 ? 'es' : ''}
-                    {slotsPerVariation > 1 ? ` · ${slotsPerVariation} componentes` : ''}
-                  </p>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <p className="text-[11px] text-gray-500">
+                      {variationGroups.length} variación{variationGroups.length !== 1 ? 'es' : ''}
+                      {slotsPerVariation > 1 ? ` · ${slotsPerVariation} componentes` : ''}
+                    </p>
+                    {onBulkSave && (
+                      <>
+                        <span className="text-gray-300 text-[10px]">·</span>
+                        {allSelectedForPlatform(platform) ? (
+                          <button
+                            onClick={() => deselectAllForPlatform(platform)}
+                            className="text-[11px] text-gray-400 hover:text-gray-700 transition-colors"
+                          >
+                            Ninguno
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => selectAllForPlatform(platform)}
+                            className="text-[11px] text-gray-400 hover:text-gray-700 transition-colors"
+                          >
+                            Seleccionar todo
+                          </button>
+                        )}
+                      </>
+                    )}
+                  </div>
                 </div>
                 {totalIssues > 0 && (
                   <span className="text-[11px] font-medium text-amber-700 bg-amber-50 border border-amber-200 px-2 py-1 rounded-md">
@@ -596,6 +724,15 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ variations, projects, activ
                       {/* VARIATION HEADER */}
                       <div className="flex items-center justify-between px-4 py-2.5 bg-gray-50/70 border-b border-gray-100">
                         <div className="flex items-center gap-2 flex-wrap">
+                          {onBulkSave && (
+                            <input
+                              type="checkbox"
+                              checked={isSelected(slots[0])}
+                              onChange={() => toggleSelected(slots[0])}
+                              className="w-3.5 h-3.5 rounded border-gray-300 accent-gray-900 cursor-pointer shrink-0"
+                              title="Seleccionar esta variación"
+                            />
+                          )}
                           <span className="text-[10px] font-mono font-semibold text-gray-500 bg-white border border-gray-200 px-2 py-0.5 rounded">
                             #{variationIndex}
                           </span>
@@ -866,6 +1003,17 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ variations, projects, activ
         </div>
       )}
 
+      {/* 5A — PDF PRINT PREVIEW */}
+      {showPrintPreview && (
+        <PrintPreview
+          title="Resultados de generacion"
+          clientName={activeClient?.name}
+          spine={spine}
+          variations={localVariations}
+          onClose={() => setShowPrintPreview(false)}
+        />
+      )}
+
       {/* MODAL PARA GUARDAR */}
       {savingId && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 animate-in fade-in duration-200">
@@ -917,6 +1065,41 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ variations, projects, activ
                 </button>
               </div>
            </div>
+        </div>
+      )}
+      {/* 1B — FLOATING BULK ACTION BAR */}
+      {onBulkSave && selectedVariationKeys.size > 0 && (
+        <div className="sticky bottom-0 left-0 right-0 z-50 flex items-center justify-between gap-4 px-6 py-4 bg-white border-t border-gray-200 shadow-lg animate-in slide-in-from-bottom-2 duration-200">
+          <span className="text-[13px] font-medium text-gray-700">
+            {selectedVariationKeys.size} seleccionada{selectedVariationKeys.size !== 1 ? 's' : ''}
+          </span>
+          <div className="flex items-center gap-3">
+            {bulkSavedFeedback && (
+              <span className="text-[12px] font-medium text-green-600 animate-in fade-in duration-300">
+                Guardadas
+              </span>
+            )}
+            <button
+              onClick={() => handleBulkSave(false)}
+              disabled={isBulkSaving}
+              className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-lg text-[13px] font-medium hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+            >
+              {isBulkSaving ? (
+                <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+              ) : null}
+              Guardar seleccionadas
+            </button>
+            <button
+              onClick={() => handleBulkSave(true)}
+              disabled={isBulkSaving}
+              className="flex items-center gap-2 px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-lg text-[13px] font-medium hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isBulkSaving ? (
+                <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+              ) : null}
+              Guardar todas
+            </button>
+          </div>
         </div>
       )}
     </div>

@@ -4,10 +4,13 @@ import { prisma } from '../lib/prisma.js';
 
 export const getAnalytics = async (req: AuthRequest, res: Response) => {
   const user = req.user;
+  const clientIdFilter = typeof req.query.clientId === 'string' ? req.query.clientId : undefined;
 
   try {
     const clients = await prisma.client.findMany({
-      where: { workspaceId: user?.workspaceId },
+      where: clientIdFilter
+        ? { workspaceId: user?.workspaceId, id: clientIdFilter }
+        : { workspaceId: user?.workspaceId },
       select: { id: true, name: true },
     });
     const clientIds = clients.map(c => c.id);
@@ -22,41 +25,43 @@ export const getAnalytics = async (req: AuthRequest, res: Response) => {
       });
     }
 
+    const scopedClientIds = clientIdFilter ? [clientIdFilter].filter(id => clientIds.includes(id)) : clientIds;
+
     const [savedAll, approvedAll, rejectedAll, savedByPlatform, approvedByPlatform, rejectedByPlatform, recentRejections] =
       await Promise.all([
         prisma.savedVariation.groupBy({
           by: ['clientId'],
-          where: { clientId: { in: clientIds } },
+          where: { clientId: { in: scopedClientIds } },
           _count: { id: true },
         }),
         prisma.savedVariation.groupBy({
           by: ['clientId'],
-          where: { clientId: { in: clientIds }, isApproved: true },
+          where: { clientId: { in: scopedClientIds }, isApproved: true },
           _count: { id: true },
         }),
         prisma.negativeFeedback.groupBy({
           by: ['clientId'],
-          where: { clientId: { in: clientIds } },
+          where: { clientId: { in: scopedClientIds } },
           _count: { id: true },
         }),
         prisma.savedVariation.groupBy({
           by: ['platform'],
-          where: { clientId: { in: clientIds } },
+          where: { clientId: { in: scopedClientIds } },
           _count: { id: true },
         }),
         prisma.savedVariation.groupBy({
           by: ['platform'],
-          where: { clientId: { in: clientIds }, isApproved: true },
+          where: { clientId: { in: scopedClientIds }, isApproved: true },
           _count: { id: true },
         }),
         prisma.negativeFeedback.groupBy({
           by: ['platform'],
-          where: { clientId: { in: clientIds } },
+          where: { clientId: { in: scopedClientIds } },
           _count: { id: true },
           orderBy: { _count: { platform: 'desc' } },
         }),
         prisma.negativeFeedback.findMany({
-          where: { clientId: { in: clientIds } },
+          where: { clientId: { in: scopedClientIds } },
           orderBy: { createdAt: 'desc' },
           take: 6,
           select: { platform: true, reason: true, clientId: true, createdAt: true },

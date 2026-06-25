@@ -48,7 +48,7 @@ export const authApi = {
 };
 
 export const analyticsApi = {
-  get: () => apiRequest('/analytics'),
+  get: (clientId?: string) => apiRequest(`/analytics${clientId ? `?clientId=${encodeURIComponent(clientId)}` : ''}`),
 };
 
 export const generationApi = {
@@ -153,9 +153,17 @@ export const libraryApi = {
   saveVariation: (data: any) => apiRequest('/saved', { method: 'POST', body: JSON.stringify(data) }),
   updateVariation: (id: string, data: any) => apiRequest(`/saved/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteVariation: (id: string) => apiRequest(`/saved/${id}`, { method: 'DELETE' }),
+  bulkDelete: (ids: string[]) => apiRequest('/saved/bulk-delete', { method: 'POST', body: JSON.stringify({ ids }) }),
   listProjects: () => apiRequest('/projects'),
   createProject: (data: any) => apiRequest('/projects', { method: 'POST', body: JSON.stringify(data) }),
   deleteProject: (id: string) => apiRequest(`/projects/${id}`, { method: 'DELETE' }),
+};
+
+export const presetApi = {
+  list: () => apiRequest('/presets'),
+  create: (data: { name: string; clientId?: string; parameters: any }) =>
+    apiRequest('/presets', { method: 'POST', body: JSON.stringify(data) }),
+  delete: (id: string) => apiRequest(`/presets/${id}`, { method: 'DELETE' }),
 };
 
 export const reviewApi = {

@@ -2,6 +2,35 @@
 import React from 'react';
 import { BrandConfig } from '../types';
 
+const ALL_PLATFORMS = [
+  'Instagram Post',
+  'Instagram Historia',
+  'Instagram Carrusel',
+  'Instagram Reel',
+  'TikTok',
+  'YouTube',
+  'Email',
+  'WhatsApp',
+  'Google Ads',
+  'Google Display',
+  'Push Notification',
+  'Pop up',
+  'Cuña de Radio',
+  'Rich Media',
+];
+
+const LS_KEY = 'vt_default_locked_platforms';
+
+function loadLockedPlatforms(): string[] {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return [];
+    return JSON.parse(raw) as string[];
+  } catch {
+    return [];
+  }
+}
+
 interface SettingsManagerProps {
   voices: BrandConfig[];
   goals: BrandConfig[];
@@ -10,16 +39,27 @@ interface SettingsManagerProps {
   onResetDefaults: () => void;
 }
 
-const SettingsManager: React.FC<SettingsManagerProps> = ({ 
-  voices, 
-  goals, 
-  onUpdateVoices, 
+const SettingsManager: React.FC<SettingsManagerProps> = ({
+  voices,
+  goals,
+  onUpdateVoices,
   onUpdateGoals,
   onResetDefaults
 }) => {
   const [newVoice, setNewVoice] = React.useState('');
   const [newGoal, setNewGoal] = React.useState('');
   const [editingItem, setEditingItem] = React.useState<{ type: 'voice' | 'goal', id: string, value: string } | null>(null);
+  const [lockedPlatforms, setLockedPlatforms] = React.useState<string[]>(() => loadLockedPlatforms());
+
+  const togglePlatformLock = (platform: string) => {
+    setLockedPlatforms(prev => {
+      const next = prev.includes(platform)
+        ? prev.filter(p => p !== platform)
+        : [...prev, platform];
+      localStorage.setItem(LS_KEY, JSON.stringify(next));
+      return next;
+    });
+  };
 
   const addItem = (type: 'voice' | 'goal') => {
     const value = type === 'voice' ? newVoice : newGoal;
@@ -198,6 +238,72 @@ const SettingsManager: React.FC<SettingsManagerProps> = ({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
         )}
+      </div>
+
+      {/* Comportamiento del generador */}
+      <div className="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden">
+        {/* Section Header */}
+        <div className="p-10 border-b border-slate-50 bg-slate-50/30">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-white border border-slate-100 text-slate-900 rounded-2xl shadow-sm">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+            </div>
+            <div>
+              <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter">
+                Comportamiento del Generador
+              </h3>
+            </div>
+          </div>
+        </div>
+
+        {/* Platform Grid */}
+        <div className="p-10">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
+            {ALL_PLATFORMS.map(platform => {
+              const isLocked = lockedPlatforms.includes(platform);
+              return (
+                <label
+                  key={platform}
+                  className={`flex items-center gap-4 p-5 rounded-2xl border cursor-pointer transition-all group select-none ${
+                    isLocked
+                      ? 'border-slate-900 bg-slate-50'
+                      : 'border-slate-100 bg-white hover:border-slate-300'
+                  }`}
+                >
+                  {/* Toggle */}
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={isLocked}
+                    onClick={() => togglePlatformLock(platform)}
+                    className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none ${
+                      isLocked ? 'bg-slate-900' : 'bg-slate-200'
+                    }`}
+                  >
+                    <span
+                      className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-md ring-0 transition-transform duration-200 ${
+                        isLocked ? 'translate-x-4' : 'translate-x-0'
+                      }`}
+                    />
+                  </button>
+                  <span
+                    className={`font-bold text-sm uppercase tracking-tight transition-colors ${
+                      isLocked ? 'text-slate-900' : 'text-slate-400 group-hover:text-slate-600'
+                    }`}
+                    onClick={() => togglePlatformLock(platform)}
+                  >
+                    {platform}
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+          <p className="text-[10px] font-black uppercase tracking-widest text-slate-300 leading-relaxed">
+            Estas plataformas iniciaran bloqueadas al generar nuevas variaciones.
+          </p>
+        </div>
       </div>
 
       {/* Info Tip */}

@@ -618,6 +618,11 @@ const App: React.FC = () => {
                     onRegenerate={handleRegenerate}
                     onRegenerateChannel={spine ? handleRegenerateChannel : undefined}
                     isLoading={isLoading}
+                    onBulkSave={async (vars) => {
+                      let count = 0;
+                      for (const v of vars) { try { await handleSaveVariation(v, ""); count++; } catch {} }
+                      if (count > 0) addNotification(count + " variaciones guardadas en la biblioteca", "success");
+                    }}
                   />
                 ) : !isLoading ? (
                   <div className="apple-card overflow-hidden">
@@ -795,6 +800,16 @@ const App: React.FC = () => {
                 }
               }} 
               onCreateProject={createProject}
+              onRefreshSaved={async () => {
+                try {
+                  const apiSaved = await libraryApi.listSaved();
+                  const normalized = apiSaved.map((v: any) => ({
+                    ...v,
+                    savedAt: typeof v.savedAt === 'string' ? new Date(v.savedAt).getTime() : v.savedAt
+                  }));
+                  setSavedVariations(normalized);
+                } catch {}
+              }}
               readOnly={!isAdmin}
             />
           )}

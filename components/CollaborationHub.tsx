@@ -36,6 +36,7 @@ export default function CollaborationHub({ savedVariations, clients, addNotifica
   const [clientFilter, setClientFilter] = useState('');
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [detailCache, setDetailCache] = useState<Record<string, ReviewSession>>({});
+  const [showRejections, setShowRejections] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     loadSessions();
@@ -300,6 +301,20 @@ export default function CollaborationHub({ savedVariations, clients, addNotifica
                       {statusInfo.label}
                     </span>
 
+                    {/* Resumen compacto aprobadas/rechazadas (solo COMPLETED con detalle cargado) */}
+                    {s.status === 'COMPLETED' && s.submission && detail && (() => {
+                      const feedbacks = detail.submission?.feedbacks ?? [];
+                      const approvedCount = feedbacks.filter(f => f.decision === 'APPROVED').length;
+                      const rejectedCount = feedbacks.filter(f => f.decision === 'REJECTED').length;
+                      return (
+                        <span className="inline-flex items-center gap-1.5 shrink-0">
+                          <span className="text-[11px] font-semibold text-emerald-600">V {approvedCount}</span>
+                          <span className="text-[10px] text-gray-300">·</span>
+                          <span className="text-[11px] font-semibold text-red-500">X {rejectedCount}</span>
+                        </span>
+                      );
+                    })()}
+
                     {/* # variaciones */}
                     <span className="text-[12px] text-gray-400 w-8 text-center shrink-0">
                       {s._count?.items ?? s.items?.length ?? '—'}
@@ -336,6 +351,66 @@ export default function CollaborationHub({ savedVariations, clients, addNotifica
                         <p className="text-[12px] text-gray-400 text-center py-2">Aún no hay revisión enviada.</p>
                       ) : (
                         <div className="space-y-2">
+                          {/* Resumen de revision (solo COMPLETED) */}
+                          {s.status === 'COMPLETED' && (() => {
+                            const feedbacks = detail.submission?.feedbacks ?? [];
+                            const approvedCount = feedbacks.filter(f => f.decision === 'APPROVED').length;
+                            const rejectedCount = feedbacks.filter(f => f.decision === 'REJECTED').length;
+                            const rejectedFeedbacks = feedbacks.filter(f => f.decision === 'REJECTED');
+                            const isShowingRejections = showRejections[s.id] ?? false;
+                            return (
+                              <div className="mb-4 p-4 bg-white border border-gray-100 rounded-xl shadow-sm space-y-3">
+                                <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Resumen de revision</p>
+                                {detail.submission?.reviewerName && (
+                                  <p className="text-[12px] text-gray-600">
+                                    Revisado por: <span className="font-semibold text-gray-800">{detail.submission.reviewerName}</span>
+                                  </p>
+                                )}
+                                <div className="flex gap-3">
+                                  <div className="flex-1 bg-emerald-50 border border-emerald-100 rounded-lg px-4 py-3 text-center">
+                                    <p className="text-[10px] font-medium text-emerald-600 uppercase tracking-wide mb-1">Aprobadas</p>
+                                    <p className="text-[22px] font-bold text-emerald-700 leading-none">{approvedCount}</p>
+                                  </div>
+                                  <div className="flex-1 bg-red-50 border border-red-100 rounded-lg px-4 py-3 text-center">
+                                    <p className="text-[10px] font-medium text-red-500 uppercase tracking-wide mb-1">Rechazadas</p>
+                                    <p className="text-[22px] font-bold text-red-600 leading-none">{rejectedCount}</p>
+                                  </div>
+                                </div>
+                                {rejectedCount > 0 && (
+                                  <div>
+                                    <button
+                                      onClick={() => setShowRejections(prev => ({ ...prev, [s.id]: !isShowingRejections }))}
+                                      className="flex items-center gap-1.5 text-[11px] font-medium text-red-500 hover:text-red-700 transition-colors"
+                                    >
+                                      <svg className={`w-3 h-3 transition-transform ${isShowingRejections ? 'rotate-90' : ''}`} fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                                      </svg>
+                                      Ver motivos de rechazo
+                                    </button>
+                                    {isShowingRejections && (
+                                      <div className="mt-2 space-y-1.5 pl-4 border-l-2 border-red-100">
+                                        {rejectedFeedbacks.map(fb => {
+                                          const matchedItem = (detail.items ?? []).find(it => it.savedVariation.id === fb.savedVariationId);
+                                          const platformLabel = matchedItem?.savedVariation.platform ?? fb.savedVariationId;
+                                          return (
+                                            <div key={fb.savedVariationId} className="flex items-start gap-2">
+                                              <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-medium shrink-0 ${PLATFORM_COLORS[platformLabel] ?? 'bg-gray-100 text-gray-600'}`}>
+                                                {platformLabel}
+                                              </span>
+                                              <span className="text-[11px] text-gray-600 italic">
+                                                {fb.comment ? `"${fb.comment}"` : 'Sin comentario'}
+                                              </span>
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })()}
+
                           <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-3">
                             Revisado por <span className="text-gray-700 normal-case font-semibold">{detail.submission.reviewerName || 'Anónimo'}</span>
                             {' '}· {new Date(detail.submission.submittedAt).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })}

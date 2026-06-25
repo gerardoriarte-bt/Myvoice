@@ -6,7 +6,7 @@ import PromptPreview from './PromptPreview';
 import GenerationHistory from './GenerationHistory';
 import VoiceFingerprintCard from './VoiceFingerprintCard';
 import BrandHubHero from './BrandHubHero';
-import { clientApi } from '../services/api';
+import { clientApi, analyticsApi } from '../services/api';
 
 interface ClientManagerProps {
   clients: Client[];
@@ -85,6 +85,26 @@ const ClientManager: React.FC<ClientManagerProps> = ({
 
   // Duplicate campaign state
   const [duplicatingId, setDuplicatingId] = React.useState<string | null>(null);
+
+  // Client detail view state
+  const [clientDetailView, setClientDetailView] = React.useState<'campaigns' | 'metrics'>('campaigns');
+
+  // Analytics / Metricas state
+  const [analyticsData, setAnalyticsData] = React.useState<any>(null);
+  const [analyticsLoading, setAnalyticsLoading] = React.useState(false);
+  const [analyticsError, setAnalyticsError] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (clientDetailView === 'metrics' && activeClientHub) {
+      setAnalyticsData(null);
+      setAnalyticsError(null);
+      setAnalyticsLoading(true);
+      analyticsApi.get(activeClientHub)
+        .then((data: any) => { setAnalyticsData(data); })
+        .catch((err: any) => { setAnalyticsError(err?.message || 'Error cargando métricas'); })
+        .finally(() => { setAnalyticsLoading(false); });
+    }
+  }, [clientDetailView, activeClientHub]);
 
   const handleDuplicateProfile = async (profile: ContentDNAProfile) => {
     setDuplicatingId(profile.id);
@@ -286,11 +306,17 @@ const ClientManager: React.FC<ClientManagerProps> = ({
     setActiveClientHub(clientId);
     resetDnaForm();
     setShowGlobalSettings(false);
+    setClientDetailView('campaigns');
+    setAnalyticsData(null);
+    setAnalyticsError(null);
   };
 
   const exitHub = () => {
     setActiveClientHub(null);
     resetDnaForm();
+    setClientDetailView('campaigns');
+    setAnalyticsData(null);
+    setAnalyticsError(null);
   };
 
   const inputStyle = "w-full px-5 py-4 bg-white border border-slate-300 rounded-2xl font-bold text-slate-800 focus:border-slate-900 outline-none transition-all placeholder:text-slate-300 text-sm shadow-sm";
@@ -734,28 +760,126 @@ const ClientManager: React.FC<ClientManagerProps> = ({
                      </button>
                   </div>
 
-                  {/* DETAIL RIGHT: WORKSPACE CAMPAÑAS */}
+                  {/* DETAIL RIGHT: WORKSPACE CAMPAÑAS / METRICAS */}
                   <div className="xl:col-span-9 space-y-6">
                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
                         <div>
                           <h4 className="text-[16px] font-medium text-gray-900">
-                             {showDnaForm ? (editingProfileId ? 'Editor de Campaña' : 'Nueva Campaña') : 'Campañas Activas'}
+                             {clientDetailView === 'metrics'
+                               ? 'Métricas'
+                               : showDnaForm ? (editingProfileId ? 'Editor de Campaña' : 'Nueva Campaña') : 'Campañas Activas'}
                           </h4>
                           <p className="text-[12px] text-gray-500 mt-0.5">
-                             {showDnaForm ? 'Parametriza el brief estratégico' : `${profiles.length} campañas configuradas`}
+                             {clientDetailView === 'metrics'
+                               ? 'Resumen de rendimiento por cliente'
+                               : showDnaForm ? 'Parametriza el brief estratégico' : `${profiles.length} campañas configuradas`}
                           </p>
                         </div>
-                        {!showDnaForm && (
-                          <button 
-                            onClick={() => { resetDnaForm(); setShowDnaForm(true); }}
-                            className="bg-gray-900 text-white px-4 py-2 rounded-lg text-[13px] font-medium shadow-sm hover:bg-gray-800 transition-colors"
-                          >
-                            + Crear Campaña
-                          </button>
-                        )}
+                        <div className="flex items-center gap-3">
+                          {/* Sub-tab toggle */}
+                          <div className="flex items-center bg-gray-100 rounded-lg p-1 gap-1">
+                            <button
+                              onClick={() => setClientDetailView('campaigns')}
+                              className={`px-3 py-1.5 rounded-md text-[12px] font-medium transition-colors ${clientDetailView === 'campaigns' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                            >
+                              Campañas
+                            </button>
+                            <button
+                              onClick={() => setClientDetailView('metrics')}
+                              className={`px-3 py-1.5 rounded-md text-[12px] font-medium transition-colors ${clientDetailView === 'metrics' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                            >
+                              Métricas
+                            </button>
+                          </div>
+                          {clientDetailView === 'campaigns' && !showDnaForm && (
+                            <button
+                              onClick={() => { resetDnaForm(); setShowDnaForm(true); }}
+                              className="bg-gray-900 text-white px-4 py-2 rounded-lg text-[13px] font-medium shadow-sm hover:bg-gray-800 transition-colors"
+                            >
+                              + Crear Campaña
+                            </button>
+                          )}
+                        </div>
                      </div>
 
-                     {!showDnaForm ? (
+                     {clientDetailView === 'metrics' ? (
+                        /* METRICAS PANEL */
+                        <div className="animate-in fade-in duration-300">
+                          {analyticsLoading && (
+                            <div className="flex items-center justify-center py-16">
+                              <span className="w-6 h-6 border-2 border-gray-200 border-t-gray-700 rounded-full animate-spin" />
+                            </div>
+                          )}
+                          {analyticsError && !analyticsLoading && (
+                            <div className="flex items-start gap-2 text-[12px] text-red-700 bg-red-50 border border-red-200 rounded-xl p-4">
+                              <svg className="w-4 h-4 mt-0.5 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" /></svg>
+                              <span>{analyticsError}</span>
+                            </div>
+                          )}
+                          {analyticsData && !analyticsLoading && (() => {
+                            const summary = analyticsData.summary || {};
+                            const byPlatform: any[] = (analyticsData.byPlatform || [])
+                              .slice()
+                              .sort((a: any, b: any) => (b.saved || 0) - (a.saved || 0))
+                              .slice(0, 5);
+                            const maxSaved = byPlatform.reduce((m: number, p: any) => Math.max(m, p.saved || 0), 1);
+                            const totalSaved = summary.totalSaved || 0;
+
+                            if (totalSaved === 0) {
+                              return (
+                                <div className="py-16 text-center text-[13px] text-gray-500 border border-dashed border-gray-200 rounded-xl bg-gray-50/50">
+                                  Sin datos registrados aun para este cliente.
+                                </div>
+                              );
+                            }
+
+                            return (
+                              <div className="space-y-6">
+                                {/* Stat cards 2x2 */}
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+                                    <p className="text-[11px] font-medium text-gray-500 uppercase tracking-wider mb-2">Guardadas</p>
+                                    <p className="text-[32px] font-semibold text-gray-900 leading-none">{totalSaved}</p>
+                                  </div>
+                                  <div className="bg-white border border-emerald-200 rounded-xl p-5 shadow-sm">
+                                    <p className="text-[11px] font-medium text-emerald-600 uppercase tracking-wider mb-2">Aprobadas</p>
+                                    <p className="text-[32px] font-semibold text-emerald-700 leading-none">{summary.totalApproved || 0}</p>
+                                  </div>
+                                  <div className="bg-white border border-blue-200 rounded-xl p-5 shadow-sm">
+                                    <p className="text-[11px] font-medium text-blue-600 uppercase tracking-wider mb-2">Tasa aprobacion</p>
+                                    <p className="text-[32px] font-semibold text-blue-700 leading-none">{summary.approvalRate || 0}%</p>
+                                  </div>
+                                  <div className="bg-white border border-red-200 rounded-xl p-5 shadow-sm">
+                                    <p className="text-[11px] font-medium text-red-500 uppercase tracking-wider mb-2">Rechazadas</p>
+                                    <p className="text-[32px] font-semibold text-red-600 leading-none">{summary.totalRejected || 0}</p>
+                                  </div>
+                                </div>
+
+                                {/* Mini bar chart — CSS only */}
+                                {byPlatform.length > 0 && (
+                                  <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+                                    <h5 className="text-[13px] font-medium text-gray-900 mb-4">Por plataforma</h5>
+                                    <div className="space-y-3">
+                                      {byPlatform.map((item: any) => (
+                                        <div key={item.platform} className="flex items-center gap-3">
+                                          <span className="text-[11px] text-gray-600 w-36 truncate shrink-0">{item.platform}</span>
+                                          <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+                                            <div
+                                              className="h-full bg-gray-700 rounded-full transition-all"
+                                              style={{ width: `${Math.round(((item.saved || 0) / maxSaved) * 100)}%` }}
+                                            />
+                                          </div>
+                                          <span className="text-[11px] font-medium text-gray-700 tabular-nums w-6 text-right shrink-0">{item.saved || 0}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })()}
+                        </div>
+                     ) : !showDnaForm ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                            {profiles.map(profile => (
                              <div key={profile.id} className="bg-white p-5 rounded-xl border border-gray-200 hover:border-gray-300 shadow-sm transition-colors group flex flex-col justify-between h-full">
@@ -998,7 +1122,7 @@ const ClientManager: React.FC<ClientManagerProps> = ({
                         </div>
                      )}
 
-                     {!showDnaForm && (
+                     {clientDetailView === 'campaigns' && !showDnaForm && (
                        <GenerationHistory initialClientId={client.id} />
                      )}
                   </div>

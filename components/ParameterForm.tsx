@@ -1,7 +1,8 @@
 import React from 'react';
-import { Building2, Layers, Target, Radio, Zap, Check, Loader2, Sparkles, ChevronRight, BookOpen } from 'lucide-react';
+import { Building2, Layers, Target, Radio, Zap, Check, Loader2, Sparkles, ChevronRight, BookOpen, X } from 'lucide-react';
 import { Platform, PLATFORM_GROUPS, FunnelStage, FUNNEL_STAGE_DESCRIPTIONS, CopyParameters, BrandConfig, Client, ContentDNAProfile } from '../types';
 import { PlatformIcon } from './ui/platformIcons';
+import { apiRequest } from '../services/api';
 
 interface ParameterFormProps {
   onSubmit: (params: CopyParameters) => void;
@@ -26,6 +27,80 @@ const ParameterForm: React.FC<ParameterFormProps> = ({
   const [activeProfileId, setActiveProfileId] = React.useState<string | null>(null);
   const [selectedPlatforms, setSelectedPlatforms] = React.useState<Platform[]>([]);
   const [funnelStage, setFunnelStage] = React.useState<FunnelStage>(FunnelStage.CONVERSION);
+
+  // Presets state
+  const [presets, setPresets] = React.useState<any[]>([]);
+  const [isLoadingPresets, setIsLoadingPresets] = React.useState(false);
+  const [showPresetSave, setShowPresetSave] = React.useState(false);
+  const [presetName, setPresetName] = React.useState('');
+  const [isSavingPreset, setIsSavingPreset] = React.useState(false);
+  const [presetSelectValue, setPresetSelectValue] = React.useState('');
+
+  const loadPresets = async () => {
+    setIsLoadingPresets(true);
+    try {
+      const data = await apiRequest('/presets');
+      setPresets(Array.isArray(data) ? data : []);
+    } catch {
+      // silently ignore
+    } finally {
+      setIsLoadingPresets(false);
+    }
+  };
+
+  React.useEffect(() => {
+    loadPresets();
+  }, []);
+
+  const applyPreset = (preset: any) => {
+    const p = preset.parameters;
+    if (!p) return;
+    if (typeof p.clientId === 'string' && p.clientId) setClientId(p.clientId);
+    if (typeof p.activeProfileId === 'string') setActiveProfileId(p.activeProfileId);
+    if (Array.isArray(p.selectedPlatforms) && p.selectedPlatforms.length > 0) {
+      setSelectedPlatforms(p.selectedPlatforms as Platform[]);
+    }
+    if (typeof p.funnelStage === 'string' && Object.values(FunnelStage).includes(p.funnelStage as FunnelStage)) {
+      setFunnelStage(p.funnelStage as FunnelStage);
+    }
+    setPresetSelectValue('');
+  };
+
+  const savePreset = async () => {
+    if (!presetName.trim()) return;
+    setIsSavingPreset(true);
+    try {
+      await apiRequest('/presets', {
+        method: 'POST',
+        body: JSON.stringify({
+          name: presetName.trim(),
+          clientId,
+          parameters: {
+            clientId,
+            activeProfileId,
+            selectedPlatforms,
+            funnelStage,
+          },
+        }),
+      });
+      await loadPresets();
+      setShowPresetSave(false);
+      setPresetName('');
+    } catch {
+      // silently ignore
+    } finally {
+      setIsSavingPreset(false);
+    }
+  };
+
+  const deletePreset = async (id: string) => {
+    try {
+      await apiRequest('/presets/' + id, { method: 'DELETE' });
+      setPresets(prev => prev.filter(p => p.id !== id));
+    } catch {
+      // silently ignore
+    }
+  };
 
   React.useEffect(() => {
     if (clients.length > 0) {
@@ -84,6 +159,84 @@ const ParameterForm: React.FC<ParameterFormProps> = ({
       onSubmit={handleSubmit}
       className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden animate-in fade-in duration-300 sticky top-6"
     >
+      {/* PRESETS */}
+      <div className="px-5 pt-4 pb-4 border-b border-gray-100">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide">Presets</span>
+          <button
+            type="button"
+            onClick={() => setShowPresetSave(v => !v)}
+            className="text-[10px] font-medium text-gray-500 border border-gray-200 bg-white px-2 py-0.5 rounded hover:bg-gray-50 transition-colors"
+          >
+            Guardar como preset
+          </button>
+        </div>
+
+        <select
+          value={presetSelectValue}
+          onChange={e => {
+            const val = e.target.value;
+            setPresetSelectValue(val);
+            if (val !== '') {
+              const found = presets.find(p => p.id === val);
+              if (found) applyPreset(found);
+            }
+          }}
+          disabled={isLoadingPresets || presets.length === 0}
+          className="w-full px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-gray-700 focus:border-gray-400 outline-none transition-colors text-[12px] disabled:opacity-50"
+        >
+          <option value="">{isLoadingPresets ? 'Cargando…' : 'Cargar preset…'}</option>
+          {presets.map(p => (
+            <option key={p.id} value={p.id}>{p.name}</option>
+          ))}
+        </select>
+
+        {showPresetSave && (
+          <div className="mt-2 flex items-center gap-1.5">
+            <input
+              type="text"
+              value={presetName}
+              onChange={e => setPresetName(e.target.value)}
+              placeholder="Nombre del preset"
+              className="flex-1 px-2.5 py-1.5 border border-gray-200 rounded-lg text-[12px] text-gray-900 outline-none focus:border-gray-400 transition-colors"
+            />
+            <button
+              type="button"
+              onClick={savePreset}
+              disabled={isSavingPreset || !presetName.trim()}
+              className="text-[11px] font-medium bg-gray-900 text-white px-3 py-1.5 rounded-lg hover:bg-black disabled:opacity-50 transition-colors whitespace-nowrap"
+            >
+              {isSavingPreset ? 'Guardando…' : 'Guardar'}
+            </button>
+            <button
+              type="button"
+              onClick={() => { setShowPresetSave(false); setPresetName(''); }}
+              className="text-[11px] font-medium text-gray-500 border border-gray-200 bg-white px-2.5 py-1.5 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              Cancelar
+            </button>
+          </div>
+        )}
+
+        {presets.length > 0 && (
+          <div className="mt-2 flex flex-wrap gap-1">
+            {presets.map(p => (
+              <span key={p.id} className="inline-flex items-center gap-1 bg-gray-100 text-gray-600 border border-gray-200 text-[10px] font-medium px-2 py-0.5 rounded-full">
+                {p.name}
+                <button
+                  type="button"
+                  onClick={() => deletePreset(p.id)}
+                  className="text-gray-400 hover:text-gray-700 transition-colors ml-0.5"
+                  aria-label={`Eliminar preset ${p.name}`}
+                >
+                  <X className="w-2.5 h-2.5" />
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* STEPPER */}
       <div className="px-5 pt-4 pb-2">
         <div className="flex items-center gap-0">

@@ -128,3 +128,32 @@ export const saveNegativeFeedback = async (req: AuthRequest, res: Response) => {
     res.status(500).json({ error: 'Error al guardar feedback negativo' });
   }
 };
+
+export const bulkDeleteSaved = async (req: AuthRequest, res: Response) => {
+  const user = req.user;
+  const { ids } = req.body;
+  if (!Array.isArray(ids) || ids.length === 0) {
+    return res.status(400).json({ error: 'ids debe ser un array no vacío' });
+  }
+  try {
+    if (user?.role === 'ADMIN') {
+      await prisma.savedVariation.deleteMany({
+        where: {
+          id: { in: ids },
+          client: { workspaceId: user.workspaceId },
+        },
+      });
+    } else {
+      await prisma.savedVariation.deleteMany({
+        where: {
+          id: { in: ids },
+          clientId: user?.clientId!,
+        },
+      });
+    }
+    res.json({ success: true });
+  } catch (error) {
+    console.error('bulkDeleteSaved error:', error);
+    res.status(500).json({ error: 'Error al eliminar contenidos' });
+  }
+};

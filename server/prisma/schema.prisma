@@ -8,19 +8,20 @@ datasource db {
 }
 
 model Workspace {
-  id             String          @id @default(uuid())
+  id             String              @id @default(uuid())
   name           String
-  slug           String          @unique
-  plan           String          @default("agency")
+  slug           String              @unique
+  plan           String              @default("agency")
   aiProvider     String?
   aiApiKey       String?
   aiModel        String?
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @default(now()) @updatedAt
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @default(now()) @updatedAt
   clients        Client[]
   projects       Project[]
   users          User[]
   reviewSessions ReviewSession[]
+  presets        GenerationPreset[]
 }
 
 model User {
@@ -134,6 +135,17 @@ model NegativeFeedback {
   reason    String
   createdAt DateTime @default(now())
   client    Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+}
+
+model GenerationPreset {
+  id          String     @id @default(uuid())
+  name        String
+  workspaceId String?
+  clientId    String?
+  parameters  Json
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  workspace   Workspace? @relation(fields: [workspaceId], references: [id])
 }
 
 enum Role {

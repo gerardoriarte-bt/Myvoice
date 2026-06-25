@@ -246,3 +246,13 @@ export interface ReviewSession {
     feedbacks?: ReviewItemFeedbackDetail[];
   };
 }
+
+export interface GenerationPreset {
+  id: string;
+  name: string;
+  workspaceId?: string;
+  clientId?: string;
+  parameters: Partial<CopyParameters>;
+  createdAt?: number;
+  updatedAt?: number;
+}
