@@ -9,7 +9,7 @@ interface GenerationLog {
   platforms: string[];
   funnelStage?: string;
   spineJson?: { concept?: string; keyMessage?: string; tone?: string; heroCTA?: string } | null;
-  outputJson?: CopyVariation[] | null;
+  outputJson?: { variations?: CopyVariation[] } | CopyVariation[] | null;
   createdAt: string;
 }
 
@@ -115,7 +115,12 @@ export default function GenerationHistory({ clients = [], dnaProfiles = [], init
               <div className="space-y-3">
                 {dayLogs.map(log => {
                   const isExpanded = expandedId === log.id;
-                  const variations: CopyVariation[] = Array.isArray(log.outputJson) ? log.outputJson : [];
+                  const rawOutput = log.outputJson;
+                  const variations: CopyVariation[] = Array.isArray(rawOutput)
+                    ? rawOutput
+                    : Array.isArray((rawOutput as any)?.variations)
+                      ? (rawOutput as any).variations
+                      : [];
                   const funnelCls = FUNNEL_COLORS[log.funnelStage ?? ''] ?? 'bg-gray-50 text-gray-600 border-gray-200';
 
                   return (

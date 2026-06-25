@@ -804,7 +804,12 @@ const App: React.FC = () => {
               dnaProfiles={dnaProfiles}
               onRestore={(log) => {
                 if (log.spineJson) setSpine(log.spineJson);
-                if (Array.isArray(log.outputJson) && log.outputJson.length > 0) setVariations(log.outputJson);
+                const restoredVars = Array.isArray(log.outputJson)
+                  ? log.outputJson
+                  : Array.isArray((log.outputJson as any)?.variations)
+                    ? (log.outputJson as any).variations
+                    : [];
+                if (restoredVars.length > 0) setVariations(restoredVars);
                 setLastParams({
                   clientId: log.clientId,
                   platforms: log.platforms as any,
