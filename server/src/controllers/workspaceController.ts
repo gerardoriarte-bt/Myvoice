@@ -1,9 +1,7 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth.js';
-import { PrismaClient } from '@prisma/client';
 import { createAIClient, WorkspaceAIConfig } from '../services/aiClient.js';
-
-const prisma = new PrismaClient();
+import { prisma } from '../lib/prisma.js';
 
 export const getWorkspaceAIConfig = async (req: AuthRequest, res: Response) => {
   const user = req.user;

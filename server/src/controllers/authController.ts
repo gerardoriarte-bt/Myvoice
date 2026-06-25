@@ -1,12 +1,10 @@
 
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { OAuth2Client } from 'google-auth-library';
 import { AuthRequest } from '../middleware/auth.js';
-
-const prisma = new PrismaClient();
+import { prisma } from '../lib/prisma.js';
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret';
 const MASTER_PASSWORD = process.env.MASTER_PASSWORD || 'Lobueno2025*';
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;

@@ -1,14 +1,13 @@
 
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth.js';
-import { PrismaClient, Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import path from 'node:path';
 import fs from 'node:fs/promises';
 import { extractBrandFromPdf } from '../services/brandExtractionService.js';
 import { computeBrandFingerprint } from '../services/voiceFingerprintService.js';
 import { serverAIConfig } from '../services/aiClient.js';
-
-const prisma = new PrismaClient();
+import { prisma } from '../lib/prisma.js';
 const UPLOAD_DIR = path.resolve(process.cwd(), 'uploads');
 
 // Get all clients (or current client if restricted)

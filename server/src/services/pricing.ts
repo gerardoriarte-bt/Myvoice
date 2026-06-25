@@ -11,8 +11,16 @@ export interface ModelPricing {
 }
 
 export const MODEL_PRICING: Record<string, ModelPricing> = {
+  // OpenAI
   "gpt-4o":      { inputPer1M: 2.50, cachedInputPer1M: 1.25, outputPer1M: 10.00 },
   "gpt-4o-mini": { inputPer1M: 0.15, cachedInputPer1M: 0.075, outputPer1M: 0.60 },
+  // Anthropic
+  "claude-sonnet-4-6":          { inputPer1M: 3.00, cachedInputPer1M: 1.50, outputPer1M: 15.00 },
+  "claude-haiku-4-5-20251001":  { inputPer1M: 0.25, cachedInputPer1M: 0.125, outputPer1M: 1.25 },
+  // Gemini
+  "gemini-2.0-flash":       { inputPer1M: 0.075, cachedInputPer1M: 0.0375, outputPer1M: 0.30 },
+  "gemini-2.5-flash-lite":  { inputPer1M: 0.10,  cachedInputPer1M: 0.05,   outputPer1M: 0.40 },
+  "gemini-2.5-flash":       { inputPer1M: 0.15,  cachedInputPer1M: 0.075,  outputPer1M: 0.60 },
 };
 
 const DEFAULT = MODEL_PRICING["gpt-4o"];
