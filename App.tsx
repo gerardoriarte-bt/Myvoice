@@ -798,7 +798,26 @@ const App: React.FC = () => {
               readOnly={!isAdmin}
             />
           )}
-          {activeTab === 'history' && isAdmin && <GenerationHistory clients={clients} dnaProfiles={dnaProfiles} />}
+          {activeTab === 'history' && isAdmin && (
+            <GenerationHistory
+              clients={clients}
+              dnaProfiles={dnaProfiles}
+              onRestore={(log) => {
+                if (log.spineJson) setSpine(log.spineJson);
+                if (Array.isArray(log.outputJson) && log.outputJson.length > 0) setVariations(log.outputJson);
+                setLastParams({
+                  clientId: log.clientId,
+                  platforms: log.platforms as any,
+                  voice: '', goal: '', theme: '', product: '',
+                  targetAudience: '', keywords: '', brandVoiceGuidelines: '',
+                  valueProposition: '', primaryCTA: '',
+                  funnelStage: log.funnelStage as any,
+                });
+                setActiveTab('generator');
+                addNotification('Generación restaurada en el editor', 'success');
+              }}
+            />
+          )}
           {activeTab === 'analytics' && isAdmin && <Analytics />}
           {activeTab === 'collaboration' && isAdmin && (
             <CollaborationHub

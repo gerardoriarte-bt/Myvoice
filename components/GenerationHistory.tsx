@@ -17,6 +17,7 @@ interface GenerationHistoryProps {
   clients?: Client[];
   dnaProfiles?: ContentDNAProfile[];
   initialClientId?: string;
+  onRestore?: (log: GenerationLog) => void;
 }
 
 const FUNNEL_COLORS: Record<string, string> = {
@@ -60,7 +61,7 @@ function groupByDate(logs: GenerationLog[]): [string, GenerationLog[]][] {
   return Array.from(map.entries());
 }
 
-export default function GenerationHistory({ clients = [], dnaProfiles = [], initialClientId }: GenerationHistoryProps) {
+export default function GenerationHistory({ clients = [], dnaProfiles = [], initialClientId, onRestore }: GenerationHistoryProps) {
   const [logs, setLogs] = useState<GenerationLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -159,6 +160,17 @@ export default function GenerationHistory({ clients = [], dnaProfiles = [], init
 
                       {isExpanded && (
                         <div className="border-t border-gray-100 bg-gray-50/50 p-5 space-y-4">
+                          {onRestore && variations.length > 0 && (
+                            <button
+                              onClick={() => onRestore(log)}
+                              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-[#1D1D1F] text-white text-[12px] font-medium rounded-lg hover:bg-[#3a3a3c] transition-colors"
+                            >
+                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
+                              </svg>
+                              Restaurar en el generador
+                            </button>
+                          )}
                           {log.spineJson && (log.spineJson.concept || log.spineJson.keyMessage) && (
                             <div className="bg-white border border-gray-200 rounded-lg p-4 space-y-1.5">
                               <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-2">Campaign Spine</p>
