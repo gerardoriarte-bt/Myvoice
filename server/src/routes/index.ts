@@ -28,6 +28,7 @@ router.delete('/users/:id', authenticateToken, authorizeRole(['ADMIN']), authCon
 // Generation Routes
 router.post('/generate', authenticateToken, generateController.generateCopy);
 router.post('/generate/stream', authenticateToken, generateController.generateCopyStream);
+router.post('/generate/channel', authenticateToken, generateController.regenerateChannel);
 router.get('/generate/history', authenticateToken, generateController.listGenerationHistory);
 
 // Client/Brand Routes

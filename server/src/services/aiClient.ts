@@ -46,8 +46,8 @@ export const createAIClient = (config: WorkspaceAIConfig): OpenAI =>
   });
 
 export const resolveModel = (config: WorkspaceAIConfig, mini = false): string => {
-  if (config.model) return config.model;
-  return mini ? MINI_MODELS[config.provider] : DEFAULT_MODELS[config.provider];
+  if (mini) return MINI_MODELS[config.provider];
+  return config.model ?? DEFAULT_MODELS[config.provider];
 };
 
 // Fallback: server-level config from env vars (used when workspace has no custom key)

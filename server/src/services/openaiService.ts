@@ -13,7 +13,21 @@ import { UsageEntry, extractUsage, aggregateUsage } from "./pricing.js";
 import { WorkspaceAIConfig, createAIClient, resolveModel } from "./aiClient.js";
 import { resolveMarketLocale, brandUsesVoseo } from "./localeRules.js";
 
-const buildBrief = (params: CopyParameters, spine: CampaignSpine): ChannelBrief => ({
+const createSemaphore = (max: number) => {
+  let running = 0;
+  const queue: Array<() => void> = [];
+  const acquire = (): Promise<void> => new Promise(resolve => {
+    if (running < max) { running++; resolve(); }
+    else queue.push(resolve);
+  });
+  const release = (): void => {
+    running--;
+    if (queue.length > 0) { running++; queue.shift()!(); }
+  };
+  return { acquire, release };
+};
+
+export const buildBrief = (params: CopyParameters, spine: CampaignSpine): ChannelBrief => ({
   spine,
   funnelStage: params.funnelStage,
   brand: {
@@ -22,7 +36,7 @@ const buildBrief = (params: CopyParameters, spine: CampaignSpine): ChannelBrief 
     voice: params.voice || "",
     valueProposition: params.valueProposition || "",
     brandVoiceGuidelines: params.brandVoiceGuidelines || "",
-    fingerprint: (params as any).brandFingerprint,
+    fingerprint: params.brandFingerprint,
   },
   campaign: {
     name: "",
@@ -45,7 +59,7 @@ const buildBrief = (params: CopyParameters, spine: CampaignSpine): ChannelBrief 
   checkVoseo: brandUsesVoseo(params),
 });
 
-const generateForChannel = async (
+export const generateForChannel = async (
   spec: ChannelSpec,
   brief: ChannelBrief,
   client: OpenAI,
@@ -102,7 +116,10 @@ const generateForChannel = async (
 
   const validated = validateBatch(variations, spec, brief.campaign.prohibitions, brief.checkVoseo);
   const critiqued = await runCritic(brief, spec, validated, client, miniModel, usage);
-  const autofixed = await runAutoFix(brief, spec, critiqued, client, miniModel, usage);
+  const needsFix = critiqued.some(v => Array.isArray(v.editorFlags) && v.editorFlags.length > 0);
+  const autofixed = needsFix
+    ? await runAutoFix(brief, spec, critiqued, client, miniModel, usage)
+    : critiqued;
   return autofixed;
 };
 
@@ -134,22 +151,23 @@ const runGeneration = async (
 
   const usage: UsageEntry[] = [];
 
-  const spine = await buildCampaignSpine(params, client, miniModel, usage);
+  const spine = await buildCampaignSpine(params, client, writerModel, usage);
   const brief = buildBrief(params, spine);
   emit({ type: "spine", payload: spine });
 
   const allVariations: CopyVariation[] = [];
+  const sem = createSemaphore(5);
   await Promise.all(
     specs.map(async spec => {
+      await sem.acquire();
       try {
         const variations = await generateForChannel(spec, brief, client, writerModel, miniModel, usage);
         allVariations.push(...variations);
         emit({ type: "channel", payload: { platform: spec.id, variations } });
       } catch (error: any) {
-        emit({
-          type: "channel-error",
-          payload: { platform: spec.id, message: error?.message || "Error desconocido" },
-        });
+        emit({ type: "channel-error", payload: { platform: spec.id, message: error?.message || "Error desconocido" } });
+      } finally {
+        sem.release();
       }
     })
   );

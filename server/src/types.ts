@@ -87,6 +87,7 @@ export interface CopyParameters {
   clientName?: string;
   clientIndustry?: string;
   marketLocale?: 'es-CO' | 'es-AR' | 'es-MX' | 'es-419';
+  brandFingerprint?: Record<string, any>;
   feedbackExamples?: FeedbackExample[];
   negativeExamples?: { content: string; reason: string }[];
 }

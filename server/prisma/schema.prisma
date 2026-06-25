@@ -99,18 +99,19 @@ model ContentDNAProfile {
 }
 
 model SavedVariation {
-  id         String   @id @default(uuid())
-  clientId   String
-  projectId  String?
-  platform   String
-  type       String
-  content    String
-  charCount  Int
-  tags       String[]
-  isApproved Boolean  @default(false)
-  savedAt    DateTime @default(now())
-  client     Client   @relation(fields: [clientId], references: [id])
-  project    Project? @relation(fields: [projectId], references: [id])
+  id           String   @id @default(uuid())
+  clientId     String
+  projectId    String?
+  platform     String
+  type         String
+  content      String
+  charCount    Int
+  tags         String[]
+  isApproved   Boolean  @default(false)
+  approvalNote String?
+  savedAt      DateTime @default(now())
+  client       Client   @relation(fields: [clientId], references: [id])
+  project      Project? @relation(fields: [projectId], references: [id])
 }
 
 model Project {

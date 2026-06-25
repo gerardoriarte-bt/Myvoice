@@ -1,9 +1,7 @@
 
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth.js';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '../lib/prisma.js';
 
 export const getSavedVariations = async (req: AuthRequest, res: Response) => {
   const user = req.user;
@@ -77,7 +75,9 @@ export const createProject = async (req: AuthRequest, res: Response) => {
 
 export const updateVariation = async (req: AuthRequest, res: Response) => {
   const { id } = req.params;
-  const updates = req.body;
+  const { approvalNote, ...rest } = req.body;
+  const updates: any = { ...rest };
+  if (approvalNote !== undefined) updates.approvalNote = approvalNote;
   try {
     const variation = await prisma.savedVariation.update({
       where: { id },
