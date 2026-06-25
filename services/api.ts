@@ -160,6 +160,7 @@ export const libraryApi = {
 
 export const reviewApi = {
   list: () => apiRequest('/review-sessions'),
+  getDetail: (id: string) => apiRequest(`/review-sessions/${id}`),
   create: (data: { title: string; variationIds: string[]; expiresInDays?: number }) =>
     apiRequest('/review-sessions', { method: 'POST', body: JSON.stringify(data) }),
   delete: (id: string) => apiRequest(`/review-sessions/${id}`, { method: 'DELETE' }),

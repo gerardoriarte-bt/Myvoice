@@ -225,6 +225,12 @@ export interface ReviewSessionItem {
   };
 }
 
+export interface ReviewItemFeedbackDetail {
+  savedVariationId: string;
+  decision: ReviewDecision;
+  comment?: string | null;
+}
+
 export interface ReviewSession {
   id: string;
   token: string;
@@ -234,5 +240,9 @@ export interface ReviewSession {
   createdAt: string;
   _count?: { items: number };
   items?: ReviewSessionItem[];
-  submission?: { submittedAt: string; reviewerName?: string };
+  submission?: {
+    submittedAt: string;
+    reviewerName?: string | null;
+    feedbacks?: ReviewItemFeedbackDetail[];
+  };
 }

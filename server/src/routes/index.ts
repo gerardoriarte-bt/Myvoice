@@ -65,6 +65,7 @@ router.get('/analytics', authenticateToken, authorizeRole(['ADMIN']), analyticsC
 // Review Sessions (ADMIN — protegidas)
 router.get('/review-sessions', authenticateToken, authorizeRole(['ADMIN']), reviewController.listReviewSessions);
 router.post('/review-sessions', authenticateToken, authorizeRole(['ADMIN']), reviewController.createReviewSession);
+router.get('/review-sessions/:id', authenticateToken, authorizeRole(['ADMIN']), reviewController.getReviewSessionDetail);
 router.delete('/review-sessions/:id', authenticateToken, authorizeRole(['ADMIN']), reviewController.deleteReviewSession);
 
 // Review Public (sin auth — acceso por token UUID)

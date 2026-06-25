@@ -59,6 +59,35 @@ export const listReviewSessions = async (req: AuthRequest, res: Response) => {
   }
 };
 
+export const getReviewSessionDetail = async (req: AuthRequest, res: Response) => {
+  const user = req.user;
+  const { id } = req.params;
+  try {
+    const session = await prisma.reviewSession.findUnique({
+      where: { id },
+      include: {
+        items: {
+          orderBy: { sortOrder: 'asc' },
+          include: {
+            savedVariation: { select: { id: true, platform: true, type: true, content: true, charCount: true } },
+          },
+        },
+        submission: {
+          include: {
+            feedbacks: { select: { savedVariationId: true, decision: true, comment: true } },
+          },
+        },
+      },
+    });
+    if (!session) return res.status(404).json({ error: 'Sesión no encontrada' });
+    if (session.workspaceId !== user?.workspaceId) return res.status(403).json({ error: 'Sin permiso' });
+    res.json(session);
+  } catch (error) {
+    console.error('getReviewSessionDetail error:', error);
+    res.status(500).json({ error: 'Error al cargar detalle' });
+  }
+};
+
 export const deleteReviewSession = async (req: AuthRequest, res: Response) => {
   const user = req.user;
   const { id } = req.params;

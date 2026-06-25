@@ -52,6 +52,7 @@ const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = React.useState(false);
   const [activeTab, setActiveTab] = React.useState<'generator' | 'saved' | 'clients' | 'users' | 'settings' | 'help' | 'collaboration' | 'analytics'>('clients');
   const [reviewToken, setReviewToken] = React.useState(() => new URLSearchParams(window.location.search).get('review'));
+  const [completedSessionsCount, setCompletedSessionsCount] = React.useState(0);
   const [variations, setVariations] = React.useState<CopyVariation[]>([]);
   const [coherence, setCoherence] = React.useState<any | null>(null);
   const [spine, setSpine] = React.useState<any | null>(null);
@@ -501,7 +502,12 @@ const App: React.FC = () => {
                 <span className={isActive ? 'text-[#1D1D1F]' : 'text-[#86868B]'}>
                   {navIcons[tab.id]}
                 </span>
-                {tab.label}
+                <span className="flex-1">{tab.label}</span>
+                {tab.id === 'collaboration' && completedSessionsCount > 0 && !isActive && (
+                  <span className="w-4 h-4 rounded-full bg-emerald-500 text-white text-[9px] font-bold flex items-center justify-center leading-none">
+                    {completedSessionsCount > 9 ? '9+' : completedSessionsCount}
+                  </span>
+                )}
               </button>
             );
           })}
@@ -769,6 +775,7 @@ const App: React.FC = () => {
               savedVariations={savedVariations}
               clients={clients}
               addNotification={addNotification}
+              onSessionsLoaded={s => setCompletedSessionsCount(s.filter(x => x.status === 'COMPLETED').length)}
             />
           )}
           {activeTab === 'settings' && isAdmin && (
