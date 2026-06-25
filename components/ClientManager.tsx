@@ -999,7 +999,7 @@ const ClientManager: React.FC<ClientManagerProps> = ({
                      )}
 
                      {!showDnaForm && (
-                       <GenerationHistory clientId={client.id} />
+                       <GenerationHistory initialClientId={client.id} />
                      )}
                   </div>
                </div>

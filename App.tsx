@@ -74,6 +74,7 @@ const App: React.FC = () => {
   const [customVoices, setCustomVoices] = React.useState<BrandConfig[]>([]);
   const [customGoals, setCustomGoals] = React.useState<BrandConfig[]>([]);
   const [isLoading, setIsLoading] = React.useState(false);
+  const [isDataReady, setIsDataReady] = React.useState(false);
   const [notifications, setNotifications] = React.useState<Notification[]>([]);
   const [loadingStep, setLoadingStep] = React.useState(0);
 
@@ -199,6 +200,8 @@ const App: React.FC = () => {
       } catch (err: any) {
         console.error('Fetch error:', err);
         addNotification('Error al sincronizar datos', 'error');
+      } finally {
+        setIsDataReady(true);
       }
     };
 
@@ -425,6 +428,7 @@ const App: React.FC = () => {
           savedVariations={myVariations}
           clients={clients}
           onLogout={handleLogout}
+          isLoading={!isDataReady}
         />
       </>
     );

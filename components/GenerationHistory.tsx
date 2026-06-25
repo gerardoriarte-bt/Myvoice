@@ -14,8 +14,9 @@ interface GenerationLog {
 }
 
 interface GenerationHistoryProps {
-  clients: Client[];
-  dnaProfiles: ContentDNAProfile[];
+  clients?: Client[];
+  dnaProfiles?: ContentDNAProfile[];
+  initialClientId?: string;
 }
 
 const FUNNEL_COLORS: Record<string, string> = {
@@ -59,11 +60,11 @@ function groupByDate(logs: GenerationLog[]): [string, GenerationLog[]][] {
   return Array.from(map.entries());
 }
 
-export default function GenerationHistory({ clients, dnaProfiles }: GenerationHistoryProps) {
+export default function GenerationHistory({ clients = [], dnaProfiles = [], initialClientId }: GenerationHistoryProps) {
   const [logs, setLogs] = useState<GenerationLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [clientFilter, setClientFilter] = useState('');
+  const [clientFilter, setClientFilter] = useState(initialClientId ?? '');
 
   useEffect(() => {
     setIsLoading(true);

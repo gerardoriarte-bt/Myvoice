@@ -6,6 +6,7 @@ interface ClientPortalProps {
   savedVariations: SavedVariation[];
   clients: Client[];
   onLogout: () => void;
+  isLoading?: boolean;
 }
 
 const PLATFORM_COLORS: Record<string, string> = {
@@ -20,7 +21,7 @@ const PLATFORM_COLORS: Record<string, string> = {
   'Google Ads':        'bg-yellow-50 text-yellow-700 border-yellow-200',
 };
 
-export default function ClientPortal({ currentUser, savedVariations, clients, onLogout }: ClientPortalProps) {
+export default function ClientPortal({ currentUser, savedVariations, clients, onLogout, isLoading = false }: ClientPortalProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [platformFilter, setPlatformFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'approved' | 'pending'>('all');
@@ -91,6 +92,12 @@ export default function ClientPortal({ currentUser, savedVariations, clients, on
       </header>
 
       <main className="max-w-4xl mx-auto px-6 py-8 space-y-6">
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center h-64 gap-3">
+            <div className="w-6 h-6 border-2 border-gray-300 border-t-gray-700 rounded-full animate-spin" />
+            <p className="text-[12px] text-gray-400">Cargando contenido...</p>
+          </div>
+        ) : (<>
         {/* Summary */}
         <div>
           <h1 className="text-[22px] font-semibold text-gray-900 mb-1">Biblioteca de contenido</h1>
@@ -211,6 +218,7 @@ export default function ClientPortal({ currentUser, savedVariations, clients, on
             })}
           </div>
         )}
+        </>)}
       </main>
     </div>
   );

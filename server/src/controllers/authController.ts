@@ -130,6 +130,7 @@ export const login = async (req: Request, res: Response) => {
         name: user.name,
         email: user.email,
         role: user.role,
+        clientId: user.clientId,
         workspaceId: (user as any).workspaceId,
         workspaceName: workspace?.name,
         client: user.client
@@ -206,6 +207,7 @@ export const googleLogin = async (req: Request, res: Response) => {
         name: user.name,
         email: user.email,
         role: user.role,
+        clientId: user.clientId,
         workspaceId: (user as any).workspaceId,
         workspaceName: workspace?.name,
         client: user.client

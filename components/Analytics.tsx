@@ -149,7 +149,7 @@ export default function Analytics() {
                 {byPlatform.filter(p => p.rejected > 0).length === 0 ? (
                   <p className="text-[12px] text-gray-400 text-center py-4">Sin rechazos registrados</p>
                 ) : (
-                  byPlatform.filter(p => p.rejected > 0).map(p => (
+                  byPlatform.filter(p => p.rejected > 0).map((p: PlatformStat) => (
                     <BarRow
                       key={p.platform}
                       label={p.platform}
@@ -172,7 +172,7 @@ export default function Analytics() {
                 {byPlatform.filter(p => p.saved > 0).length === 0 ? (
                   <p className="text-[12px] text-gray-400 text-center py-4">Sin variaciones guardadas</p>
                 ) : (
-                  byPlatform.filter(p => p.saved > 0).map(p => (
+                  byPlatform.filter(p => p.saved > 0).map((p: PlatformStat) => (
                     <BarRow
                       key={p.platform}
                       label={p.platform}
