@@ -148,3 +148,19 @@ export const libraryApi = {
   createProject: (data: any) => apiRequest('/projects', { method: 'POST', body: JSON.stringify(data) }),
   deleteProject: (id: string) => apiRequest(`/projects/${id}`, { method: 'DELETE' }),
 };
+
+export const reviewApi = {
+  list: () => apiRequest('/review-sessions'),
+  create: (data: { title: string; variationIds: string[]; expiresInDays?: number }) =>
+    apiRequest('/review-sessions', { method: 'POST', body: JSON.stringify(data) }),
+  delete: (id: string) => apiRequest(`/review-sessions/${id}`, { method: 'DELETE' }),
+  // Rutas públicas: fetch directo sin Bearer token
+  getByToken: (token: string) =>
+    fetch(`${API_URL}/review/public/${token}`).then(r => r.json()),
+  submit: (token: string, data: { reviewerName?: string; feedbacks: Array<{ savedVariationId: string; decision: string; comment?: string }> }) =>
+    fetch(`${API_URL}/review/public/${token}/submit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    }).then(r => r.json()),
+};

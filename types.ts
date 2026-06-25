@@ -202,3 +202,37 @@ export interface UsageReport {
   costUsd: number;
   byStage: Record<string, { tokens: number; costUsd: number }>;
 }
+
+export type ReviewDecision = 'APPROVED' | 'REJECTED';
+export type ReviewSessionStatus = 'PENDING' | 'IN_REVIEW' | 'COMPLETED';
+
+export interface ReviewFeedback {
+  savedVariationId: string;
+  decision: ReviewDecision;
+  comment?: string;
+}
+
+export interface ReviewSessionItem {
+  id: string;
+  sortOrder: number;
+  savedVariation: {
+    id: string;
+    platform: string;
+    type: string;
+    content: string;
+    charCount: number;
+    clientId: string;
+  };
+}
+
+export interface ReviewSession {
+  id: string;
+  token: string;
+  title: string;
+  status: ReviewSessionStatus;
+  expiresAt: string;
+  createdAt: string;
+  _count?: { items: number };
+  items?: ReviewSessionItem[];
+  submission?: { submittedAt: string; reviewerName?: string };
+}

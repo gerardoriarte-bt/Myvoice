@@ -6,6 +6,7 @@ import * as generateController from '../controllers/generateController.js';
 import * as clientController from '../controllers/clientController.js';
 import * as savedController from '../controllers/savedController.js';
 import * as workspaceController from '../controllers/workspaceController.js';
+import * as reviewController from '../controllers/reviewController.js';
 import { authenticateToken, authorizeRole } from '../middleware/auth.js';
 
 const router = Router();
@@ -56,5 +57,14 @@ router.post('/feedback/negative', authenticateToken, savedController.saveNegativ
 // Workspace AI Config (admin only)
 router.get('/workspace/ai-config', authenticateToken, authorizeRole(['ADMIN']), workspaceController.getWorkspaceAIConfig);
 router.put('/workspace/ai-config', authenticateToken, authorizeRole(['ADMIN']), workspaceController.updateWorkspaceAIConfig);
+
+// Review Sessions (ADMIN — protegidas)
+router.get('/review-sessions', authenticateToken, authorizeRole(['ADMIN']), reviewController.listReviewSessions);
+router.post('/review-sessions', authenticateToken, authorizeRole(['ADMIN']), reviewController.createReviewSession);
+router.delete('/review-sessions/:id', authenticateToken, authorizeRole(['ADMIN']), reviewController.deleteReviewSession);
+
+// Review Public (sin auth — acceso por token UUID)
+router.get('/review/public/:token', reviewController.getReviewByToken);
+router.post('/review/public/:token/submit', reviewController.submitReview);
 
 export default router;

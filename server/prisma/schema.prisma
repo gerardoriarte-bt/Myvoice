@@ -8,32 +8,34 @@ datasource db {
 }
 
 model Workspace {
-  id         String    @id @default(uuid())
-  name       String
-  slug       String    @unique
-  plan       String    @default("agency")
-  aiProvider String?
-  aiApiKey   String?
-  aiModel    String?
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @default(now()) @updatedAt
-  clients    Client[]
-  projects   Project[]
-  users      User[]
+  id             String          @id @default(uuid())
+  name           String
+  slug           String          @unique
+  plan           String          @default("agency")
+  aiProvider     String?
+  aiApiKey       String?
+  aiModel        String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @default(now()) @updatedAt
+  clients        Client[]
+  projects       Project[]
+  users          User[]
+  reviewSessions ReviewSession[]
 }
 
 model User {
-  id           String     @id @default(uuid())
-  email        String     @unique
-  passwordHash String
-  name         String
-  role         Role       @default(CLIENT)
-  clientId     String?
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
-  workspaceId  String?
-  client       Client?    @relation(fields: [clientId], references: [id])
-  workspace    Workspace? @relation(fields: [workspaceId], references: [id])
+  id                    String          @id @default(uuid())
+  email                 String          @unique
+  passwordHash          String
+  name                  String
+  role                  Role            @default(CLIENT)
+  clientId              String?
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+  workspaceId           String?
+  client                Client?         @relation(fields: [clientId], references: [id])
+  workspace             Workspace?      @relation(fields: [workspaceId], references: [id])
+  createdReviewSessions ReviewSession[]
 }
 
 model Client {
@@ -107,11 +109,12 @@ model SavedVariation {
   content      String
   charCount    Int
   tags         String[]
-  isApproved   Boolean  @default(false)
+  isApproved   Boolean             @default(false)
   approvalNote String?
-  savedAt      DateTime @default(now())
-  client       Client   @relation(fields: [clientId], references: [id])
-  project      Project? @relation(fields: [projectId], references: [id])
+  savedAt      DateTime            @default(now())
+  client       Client              @relation(fields: [clientId], references: [id])
+  project      Project?            @relation(fields: [projectId], references: [id])
+  reviewItems  ReviewSessionItem[]
 }
 
 model Project {
@@ -136,4 +139,58 @@ model NegativeFeedback {
 enum Role {
   ADMIN
   CLIENT
+}
+
+model ReviewSession {
+  id          String              @id @default(uuid())
+  token       String              @unique @default(uuid())
+  title       String
+  status      ReviewSessionStatus @default(PENDING)
+  expiresAt   DateTime
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  workspaceId String?
+  createdById String
+  workspace   Workspace?          @relation(fields: [workspaceId], references: [id])
+  createdBy   User                @relation(fields: [createdById], references: [id])
+  items       ReviewSessionItem[]
+  submission  ReviewSubmission?
+}
+
+model ReviewSessionItem {
+  id               String         @id @default(uuid())
+  reviewSessionId  String
+  savedVariationId String
+  sortOrder        Int            @default(0)
+  reviewSession    ReviewSession  @relation(fields: [reviewSessionId], references: [id], onDelete: Cascade)
+  savedVariation   SavedVariation @relation(fields: [savedVariationId], references: [id], onDelete: Cascade)
+}
+
+model ReviewSubmission {
+  id              String               @id @default(uuid())
+  reviewSessionId String               @unique
+  submittedAt     DateTime             @default(now())
+  reviewerName    String?
+  reviewSession   ReviewSession        @relation(fields: [reviewSessionId], references: [id], onDelete: Cascade)
+  feedbacks       ReviewItemFeedback[]
+}
+
+model ReviewItemFeedback {
+  id                 String           @id @default(uuid())
+  reviewSubmissionId String
+  savedVariationId   String
+  decision           ReviewDecision
+  comment            String?
+  reviewSubmission   ReviewSubmission @relation(fields: [reviewSubmissionId], references: [id], onDelete: Cascade)
+}
+
+enum ReviewSessionStatus {
+  PENDING
+  IN_REVIEW
+  COMPLETED
+}
+
+enum ReviewDecision {
+  APPROVED
+  REJECTED
 }

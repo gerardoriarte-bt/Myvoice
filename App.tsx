@@ -15,6 +15,8 @@ import HomePage from './components/HomePage';
 import AISettings from './components/AISettings';
 import HelpGuide from './components/HelpGuide';
 import { generationApi, clientApi, libraryApi, authApi } from './services/api';
+import CollaborationHub from './components/CollaborationHub';
+import ReviewPortal from './components/ReviewPortal';
 import WorkflowHelpSidebar from './components/WorkflowHelpSidebar';
 
 const MOCK_CLIENTS: Client[] = [
@@ -46,7 +48,8 @@ const MOCK_DNA: ContentDNAProfile[] = [
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = React.useState(false);
-  const [activeTab, setActiveTab] = React.useState<'generator' | 'saved' | 'clients' | 'users' | 'settings' | 'help'>('clients');
+  const [activeTab, setActiveTab] = React.useState<'generator' | 'saved' | 'clients' | 'users' | 'settings' | 'help' | 'collaboration'>('clients');
+  const [reviewToken, setReviewToken] = React.useState(() => new URLSearchParams(window.location.search).get('review'));
   const [variations, setVariations] = React.useState<CopyVariation[]>([]);
   const [coherence, setCoherence] = React.useState<any | null>(null);
   const [spine, setSpine] = React.useState<any | null>(null);
@@ -370,10 +373,23 @@ const App: React.FC = () => {
     { id: 'clients', label: 'Brand Voice', icon: '👥', adminOnly: true },
     { id: 'generator', label: 'Generate', icon: '⚡', adminOnly: true },
     { id: 'saved', label: 'Content Selection', icon: '📚', adminOnly: false },
+    { id: 'collaboration', label: 'Collaboration', icon: '🤝', adminOnly: true },
     { id: 'users', label: 'Team', icon: '🛡️', adminOnly: true },
     { id: 'settings', label: 'Settings', icon: '⚙️', adminOnly: true },
     { id: 'help', label: 'Guía de uso', icon: '📖', adminOnly: false },
   ];
+
+  if (reviewToken) {
+    return (
+      <ReviewPortal
+        token={reviewToken}
+        onBack={() => {
+          setReviewToken(null);
+          window.history.replaceState({}, '', window.location.pathname);
+        }}
+      />
+    );
+  }
 
   if (!isAuthenticated || !currentUser) {
     return (
@@ -414,6 +430,11 @@ const App: React.FC = () => {
     help: (
       <svg className="w-[15px] h-[15px]" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+      </svg>
+    ),
+    collaboration: (
+      <svg className="w-[15px] h-[15px]" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
       </svg>
     ),
   };
@@ -716,6 +737,13 @@ const App: React.FC = () => {
               }} 
               onCreateProject={createProject}
               readOnly={!isAdmin}
+            />
+          )}
+          {activeTab === 'collaboration' && isAdmin && (
+            <CollaborationHub
+              savedVariations={savedVariations}
+              clients={clients}
+              addNotification={addNotification}
             />
           )}
           {activeTab === 'settings' && isAdmin && (
