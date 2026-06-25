@@ -21,13 +21,14 @@ interface ResultsTableProps {
   spine?: CampaignSpine | null;
   usage?: UsageReport | null;
   onRegenerate?: (lockedKeys: Set<string>) => void;
+  onRegenerateChannel?: (platform: string) => Promise<void>;
   isLoading?: boolean;
 }
 
 const variationKey = (v: CopyVariation) =>
   `${v.platform}::${v.slot || '_default'}::${v.variationIndex ?? 0}`;
 
-const ResultsTable: React.FC<ResultsTableProps> = ({ variations, projects, activeClient, onSave, onCreateProject, savedContentList, coherence, spine, usage, onRegenerate, isLoading }) => {
+const ResultsTable: React.FC<ResultsTableProps> = ({ variations, projects, activeClient, onSave, onCreateProject, savedContentList, coherence, spine, usage, onRegenerate, onRegenerateChannel, isLoading }) => {
   const [savingId, setSavingId] = React.useState<string | null>(null);
   const [editingId, setEditingId] = React.useState<string | null>(null);
   const [mockupId, setMockupId] = React.useState<string | null>(null);
@@ -36,6 +37,7 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ variations, projects, activ
   const [newProjectName, setNewProjectName] = React.useState('');
   const [collapsedSlots, setCollapsedSlots] = React.useState<Set<string>>(new Set());
   const [lockedKeys, setLockedKeys] = React.useState<Set<string>>(new Set());
+  const [regeneratingChannels, setRegeneratingChannels] = React.useState<Set<string>>(new Set());
   const [negativeFeedbackTarget, setNegativeFeedbackTarget] = React.useState<CopyVariation | null>(null);
   const [negativeReason, setNegativeReason] = React.useState('');
   const [negativeSaving, setNegativeSaving] = React.useState(false);
@@ -561,6 +563,21 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ variations, projects, activ
                   </span>
                 )}
                 {scored.length > 0 && <ScoreCircle score={avgScore} size="sm" />}
+                {onRegenerateChannel && (
+                  <button
+                    onClick={async () => {
+                      setRegeneratingChannels(prev => new Set(prev).add(platform));
+                      try { await onRegenerateChannel(platform); } finally {
+                        setRegeneratingChannels(prev => { const n = new Set(prev); n.delete(platform); return n; });
+                      }
+                    }}
+                    disabled={regeneratingChannels.has(platform) || isLoading}
+                    title={`Regenerar ${platform}`}
+                    className="p-1.5 rounded-md text-gray-400 hover:text-gray-700 hover:bg-white border border-transparent hover:border-gray-200 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${regeneratingChannels.has(platform) ? 'animate-spin' : ''}`} />
+                  </button>
+                )}
               </div>
 
               {/* VARIATION CARDS — agrupadas por variationIndex */}

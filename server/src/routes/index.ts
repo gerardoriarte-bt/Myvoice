@@ -7,6 +7,7 @@ import * as clientController from '../controllers/clientController.js';
 import * as savedController from '../controllers/savedController.js';
 import * as workspaceController from '../controllers/workspaceController.js';
 import * as reviewController from '../controllers/reviewController.js';
+import * as analyticsController from '../controllers/analyticsController.js';
 import { authenticateToken, authorizeRole } from '../middleware/auth.js';
 
 const router = Router();
@@ -57,6 +58,9 @@ router.post('/feedback/negative', authenticateToken, savedController.saveNegativ
 // Workspace AI Config (admin only)
 router.get('/workspace/ai-config', authenticateToken, authorizeRole(['ADMIN']), workspaceController.getWorkspaceAIConfig);
 router.put('/workspace/ai-config', authenticateToken, authorizeRole(['ADMIN']), workspaceController.updateWorkspaceAIConfig);
+
+// Analytics (ADMIN)
+router.get('/analytics', authenticateToken, authorizeRole(['ADMIN']), analyticsController.getAnalytics);
 
 // Review Sessions (ADMIN — protegidas)
 router.get('/review-sessions', authenticateToken, authorizeRole(['ADMIN']), reviewController.listReviewSessions);

@@ -15,8 +15,10 @@ import HomePage from './components/HomePage';
 import AISettings from './components/AISettings';
 import HelpGuide from './components/HelpGuide';
 import { generationApi, clientApi, libraryApi, authApi } from './services/api';
+
 import CollaborationHub from './components/CollaborationHub';
 import ReviewPortal from './components/ReviewPortal';
+import Analytics from './components/Analytics';
 import WorkflowHelpSidebar from './components/WorkflowHelpSidebar';
 
 const MOCK_CLIENTS: Client[] = [
@@ -48,7 +50,7 @@ const MOCK_DNA: ContentDNAProfile[] = [
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = React.useState(false);
-  const [activeTab, setActiveTab] = React.useState<'generator' | 'saved' | 'clients' | 'users' | 'settings' | 'help' | 'collaboration'>('clients');
+  const [activeTab, setActiveTab] = React.useState<'generator' | 'saved' | 'clients' | 'users' | 'settings' | 'help' | 'collaboration' | 'analytics'>('clients');
   const [reviewToken, setReviewToken] = React.useState(() => new URLSearchParams(window.location.search).get('review'));
   const [variations, setVariations] = React.useState<CopyVariation[]>([]);
   const [coherence, setCoherence] = React.useState<any | null>(null);
@@ -310,6 +312,21 @@ const App: React.FC = () => {
     handleGenerate(lastParams, lockedSnapshot);
   };
 
+  const handleRegenerateChannel = async (platform: string) => {
+    if (!lastParams || !spine) return;
+    const profile = dnaProfiles.find(p => p.clientId === lastParams.clientId);
+    if (!profile) return;
+    try {
+      const result = await generationApi.regenerateChannel(profile.id, platform, spine, lastParams);
+      if (result?.variations?.length) {
+        setVariations(prev => [...prev.filter(v => v.platform !== platform), ...result.variations]);
+        addNotification(`Canal ${platform} regenerado`, 'success');
+      }
+    } catch {
+      addNotification(`Error al regenerar ${platform}`, 'error');
+    }
+  };
+
   const handleSaveDNAProfile = async (profile: Omit<ContentDNAProfile, 'id' | 'createdAt'>) => {
     try {
       const savedProfile = await clientApi.saveDNA({ ...profile, clientId: activeClientId });
@@ -373,6 +390,7 @@ const App: React.FC = () => {
     { id: 'clients', label: 'Brand Voice', icon: '👥', adminOnly: true },
     { id: 'generator', label: 'Generate', icon: '⚡', adminOnly: true },
     { id: 'saved', label: 'Content Selection', icon: '📚', adminOnly: false },
+    { id: 'analytics', label: 'Analytics', icon: '📊', adminOnly: true },
     { id: 'collaboration', label: 'Collaboration', icon: '🤝', adminOnly: true },
     { id: 'users', label: 'Team', icon: '🛡️', adminOnly: true },
     { id: 'settings', label: 'Settings', icon: '⚙️', adminOnly: true },
@@ -430,6 +448,11 @@ const App: React.FC = () => {
     help: (
       <svg className="w-[15px] h-[15px]" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+      </svg>
+    ),
+    analytics: (
+      <svg className="w-[15px] h-[15px]" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
       </svg>
     ),
     collaboration: (
@@ -558,6 +581,7 @@ const App: React.FC = () => {
                     spine={spine}
                     usage={usage}
                     onRegenerate={handleRegenerate}
+                    onRegenerateChannel={spine ? handleRegenerateChannel : undefined}
                     isLoading={isLoading}
                   />
                 ) : !isLoading ? (
@@ -739,6 +763,7 @@ const App: React.FC = () => {
               readOnly={!isAdmin}
             />
           )}
+          {activeTab === 'analytics' && isAdmin && <Analytics />}
           {activeTab === 'collaboration' && isAdmin && (
             <CollaborationHub
               savedVariations={savedVariations}
