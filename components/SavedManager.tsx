@@ -55,6 +55,9 @@ const SavedManager: React.FC<SavedManagerProps> = ({
   const [addingTagId, setAddingTagId] = React.useState<string | null>(null);
   const [tagInputValue, setTagInputValue] = React.useState('');
 
+  // Version history modal state
+  const [versionModal, setVersionModal] = React.useState<{ variation: SavedVariation; versions: Array<{ content: string; charCount: number; editedAt: string }> } | null>(null);
+
   // Local copy of variations for in-place updates (tags, bulk delete)
   const [localVariations, setLocalVariations] = React.useState<SavedVariation[]>(saved);
 
@@ -497,6 +500,18 @@ const SavedManager: React.FC<SavedManagerProps> = ({
                     <td className="px-4 py-3 align-top text-right">
                       {!selectionMode && (
                         <div className="flex items-center justify-end gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                          {v.previousVersions && v.previousVersions.length > 0 && (
+                            <button
+                              onClick={() => setVersionModal({ variation: v, versions: v.previousVersions! })}
+                              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                              title="Ver historial de versiones"
+                            >
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                              {v.previousVersions.length}v
+                            </button>
+                          )}
                           <button
                             onClick={() => copyToClipboard(v)}
                             className="p-1.5 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
@@ -545,6 +560,50 @@ const SavedManager: React.FC<SavedManagerProps> = ({
           </table>
         </div>
       </div>
+
+      {/* Version history modal */}
+      {versionModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setVersionModal(null)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+              <div>
+                <p className="text-[13px] font-semibold text-gray-900">Historial de versiones</p>
+                <p className="text-[11px] text-gray-400">{versionModal.variation.platform} · {versionModal.versions.length} versión(es) anterior(es)</p>
+              </div>
+              <button onClick={() => setVersionModal(null)} className="text-gray-400 hover:text-gray-600">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+            <div className="p-5 space-y-3">
+              <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3">
+                <p className="text-[10px] font-semibold text-emerald-600 uppercase tracking-wide mb-1">Versión actual</p>
+                <p className="text-[12px] text-gray-800 leading-snug">{versionModal.variation.content}</p>
+              </div>
+              {[...versionModal.versions].reverse().map((v, i) => (
+                <div key={i} className="border border-gray-200 rounded-lg p-3">
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Versión {versionModal.versions.length - i}</p>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] text-gray-400">{new Date(v.editedAt).toLocaleDateString("es-CO", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}</span>
+                      <button
+                        onClick={() => {
+                          if (window.confirm("¿Restaurar esta versión?")) {
+                            onUpdate(versionModal.variation.id, { content: v.content, charCount: v.charCount });
+                            setLocalVariations(prev => prev.map(item => item.id === versionModal.variation.id ? { ...item, content: v.content, charCount: v.charCount } : item));
+                            setVersionModal(null);
+                          }
+                        }}
+                        className="px-2 py-0.5 bg-gray-100 hover:bg-gray-200 text-[10px] font-medium text-gray-600 rounded transition-colors"
+                      >Restaurar</button>
+                    </div>
+                  </div>
+                  <p className="text-[12px] text-gray-700 leading-snug">{v.content}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 2A: Sticky batch action bar */}
       {selectionMode && selectedIds.size > 0 && (

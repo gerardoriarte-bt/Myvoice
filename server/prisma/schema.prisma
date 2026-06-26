@@ -110,6 +110,7 @@ model SavedVariation {
   content      String
   charCount    Int
   tags         String[]
+  previousVersions Json   @default("[]")
   isApproved   Boolean             @default(false)
   approvalNote String?
   savedAt      DateTime            @default(now())

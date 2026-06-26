@@ -2,7 +2,7 @@ import React from 'react';
 import { Building2, Layers, Target, Radio, Zap, Check, Loader2, Sparkles, ChevronRight, BookOpen, X } from 'lucide-react';
 import { Platform, PLATFORM_GROUPS, FunnelStage, FUNNEL_STAGE_DESCRIPTIONS, CopyParameters, BrandConfig, Client, ContentDNAProfile } from '../types';
 import { PlatformIcon } from './ui/platformIcons';
-import { apiRequest } from '../services/api';
+import { apiRequest, clientApi } from '../services/api';
 
 interface ParameterFormProps {
   onSubmit: (params: CopyParameters) => void;
@@ -27,6 +27,8 @@ const ParameterForm: React.FC<ParameterFormProps> = ({
   const [activeProfileId, setActiveProfileId] = React.useState<string | null>(null);
   const [selectedPlatforms, setSelectedPlatforms] = React.useState<Platform[]>([]);
   const [funnelStage, setFunnelStage] = React.useState<FunnelStage>(FunnelStage.CONVERSION);
+
+  const [dnaInsights, setDnaInsights] = React.useState<{approvedCount: number; negativeCount: number; topReasons: {reason: string; count: number}[]} | null>(null);
 
   // Presets state
   const [presets, setPresets] = React.useState<any[]>([]);
@@ -112,7 +114,15 @@ const ParameterForm: React.FC<ParameterFormProps> = ({
 
   React.useEffect(() => {
     setActiveProfileId(null);
+    setDnaInsights(null);
   }, [clientId]);
+
+  React.useEffect(() => {
+    if (!activeProfileId) { setDnaInsights(null); return; }
+    clientApi.getDNAInsights(activeProfileId)
+      .then((data: any) => setDnaInsights(data))
+      .catch(() => setDnaInsights(null));
+  }, [activeProfileId]);
 
   const togglePlatform = (p: Platform) => {
     setSelectedPlatforms(prev => prev.includes(p) ? prev.filter(item => item !== p) : [...prev, p]);
@@ -351,6 +361,25 @@ const ParameterForm: React.FC<ParameterFormProps> = ({
                 Configurar campaña
                 <ChevronRight className="w-3 h-3" />
               </button>
+            )}
+          </div>
+        )}
+        {dnaInsights && (dnaInsights.approvedCount > 0 || dnaInsights.negativeCount > 0) && (
+          <div className="flex items-center gap-3 mt-1.5 px-1">
+            {dnaInsights.approvedCount > 0 && (
+              <span className="flex items-center gap-1 text-[10px] text-emerald-600">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
+                {dnaInsights.approvedCount} aprobados
+              </span>
+            )}
+            {dnaInsights.negativeCount > 0 && (
+              <span className="flex items-center gap-1 text-[10px] text-red-500">
+                <span className="w-1.5 h-1.5 rounded-full bg-red-400 shrink-0" />
+                {dnaInsights.negativeCount} rechazos aprendidos
+              </span>
+            )}
+            {(dnaInsights.approvedCount > 0 || dnaInsights.negativeCount > 0) && (
+              <span className="text-[10px] text-gray-400">· el ADN está aprendiendo</span>
             )}
           </div>
         )}

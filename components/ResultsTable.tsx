@@ -25,12 +25,15 @@ interface ResultsTableProps {
   onRegenerateChannel?: (platform: string) => Promise<void>;
   isLoading?: boolean;
   onBulkSave?: (variations: CopyVariation[]) => Promise<void>;
+  onRefine?: (instruction: string) => Promise<void>;
 }
 
 const variationKey = (v: CopyVariation) =>
   `${v.platform}::${v.slot || '_default'}::${v.variationIndex ?? 0}`;
 
-const ResultsTable: React.FC<ResultsTableProps> = ({ variations, projects, activeClient, onSave, onCreateProject, savedContentList, coherence, spine, usage, onRegenerate, onRegenerateChannel, isLoading, onBulkSave }) => {
+const ResultsTable: React.FC<ResultsTableProps> = ({ variations, projects, activeClient, onSave, onCreateProject, savedContentList, coherence, spine, usage, onRegenerate, onRegenerateChannel, isLoading, onBulkSave, onRefine }) => {
+  const [refineInstruction, setRefineInstruction] = React.useState('');
+  const [refineLoading, setRefineLoading] = React.useState(false);
   const [savingId, setSavingId] = React.useState<string | null>(null);
   const [editingId, setEditingId] = React.useState<string | null>(null);
   const [mockupId, setMockupId] = React.useState<string | null>(null);
@@ -177,6 +180,13 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ variations, projects, activ
     } finally {
       setIsBulkSaving(false);
     }
+  };
+
+  const handleRefine = async () => {
+    if (!refineInstruction.trim() || !onRefine) return;
+    setRefineLoading(true);
+    try { await onRefine(refineInstruction); setRefineInstruction(''); }
+    finally { setRefineLoading(false); }
   };
 
   const startEditing = (v: CopyVariation) => {
@@ -572,6 +582,30 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ variations, projects, activ
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      {onRefine && (
+        <div className="flex items-center gap-2 mb-4 p-3 bg-gray-50 border border-gray-200 rounded-xl">
+          <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+          </svg>
+          <input
+            type="text"
+            value={refineInstruction}
+            onChange={e => setRefineInstruction(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && handleRefine()}
+            placeholder="Refinar copy: hazlo más corto, cambia tono a urgente, agrega emoji..."
+            className="flex-1 text-[12px] bg-transparent outline-none text-gray-700 placeholder-gray-400"
+          />
+          <button
+            onClick={handleRefine}
+            disabled={!refineInstruction.trim() || refineLoading}
+            className="px-3 py-1.5 bg-[#1D1D1F] text-white text-[11px] font-medium rounded-lg disabled:opacity-40 hover:bg-[#3a3a3c] transition-colors shrink-0 flex items-center gap-1.5"
+          >
+            {refineLoading ? (
+              <><div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin" /> Refinando...</>
+            ) : "Aplicar"}
+          </button>
+        </div>
+      )}
       {spine && <SpineHero spine={spine} client={activeClient} />}
 
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-xl border border-gray-200 shadow-sm">

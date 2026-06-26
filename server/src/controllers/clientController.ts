@@ -231,3 +231,28 @@ export const deleteDNAProfile = async (req: AuthRequest, res: Response) => {
     res.status(500).json({ error: 'Error al eliminar perfil de ADN' });
   }
 };
+
+export const getDNAInsights = async (req: AuthRequest, res: Response) => {
+  const { id } = req.params; // dna profile id
+  try {
+    const profile = await prisma.contentDNAProfile.findUnique({ where: { id } });
+    if (!profile) return res.status(404).json({ error: "Perfil no encontrado" });
+    const clientId = profile.clientId;
+    // Fetch approved variations count
+    const approvedCount = await prisma.savedVariation.count({ where: { clientId, isApproved: true } });
+    // Fetch total saved
+    const totalSaved = await prisma.savedVariation.count({ where: { clientId } });
+    // Fetch negative feedback
+    const negatives = await prisma.negativeFeedback.findMany({ where: { clientId }, orderBy: { createdAt: "desc" }, take: 20 });
+    const negativeCount = negatives.length;
+    // Top rejection reasons (group by reason, top 3)
+    const reasonMap: Record<string, number> = {};
+    negatives.forEach((n: any) => { const key = n.reason.substring(0, 60); reasonMap[key] = (reasonMap[key] || 0) + 1; });
+    const topReasons = Object.entries(reasonMap).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([reason, count]) => ({ reason, count }));
+    // Recent approved sample
+    const recentApproved = await prisma.savedVariation.findMany({ where: { clientId, isApproved: true }, orderBy: { savedAt: "desc" }, take: 3, select: { platform: true, content: true } });
+    res.json({ approvedCount, totalSaved, negativeCount, topReasons, recentApproved });
+  } catch (error) {
+    res.status(500).json({ error: "Error al obtener insights" });
+  }
+};

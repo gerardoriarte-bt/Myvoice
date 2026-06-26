@@ -14,7 +14,7 @@ import { VOICES, GOALS } from './constants';
 import HomePage from './components/HomePage';
 import AISettings from './components/AISettings';
 import HelpGuide from './components/HelpGuide';
-import { generationApi, clientApi, libraryApi, authApi } from './services/api';
+import { generationApi, clientApi, libraryApi, authApi, refineApi } from './services/api';
 
 import CollaborationHub from './components/CollaborationHub';
 import ReviewPortal from './components/ReviewPortal';
@@ -333,6 +333,20 @@ const App: React.FC = () => {
     }
   };
 
+  const handleRefine = React.useCallback(async (instruction: string) => {
+    const clientId = lastParams?.clientId;
+    if (!clientId || variations.length === 0) return;
+    try {
+      const result = await refineApi.refine({ variations, instruction, clientId });
+      if (result?.variations?.length > 0) {
+        setVariations(result.variations);
+        addNotification('Copy refinado correctamente', 'success');
+      }
+    } catch {
+      addNotification('Error al refinar el copy', 'error');
+    }
+  }, [variations, lastParams, addNotification]);
+
   const handleSaveDNAProfile = async (profile: Omit<ContentDNAProfile, 'id' | 'createdAt'>) => {
     try {
       const savedProfile = await clientApi.saveDNA({ ...profile, clientId: activeClientId });
@@ -617,6 +631,7 @@ const App: React.FC = () => {
                     usage={usage}
                     onRegenerate={handleRegenerate}
                     onRegenerateChannel={spine ? handleRegenerateChannel : undefined}
+                    onRefine={handleRefine}
                     isLoading={isLoading}
                     onBulkSave={async (vars) => {
                       let count = 0;

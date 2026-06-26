@@ -9,6 +9,7 @@ import * as workspaceController from '../controllers/workspaceController.js';
 import * as reviewController from '../controllers/reviewController.js';
 import * as analyticsController from '../controllers/analyticsController.js';
 import * as presetController from '../controllers/presetController.js';
+import * as refineController from '../controllers/refineController.js';
 import { authenticateToken, authorizeRole } from '../middleware/auth.js';
 
 const router = Router();
@@ -68,6 +69,12 @@ router.put('/workspace/ai-config', authenticateToken, authorizeRole(['ADMIN']), 
 
 // Analytics (ADMIN)
 router.get('/analytics', authenticateToken, authorizeRole(['ADMIN']), analyticsController.getAnalytics);
+
+// Refine copy (iterative)
+router.post('/copy/refine', authenticateToken, refineController.refineVariations);
+
+// DNA Insights
+router.get('/dna-profiles/:id/insights', authenticateToken, authorizeRole(['ADMIN']), clientController.getDNAInsights);
 
 // Review Sessions (ADMIN — protegidas)
 router.get('/review-sessions', authenticateToken, authorizeRole(['ADMIN']), reviewController.listReviewSessions);

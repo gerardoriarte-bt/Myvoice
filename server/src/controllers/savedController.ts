@@ -79,6 +79,13 @@ export const updateVariation = async (req: AuthRequest, res: Response) => {
   const updates: any = { ...rest };
   if (approvalNote !== undefined) updates.approvalNote = approvalNote;
   try {
+    // Save current content as a version before updating
+    const current = await prisma.savedVariation.findUnique({ where: { id }, select: { content: true, charCount: true, previousVersions: true } });
+    if (current && rest.content && rest.content !== current.content) {
+      const versions = Array.isArray(current.previousVersions) ? current.previousVersions as any[] : [];
+      const newVersion = { content: current.content, charCount: current.charCount, editedAt: new Date().toISOString() };
+      updates.previousVersions = [...versions, newVersion].slice(-10);
+    }
     const variation = await prisma.savedVariation.update({
       where: { id },
       data: updates

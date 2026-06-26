@@ -118,6 +118,7 @@ export const clientApi = {
   duplicateDNA: (id: string) => apiRequest(`/dna-profiles/${id}/duplicate`, { method: 'POST' }),
   updateDNA: (id: string, data: any) => apiRequest(`/dna-profiles/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteDNA: (id: string) => apiRequest(`/dna-profiles/${id}`, { method: 'DELETE' }),
+  getDNAInsights: (dnaProfileId: string) => apiRequest(`/dna-profiles/${dnaProfileId}/insights`),
   computeFingerprint: (id: string) =>
     apiRequest(`/clients/${id}/fingerprint`, { method: 'POST' }),
   uploadBrandGuideline: async (id: string, file: File) => {
@@ -164,6 +165,11 @@ export const presetApi = {
   create: (data: { name: string; clientId?: string; parameters: any }) =>
     apiRequest('/presets', { method: 'POST', body: JSON.stringify(data) }),
   delete: (id: string) => apiRequest(`/presets/${id}`, { method: 'DELETE' }),
+};
+
+export const refineApi = {
+  refine: (data: { variations: any[], instruction: string, clientId: string }) =>
+    apiRequest('/copy/refine', { method: 'POST', body: JSON.stringify(data) }),
 };
 
 export const reviewApi = {
