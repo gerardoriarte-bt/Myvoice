@@ -2,6 +2,7 @@ import type OpenAI from "openai";
 import { CampaignSpine, CopyParameters, FunnelStage } from "../types.js";
 import { UsageEntry, extractUsage } from "./pricing.js";
 import { buildLocaleRulesBlock, resolveMarketLocale } from "./localeRules.js";
+import { jsonObjectFormat, stripJsonFence } from "./aiClient.js";
 
 const FUNNEL_GUIDANCE: Record<FunnelStage, string> = {
   [FunnelStage.AWARENESS]:
@@ -106,7 +107,7 @@ export const buildCampaignSpine = async (
       { role: "system", content: buildDirectorSystemPrompt(params) },
       { role: "user", content: prompt },
     ],
-    response_format: { type: "json_object" },
+    response_format: jsonObjectFormat(client),
     temperature: 0.7,
   });
 
@@ -116,7 +117,7 @@ export const buildCampaignSpine = async (
   const content = response.choices[0].message.content;
   if (!content) throw new Error("Director: respuesta vacía de OpenAI");
 
-  const parsed = JSON.parse(content);
+  const parsed = JSON.parse(stripJsonFence(content));
   if (!parsed.angles || !Array.isArray(parsed.angles) || parsed.angles.length < 3) {
     throw new Error("Director: respuesta inválida (faltan ángulos)");
   }

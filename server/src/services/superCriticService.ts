@@ -1,6 +1,7 @@
 import type OpenAI from "openai";
 import { CampaignSpine, CoherenceReport, CopyVariation } from "../types.js";
 import { UsageEntry, extractUsage } from "./pricing.js";
+import { jsonObjectFormat, stripJsonFence } from "./aiClient.js";
 
 const summarizeChannel = (channel: string, items: CopyVariation[]): string => {
   const top = items
@@ -98,14 +99,14 @@ export const runSuperCritic = async (
         { role: "system", content: "Eres director creativo senior. Auditas coherencia entre canales. Severo pero justo. Respondés SOLO en JSON válido." },
         { role: "user", content: buildPrompt(brandName, spine, variations, prohibitions) },
       ],
-      response_format: { type: "json_object" },
+      response_format: jsonObjectFormat(client),
       temperature: 0.3,
     });
     const u = extractUsage(response, model, "supercritic");
     if (u && usage) usage.push(u);
     const raw = response.choices[0].message.content;
     if (!raw) return null;
-    const parsed = JSON.parse(raw);
+    const parsed = JSON.parse(stripJsonFence(raw));
     return {
       coherenceScore: typeof parsed.coherenceScore === "number" ? parsed.coherenceScore : 0,
       summary: parsed.summary || "",

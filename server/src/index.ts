@@ -10,7 +10,7 @@ const provider = process.env.AI_PROVIDER || 'openai';
 const hasAIKey =
   (provider === 'openai'     && !!process.env.OPENAI_API_KEY) ||
   (provider === 'openrouter' && !!process.env.OPENROUTER_API_KEY) ||
-  (provider === 'anthropic'  && !!process.env.ANTHROPIC_API_KEY) ||
+  (provider === 'anthropic'  && !!(process.env.ANTHROPIC_API_KEY_TEMP || process.env.ANTHROPIC_API_KEY)) ||
   (provider === 'gemini'     && !!process.env.GEMINI_API_KEY);
 
 if (!process.env.DATABASE_URL || !hasAIKey) {

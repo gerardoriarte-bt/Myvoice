@@ -3,6 +3,7 @@ import { CopyVariation } from "../types.js";
 import { ChannelBrief, ChannelSpec } from "../channels/types.js";
 import { validateVariation } from "../channels/validators.js";
 import { UsageEntry, extractUsage } from "./pricing.js";
+import { jsonObjectFormat, stripJsonFence } from "./aiClient.js";
 
 const isBroken = (v: CopyVariation): boolean => {
   if (v.budgetOk === false) return true;
@@ -108,14 +109,14 @@ const fixOne = async (
         { role: "system", content: "Eres editor de copy especializado en respetar restricciones duras. Respondés SOLO en JSON válido." },
         { role: "user", content: buildFixPrompt(brief, spec, v) },
       ],
-      response_format: { type: "json_object" },
+      response_format: jsonObjectFormat(client),
       temperature: 0.5,
     });
     const u = extractUsage(response, model, `fixer:${spec.id}`);
     if (u && usage) usage.push(u);
     const raw = response.choices[0].message.content;
     if (!raw) return v;
-    const parsed = JSON.parse(raw);
+    const parsed = JSON.parse(stripJsonFence(raw));
     const newContent = typeof parsed.content === "string" ? parsed.content : "";
     if (!newContent) return v;
 

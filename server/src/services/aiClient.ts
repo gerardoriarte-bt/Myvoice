@@ -45,6 +45,22 @@ export const createAIClient = (config: WorkspaceAIConfig): OpenAI =>
         : undefined,
   });
 
+// Anthropic's OpenAI-compatible endpoint rejects response_format: { type: "json_object" }
+// (only "json_schema" is accepted there). Detect the provider from the client's baseURL so
+// call sites don't need to thread WorkspaceAIConfig through just for this.
+export const jsonObjectFormat = (client: OpenAI): { type: "json_object" } | undefined =>
+  client.baseURL?.includes("anthropic.com") ? undefined : { type: "json_object" };
+
+// Models sometimes wrap JSON responses in markdown code fences despite prompt
+// instructions not to — most often when response_format can't force JSON mode
+// (e.g. Anthropic's OpenAI-compatible endpoint, see jsonObjectFormat above).
+// Strip a leading/trailing ``` or ```json fence before JSON.parse.
+export const stripJsonFence = (raw: string): string => {
+  const trimmed = raw.trim();
+  const fenced = trimmed.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
+  return fenced ? fenced[1] : trimmed;
+};
+
 export const resolveModel = (config: WorkspaceAIConfig, mini = false): string => {
   if (mini) return MINI_MODELS[config.provider];
   return config.model ?? DEFAULT_MODELS[config.provider];
@@ -58,7 +74,8 @@ export const serverAIConfig = (): WorkspaceAIConfig => {
   if (provider === "openrouter") {
     apiKey = process.env.OPENROUTER_API_KEY || apiKey;
   } else if (provider === "anthropic") {
-    apiKey = process.env.ANTHROPIC_API_KEY || apiKey;
+    // ANTHROPIC_API_KEY_TEMP is a temporary extra key — remove once no longer needed.
+    apiKey = process.env.ANTHROPIC_API_KEY_TEMP || process.env.ANTHROPIC_API_KEY || apiKey;
   } else if (provider === "gemini") {
     apiKey = process.env.GEMINI_API_KEY || apiKey;
   }

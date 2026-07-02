@@ -1,4 +1,4 @@
-import { createAIClient, resolveModel, serverAIConfig, WorkspaceAIConfig } from "./aiClient.js";
+import { createAIClient, resolveModel, serverAIConfig, WorkspaceAIConfig, jsonObjectFormat, stripJsonFence } from "./aiClient.js";
 
 export interface DeterministicStats {
   sampleSize: number;          // # de textos analizados
@@ -119,13 +119,13 @@ export const computeBrandFingerprint = async (
       { role: "system", content: "Eres lingüista de marca. Tu output siempre es JSON válido." },
       { role: "user", content: buildQualPrompt(cleaned, stats) },
     ],
-    response_format: { type: "json_object" },
+    response_format: jsonObjectFormat(openai),
     temperature: 0.3,
   });
 
   const raw = response.choices[0].message.content;
   if (!raw) throw new Error("La IA devolvió respuesta vacía.");
-  const qual = JSON.parse(raw) as QualitativeFingerprint;
+  const qual = JSON.parse(stripJsonFence(raw)) as QualitativeFingerprint;
 
   return {
     ...stats,

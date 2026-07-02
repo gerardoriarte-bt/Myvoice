@@ -2,6 +2,7 @@ import type OpenAI from "openai";
 import { CopyVariation } from "../types.js";
 import { ChannelBrief, ChannelSpec } from "../channels/types.js";
 import { UsageEntry, extractUsage } from "./pricing.js";
+import { jsonObjectFormat, stripJsonFence } from "./aiClient.js";
 
 interface CriticEvaluation {
   id: string;
@@ -99,7 +100,7 @@ export const runCritic = async (
         { role: "system", content: "Eres editor senior de marca. Severo pero justo. Respondés SOLO en JSON válido." },
         { role: "user", content: prompt },
       ],
-      response_format: { type: "json_object" },
+      response_format: jsonObjectFormat(client),
       temperature: 0.3,
     });
 
@@ -109,7 +110,7 @@ export const runCritic = async (
     const raw = response.choices[0].message.content;
     if (!raw) return variations;
 
-    const parsed = JSON.parse(raw);
+    const parsed = JSON.parse(stripJsonFence(raw));
     const evals: CriticEvaluation[] = Array.isArray(parsed.evaluations) ? parsed.evaluations : [];
     const byId = new Map(evals.map(e => [e.id, e]));
 

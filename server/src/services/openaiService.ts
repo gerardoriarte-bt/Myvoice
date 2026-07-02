@@ -10,7 +10,7 @@ import { runCritic } from "./criticService.js";
 import { runAutoFix } from "./fixerService.js";
 import { runSuperCritic } from "./superCriticService.js";
 import { UsageEntry, extractUsage, aggregateUsage } from "./pricing.js";
-import { WorkspaceAIConfig, createAIClient, resolveModel } from "./aiClient.js";
+import { WorkspaceAIConfig, createAIClient, resolveModel, jsonObjectFormat, stripJsonFence } from "./aiClient.js";
 import { resolveMarketLocale, brandUsesVoseo } from "./localeRules.js";
 
 const createSemaphore = (max: number) => {
@@ -78,7 +78,7 @@ export const generateForChannel = async (
         { role: "system", content: system },
         { role: "user", content: user },
       ],
-      response_format: { type: "json_object" },
+      response_format: jsonObjectFormat(client),
       temperature: 0.8,
     });
     const u = extractUsage(response, writerModel, `writer:${spec.id}`);
@@ -95,7 +95,7 @@ export const generateForChannel = async (
 
   let parsed: any;
   try {
-    parsed = JSON.parse(raw);
+    parsed = JSON.parse(stripJsonFence(raw));
   } catch {
     throw new Error(`Canal "${spec.id}" devolvió JSON inválido.`);
   }

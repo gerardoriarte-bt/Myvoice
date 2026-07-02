@@ -1,6 +1,6 @@
 // pdf-parse v2 uses a class-based API: PDFParse({ data }) + .getText()
 import { PDFParse } from "pdf-parse";
-import { createAIClient, resolveModel, serverAIConfig, WorkspaceAIConfig } from "./aiClient.js";
+import { createAIClient, resolveModel, serverAIConfig, WorkspaceAIConfig, jsonObjectFormat, stripJsonFence } from "./aiClient.js";
 
 export interface ExtractedBrand {
   voice: string;
@@ -66,14 +66,14 @@ export const extractBrandFromPdf = async (
       { role: "system", content: "Eres un analista de marca. Extraes información estructurada de manuales de marca. Respondés SOLO en JSON válido." },
       { role: "user", content: buildExtractionPrompt(text, clientName, industry) },
     ],
-    response_format: { type: "json_object" },
+    response_format: jsonObjectFormat(openai),
     temperature: 0.2,
   });
 
   const raw = response.choices[0].message.content;
   if (!raw) throw new Error("La IA devolvió respuesta vacía.");
 
-  const parsedJson = JSON.parse(raw) as Partial<ExtractedBrand>;
+  const parsedJson = JSON.parse(stripJsonFence(raw)) as Partial<ExtractedBrand>;
   return {
     summary: parsedJson.summary || "",
     voice: parsedJson.voice || "",
