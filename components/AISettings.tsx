@@ -55,7 +55,11 @@ export default function AISettings() {
       await workspaceApi.updateAIConfig({
         aiProvider: provider,
         aiApiKey: apiKey || undefined,
-        aiModel: model || undefined,
+        // Always send aiModel (even "") so switching provider without picking a
+        // model clears the old value server-side instead of leaving it stale —
+        // `JSON.stringify` drops `undefined` keys, so `|| undefined` here would
+        // silently skip the update and keep the previous provider's model string.
+        aiModel: model,
       });
       setApiKey('');
       setConfig(prev => prev ? { ...prev, aiProvider: provider, aiModel: model || null, hasApiKey: true } : prev);

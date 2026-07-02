@@ -1,6 +1,6 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth.js';
-import { createAIClient, WorkspaceAIConfig } from '../services/aiClient.js';
+import { createAIClient, resolveModel, WorkspaceAIConfig } from '../services/aiClient.js';
 import { prisma } from '../lib/prisma.js';
 
 export const getWorkspaceAIConfig = async (req: AuthRequest, res: Response) => {
@@ -40,12 +40,20 @@ export const updateWorkspaceAIConfig = async (req: AuthRequest, res: Response) =
     return res.status(400).json({ error: 'Provider inválido. Usá: openai, anthropic, gemini' });
   }
 
-  // Validate the key works before saving (quick smoke test)
+  // Validate the key works before saving (quick smoke test).
+  // NOTE: uses a minimal chat completion, not models.list() — Anthropic's
+  // OpenAI-compatible endpoint rejects Bearer auth on /v1/models (401 "Invalid
+  // bearer token") even for a valid key, so models.list() would false-negative
+  // every Anthropic key.
   if (aiApiKey && aiProvider) {
     try {
-      const testConfig: WorkspaceAIConfig = { provider: aiProvider as any, apiKey: aiApiKey };
+      const testConfig: WorkspaceAIConfig = { provider: aiProvider as any, apiKey: aiApiKey, model: aiModel || undefined };
       const testClient = createAIClient(testConfig);
-      await testClient.models.list();
+      await testClient.chat.completions.create({
+        model: resolveModel(testConfig, true),
+        max_tokens: 1,
+        messages: [{ role: 'user', content: 'hi' }],
+      });
     } catch (err: any) {
       return res.status(400).json({
         error: `API key inválida o sin acceso: ${err?.message || 'error desconocido'}`,
