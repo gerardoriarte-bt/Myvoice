@@ -31,8 +31,10 @@ const SpineHero: React.FC<Props> = ({ spine, client }) => {
               <p className="text-[13px] font-medium text-white truncate">{client?.name || 'Marca'}</p>
             </div>
           </div>
+          {/* El modelo del director sale de la config del workspace y cambia
+              por proveedor, así que no se puede rotular acá sin inventarlo. */}
           <span className="text-[10px] font-medium uppercase tracking-wider text-white/40 px-2 py-1 rounded border border-white/10">
-            Director · gpt-4o-mini
+            Director
           </span>
         </div>
 
@@ -62,7 +64,9 @@ const SpineHero: React.FC<Props> = ({ spine, client }) => {
       <div className="bg-black/20 backdrop-blur-sm px-7 py-5 border-t border-white/10">
         <div className="flex items-center gap-2 mb-3">
           <Layers className="w-3.5 h-3.5 text-white/50" />
-          <span className="text-[10px] font-medium uppercase tracking-[0.2em] text-white/50">3 ángulos narrativos</span>
+          <span className="text-[10px] font-medium uppercase tracking-[0.2em] text-white/50">
+            {spine.angles.length} {spine.angles.length === 1 ? 'ángulo narrativo' : 'ángulos narrativos'}
+          </span>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {spine.angles.map((a, i) => (

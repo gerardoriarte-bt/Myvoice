@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { workspaceApi } from '../services/api';
 
-type Provider = 'openai' | 'anthropic' | 'gemini';
+type Provider = 'openrouter' | 'openai' | 'anthropic' | 'gemini';
 
 interface AIConfig {
   aiProvider: Provider | null;
@@ -9,7 +9,22 @@ interface AIConfig {
   hasApiKey: boolean;
 }
 
+// Mantener alineado con DEFAULT_MODELS / MINI_MODELS en
+// server/src/services/aiClient.ts. Los slugs de OpenRouter están verificados
+// contra https://openrouter.ai/api/v1/models.
 const PROVIDERS: { id: Provider; label: string; placeholder: string; models: string[] }[] = [
+  {
+    id: 'openrouter',
+    label: 'OpenRouter',
+    placeholder: 'sk-or-...',
+    models: [
+      'anthropic/claude-sonnet-4.6',
+      'anthropic/claude-sonnet-5',
+      'anthropic/claude-opus-4.6',
+      'google/gemini-2.5-flash',
+      'google/gemini-2.5-flash-lite',
+    ],
+  },
   {
     id: 'openai',
     label: 'OpenAI',
@@ -20,13 +35,13 @@ const PROVIDERS: { id: Provider; label: string; placeholder: string; models: str
     id: 'anthropic',
     label: 'Anthropic',
     placeholder: 'sk-ant-...',
-    models: ['claude-opus-4-7', 'claude-sonnet-4-6', 'claude-haiku-4-5-20251001'],
+    models: ['claude-sonnet-4-6', 'claude-sonnet-5', 'claude-opus-4-6', 'claude-haiku-4-5'],
   },
   {
     id: 'gemini',
     label: 'Google Gemini',
     placeholder: 'AIza...',
-    models: ['gemini-2.0-flash', 'gemini-1.5-pro', 'gemini-1.5-flash'],
+    models: ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.5-pro'],
   },
 ];
 
@@ -209,9 +224,10 @@ export default function AISettings() {
       <div style={{ marginTop: 32, padding: 16, background: '#F5F5F7', borderRadius: 10, fontSize: 13, color: '#6E6E73' }}>
         <strong style={{ color: '#1D1D1F', display: 'block', marginBottom: 6 }}>Modelos predeterminados</strong>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <span>OpenRouter — Writer: <code>google/gemini-2.5-flash</code> · Critic/Fixer: <code>google/gemini-2.5-flash-lite</code></span>
           <span>OpenAI — Writer: <code>gpt-4o</code> · Critic/Fixer: <code>gpt-4o-mini</code></span>
           <span>Anthropic — Writer: <code>claude-sonnet-4-6</code> · Critic/Fixer: <code>claude-haiku-4-5</code></span>
-          <span>Gemini — Writer &amp; Critic: <code>gemini-2.0-flash</code></span>
+          <span>Gemini — Writer: <code>gemini-2.5-flash</code> · Critic/Fixer: <code>gemini-2.5-flash-lite</code></span>
         </div>
       </div>
     </div>

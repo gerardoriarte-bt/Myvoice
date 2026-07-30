@@ -147,6 +147,7 @@ const ParameterForm: React.FC<ParameterFormProps> = ({
       feedbackExamples: profile.feedbackExamples,
       platforms: selectedPlatforms,
       clientId,
+      dnaProfileId: profile.id,
       clientName: activeClient?.name,
       clientIndustry: activeClient?.industry,
     };

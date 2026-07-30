@@ -130,6 +130,12 @@ export interface CopyParameters {
   funnelStage?: FunnelStage;
   platforms: Platform[];
   clientId: string;
+  /**
+   * Brief (perfil de ADN) elegido en el formulario. Sin esto el consumidor
+   * tiene que adivinar por clientId y termina tomando el primer brief de la
+   * marca, que no es necesariamente el que se seleccionó.
+   */
+  dnaProfileId?: string;
   clientName?: string;
   clientIndustry?: string;
   feedbackExamples?: FeedbackExample[];

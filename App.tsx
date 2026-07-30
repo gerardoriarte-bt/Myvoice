@@ -264,8 +264,22 @@ const App: React.FC = () => {
     setProgressCoherenceStatus(platforms.length >= 2 ? 'pending' : 'done');
 
     try {
-      const profile = dnaProfiles.find(p => p.clientId === params.clientId);
+      // Usar el brief que el formulario seleccionó explícitamente. El fallback
+      // por clientId toma el PRIMER brief de la marca, que con marcas de varios
+      // briefs no es el elegido — solo aplica a presets guardados antes de que
+      // params llevara dnaProfileId.
+      const profile =
+        (params.dnaProfileId && dnaProfiles.find(p => p.id === params.dnaProfileId)) ||
+        dnaProfiles.find(p => p.clientId === params.clientId);
       if (!profile) throw new Error("No se encontró el ADN de esta marca");
+
+      // El formulario tiene su propio selector de marca, independiente del
+      // global. Sin esta sincronización la espina muestra la marca anterior y,
+      // peor, handleSaveVariation archiva el copy bajo la marca equivocada
+      // (contaminando su bucle de feedback).
+      if (params.clientId && params.clientId !== activeClientId) {
+        setActiveClientId(params.clientId);
+      }
 
       const collected: any[] = [...(lockedSnapshot || [])];
 

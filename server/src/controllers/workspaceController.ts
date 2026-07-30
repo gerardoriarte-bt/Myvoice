@@ -36,8 +36,10 @@ export const updateWorkspaceAIConfig = async (req: AuthRequest, res: Response) =
     aiModel?: string;
   };
 
-  if (aiProvider && !['openai', 'anthropic', 'gemini'].includes(aiProvider)) {
-    return res.status(400).json({ error: 'Provider inválido. Usá: openai, anthropic, gemini' });
+  // Mantener alineado con AIProvider en services/aiClient.ts.
+  const VALID_PROVIDERS = ['openrouter', 'openai', 'anthropic', 'gemini'];
+  if (aiProvider && !VALID_PROVIDERS.includes(aiProvider)) {
+    return res.status(400).json({ error: `Provider inválido. Usá: ${VALID_PROVIDERS.join(', ')}` });
   }
 
   // Validate the key works before saving (quick smoke test).
