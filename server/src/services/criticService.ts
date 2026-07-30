@@ -2,7 +2,7 @@ import type OpenAI from "openai";
 import { CopyVariation } from "../types.js";
 import { ChannelBrief, ChannelSpec } from "../channels/types.js";
 import { UsageEntry, extractUsage } from "./pricing.js";
-import { jsonObjectFormat, stripJsonFence } from "./aiClient.js";
+import { jsonObjectFormat, stripJsonFence, samplingParams, MAX_TOKENS } from "./aiClient.js";
 
 interface CriticEvaluation {
   id: string;
@@ -101,7 +101,8 @@ export const runCritic = async (
         { role: "user", content: prompt },
       ],
       response_format: jsonObjectFormat(client),
-      temperature: 0.3,
+      max_tokens: MAX_TOKENS.critic,
+      ...samplingParams(model, 0.3),
     });
 
     const u = extractUsage(response, model, `critic:${spec.id}`);

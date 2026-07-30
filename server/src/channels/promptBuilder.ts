@@ -78,10 +78,10 @@ ${own.slice(0, 4).map(e => `- "${e.content}"`).join("\n")}
 };
 
 /**
- * SYSTEM prompt: brand-level, identical across all channel calls of a generation.
- * Cacheable prefix.
+ * Persona block — identical across all channel calls of a generation.
+ * Rendered as the head of the cacheable system message.
  */
-export const buildSystemPrompt = (brief: ChannelBrief): string => {
+const buildPersonaPrompt = (brief: ChannelBrief): string => {
   const voseoSection = brief.checkVoseo
     ? `\n\n## VOSEO COLOMBIANO — REGLA DURA\n${VOSEO_CO_RULES}\nSi escribís "tú", "eres", "tienes", "puedes", "quieres", "sabes", "haces" o "vienes", la variación está mal. Reescribila antes de devolver.`
     : "";
@@ -101,8 +101,8 @@ Respondes SOLO en JSON válido. Sin texto fuera del JSON.
 };
 
 /**
- * Cacheable prefix block of the user prompt — identical across all channel calls in a single generation.
- * OpenAI's auto-caching kicks in when this prefix is ≥1024 tokens and identical between calls.
+ * Campaign-level block — identical across all channel calls in a single generation.
+ * Rendered as the tail of the cacheable system message.
  */
 const buildCacheablePrefix = (brief: ChannelBrief): string => {
   const conceptLine = brief.spine.concept ? `"${brief.spine.concept}"` : "(sin concepto fijo)";
@@ -138,7 +138,22 @@ ${brief.brand.fingerprint ? renderFingerprintForPrompt(brief.brand.fingerprint) 
 - Keywords (favorecer): ${brief.campaign.keywords || "—"}
 - Prohibiciones: ${brief.campaign.prohibitions || "—"}
 - CTA principal: ${brief.campaign.primaryCTA || "—"}
-${renderExamples(brief)}${renderNegativeExamples(brief)}`;
+${renderExamples(brief)}${renderNegativeExamples(brief)}
+## REGLAS — ORDEN DE PRIORIDAD (si hay conflicto, gana la regla más arriba)
+Aplican a TODOS los canales. El detalle de slots y límites llega en el bloque del canal.
+1. **Límites de caracteres/palabras** del slot. Cuenta ANTES de devolver. Si te pasas, acorta.
+2. **Prohibiciones**: las palabras listadas y sus paráfrasis cercanas (zona semántica) están prohibidas.
+3. **Concepto creativo**: literal en slots cortos según la regla declarada en el canal; expansión coherente en slots largos.
+4. **Tono y guías de voz** de la marca.
+5. **Ángulo asignado** a cada variación.
+
+## SCORING (rúbrica 1-10) por variación
+- 5 pts — ¿Inconfundiblemente "${brief.brand.name}"? Si podría ser otra marca del rubro, resta puntos.
+- 3 pts — ¿Cumple presupuesto de slot Y respeta prohibiciones? Si no, máx 5 puntos en esta variación.
+- 2 pts — ¿Aporta una idea distinta a las otras variaciones del mismo slot?
+
+Devolver score + scoreRationale CONCRETO (1 línea, citando un detalle específico — no "buen tono").
+`;
 };
 
 /**
@@ -170,19 +185,7 @@ ${conceptLiteralRule}
 ## SLOTS A GENERAR
 ${slotBlock}
 
-## REGLAS — ORDEN DE PRIORIDAD (si hay conflicto, gana la regla más arriba)
-1. **Límites de caracteres/palabras** del slot. Cuenta ANTES de devolver. Si te pasas, acorta.
-2. **Prohibiciones**: las palabras listadas y sus paráfrasis cercanas (zona semántica) están prohibidas.
-3. **Concepto creativo**: literal en slots cortos según la regla declarada arriba; expansión coherente en slots largos.
-4. **Tono y guías de voz** de la marca.
-5. **Ángulo asignado** a cada variación.
-
-## SCORING (rúbrica 1-10) por variación
-- 5 pts — ¿Inconfundiblemente "${brief.brand.name}"? Si podría ser otra marca del rubro, resta puntos.
-- 3 pts — ¿Cumple presupuesto de slot Y respeta prohibiciones? Si no, máx 5 puntos en esta variación.
-- 2 pts — ¿Aporta una idea distinta a las otras variaciones del mismo slot?
-
-Devolver score + scoreRationale CONCRETO (1 línea, citando un detalle específico — no "buen tono").
+Aplicá las REGLAS — ORDEN DE PRIORIDAD y la rúbrica de SCORING declaradas arriba a estos slots.
 
 ## FORMATO JSON (única salida válida)
 ${schema}
@@ -190,10 +193,25 @@ ${schema}
 };
 
 /**
- * Build the full user prompt as prefix + suffix. The prefix is cacheable.
+ * The full cacheable prefix: persona + campaign spine + brand DNA + examples.
+ *
+ * This is byte-identical across every channel call of one generation, so it is
+ * sent as the system message with a single cache_control breakpoint. With N
+ * channels the prefix is billed at full rate once and at ~0.1x for the other
+ * N-1 calls, instead of N times at full rate.
+ *
+ * Anything channel-specific MUST stay in buildChannelSuffix — a single byte of
+ * per-channel content in here invalidates the shared prefix for every call.
+ */
+export const buildSystemPrompt = (brief: ChannelBrief): string =>
+  buildPersonaPrompt(brief) + "\n" + buildCacheablePrefix(brief);
+
+/**
+ * The per-channel user prompt: slots, tactics, scoring rubric and JSON schema.
+ * Varies per call and sits after the cache breakpoint.
  */
 export const buildUserPrompt = (brief: ChannelBrief, spec: ChannelSpec): string => {
-  return buildCacheablePrefix(brief) + buildChannelSuffix(brief, spec);
+  return buildChannelSuffix(brief, spec);
 };
 
 export const renderChannelPromptForPreview = (brief: ChannelBrief, spec: ChannelSpec): { system: string; user: string } => ({

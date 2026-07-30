@@ -22,8 +22,10 @@ import Analytics from './components/Analytics';
 import GenerationHistory from './components/GenerationHistory';
 import ClientPortal from './components/ClientPortal';
 import WorkflowHelpSidebar from './components/WorkflowHelpSidebar';
+import { LOBUENO_DNA_PROFILES, LOBUENO_APPROVED_EXAMPLES } from './shared/lobuenoBrand';
 
 const MOCK_CLIENTS: Client[] = [
+  { id: 'c-lobueno', name: 'LoBueno', industry: 'Agencia creativa y de contenido', logo: '', createdAt: Date.now() },
   { id: 'c-terpel', name: 'Terpel', industry: 'Energía y Combustibles', logo: '', createdAt: Date.now() },
   { id: 'c-huggies', name: 'Huggies', industry: 'Cuidado Infantil', logo: '', createdAt: Date.now() },
   { id: 'c-clubcol', name: 'Club Colombia', industry: 'Bebidas Premium', logo: '', createdAt: Date.now() },
@@ -32,6 +34,24 @@ const MOCK_CLIENTS: Client[] = [
 ];
 
 const MOCK_DNA: ContentDNAProfile[] = [
+  ...LOBUENO_DNA_PROFILES.map(p => ({
+    id: `dna-lobueno-${p.key}`,
+    clientId: 'c-lobueno',
+    name: p.name,
+    voice: p.voice,
+    goal: p.goal,
+    product: p.product,
+    targetAudience: p.targetAudience,
+    theme: p.theme,
+    keywords: p.keywords,
+    brandVoiceGuidelines: p.brandVoiceGuidelines,
+    valueProposition: p.valueProposition,
+    primaryCTA: p.primaryCTA,
+    prohibitions: p.prohibitions,
+    campaignConcept: p.campaignConcept,
+    feedbackExamples: LOBUENO_APPROVED_EXAMPLES.map(e => ({ platform: e.platform, content: e.content })),
+    createdAt: Date.now(),
+  })),
   {
     id: 'dna-terpel-1',
     clientId: 'c-terpel',

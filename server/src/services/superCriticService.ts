@@ -1,7 +1,7 @@
 import type OpenAI from "openai";
 import { CampaignSpine, CoherenceReport, CopyVariation } from "../types.js";
 import { UsageEntry, extractUsage } from "./pricing.js";
-import { jsonObjectFormat, stripJsonFence } from "./aiClient.js";
+import { jsonObjectFormat, stripJsonFence, samplingParams, MAX_TOKENS } from "./aiClient.js";
 
 const summarizeChannel = (channel: string, items: CopyVariation[]): string => {
   const top = items
@@ -100,7 +100,8 @@ export const runSuperCritic = async (
         { role: "user", content: buildPrompt(brandName, spine, variations, prohibitions) },
       ],
       response_format: jsonObjectFormat(client),
-      temperature: 0.3,
+      max_tokens: MAX_TOKENS.superCritic,
+      ...samplingParams(model, 0.3),
     });
     const u = extractUsage(response, model, "supercritic");
     if (u && usage) usage.push(u);

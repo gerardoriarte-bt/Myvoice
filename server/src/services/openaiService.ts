@@ -10,7 +10,16 @@ import { runCritic } from "./criticService.js";
 import { runAutoFix } from "./fixerService.js";
 import { runSuperCritic } from "./superCriticService.js";
 import { UsageEntry, extractUsage, aggregateUsage } from "./pricing.js";
-import { WorkspaceAIConfig, createAIClient, resolveModel, jsonObjectFormat, stripJsonFence } from "./aiClient.js";
+import {
+  WorkspaceAIConfig,
+  createAIClient,
+  resolveModel,
+  jsonObjectFormat,
+  stripJsonFence,
+  buildCacheableSystemMessage,
+  samplingParams,
+  MAX_TOKENS,
+} from "./aiClient.js";
 import { resolveMarketLocale, brandUsesVoseo } from "./localeRules.js";
 
 const createSemaphore = (max: number) => {
@@ -75,11 +84,13 @@ export const generateForChannel = async (
     const response = await client.chat.completions.create({
       model: writerModel,
       messages: [
-        { role: "system", content: system },
+        // Campaign-wide prefix, cached across every channel call of this generation.
+        buildCacheableSystemMessage(system, client),
         { role: "user", content: user },
       ],
       response_format: jsonObjectFormat(client),
-      temperature: 0.8,
+      max_tokens: MAX_TOKENS.writer,
+      ...samplingParams(writerModel, 0.8),
     });
     const u = extractUsage(response, writerModel, `writer:${spec.id}`);
     if (u && usage) usage.push(u);

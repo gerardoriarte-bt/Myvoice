@@ -181,6 +181,7 @@ export interface SavedVariation extends CopyVariation {
   tags: string[];
   savedAt: number;
   isApproved?: boolean;
+  previousVersions?: Array<{ content: string; charCount: number; editedAt: string }>;
 }
 
 export interface BrandConfig {
@@ -198,8 +199,14 @@ export interface GenerationResponse {
 export interface UsageReport {
   promptTokens: number;
   cachedTokens: number;
+  /** tokens written to cache on the first call of a generation */
+  cacheWriteTokens?: number;
   completionTokens: number;
   costUsd: number;
+  /** true when costUsd is estimated from a local price table, not reported by the provider */
+  costEstimated?: boolean;
+  /** cachedTokens / promptTokens, 0-1 */
+  cacheHitRate?: number;
   byStage: Record<string, { tokens: number; costUsd: number }>;
 }
 

@@ -1,4 +1,4 @@
-import { createAIClient, resolveModel, serverAIConfig, WorkspaceAIConfig, jsonObjectFormat, stripJsonFence } from "./aiClient.js";
+import { createAIClient, resolveModel, serverAIConfig, WorkspaceAIConfig, jsonObjectFormat, stripJsonFence, samplingParams, MAX_TOKENS } from "./aiClient.js";
 
 export interface DeterministicStats {
   sampleSize: number;          // # de textos analizados
@@ -120,7 +120,8 @@ export const computeBrandFingerprint = async (
       { role: "user", content: buildQualPrompt(cleaned, stats) },
     ],
     response_format: jsonObjectFormat(openai),
-    temperature: 0.3,
+    max_tokens: MAX_TOKENS.fingerprint,
+    ...samplingParams(model, 0.3),
   });
 
   const raw = response.choices[0].message.content;

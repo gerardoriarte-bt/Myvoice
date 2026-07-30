@@ -30,3 +30,9 @@ server/dist
 *.sln
 *.sw?
 Myvoice.pem
+
+# PDFs de guías de marca subidos por usuarios — datos, no código
+server/uploads/
+
+# Configuración local del asistente
+.claude/

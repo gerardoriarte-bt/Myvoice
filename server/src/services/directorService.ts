@@ -2,7 +2,7 @@ import type OpenAI from "openai";
 import { CampaignSpine, CopyParameters, FunnelStage } from "../types.js";
 import { UsageEntry, extractUsage } from "./pricing.js";
 import { buildLocaleRulesBlock, resolveMarketLocale } from "./localeRules.js";
-import { jsonObjectFormat, stripJsonFence } from "./aiClient.js";
+import { jsonObjectFormat, stripJsonFence, samplingParams, MAX_TOKENS } from "./aiClient.js";
 
 const FUNNEL_GUIDANCE: Record<FunnelStage, string> = {
   [FunnelStage.AWARENESS]:
@@ -108,7 +108,8 @@ export const buildCampaignSpine = async (
       { role: "user", content: prompt },
     ],
     response_format: jsonObjectFormat(client),
-    temperature: 0.7,
+    max_tokens: MAX_TOKENS.director,
+    ...samplingParams(model, 0.7),
   });
 
   const u = extractUsage(response, model, "director");

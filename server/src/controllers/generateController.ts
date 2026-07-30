@@ -3,6 +3,7 @@ import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth.js';
 import { generateCopyWithOpenAI, streamGenerateCopyWithOpenAI, generateForChannel, buildBrief } from '../services/openaiService.js';
 import { serverAIConfig, WorkspaceAIConfig, createAIClient, resolveModel } from '../services/aiClient.js';
+import { UsageEntry, aggregateUsage } from '../services/pricing.js';
 import { prisma } from '../lib/prisma.js';
 import { getChannelSpec } from '../channels/registry.js';
 
@@ -241,14 +242,32 @@ export const regenerateChannel = async (req: AuthRequest, res: Response) => {
     const miniModel = resolveModel(aiConfig, true);
 
     const brief = buildBrief({ ...generationParams, ...params }, spine);
-    const variations = await generateForChannel(spec, brief, aiClientInstance, writerModel, miniModel);
+    const usage: UsageEntry[] = [];
+    const variations = await generateForChannel(spec, brief, aiClientInstance, writerModel, miniModel, usage);
+    const usageTotal = aggregateUsage(usage);
 
     await prisma.client.update({
       where: { id: client.id },
       data: { quotaUsed: { increment: 1 } }
     });
 
-    res.json({ platform, variations });
+    // Regeneration is a real spend — log it like a generation so cost reporting
+    // isn't blind to it.
+    await prisma.generationLog.create({
+      data: {
+        clientId: client.id,
+        userId: user?.userId || 'system',
+        dnaProfileId: ctx.dnaProfile.id,
+        platforms: [platform],
+        funnelStage: params?.funnelStage || null,
+        spineJson: spine,
+        outputJson: { variations, usage: usageTotal, regeneratedChannel: platform } as any,
+        promptTokens: usageTotal.promptTokens,
+        completionTokens: usageTotal.completionTokens,
+      }
+    });
+
+    res.json({ platform, variations, usage: usageTotal });
   } catch (error: any) {
     if (error?.statusCode) {
       return res.status(error.statusCode).json({ error: error.message });

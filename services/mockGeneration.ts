@@ -1,4 +1,9 @@
 import { CopyParameters, CopyVariation, CampaignSpine, CoherenceReport, UsageReport, Platform } from '../types';
+import {
+  LOBUENO_SPINE,
+  LOBUENO_CHANNEL_COPY,
+  LOBUENO_COHERENCE,
+} from '../shared/lobuenoBrand';
 
 const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
 
@@ -270,6 +275,27 @@ const AVENA_COHERENCE: CoherenceReport = {
   flags: [],
 };
 
+// ------ LOBUENO FIXTURE (definido en shared/lobuenoBrand.ts) ------
+// El copy vive en shared/ para que la demo offline y el seed de Postgres
+// (server/prisma/seedLobueno.ts) partan de la misma definición de marca.
+const buildLobuenoChannels = (): Record<string, CopyVariation[]> => {
+  const out: Record<string, CopyVariation[]> = {};
+  for (const [platform, items] of Object.entries(LOBUENO_CHANNEL_COPY)) {
+    out[platform] = items.map(it => {
+      // Omitir claves undefined: make() hace `...opts` al final y un undefined
+      // explícito pisaría los valores por defecto.
+      const opts: Partial<CopyVariation> = {};
+      if (it.score !== undefined) opts.score = it.score;
+      if (it.writerScore !== undefined) opts.writerScore = it.writerScore;
+      if (it.scoreRationale !== undefined) opts.scoreRationale = it.scoreRationale;
+      if (it.editorFlags !== undefined) opts.editorFlags = it.editorFlags;
+      if (it.autofixed !== undefined) opts.autofixed = it.autofixed;
+      return make(platform, it.slot, it.variationIndex, it.type, it.content, it.budget, it.unit || 'char', opts);
+    });
+  }
+  return out;
+};
+
 const NEXUS_COHERENCE: CoherenceReport = {
   coherenceScore: 8,
   summary: 'Coherente: voz directa, segunda persona, sin tecnicismos en todos los canales. Push se beneficiaría de un poco más de calidez.',
@@ -278,7 +304,7 @@ const NEXUS_COHERENCE: CoherenceReport = {
 };
 
 // ------ MOCK USAGE (simulates a cache-warm second run) ------
-const mockUsage = (channelCount: number, isAvena: boolean): UsageReport => {
+const mockUsage = (channelCount: number): UsageReport => {
   const channelTokens = channelCount * 1850;
   const promptTokens = 1100 /* director */ + channelTokens + (channelCount * 1200) /* critics */ + 2400 /* supercritic */;
   const cachedTokens = Math.round(channelTokens * 0.71); // 71% cache hit rate
@@ -307,11 +333,23 @@ export const runMockGeneration = async (
   params: CopyParameters,
   onEvent: (event: any) => void
 ): Promise<void> => {
-  const isNexus = (params.clientName || '').toLowerCase().includes('nexus');
-  const spine = isNexus ? NEXUS_SPINE : AVENA_SPINE;
-  const allChannels = isNexus ? buildNexusChannels() : buildAvenaChannels();
-  const coherence = isNexus ? NEXUS_COHERENCE : AVENA_COHERENCE;
-  const brand = params.clientName || (isNexus ? 'Nexus Bank' : 'Avena+');
+  const name = (params.clientName || '').toLowerCase();
+  const fixture =
+    name.includes('lobueno') || name.includes('lo bueno')
+      ? {
+          spine: LOBUENO_SPINE as CampaignSpine,
+          channels: buildLobuenoChannels,
+          coherence: LOBUENO_COHERENCE as CoherenceReport,
+          defaultBrand: 'LoBueno',
+        }
+      : name.includes('nexus')
+      ? { spine: NEXUS_SPINE, channels: buildNexusChannels, coherence: NEXUS_COHERENCE, defaultBrand: 'Nexus Bank' }
+      : { spine: AVENA_SPINE, channels: buildAvenaChannels, coherence: AVENA_COHERENCE, defaultBrand: 'Avena+' };
+
+  const spine = fixture.spine;
+  const allChannels = fixture.channels();
+  const coherence = fixture.coherence;
+  const brand = params.clientName || fixture.defaultBrand;
 
   // Director takes ~800ms
   await sleep(800);
@@ -332,6 +370,6 @@ export const runMockGeneration = async (
   }
 
   await sleep(150);
-  onEvent({ type: 'usage', payload: mockUsage(platforms.length, !isNexus) });
+  onEvent({ type: 'usage', payload: mockUsage(platforms.length) });
   onEvent({ type: 'done' });
 };
