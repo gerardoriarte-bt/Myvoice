@@ -42,10 +42,13 @@ que permite cobrar por plan.
 Objetivo: dejar de competir con "un prompt bien escrito" y volverse infraestructura del
 proceso creativo.
 
+> **Lo que se despliega con el H1 y lo que es H2 no se mezclan.** El lote de H1 —tenancy, motor,
+> consistencia de interfaz— está verificado y listo. El H2 arranca por el diseño y no comparte
+> código ni migraciones con ese despliegue.
+
 | # | Iniciativa | Detalle |
 |---|---|---|
-| H2.A | **Ciclo copy → pieza (Composición)** | Plan ya auditado: 8.5–11.5 días, 4 fases. Prerrequisito duro: persistir `slot` (ver H1.B.3). Modelo de tres destinos: Pieza / Publicación / Brief. |
-| H2.B | **Producción y auditoría de piezas** | **Corregido el 2026-08-27:** decía "conectarlos a generación visual", asumiendo que la IA genera la pieza. No es así — la pieza la hace el equipo de diseño y la IA entra después, a auditarla. El proceso real tiene seis etapas y la navegación cuenta cuatro: falta asignar al equipo de diseño y auditar la pieza subida (contra el copy aprobado y contra el ADN). Los 4 canales de instrucción —`visualBrief`, `animationBrief`, `structure`, `production`— son el brief que ese equipo necesita y hoy nadie consume. **E1 pasa de recomendable a prerrequisito.** [plan](./plan-h2-produccion-auditoria.md) |
+| H2.A + H2.B | **Del copy aprobado a la pieza verificada** · EN DISEÑO | Una sola fase, no dos iniciativas: el proceso tiene seis etapas y las dos del medio no existen — asignar la pieza al equipo de diseño, y auditar con IA la pieza que ese equipo sube (contra el copy aprobado y contra el ADN). Arranca por el diseño en el `.pen`; no se escribe código hasta que cierren las cinco decisiones. **No entra en el despliegue del H1.** [plan de fase](./plan-h2-produccion-auditoria.md) |
 | H2.C | **Analytics de desempeño real** | Hoy la métrica es tasa de aprobación interna. Conectar Meta Ads / Google Ads para traer CTR y CPA por variación y realimentar el fingerprint con datos duros. Es el diferenciador defendible. |
 | H2.D | **Aprendizaje de marca evolutivo** | Hoy few-shot con 5 aprobados + 10 negativos, fijo. Escalar a fingerprint por canal + ranking de ángulos que se aprueban (`GenerationLog.outputJson` ya tiene la materia prima). |
 
