@@ -8,9 +8,12 @@ name: CI
 # los tipos de React. El trabajo de este workflow es que eso no pueda repetirse
 # en silencio.
 
+# Push solo en main; las ramas de trabajo se verifican al abrir el PR. El job
+# de aislamiento levanta un Postgres de servicio y es el más caro de los cuatro,
+# así que no conviene pagarlo en cada push intermedio de una rama.
 on:
   push:
-    branches: ['**']
+    branches: [main]
   pull_request:
 
 # Un push nuevo cancela la corrida anterior de la misma rama.
