@@ -92,3 +92,73 @@ export const notifyReviewCompleted = async (payload: ReviewCompletedPayload): Pr
     console.error('[Notification] Error al enviar notificación:', err);
   }
 };
+
+interface WorkspaceInvitePayload {
+  email: string;
+  workspaceName: string;
+  token: string;
+  expiresAt: Date;
+}
+
+/**
+ * Invitación a un workspace. Igual que notifyReviewCompleted: si Resend no está
+ * configurado cae a console.log con el link, para que el flujo siga siendo
+ * usable en desarrollo sin credenciales de email.
+ */
+export const notifyWorkspaceInvite = async (payload: WorkspaceInvitePayload): Promise<void> => {
+  const apiKey = process.env.RESEND_API_KEY;
+  const fromEmail = process.env.RESEND_FROM_EMAIL || 'My Voice <noreply@myvoice.lobueno.co>';
+  const appUrl = process.env.APP_URL || 'https://myvoice.lobueno.co';
+  const link = `${appUrl}/?invite=${payload.token}`;
+
+  if (!apiKey) {
+    console.log(
+      `[Notification] Resend no configurado. Invitación a "${payload.workspaceName}" para ${payload.email}: ${link}`
+    );
+    return;
+  }
+
+  try {
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        from: fromEmail,
+        to: [payload.email],
+        subject: `Te invitaron a ${payload.workspaceName} en My Voice`,
+        html: `
+          <!DOCTYPE html>
+          <html lang="es">
+          <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+          <body style="margin:0;padding:0;background-color:#f5f5f7;">
+            <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;max-width:520px;margin:40px auto;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.08);">
+              <div style="background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%);padding:28px 32px;text-align:center;">
+                <div style="font-size:22px;font-weight:700;color:#ffffff;letter-spacing:-0.3px;">My Voice</div>
+              </div>
+              <div style="padding:32px;">
+                <p style="font-size:16px;color:#1d1d1f;margin:0 0 16px;">
+                  Te invitaron a trabajar en <strong>${payload.workspaceName}</strong>.
+                </p>
+                <p style="font-size:14px;color:#6e6e73;margin:0 0 24px;">
+                  El enlace vence el ${payload.expiresAt.toLocaleDateString('es-CO')}.
+                </p>
+                <a href="${link}" style="display:inline-block;background:#1a1a2e;color:#ffffff;text-decoration:none;padding:12px 24px;border-radius:8px;font-size:15px;font-weight:600;">
+                  Aceptar invitación
+                </a>
+              </div>
+              <div style="padding:16px 32px 28px;border-top:1px solid #ecedf1;">
+                <div style="font-size:12px;color:#8a8aaa;">myvoice.lobueno.co</div>
+              </div>
+            </div>
+          </body>
+          </html>
+        `,
+      }),
+    });
+    if (!response.ok) {
+      console.error('[Notification] Resend rechazó la invitación:', await response.text());
+    }
+  } catch (error) {
+    console.error('[Notification] Error enviando la invitación:', error);
+  }
+};

@@ -13,17 +13,33 @@ const hasAIKey =
   (provider === 'anthropic'  && !!(process.env.ANTHROPIC_API_KEY_TEMP || process.env.ANTHROPIC_API_KEY)) ||
   (provider === 'gemini'     && !!process.env.GEMINI_API_KEY);
 
-if (!process.env.DATABASE_URL || !hasAIKey) {
+if (!process.env.DATABASE_URL || !hasAIKey || !process.env.JWT_SECRET || !process.env.ENCRYPTION_KEY) {
   const missing = [
     !process.env.DATABASE_URL && 'DATABASE_URL',
     !hasAIKey && `API key for provider "${provider}" (e.g. OPENROUTER_API_KEY)`,
+    // Sin secreto propio, cualquiera puede firmar un token con el workspace y
+    // el rol que quiera. Es fatal a propósito: antes era solo un warning.
+    !process.env.JWT_SECRET && 'JWT_SECRET',
+    // Sin ella no se pueden leer las API keys de IA que ya están cifradas en la
+    // base, y las nuevas se guardarían en claro. Generar con: openssl rand -base64 32
+    !process.env.ENCRYPTION_KEY && 'ENCRYPTION_KEY',
   ].filter(Boolean);
   console.error(`\n[MyVoice] Missing required environment variables:\n  ${missing.join('\n  ')}\n`);
   console.error('[MyVoice] Copy server/.env.example to server/.env and fill in the values.\n');
   process.exit(1);
 }
-if (!process.env.JWT_SECRET) {
-  console.warn('[MyVoice] WARNING: JWT_SECRET not set — using insecure fallback. Set it before deploying.');
+
+// El require de este import se emite en esta posición (el server compila a
+// CommonJS), así que la validación corre después del chequeo de entorno de
+// arriba. Fallar acá y no en la primera generación: una clave mal formada no se
+// nota hasta que un workspace intenta usar su propia API key.
+import { loadEncryptionKey } from './lib/crypto.js';
+
+try {
+  loadEncryptionKey();
+} catch (err: any) {
+  console.error(`\n[MyVoice] ENCRYPTION_KEY inválida: ${err.message}\n`);
+  process.exit(1);
 }
 
 import { PrismaClient } from '@prisma/client';

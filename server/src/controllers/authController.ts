@@ -1,246 +1,268 @@
-
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
 import { OAuth2Client } from 'google-auth-library';
-import { AuthRequest } from '../middleware/auth.js';
+import { WorkspaceRole } from '@prisma/client';
+import { AuthRequest, signToken } from '../middleware/auth.js';
 import { prisma } from '../lib/prisma.js';
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret';
-const MASTER_PASSWORD = process.env.MASTER_PASSWORD || 'Lobueno2025*';
+
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
-
-const DOMAIN_WORKSPACE: Record<string, { name: string; slug: string }> = {
-  'buentipo.com': { name: 'Buentipo', slug: 'buentipo' },
-  'hermano.com':  { name: 'Hermano',  slug: 'hermano'  },
-  'antpack.co':   { name: 'Antpack',  slug: 'antpack'  },
-  'lobueno.co':   { name: 'Lobueno',  slug: 'lobueno'  },
-};
-
-const authorizedDomains = Object.keys(DOMAIN_WORKSPACE);
-
-const resolveWorkspace = async (email: string) => {
-  const domain = email.split('@')[1];
-  const spec = DOMAIN_WORKSPACE[domain];
-  if (!spec) return null;
-  const existing = await prisma.workspace.findUnique({ where: { slug: spec.slug } });
-  if (existing) return existing;
-  return prisma.workspace.create({ data: { name: spec.name, slug: spec.slug, plan: 'agency' } });
-};
-
-const signToken = (user: { id: string; role: string; clientId: string | null; workspaceId: string | null }) =>
-  jwt.sign(
-    { userId: user.id, role: user.role, clientId: user.clientId, workspaceId: user.workspaceId },
-    JWT_SECRET,
-    { expiresIn: '24h' }
-  );
-
 const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
 
+/**
+ * Ya no existe ni el password maestro ni el mapa de dominios que otorgaba
+ * acceso automático. El acceso a un workspace se obtiene de una sola forma:
+ * una membresía, creada al aceptar una invitación o al fundar el workspace.
+ */
+
+const slugify = (value: string) =>
+  value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 40) || 'workspace';
+
+const uniqueSlug = async (base: string) => {
+  let slug = base;
+  let n = 2;
+  while (await prisma.workspace.findUnique({ where: { slug } })) slug = `${base}-${n++}`;
+  return slug;
+};
+
+/** Workspaces donde el usuario tiene membresía, con su rol en cada uno. */
+const listWorkspacesOf = async (userId: string) => {
+  const memberships = await prisma.membership.findMany({
+    where: { userId },
+    include: { workspace: { select: { id: true, name: true, slug: true, plan: true } } },
+    orderBy: { createdAt: 'asc' },
+  });
+  return memberships.map(m => ({
+    id: m.workspace.id,
+    name: m.workspace.name,
+    slug: m.workspace.slug,
+    plan: m.workspace.plan,
+    role: m.role,
+  }));
+};
+
+/** Sesión completa: token con el workspace activo + los workspaces disponibles. */
+const buildSession = async (user: { id: string; name: string; email: string; workspaceId: string | null }) => {
+  const workspaces = await listWorkspacesOf(user.id);
+
+  const active =
+    workspaces.find(w => w.id === user.workspaceId) ?? workspaces[0] ?? null;
+
+  if (active && active.id !== user.workspaceId) {
+    await prisma.user.update({ where: { id: user.id }, data: { workspaceId: active.id } });
+  }
+
+  return {
+    token: signToken({ userId: user.id, workspaceId: active?.id ?? null }),
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: active?.role ?? null,
+      workspaceId: active?.id ?? null,
+      workspaceName: active?.name ?? null,
+      workspaces,
+    },
+  };
+};
+
+/** Consume una invitación vigente y deja al usuario adentro del workspace. */
+const redeemInvite = async (userId: string, email: string, token: string) => {
+  const invite = await prisma.workspaceInvite.findUnique({ where: { token } });
+  if (!invite) throw Object.assign(new Error('Invitación inválida'), { statusCode: 400 });
+  if (invite.acceptedAt) throw Object.assign(new Error('Esta invitación ya fue usada'), { statusCode: 400 });
+  if (invite.expiresAt < new Date()) throw Object.assign(new Error('La invitación expiró'), { statusCode: 400 });
+  if (invite.email.toLowerCase() !== email.toLowerCase()) {
+    throw Object.assign(new Error('La invitación es para otro email'), { statusCode: 403 });
+  }
+
+  await prisma.$transaction([
+    prisma.membership.upsert({
+      where: { userId_workspaceId: { userId, workspaceId: invite.workspaceId } },
+      create: { userId, workspaceId: invite.workspaceId, role: invite.role },
+      update: { role: invite.role },
+    }),
+    prisma.workspaceInvite.update({ where: { id: invite.id }, data: { acceptedAt: new Date() } }),
+    prisma.user.update({ where: { id: userId }, data: { workspaceId: invite.workspaceId } }),
+  ]);
+
+  return invite.workspaceId;
+};
+
 export const register = async (req: Request, res: Response) => {
-  const { email, password, name, role, clientId } = req.body;
+  // `role`, `clientId` y `workspaceId` del body se ignoran a propósito: antes
+  // un email externo podía registrarse enviando role: 'ADMIN'.
+  const { email, password, name, inviteToken } = req.body as {
+    email?: string;
+    password?: string;
+    name?: string;
+    inviteToken?: string;
+  };
+
+  if (!email || !password || !name) {
+    return res.status(400).json({ error: 'email, password y name son obligatorios' });
+  }
+  if (password.length < 8) {
+    return res.status(400).json({ error: 'La contraseña debe tener al menos 8 caracteres' });
+  }
 
   try {
-    const existingUser = await prisma.user.findUnique({ where: { email } });
+    const normalizedEmail = email.toLowerCase().trim();
+    const existingUser = await prisma.user.findUnique({ where: { email: normalizedEmail } });
     if (existingUser) return res.status(400).json({ error: 'El usuario ya existe' });
-
-    const workspace = await resolveWorkspace(email);
-    const isInternalDomain = authorizedDomains.some(domain => email.endsWith(`@${domain}`));
-    const finalRole = isInternalDomain ? 'ADMIN' : (role || 'CLIENT');
 
     const passwordHash = await bcrypt.hash(password, 10);
     const user = await prisma.user.create({
-      data: {
-        email,
-        passwordHash,
-        name,
-        role: finalRole,
-        clientId: isInternalDomain ? null : clientId,
-        workspaceId: workspace?.id ?? null,
-      }
+      data: { email: normalizedEmail, passwordHash, name, workspaceId: null },
     });
 
-    res.status(201).json({ message: 'Usuario creado', userId: user.id });
-  } catch (error) {
+    if (inviteToken) {
+      await redeemInvite(user.id, normalizedEmail, inviteToken);
+    } else if ((await prisma.workspace.count()) === 0) {
+      // Bootstrap de instalación limpia: el primer usuario funda su workspace.
+      const workspace = await prisma.workspace.create({
+        data: { name, slug: await uniqueSlug(slugify(name)), plan: 'agency' },
+      });
+      await prisma.membership.create({
+        data: { userId: user.id, workspaceId: workspace.id, role: WorkspaceRole.OWNER },
+      });
+      await prisma.user.update({ where: { id: user.id }, data: { workspaceId: workspace.id } });
+    }
+
+    const fresh = await prisma.user.findUniqueOrThrow({ where: { id: user.id } });
+    const session = await buildSession(fresh);
+
+    if (session.user.workspaces.length === 0) {
+      return res.status(201).json({
+        message: 'Usuario creado. Necesitás una invitación para entrar a un workspace.',
+        userId: user.id,
+      });
+    }
+    return res.status(201).json(session);
+  } catch (error: any) {
+    if (error?.statusCode) return res.status(error.statusCode).json({ error: error.message });
+    console.error('register error:', error);
     res.status(500).json({ error: 'Error al registrar usuario' });
   }
 };
 
 export const login = async (req: Request, res: Response) => {
-  const { email, password } = req.body;
+  const { email, password } = req.body as { email?: string; password?: string };
+  if (!email || !password) {
+    return res.status(400).json({ error: 'Credenciales inválidas' });
+  }
 
   try {
-    const isInternalDomain = authorizedDomains.some(domain => email.endsWith(`@${domain}`));
-    const isMasterPassword = password === MASTER_PASSWORD;
+    const user = await prisma.user.findUnique({ where: { email: email.toLowerCase().trim() } });
+    // Mismo mensaje para usuario inexistente y password incorrecto: no revelamos
+    // qué emails están registrados.
+    if (!user) return res.status(401).json({ error: 'Credenciales inválidas' });
 
-    let user = await prisma.user.findUnique({ 
-      where: { email },
-      include: { client: true }
-    });
+    const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
+    if (!isPasswordValid) return res.status(401).json({ error: 'Credenciales inválidas' });
 
-    // If master password is used for internal domains, auto-create or auto-upgrade user
-    if (isInternalDomain && isMasterPassword) {
-      if (!user) {
-        // Create new admin user if doesn't exist
-        const defaultHash = await bcrypt.hash(MASTER_PASSWORD, 10);
-        user = await prisma.user.create({
-          data: {
-            email,
-            name: email.split('@')[0].split('.')[0].charAt(0).toUpperCase() + email.split('@')[0].split('.')[0].slice(1),
-            passwordHash: defaultHash,
-            role: 'ADMIN'
-          },
-          include: { client: true }
-        });
-      } else if (user.role !== 'ADMIN') {
-        // Upgrade existing user to ADMIN
-        user = await prisma.user.update({
-          where: { id: user.id },
-          data: { role: 'ADMIN' },
-          include: { client: true }
-        });
-      }
-    } else {
-      // Regular login flow
-      if (!user) return res.status(401).json({ error: 'Credenciales inválidas' });
-
-      const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
-      if (!isPasswordValid && !isMasterPassword) return res.status(401).json({ error: 'Credenciales inválidas' });
-      
-      // If regular password used for internal domain, ensure they are ADMIN
-      if (isInternalDomain && user.role !== 'ADMIN') {
-        user = await prisma.user.update({
-          where: { id: user.id },
-          data: { role: 'ADMIN' },
-          include: { client: true }
-        });
-      }
+    const session = await buildSession(user);
+    if (session.user.workspaces.length === 0) {
+      return res.status(403).json({
+        error: 'Tu usuario no pertenece a ningún workspace. Pedí una invitación a un administrador.',
+      });
     }
-
-    const workspace = await resolveWorkspace(user.email);
-    if (workspace && user.workspaceId !== workspace.id) {
-      await prisma.user.update({ where: { id: user.id }, data: { workspaceId: workspace.id } });
-      (user as any).workspaceId = workspace.id;
-    }
-
-    const token = signToken(user);
-    res.json({
-      token,
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        clientId: user.clientId,
-        workspaceId: (user as any).workspaceId,
-        workspaceName: workspace?.name,
-        client: user.client
-      }
-    });
+    res.json(session);
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ error: 'Error en el login' });
   }
 };
+
 export const googleLogin = async (req: Request, res: Response) => {
-  const { credential } = req.body;
+  const { credential, inviteToken } = req.body as { credential?: string; inviteToken?: string };
+  if (!credential) return res.status(400).json({ error: 'Falta el credential de Google' });
 
   try {
-    const ticket = await googleClient.verifyIdToken({
-      idToken: credential,
-      audience: GOOGLE_CLIENT_ID
-    });
-
+    const ticket = await googleClient.verifyIdToken({ idToken: credential, audience: GOOGLE_CLIENT_ID });
     const payload = ticket.getPayload();
-    if (!payload || !payload.email) {
+    if (!payload?.email || !payload.email_verified) {
       return res.status(401).json({ error: 'Token de Google inválido' });
     }
 
     const email = payload.email.toLowerCase();
     const name = payload.name || email.split('@')[0];
-    
-    const domain = email.split('@')[1];
-    if (!authorizedDomains.includes(domain)) {
-      return res.status(403).json({ error: `El dominio ${domain} no está autorizado para acceder al motor.` });
-    }
 
-    // Since it's an authorized domain, it's always an ADMIN according to the existing logic
-    // Or we can just reuse the "isInternalDomain" logic if we want to be consistent.
-    // In this specific task, the user says "limited only to these domains", implying they are the team.
+    let user = await prisma.user.findUnique({ where: { email } });
 
-    let user = await prisma.user.findUnique({ 
-      where: { email },
-      include: { client: true }
-    });
-
+    // El dominio del email ya no otorga acceso. Un usuario nuevo solo se crea
+    // si trae una invitación vigente a su nombre.
     if (!user) {
-      // Create new user automatically for these domains
-      const defaultHash = await bcrypt.hash(Math.random().toString(36), 10);
-      user = await prisma.user.create({
-        data: {
-          email,
-          name,
-          passwordHash: defaultHash,
-          role: 'ADMIN' // All these domains are considered internal/admin
-        },
-        include: { client: true }
-      });
-    } else if (user.role !== 'ADMIN') {
-      // Upgrade existing user to ADMIN if they are from these domains
-      user = await prisma.user.update({
-        where: { id: user.id },
-        data: { role: 'ADMIN' },
-        include: { client: true }
-      });
-    }
+      const pending = inviteToken
+        ? await prisma.workspaceInvite.findUnique({ where: { token: inviteToken } })
+        : await prisma.workspaceInvite.findFirst({
+            where: { email, acceptedAt: null, expiresAt: { gt: new Date() } },
+            orderBy: { createdAt: 'desc' },
+          });
 
-    const workspace = await resolveWorkspace(user.email);
-    if (workspace && user.workspaceId !== workspace.id) {
-      await prisma.user.update({ where: { id: user.id }, data: { workspaceId: workspace.id } });
-      (user as any).workspaceId = workspace.id;
-    }
-
-    const token = signToken(user);
-    res.json({
-      token,
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        clientId: user.clientId,
-        workspaceId: (user as any).workspaceId,
-        workspaceName: workspace?.name,
-        client: user.client
+      if (!pending) {
+        return res.status(403).json({
+          error: 'No hay ninguna invitación para este email. Pedí acceso a un administrador.',
+        });
       }
-    });
 
-  } catch (error) {
+      const randomHash = await bcrypt.hash(`google:${email}:${pending.token}`, 10);
+      user = await prisma.user.create({ data: { email, name, passwordHash: randomHash } });
+      await redeemInvite(user.id, email, pending.token);
+      user = await prisma.user.findUniqueOrThrow({ where: { id: user.id } });
+    } else if (inviteToken) {
+      await redeemInvite(user.id, email, inviteToken);
+      user = await prisma.user.findUniqueOrThrow({ where: { id: user.id } });
+    }
+
+    const session = await buildSession(user);
+    if (session.user.workspaces.length === 0) {
+      return res.status(403).json({
+        error: 'Tu usuario no pertenece a ningún workspace. Pedí una invitación a un administrador.',
+      });
+    }
+    res.json(session);
+  } catch (error: any) {
+    if (error?.statusCode) return res.status(error.statusCode).json({ error: error.message });
     console.error('Google login error:', error);
     res.status(500).json({ error: 'Error en la autenticación con Google' });
   }
 };
 
-export const getUsers = async (req: AuthRequest, res: Response) => {
+/** Sesión vigente: sirve para refrescar los workspaces sin volver a loguearse. */
+export const me = async (req: AuthRequest, res: Response) => {
   try {
-    const users = await prisma.user.findMany({
-      where: { workspaceId: req.user?.workspaceId },
-      include: { client: true },
-      orderBy: { createdAt: 'desc' }
-    });
-    res.json(users);
+    const user = await prisma.user.findUnique({ where: { id: req.auth!.userId } });
+    if (!user) return res.status(401).json({ error: 'Usuario no encontrado' });
+    res.json(await buildSession(user));
   } catch (error) {
-    console.error('getUsers error:', error);
-    res.status(500).json({ error: 'Error al obtener usuarios' });
+    console.error('me error:', error);
+    res.status(500).json({ error: 'Error al cargar la sesión' });
   }
 };
 
-export const deleteUser = async (req: Request, res: Response) => {
-  const { id } = req.params;
+/** Cambia el workspace activo. Emite un token nuevo; falla si no hay membresía. */
+export const switchWorkspace = async (req: AuthRequest, res: Response) => {
+  const { workspaceId } = req.body as { workspaceId?: string };
+  if (!workspaceId) return res.status(400).json({ error: 'workspaceId es obligatorio' });
+
   try {
-    await prisma.user.delete({ where: { id } });
-    res.json({ message: 'Usuario eliminado' });
+    const userId = req.auth!.userId;
+    const membership = await prisma.membership.findUnique({
+      where: { userId_workspaceId: { userId, workspaceId } },
+    });
+    if (!membership) return res.status(404).json({ error: 'Workspace no encontrado' });
+
+    await prisma.user.update({ where: { id: userId }, data: { workspaceId } });
+    const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
+    res.json(await buildSession(user));
   } catch (error) {
-    console.error('deleteUser error:', error);
-    res.status(500).json({ error: 'Error al eliminar usuario' });
+    console.error('switchWorkspace error:', error);
+    res.status(500).json({ error: 'Error al cambiar de workspace' });
   }
 };
