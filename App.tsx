@@ -10,7 +10,7 @@ import ClientManager from './components/ClientManager';
 import UserManager from './components/UserManager';
 import UserHeader from './components/UserHeader';
 import NotificationSystem, { Notification, NotificationType } from './components/NotificationSystem';
-import { CopyParameters, CopyVariation, Project, SavedVariation, BrandConfig, Client, User, WorkspaceSummary, canManageWorkspace, ContentDNAProfile } from './types';
+import { CopyParameters, CopyVariation, Project, SavedVariation, BrandConfig, Client, User, WorkspaceMember, WorkspaceSummary, canManageWorkspace, ContentDNAProfile } from './types';
 import { VOICES, GOALS } from './constants';
 import HomePage from './components/HomePage';
 import AISettings from './components/AISettings';
@@ -91,7 +91,7 @@ const App: React.FC = () => {
   const [savedVariations, setSavedVariations] = React.useState<SavedVariation[]>([]);
   const [clients, setClients] = React.useState<Client[]>([]);
   const [dnaProfiles, setDnaProfiles] = React.useState<ContentDNAProfile[]>([]);
-  const [users, setUsers] = React.useState<User[]>([]);
+  const [users, setUsers] = React.useState<WorkspaceMember[]>([]);
   const [currentUser, setCurrentUser] = React.useState<User | null>(null);
   const [activeClientId, setActiveClientId] = React.useState<string>('');
   const [customVoices, setCustomVoices] = React.useState<BrandConfig[]>([]);
@@ -156,7 +156,7 @@ const App: React.FC = () => {
       setClients(apiClients);
       setSavedVariations(apiSaved);
       setProjects(apiProjects);
-      setDnaProfiles(apiClients.flatMap((c: any) => c.dnaProfiles || []));
+      setDnaProfiles(apiClients.flatMap((c: Client) => c.dnaProfiles || []));
       setIsDataReady(true);
       addNotification(`Ahora estás en ${session.user.workspaceName}`, 'success');
     } catch (err) {
@@ -252,7 +252,7 @@ const App: React.FC = () => {
         setUsers(apiUsers);
         
         // Extract and Normalize DNA profiles from clients
-        const allDNA = normalizedClients.flatMap((c: any) => (c.dnaProfiles || []).map((p: any) => ({
+        const allDNA = normalizedClients.flatMap((c: Client) => (c.dnaProfiles || []).map((p: any) => ({
           ...p,
           createdAt: typeof p.createdAt === 'string' ? new Date(p.createdAt).getTime() : p.createdAt
         })));

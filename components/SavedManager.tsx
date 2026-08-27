@@ -14,7 +14,7 @@ interface SavedManagerProps {
   onAddTag: (variationId: string, tag: string) => void;
   onRemoveTag: (variationId: string, tag: string) => void;
   onDeleteProject: (projectId: string) => void;
-  onCreateProject: (name: string) => string;
+  onCreateProject: (name: string) => Promise<string>;
   addNotification?: (message: string, type?: string) => void;
   onRefreshSaved?: () => void;
   readOnly?: boolean;

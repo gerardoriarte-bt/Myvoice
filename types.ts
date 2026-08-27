@@ -132,6 +132,9 @@ export interface Client {
   brandFingerprint?: any;
   brandFingerprintAt?: string | number | null;
   createdAt: number;
+  /** La API los devuelve anidados en el cliente; el estado vivo de la app es
+   *  el de `dnaProfiles`, esta copia solo alimenta la carga inicial. */
+  dnaProfiles?: ContentDNAProfile[];
 }
 
 export interface FeedbackExample {

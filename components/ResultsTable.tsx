@@ -16,7 +16,7 @@ interface ResultsTableProps {
   projects: Project[];
   activeClient?: Client;
   onSave: (variation: CopyVariation, projectId: string) => void;
-  onCreateProject: (name: string) => string;
+  onCreateProject: (name: string) => Promise<string>;
   savedContentList: string[];
   coherence?: CoherenceReport | null;
   spine?: CampaignSpine | null;
@@ -204,9 +204,9 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ variations, projects, activ
     setSavingId(null);
   };
 
-  const handleCreateAndSave = (variation: CopyVariation) => {
+  const handleCreateAndSave = async (variation: CopyVariation) => {
     if (!newProjectName.trim()) return;
-    const projectId = onCreateProject(newProjectName);
+    const projectId = await onCreateProject(newProjectName);
     onSave(variation, projectId);
     setNewProjectName('');
     setSavingId(null);

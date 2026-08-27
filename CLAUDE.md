@@ -41,11 +41,23 @@ npm run verify:resiliencia    # retry/backoff/timeout against a fake client; spe
 The four writing scripts (`backfill:*`, `recrypt:keys`) are **dry-run by default** and only
 write with `-- --apply`, inside a single transaction.
 
-**Typechecking is the only gate, and it lives at the root.** `npm run build` uses esbuild and
-strips types without checking them, so type errors ship silently. The root `tsconfig.json` has
-no `include`, so `npx tsc --noEmit` from the repo root checks the frontend **and**
-`server/src`, `server/prisma`, and `server/scripts` in one pass. Run it before considering
-any change done. `cd server && npx tsc --noEmit` checks only `server/src`.
+**Typechecking is the only gate, and it takes three commands.** `npm run build` uses esbuild
+and strips types without checking them, so type errors ship silently. Each project is checked
+with the config it actually compiles with — the root tsconfig `exclude`s `server/`, because it
+used to check the server with `moduleResolution: bundler` while the server emits NodeNext/CJS:
+
+```bash
+npx tsc --noEmit                                  # frontend
+cd server && npx tsc --noEmit                     # server/src (strict)
+cd server && npx tsc --noEmit -p tsconfig.scripts.json   # + scripts/ and prisma/ (strict)
+```
+
+Run the three before considering any change done. The root config is **not** `strict` yet:
+React types are installed so the component tree is really checked, but turning on `strict`
+raises far more errors than one sitting can pay, and has its own ticket (roadmap E2).
+A gate that certifies green over code it does not read is worse than no gate — if you touch
+the tsconfigs, verify with a probe file containing deliberate errors that the files you expect
+are actually being read (`npx tsc --noEmit --listFiles`).
 
 There are **no tests and no CI** (`.github/` does not exist). `verify:isolation` is the closest
 thing to an integration suite; it needs a running API and a throwaway database.
