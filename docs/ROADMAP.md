@@ -27,8 +27,8 @@ con el consumo medido y facturable.
 
 | # | Iniciativa | Estado | Detalle |
 |---|---|---|---|
-| H1.A | **Multi-tenant real** — aislamiento por workspace, alta de tenants sin deploy, white-label | A0 y A1 implementados y commiteados, sin desplegar, **criterio de aceptación sin correr** (`verify:isolation` necesita base) · A2 pendiente | [plan](./plan-h1-multitenant-motor.md) · [runbook](./runbook-tenancy.md) · [oráculo](./oraculo-h1.md) |
-| H1.B | **Motor serio** — telemetría de costo, cuota real, resiliencia, evals | B0–B3 implementados y commiteados, sin desplegar. **B2 verificado** (`verify:resiliencia`, 20/20). B0, B1 y B3 con criterio sin correr: necesitan base. B4 pendiente (ver E2) | [plan](./plan-h1-multitenant-motor.md) · [runbook](./runbook-mejoras-h1.md) · [oráculo](./oraculo-h1.md) |
+| H1.A | **Multi-tenant real** — aislamiento por workspace, alta de tenants sin deploy, white-label | A0 y A1 implementados, **criterio verificado** (`verify:isolation` 27/27) y secuencia de migración ensayada de punta a punta contra base descartable. Sin desplegar · A2 pendiente | [plan](./plan-h1-multitenant-motor.md) · [runbook](./runbook-tenancy.md) · [oráculo](./oraculo-h1.md) |
+| H1.B | **Motor serio** — telemetría de costo, cuota real, resiliencia, evals | B0–B3 implementados y **los cuatro criterios verificados** en el ensayo: B0 (`/analytics/usage` con costo real), B1 (`UsagePeriod` por periodo, periodo vencido no cuenta), B2 (`verify:resiliencia` 20/20), B3 (slot persistido y backfilleado). Sin desplegar. B4 pendiente (ver E2) | [plan](./plan-h1-multitenant-motor.md) · [runbook](./runbook-mejoras-h1.md) · [oráculo](./oraculo-h1.md) |
 | H1.C | **Onboarding de marca en 5 minutos** — ingesta de ADN desde URL / redes, no solo PDF | Pendiente | Reduce el costo de dar de alta una marca nueva de una sesión con el equipo a pegar un link. Depende de H1.A. |
 
 **Criterio de salida del H1:** se puede dar de alta un tenant nuevo sin tocar código,

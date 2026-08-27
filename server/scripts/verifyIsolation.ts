@@ -221,15 +221,36 @@ async function main() {
     });
 
     console.log('\nBULK Y REVISIONES — no deben filtrar por id ajeno');
+    // La fila de B que entra al bulk es DESECHABLE: el borrado de lo propio es
+    // el comportamiento correcto y se lleva la fila puesta, así que usar acá
+    // `B.variation` dejaba sin sujeto al control positivo y al chequeo de mass
+    // assignment que vienen después — los dos fallaban por una fila borrada por
+    // el propio test, no por una fuga.
+    const desechable = await prisma.savedVariation.create({
+      data: {
+        clientId: B.client.id,
+        platform: 'Push Notification',
+        type: 'Beneficio',
+        content: 'Fila desechable de B para el bulk',
+        charCount: 33,
+        tags: [],
+      },
+    });
     const bulk = await api('/saved/bulk-delete', B.token, {
       method: 'POST',
-      body: JSON.stringify({ ids: [A.variation.id, B.variation.id] }),
+      body: JSON.stringify({ ids: [A.variation.id, desechable.id] }),
     });
     const survivedA = await prisma.savedVariation.findUnique({ where: { id: A.variation.id } });
+    const borroLaPropia = !(await prisma.savedVariation.findUnique({ where: { id: desechable.id } }));
     record(
       'POST /saved/bulk-delete ignora los ids de A',
       Boolean(survivedA) && bulk.body?.skipped === 1,
       `respuesta ${JSON.stringify(bulk.body)}, la fila de A ${survivedA ? 'sobrevivió' : 'FUE BORRADA'}`
+    );
+    record(
+      'POST /saved/bulk-delete sí borra la fila propia del mismo lote',
+      borroLaPropia && bulk.body?.deleted === 1,
+      `respuesta ${JSON.stringify(bulk.body)} — un bulk que no borra nada de lo propio no prueba nada`
     );
 
     const session = await api('/review-sessions', B.token, {

@@ -32,7 +32,8 @@ El orden importa. Los pasos 3 y 5 son irreversibles sin backup.
 ```
 1. Backup de la base                    ← no negociable
 2. JWT_SECRET + ENCRYPTION_KEY          ← si faltan, el server no arranca
-3. Migración estructural (aditiva)
+3. Migración estructural (aditiva)      ← falla a propósito en la 2ª migración
+3b. migrate resolve --rolled-back       ← sin esto, el paso 6 no corre
 4. Backfill en dry-run + revisión humana
 5. Backfill aplicado
 6. Migración NOT NULL
@@ -80,7 +81,21 @@ enum `WorkspaceRole`. No toca una sola fila existente.
 
 > `migrate deploy` intentará aplicar también `20260826000001_workspace_required`. Si todavía
 > hay filas huérfanas, ese `ALTER` falla y se detiene ahí — que es exactamente lo que debe
-> pasar. Corré el backfill y volvé a ejecutar `migrate deploy`.
+> pasar. **El fallo es esperado y no rompe nada**: Postgres revierte la migración entera, así
+> que la base queda con la parte aditiva aplicada y ninguna columna a medio migrar.
+
+### 3.b Desmarcar la migración fallida
+
+Prisma anota la migración fallida en `_prisma_migrations` y **se niega a aplicar cualquier otra
+cosa** hasta que se la desmarque (`Error: P3009`). No es opcional ni es un rodeo: es el camino
+documentado de Prisma para una migración que falló y revirtió entera.
+
+```bash
+npx prisma migrate resolve --rolled-back 20260826000001_workspace_required
+```
+
+Sin este paso, el `migrate deploy` del paso 6 falla con P3009 aunque el backfill haya quedado
+perfecto, y el operador queda mirando un error que no habla del problema real.
 
 ### 4. Backfill en dry-run
 
@@ -89,7 +104,8 @@ npm run backfill:tenancy
 ```
 
 No escribe nada. Imprime el plan completo: qué workspaces de empresa se van a crear, qué
-marcas se mueven, qué membresías se otorgan y **qué usuarios quedan sin acceso**.
+marcas se mueven, qué membresías se otorgan y **qué usuarios quedan sin acceso**, y deja el
+mismo resumen en JSON bajo `server/.backfills/` para poder difearlo contra el del `--apply`.
 
 **Revisar a mano antes de seguir.** Las reglas son:
 
@@ -113,7 +129,16 @@ workspaces a mano y reasigná las marcas antes de aplicar.
 npm run backfill:tenancy -- --apply
 ```
 
-Corre dentro de una transacción: o queda todo, o no queda nada.
+Corre dentro de una transacción: o queda todo, o no queda nada. Verificado en el ensayo contra
+una falla real a mitad de la transacción: no quedó ni un workspace creado.
+
+Antes de seguir, comparar los dos reportes. Si `divergencia` es `true`, el script no escribió
+lo que había prometido y hay que mirar por qué antes de tocar la migración siguiente:
+
+```bash
+diff <(jq .plan .backfills/backfill-tenancy-dry-run-*.json) \
+     <(jq .plan .backfills/backfill-tenancy-apply-*.json)     # vacío = hizo lo prometido
+```
 
 ### 6. Migración NOT NULL
 
@@ -121,8 +146,19 @@ Corre dentro de una transacción: o queda todo, o no queda nada.
 npx prisma migrate deploy
 ```
 
-Ahora sí aplica `20260826000001_workspace_required`. Si falla, quedan huérfanos y el
-backfill no terminó — revisar, no forzar.
+Ahora sí aplica `20260826000001_workspace_required` (y, a continuación,
+`20260827000000_cost_quota_slot`, que abre el [runbook de mejoras](./runbook-mejoras-h1.md)).
+Si falla, quedan huérfanos y el backfill no terminó — revisar, no forzar.
+
+Además del `SET NOT NULL`, esta migración rehace las cuatro foreign keys de `workspaceId`:
+venían de cuando la columna era nullable y estaban en `ON DELETE SET NULL`, que sobre una
+columna obligatoria ya no puede ejecutarse. Pasan a `ON DELETE RESTRICT`, que es lo que
+`schema.prisma` declara. Comprobación de que no quedó drift:
+
+```bash
+npx prisma migrate diff --from-url "$DATABASE_URL" --to-schema-datamodel prisma/schema.prisma
+# → "No difference detected."
+```
 
 ### 7. Deploy del código
 
@@ -194,3 +230,46 @@ el backup es el primer paso y no una recomendación.
   irrecuperables y cada tenant tiene que volver a cargar la suya desde Configuración.
 - Avisar al equipo que el password maestro ya no existe y que los accesos nuevos son por
   invitación.
+
+## Ensayo del 2026-08-27
+
+La secuencia completa se corrió de punta a punta contra un Postgres 16 descartable en Docker,
+sembrado con data con la **forma** de producción antes del lote: `workspaceId` nullable, roles
+globales, sin `Membership`, costo enterrado en `outputJson`, piezas guardadas sin `slot`, una
+API key de IA en texto plano, y filas huérfanas en las cuatro tablas.
+
+Resultado: la secuencia funciona, pero **no funcionaba tal como estaba escrita**. Cuatro
+defectos, los cuatro corregidos:
+
+| # | Qué pasaba | Dónde |
+|---|---|---|
+| 1 | El backfill moría antes de aplicar una sola regla: leía con el cliente tipado del schema nuevo, donde `workspaceId` ya es `String`, contra una base donde todavía es `NULL` — que es justo lo que venía a arreglar (`P2032`) | `scripts/backfillTenancy.ts`, ahora lee con SQL crudo |
+| 2 | El mismo choque del otro lado: `client.update()` SELECTea la fila entera y pedía `quotaCostUsdOverride`, columna que agrega una migración **posterior** (`P2022`) | mismo archivo, escrituras en SQL crudo |
+| 3 | Después del fallo deliberado de `_workspace_required`, Prisma se negaba a aplicar nada más (`P3009`). El runbook decía "volvé a ejecutar `migrate deploy`" y eso no alcanzaba | paso 3.b, nuevo |
+| 4 | Las cuatro FK quedaban en `ON DELETE SET NULL` sobre columnas ya `NOT NULL`: drift real contra `schema.prisma` | `20260826000001_workspace_required` |
+
+Los tres primeros habrían aparecido recién en producción, con la migración aditiva ya aplicada
+y la base a mitad de camino.
+
+Verificado en la corrida limpia posterior:
+
+- Las cinco reglas del backfill reparten la data como dice este documento: la marca con
+  usuarios propios se recorta a su propio workspace con esos usuarios como `MEMBER`, la marca
+  sin usuarios se queda, la huérfana va al fallback, el interno más antiguo queda `OWNER`, y el
+  usuario sin nada se reporta en vez de asignarse.
+- La transacción es atómica de verdad: la corrida que falló a mitad no dejó ni un workspace.
+- `plan` idéntico entre dry-run y `--apply` en los cuatro scripts, `divergencia: false`.
+- `prisma migrate diff` contra el schema: **No difference detected**.
+- `verify:isolation`: **27/27**. (El propio verificador tenía un defecto: metía la fila de B en
+  el lote de `bulk-delete` y después la usaba como control positivo, así que dos chequeos
+  fallaban por una fila que el test había borrado. Corregido con una fila desechable, más un
+  chequeo nuevo de que el bulk **sí** borra lo propio.)
+- `GET /analytics/usage` devuelve costo real por workspace y `GET /clients` deja de devolver la
+  marca que se mudó a su propio workspace.
+
+Lo que el ensayo **no** cubre y sigue pendiente para el día del despliegue:
+
+- Se sembró data con la forma de producción, no el dump real. El volumen, los casos raros de
+  data vieja y los usuarios reales solo aparecen con una copia del dump.
+- La versión de Postgres de producción no está declarada en `docker-compose.prod.yaml` (la base
+  vive en una red externa). El ensayo corrió sobre 16.

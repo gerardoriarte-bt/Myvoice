@@ -83,7 +83,9 @@ const porSeñalEstructural = (slots: SlotSpec[], content: string): SlotSpec | un
     const slot = tiene('hashtags');
     if (slot) return slot;
   }
-  if (/\[IDEA VISUAL/i.test(content)) {
+  // El corchete lo pone el writer, pero la biblioteca guarda tanto
+  // "[IDEA VISUAL] …" como "Idea visual: …" según por dónde entró la pieza.
+  if (/^\s*\[?\s*idea visual\b/i.test(content)) {
     const slot = tiene('visualBrief');
     if (slot) return slot;
   }
@@ -134,9 +136,18 @@ function decidir(row: { id: string; platform: string; type: string; content: str
   // interactive) solo entran en juego si ningún slot acotado admite el texto.
   let candidatos = spec.slots.filter(s => entra(s, base.chars, base.words));
   let motivoUnico = 'único slot cuyo presupuesto admite el texto';
+  let ultimoRecurso = false;
   if (candidatos.length === 0) {
-    candidatos = spec.slots.filter(s => !esAcotado(s));
+    // `hashtags` no declara presupuesto, así que como candidato de último
+    // recurso admite CUALQUIER texto y, por orden de declaración en el spec,
+    // le gana a `visualBrief` en todo empate. Un slot de hashtags sin un solo
+    // '#' no es hashtags: eso no es heurística, es el dato mirándonos de
+    // frente. Sin este filtro, toda pieza larga de Instagram Post terminaba
+    // etiquetada como hashtags.
+    const tieneNumeral = row.content.includes('#');
+    candidatos = spec.slots.filter(s => !esAcotado(s) && (tieneNumeral || s.id !== 'hashtags'));
     motivoUnico = 'ningún slot acotado admite el texto; único slot sin presupuesto';
+    ultimoRecurso = true;
   }
   const ids = candidatos.map(s => s.id);
 
@@ -144,7 +155,16 @@ function decidir(row: { id: string; platform: string; type: string; content: str
     return { ...base, slot: null, confianza: 'baja', motivo: 'sin candidato', candidatos: ids };
   }
   if (candidatos.length === 1) {
-    return { ...base, slot: candidatos[0], confianza: 'alta', motivo: motivoUnico, candidatos: ids };
+    // Un candidato único por descarte no es lo mismo que un candidato único por
+    // presupuesto: el primero es el último recurso y se reporta como tal, para
+    // que caiga en la lista de ambiguas a revisar en vez de pasar por dato firme.
+    return {
+      ...base,
+      slot: candidatos[0],
+      confianza: ultimoRecurso ? 'baja' : 'alta',
+      motivo: motivoUnico,
+      candidatos: ids,
+    };
   }
 
   const menorMax = Math.min(...candidatos.map(s => s.max ?? Number.POSITIVE_INFINITY));

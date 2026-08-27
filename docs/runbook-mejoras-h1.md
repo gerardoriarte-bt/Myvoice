@@ -71,6 +71,10 @@ producción en los pasos 5 y 6.
 
 ### 3. Migración
 
+Si venís de [runbook-tenancy.md](./runbook-tenancy.md), el `migrate deploy` del paso 6 de ese
+documento ya aplicó esta migración a continuación de `_workspace_required` y podés saltear
+este paso.
+
 ```bash
 cd server && npx prisma migrate deploy
 ```
@@ -247,3 +251,32 @@ fallida no deja la base a medias, pero una corrida **exitosa** no se deshace sol
   señal de que el proveedor está degradado, no de que el código esté mal.
 - `GenerationLog.workspaceId` sigue nullable. Programar la migración que le pone `NOT NULL`
   una vez que se confirme que ninguna fila nueva llega sin él.
+
+## Ensayo del 2026-08-27
+
+Los tres backfills de este runbook (`telemetria`, `slots`, y `recrypt:keys` del runbook de
+tenancy) se corrieron de punta a punta contra la base descartable del
+[ensayo de tenancy](./runbook-tenancy.md#ensayo-del-2026-08-27), en dry-run y en `--apply`,
+con `plan` idéntico entre los dos y `divergencia: false` en los tres.
+
+Un defecto encontrado y corregido, en la heurística de slots: los slots sin presupuesto
+(`hashtags`, `visualBrief`) admiten cualquier texto como candidato de último recurso, y
+`hashtags` le ganaba a `visualBrief` en todo empate por orden de declaración en el spec. El
+resultado era que **toda pieza larga de Instagram Post terminaba etiquetada como `hashtags`**,
+incluida una idea visual explícita. Ahora un slot de hashtags sin un solo `#` queda descartado,
+la señal de "Idea visual:" se reconoce sin corchetes, y un candidato único por descarte se
+reporta con confianza **baja** en vez de alta — cae en la lista de ambiguas a revisar en lugar
+de pasar por dato firme.
+
+Verificado además:
+
+- `GET /analytics/usage` devuelve el costo real materializado por el backfill, agregado por
+  marca, por periodo y por modelo, y filtrado por workspace.
+- `UsagePeriod` acumula dos generaciones seguidas en **una sola fila** con `periodStart` en
+  medianoche UTC del día 1, y una fila de un periodo vencido con USD 999 **no** cuenta contra
+  el periodo vigente — que es el criterio de B1.
+- Con `QUOTA_ENFORCE` sin definir, una marca por encima del techo genera igual y deja el aviso
+  `[cuota] OBSERVACIÓN` en los logs; con `QUOTA_ENFORCE=true` la misma marca recibe
+  `CUOTA_AGOTADA` con la fecha de reinicio. El techo se evalúa sobre el **workspace**, no sobre
+  la marca: el consumo de una marca puede agotar el plan para sus hermanas.
+- `verify:resiliencia`: 20/20.

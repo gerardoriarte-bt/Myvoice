@@ -51,13 +51,25 @@ type Plan = {
 };
 
 async function main() {
+  // Las cuatro tablas con `workspaceId` se leen con SQL crudo y NO con el
+  // cliente tipado. Este script corre ANTES de la migración
+  // `_workspace_required`, así que en la base la columna todavía tiene NULLs
+  // —que es exactamente lo que el script viene a arreglar—, mientras que el
+  // cliente generado desde el schema nuevo la declara `String` y se niega a
+  // deserializar esas filas con P2032 antes de que el script llegue a correr
+  // una sola regla. El cliente tipado sí sirve para Workspace y User, donde no
+  // hay ninguna columna que la migración vuelva obligatoria.
   const [workspaces, users, clients, projects, reviewSessions, presets] = await Promise.all([
     prisma.workspace.findMany({ orderBy: { createdAt: 'asc' } }),
     prisma.user.findMany({ orderBy: { createdAt: 'asc' } }),
-    prisma.client.findMany({ orderBy: { createdAt: 'asc' } }),
-    prisma.project.findMany(),
-    prisma.reviewSession.findMany(),
-    prisma.generationPreset.findMany(),
+    prisma.$queryRaw<{ id: string; name: string; workspaceId: string | null }[]>`
+      SELECT id, name, "workspaceId" FROM "Client" ORDER BY "createdAt" ASC`,
+    prisma.$queryRaw<{ id: string; workspaceId: string | null }[]>`
+      SELECT id, "workspaceId" FROM "Project"`,
+    prisma.$queryRaw<{ id: string; workspaceId: string | null }[]>`
+      SELECT id, "workspaceId" FROM "ReviewSession"`,
+    prisma.$queryRaw<{ id: string; workspaceId: string | null }[]>`
+      SELECT id, "workspaceId" FROM "GenerationPreset"`,
   ]);
 
   const existingMemberships = await prisma.membership.findMany();
@@ -291,9 +303,16 @@ async function main() {
 
     const resolve = (id: string) => realId.get(id) ?? id;
 
+    // Igual que las lecturas de arriba, las escrituras sobre estas cuatro
+    // tablas van en SQL crudo. El motivo acá es el otro extremo de la misma
+    // desincronización: `tx.client.update()` SELECTea la fila entera con las
+    // columnas del schema nuevo, y `Client.quotaCostUsdOverride` no existe
+    // hasta la migración 20260827000000, que corre DESPUÉS de este backfill.
+    // Un UPDATE crudo toca solo la columna que le importa y no le pide a la
+    // base columnas de un futuro que todavía no llegó.
     for (const c of plan.moveClients) {
-      await tx.client.update({ where: { id: c.clientId }, data: { workspaceId: resolve(c.to) } });
-      escrito.clients++;
+      escrito.clients += await tx.$executeRaw`
+        UPDATE "Client" SET "workspaceId" = ${resolve(c.to)} WHERE id = ${c.clientId}`;
     }
 
     for (const m of plan.memberships) {
@@ -307,11 +326,19 @@ async function main() {
 
     for (const o of plan.orphans) {
       if (o.table === 'Client') continue; // ya movido arriba
-      const target = { workspaceId: resolve(o.to) };
-      if (o.table === 'Project') await tx.project.update({ where: { id: o.id }, data: target });
-      if (o.table === 'ReviewSession') await tx.reviewSession.update({ where: { id: o.id }, data: target });
-      if (o.table === 'GenerationPreset') await tx.generationPreset.update({ where: { id: o.id }, data: target });
-      escrito.huerfanos++;
+      const target = resolve(o.to);
+      if (o.table === 'Project') {
+        escrito.huerfanos += await tx.$executeRaw`
+          UPDATE "Project" SET "workspaceId" = ${target} WHERE id = ${o.id}`;
+      }
+      if (o.table === 'ReviewSession') {
+        escrito.huerfanos += await tx.$executeRaw`
+          UPDATE "ReviewSession" SET "workspaceId" = ${target} WHERE id = ${o.id}`;
+      }
+      if (o.table === 'GenerationPreset') {
+        escrito.huerfanos += await tx.$executeRaw`
+          UPDATE "GenerationPreset" SET "workspaceId" = ${target} WHERE id = ${o.id}`;
+      }
     }
 
     for (const a of plan.activeWorkspace) {
