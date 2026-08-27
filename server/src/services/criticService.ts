@@ -2,7 +2,14 @@ import type OpenAI from "openai";
 import { CopyVariation } from "../types.js";
 import { ChannelBrief, ChannelSpec } from "../channels/types.js";
 import { UsageEntry, extractUsage } from "./pricing.js";
-import { jsonObjectFormat, stripJsonFence, samplingParams, MAX_TOKENS } from "./aiClient.js";
+import {
+  jsonObjectFormat,
+  stripJsonFence,
+  samplingParams,
+  MAX_TOKENS,
+  TIEMPOS,
+  chatCompletionConRetry,
+} from "./aiClient.js";
 
 interface CriticEvaluation {
   id: string;
@@ -87,23 +94,36 @@ export const runCritic = async (
   variations: CopyVariation[],
   client: OpenAI,
   model: string,
-  usage?: UsageEntry[]
+  usage?: UsageEntry[],
+  opciones: { signal?: AbortSignal; presupuestoMs?: number } = {}
 ): Promise<CopyVariation[]> => {
   if (variations.length === 0) return variations;
 
   const prompt = buildCriticPrompt(brief, spec, variations);
 
   try {
-    const response = await client.chat.completions.create({
-      model,
-      messages: [
-        { role: "system", content: "Eres editor senior de marca. Severo pero justo. Respondés SOLO en JSON válido." },
-        { role: "user", content: prompt },
-      ],
-      response_format: jsonObjectFormat(client),
-      max_tokens: MAX_TOKENS.critic,
-      ...samplingParams(model, 0.3),
-    });
+    // intentosMax 2 y no 3: la falla del crítico es cosmética (se devuelven los
+    // writer scores), no vale gastarle más presupuesto al canal.
+    const response = await chatCompletionConRetry(
+      client,
+      {
+        model,
+        messages: [
+          { role: "system", content: "Eres editor senior de marca. Severo pero justo. Respondés SOLO en JSON válido." },
+          { role: "user", content: prompt },
+        ],
+        response_format: jsonObjectFormat(client),
+        max_tokens: MAX_TOKENS.critic,
+        ...samplingParams(model, 0.3),
+      },
+      {
+        etapa: `critic:${spec.id}`,
+        timeoutMs: TIEMPOS.llamada.critic,
+        intentosMax: 2,
+        presupuestoMs: opciones.presupuestoMs,
+        signal: opciones.signal,
+      }
+    );
 
     const u = extractUsage(response, model, `critic:${spec.id}`);
     if (u && usage) usage.push(u);

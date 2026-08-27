@@ -1,4 +1,4 @@
-import { ChannelSpec } from "./types.js";
+import { ChannelSpec, SlotSpec } from "./types.js";
 import { instagramPost } from "./specs/instagramPost.js";
 import { instagramHistoria } from "./specs/instagramHistoria.js";
 import { instagramCarrusel } from "./specs/instagramCarrusel.js";
@@ -39,3 +39,15 @@ export const getChannelSpec = (id: string): ChannelSpec | undefined =>
   CHANNEL_REGISTRY.get(id);
 
 export const listChannels = (): ChannelSpec[] => ALL;
+
+export const getSlotSpec = (platformId: string, slotId: string): SlotSpec | undefined =>
+  CHANNEL_REGISTRY.get(platformId)?.slots.find(s => s.id === slotId);
+
+/**
+ * Fuente única de verdad de la etiqueta de un slot: el writer, el controller y el
+ * backfill la consultan del mismo lugar en vez de cada uno armar la suya.
+ * Devuelve null cuando el canal no tiene spec o el slot no le pertenece: la
+ * etiqueta no se inventa.
+ */
+export const resolveSlotLabel = (platformId: string, slotId?: string | null): string | null =>
+  slotId ? getSlotSpec(platformId, slotId)?.label ?? null : null;

@@ -1,6 +1,6 @@
 // pdf-parse v2 uses a class-based API: PDFParse({ data }) + .getText()
 import { PDFParse } from "pdf-parse";
-import { createAIClient, resolveModel, serverAIConfig, WorkspaceAIConfig, jsonObjectFormat, stripJsonFence } from "./aiClient.js";
+import { createAIClient, resolveModel, serverAIConfig, WorkspaceAIConfig, jsonObjectFormat, stripJsonFence, TIEMPOS, chatCompletionConRetry } from "./aiClient.js";
 
 export interface ExtractedBrand {
   voice: string;
@@ -60,15 +60,20 @@ export const extractBrandFromPdf = async (
   const openai = createAIClient(config);
   const model = resolveModel(config, false);
 
-  const response = await openai.chat.completions.create({
-    model,
-    messages: [
-      { role: "system", content: "Eres un analista de marca. Extraes información estructurada de manuales de marca. Respondés SOLO en JSON válido." },
-      { role: "user", content: buildExtractionPrompt(text, clientName, industry) },
-    ],
-    response_format: jsonObjectFormat(openai),
-    temperature: 0.2,
-  });
+  // 120 s de timeout: la entrada es un manual de marca entero.
+  const response = await chatCompletionConRetry(
+    openai,
+    {
+      model,
+      messages: [
+        { role: "system", content: "Eres un analista de marca. Extraes información estructurada de manuales de marca. Respondés SOLO en JSON válido." },
+        { role: "user", content: buildExtractionPrompt(text, clientName, industry) },
+      ],
+      response_format: jsonObjectFormat(openai),
+      temperature: 0.2,
+    },
+    { etapa: "extraccion", timeoutMs: TIEMPOS.llamada.extraccion, intentosMax: 2 }
+  );
 
   const raw = response.choices[0].message.content;
   if (!raw) throw new Error("La IA devolvió respuesta vacía.");

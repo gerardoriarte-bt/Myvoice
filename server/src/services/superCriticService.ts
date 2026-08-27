@@ -1,7 +1,14 @@
 import type OpenAI from "openai";
 import { CampaignSpine, CoherenceReport, CopyVariation } from "../types.js";
 import { UsageEntry, extractUsage } from "./pricing.js";
-import { jsonObjectFormat, stripJsonFence, samplingParams, MAX_TOKENS } from "./aiClient.js";
+import {
+  jsonObjectFormat,
+  stripJsonFence,
+  samplingParams,
+  MAX_TOKENS,
+  TIEMPOS,
+  chatCompletionConRetry,
+} from "./aiClient.js";
 
 const summarizeChannel = (channel: string, items: CopyVariation[]): string => {
   const top = items
@@ -84,7 +91,8 @@ export const runSuperCritic = async (
   prohibitions: string,
   client: OpenAI,
   model: string,
-  usage?: UsageEntry[]
+  usage?: UsageEntry[],
+  signal?: AbortSignal
 ): Promise<CoherenceReport | null> => {
   if (variations.length === 0) return null;
 
@@ -93,16 +101,28 @@ export const runSuperCritic = async (
   if (channels.size < 2) return null;
 
   try {
-    const response = await client.chat.completions.create({
-      model,
-      messages: [
-        { role: "system", content: "Eres director creativo senior. Auditas coherencia entre canales. Severo pero justo. Respondés SOLO en JSON válido." },
-        { role: "user", content: buildPrompt(brandName, spine, variations, prohibitions) },
-      ],
-      response_format: jsonObjectFormat(client),
-      max_tokens: MAX_TOKENS.superCritic,
-      ...samplingParams(model, 0.3),
-    });
+    // Corre después del Promise.all, así que no compite por slots del
+    // semáforo: su presupuesto es el de la generación.
+    const response = await chatCompletionConRetry(
+      client,
+      {
+        model,
+        messages: [
+          { role: "system", content: "Eres director creativo senior. Auditas coherencia entre canales. Severo pero justo. Respondés SOLO en JSON válido." },
+          { role: "user", content: buildPrompt(brandName, spine, variations, prohibitions) },
+        ],
+        response_format: jsonObjectFormat(client),
+        max_tokens: MAX_TOKENS.superCritic,
+        ...samplingParams(model, 0.3),
+      },
+      {
+        etapa: "supercritic",
+        timeoutMs: TIEMPOS.llamada.superCritic,
+        intentosMax: 2,
+        presupuestoMs: TIEMPOS.generacion,
+        signal,
+      }
+    );
     const u = extractUsage(response, model, "supercritic");
     if (u && usage) usage.push(u);
     const raw = response.choices[0].message.content;
