@@ -59,8 +59,13 @@ A gate that certifies green over code it does not read is worse than no gate —
 the tsconfigs, verify with a probe file containing deliberate errors that the files you expect
 are actually being read (`npx tsc --noEmit --listFiles`).
 
-There are **no tests and no CI** (`.github/` does not exist). `verify:isolation` is the closest
-thing to an integration suite; it needs a running API and a throwaway database.
+There are **no unit tests**, but there is CI: `.github/workflows/ci.yml` runs four jobs on every
+push — the three type gates plus both builds (with a deliberate-error probe that fails if the
+frontend gate stops reading files), `verify:resiliencia`, and `verify:isolation` against a
+Postgres service container plus a `migrate diff` drift check. A fourth job checks that the
+links between `CLAUDE.md` and `docs/*.md` resolve. Nothing in CI touches production or spends
+AI credit. `verify:isolation` is the closest thing to an integration suite; run locally it
+needs a running API and a throwaway database.
 
 ## Architecture
 
