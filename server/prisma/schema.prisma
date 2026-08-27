@@ -7,36 +7,93 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+/// Un workspace = una empresa (tenant). Toda la data de negocio cuelga de acá y
+/// el acceso se otorga exclusivamente por Membership: no hay pertenencia
+/// implícita por dominio de email ni por columna en User.
 model Workspace {
-  id             String              @id @default(uuid())
+  id             String             @id @default(uuid())
   name           String
-  slug           String              @unique
-  plan           String              @default("agency")
+  slug           String             @unique
+  plan           String             @default("agency")
   aiProvider     String?
+  /// Cifrada en reposo con AES-256-GCM (ver lib/crypto.ts). Formato
+  /// `v1:iv:tag:ciphertext`; las filas anteriores a A0.6 pueden estar en texto
+  /// plano y se recifran al leerlas. Descifrarla solo desde
+  /// lib/workspaceSecret.ts.
   aiApiKey       String?
   aiModel        String?
-  createdAt      DateTime            @default(now())
-  updatedAt      DateTime            @default(now()) @updatedAt
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @default(now()) @updatedAt
   clients        Client[]
   projects       Project[]
   users          User[]
+  memberships    Membership[]
+  invites        WorkspaceInvite[]
   reviewSessions ReviewSession[]
   presets        GenerationPreset[]
+  generationLogs GenerationLog[]
+  usagePeriods   UsagePeriod[]
 }
 
 model User {
-  id                    String          @id @default(uuid())
-  email                 String          @unique
+  id                    String            @id @default(uuid())
+  email                 String            @unique
   passwordHash          String
   name                  String
-  role                  Role            @default(CLIENT)
+  /// LEGACY. Ya no autoriza nada: el rol efectivo vive en Membership.role y se
+  /// resuelve por workspace activo. Se conserva para no romper seeds y para el
+  /// backfill; eliminar en una migración posterior.
+  role                  Role              @default(CLIENT)
+  /// LEGACY. Ya no confina la lectura: un usuario ve todas las marcas de los
+  /// workspaces donde tiene membresía.
   clientId              String?
-  createdAt             DateTime        @default(now())
-  updatedAt             DateTime        @updatedAt
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+  /// Workspace ACTIVO de la sesión, no una relación de pertenencia. Solo es
+  /// válido si existe la Membership correspondiente; el middleware lo verifica
+  /// en cada request y nunca confía en este campo por sí solo.
   workspaceId           String?
-  client                Client?         @relation(fields: [clientId], references: [id])
-  workspace             Workspace?      @relation(fields: [workspaceId], references: [id])
+  client                Client?           @relation(fields: [clientId], references: [id])
+  workspace             Workspace?        @relation(fields: [workspaceId], references: [id])
+  memberships           Membership[]
+  invitesSent           WorkspaceInvite[] @relation("InviteAuthor")
   createdReviewSessions ReviewSession[]
+}
+
+/// La única fuente de verdad de "quién puede entrar a qué workspace".
+/// Un usuario puede tener membresía en varios workspaces (p. ej. un admin de
+/// agencia invitado a los workspaces de sus clientes).
+model Membership {
+  id          String        @id @default(uuid())
+  userId      String
+  workspaceId String
+  role        WorkspaceRole @default(MEMBER)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @default(now()) @updatedAt
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace   Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, workspaceId])
+  @@index([workspaceId])
+}
+
+/// Invitación por email a un workspace. Reemplaza el auto-aprovisionamiento por
+/// dominio: nadie entra a un workspace sin una invitación aceptada.
+model WorkspaceInvite {
+  id          String        @id @default(uuid())
+  workspaceId String
+  email       String
+  role        WorkspaceRole @default(MEMBER)
+  token       String        @unique @default(uuid())
+  expiresAt   DateTime
+  acceptedAt  DateTime?
+  createdById String
+  createdAt   DateTime      @default(now())
+  workspace   Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdBy   User          @relation("InviteAuthor", fields: [createdById], references: [id])
+
+  @@index([workspaceId])
+  @@index([email])
 }
 
 model Client {
@@ -46,8 +103,22 @@ model Client {
   logoUrl                   String?
   createdAt                 DateTime            @default(now())
   brandVoiceGuidelines      String?
+  /// LEGACY. Ya no limita nada: la cuota se evalúa contra UsagePeriod. Se
+  /// conserva un ciclo de despliegue porque durante el rolling deploy conviven
+  /// contenedores viejos que la seleccionan; se dropea en una migración
+  /// posterior junto con seedLobueno.ts y shared/lobuenoBrand.ts.
   quotaLimit                Int                 @default(100)
+  /// LEGACY. Contador de por vida sin periodo: su valor no es convertible a
+  /// consumo del periodo vigente y no se migra a ningún lado.
   quotaUsed                 Int                 @default(0)
+  /// Override del límite del plan para esta marca. NULL = se aplica el del plan
+  /// del workspace. No se backfillea desde quotaLimit: ese número cuenta
+  /// generaciones, no dólares, y convertirlo sería inventar una tarifa.
+  quotaCostUsdOverride      Decimal?            @db.Decimal(12, 6)
+  /// Techo secundario en tokens. Sostiene el límite cuando el modelo no está en
+  /// MODEL_PRICING y el proveedor no reporta costo: ahí computeCost registra 0
+  /// USD y una cuota medida solo en dinero quedaría abierta.
+  quotaTokensOverride       Int?
   valueProposition          String?
   voice                     String?
   brandGuidelinePdfUrl      String?
@@ -57,15 +128,21 @@ model Client {
   brandProhibitions         String?
   brandFingerprint          Json?
   brandFingerprintAt        DateTime?
-  workspaceId               String?
-  workspace                 Workspace?          @relation(fields: [workspaceId], references: [id])
+  workspaceId               String
+  workspace                 Workspace           @relation(fields: [workspaceId], references: [id])
   dnaProfiles               ContentDNAProfile[]
   generationLogs            GenerationLog[]
   negativeFeedbacks         NegativeFeedback[]
   variations                SavedVariation[]
   users                     User[]
+  usagePeriods              UsagePeriod[]
 }
 
+/// Una fila por generación. Además del rastro de auditoría, es la tabla de
+/// telemetría de costo: hasta B0 el costo que calcula services/pricing.ts se
+/// emitía al frontend y quedaba enterrado dentro de outputJson, así que
+/// responder "cuánto gastó el workspace X este mes" exigía abrir un JSON fila
+/// por fila.
 model GenerationLog {
   id               String   @id @default(uuid())
   clientId         String
@@ -78,7 +155,81 @@ model GenerationLog {
   funnelStage      String?
   spineJson        Json?
   outputJson       Json?
-  client           Client   @relation(fields: [clientId], references: [id])
+
+  /// Denormalizado desde Client: una marca puede moverse de empresa, y el gasto
+  /// ya incurrido no se muda con ella. Además evita un join en cada reporte.
+  /// NULLABLE de forma TRANSITORIA: la migración lo rellena para todas las
+  /// filas existentes, pero el SET NOT NULL queda para una migración posterior
+  /// (esta tanda es puramente aditiva). Toda escritura nueva debe pasarlo.
+  workspaceId      String?
+  /// NUMERIC y no Float: son montos que se suman en reportes de facturación y
+  /// el error de punto flotante se acumula fila a fila.
+  costUsd          Decimal? @db.Decimal(12, 6)
+  cachedTokens     Int?
+  cacheWriteTokens Int?
+  /// Modelo del writer (resolveModel(config, false)). El mini se deriva del
+  /// provider salvo override por AI_MODEL_MINI; el detalle por llamada vive en
+  /// stageBreakdown.
+  model            String?
+  provider         String?
+  /// NULL = no se sabe (fila anterior a la telemetría), distinto de false = el
+  /// proveedor reportó el cobro real.
+  costEstimated    Boolean?
+  durationMs       Int?
+  /// UsageTotal.byStage tal cual lo produce services/pricing.ts.
+  stageBreakdown   Json?
+
+  client    Client     @relation(fields: [clientId], references: [id])
+  workspace Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+
+  /// Los dos ejes de consulta del reporte: gasto de un workspace en un periodo
+  /// y gasto de una marca en un periodo.
+  @@index([workspaceId, createdAt])
+  @@index([clientId, createdAt])
+}
+
+/// Consumo de una marca en un periodo. Reemplaza el contador de por vida
+/// Client.quotaUsed, que nunca se reiniciaba. No hay cron ni job de reinicio:
+/// la fila del periodo vigente se crea con un upsert en el primer uso, y un
+/// periodo sin consumo simplemente no tiene fila. Las filas viejas quedan como
+/// histórico facturable, así que "reiniciar la cuota" nunca es una escritura
+/// destructiva.
+///
+/// Esta tabla mide consumo COBRABLE, no gasto bruto: una generación que falló
+/// en todos los canales gastó plata real (la etapa director corre antes del
+/// fan-out) pero no escribe acá. Ese gasto queda visible en GenerationLog.
+/// La diferencia entre las dos es intencional; no "arreglarla" cuadrándolas.
+model UsagePeriod {
+  id          String    @id @default(uuid())
+  workspaceId String
+  clientId    String
+  /// Medianoche UTC del primer día del mes. Se construye SIEMPRE con
+  /// Date.UTC(y, m, 1): un `new Date(y, m, 1)` local corre la fila un mes
+  /// entero en zonas negativas como la de Bogotá. Es TIMESTAMP y no DATE
+  /// porque el cast de timestamp a date en Postgres depende del TimeZone de la
+  /// sesión, y ahí el día 1 puede caer en el periodo anterior.
+  periodStart DateTime
+  /// Métrica secundaria: se reporta, no limita. Una regeneración de un canal y
+  /// una campaña de catorce cuentan igual acá, y por eso no puede ser el
+  /// límite.
+  generations Int       @default(0)
+  costUsd     Decimal   @default(0) @db.Decimal(12, 6)
+  /// promptTokens + completionTokens. Es el techo que sí se puede aplicar
+  /// cuando el modelo no está en MODEL_PRICING y el proveedor no reporta costo:
+  /// en ese caso pricing.ts registra 0 USD y una cuota medida solo en dinero
+  /// quedaría abierta.
+  tokens      Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @default(now()) @updatedAt
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  client      Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  /// Hace atómico el upsert: dos generaciones simultáneas de la misma marca en
+  /// un periodo recién estrenado no pueden crear dos filas.
+  @@unique([clientId, periodStart])
+  /// Techo por plan: suma del consumo de todas las marcas del workspace en el
+  /// periodo, una agregación por generación.
+  @@index([workspaceId, periodStart])
 }
 
 model ContentDNAProfile {
@@ -102,29 +253,52 @@ model ContentDNAProfile {
 }
 
 model SavedVariation {
-  id           String   @id @default(uuid())
-  clientId     String
-  projectId    String?
-  platform     String
-  type         String
-  content      String
-  charCount    Int
-  tags         String[]
-  previousVersions Json   @default("[]")
-  isApproved   Boolean             @default(false)
-  approvalNote String?
-  savedAt      DateTime            @default(now())
-  client       Client              @relation(fields: [clientId], references: [id])
-  project      Project?            @relation(fields: [projectId], references: [id])
-  reviewItems  ReviewSessionItem[]
+  id               String              @id @default(uuid())
+  clientId         String
+  projectId        String?
+  platform         String
+  type             String
+  /// Procedencia de la pieza: el id de slot que emitió el writer
+  /// (p. ej. "slidesBody"). NULLABLE sin default a propósito: NULL significa
+  /// "no sabemos", que es la verdad para las filas anteriores a esta migración.
+  /// Un default '' las volvería indistinguibles de un dato real.
+  slot             String?
+  /// Etiqueta legible del slot, resuelta SIEMPRE en el servidor contra
+  /// channels/registry.ts. Nunca se copia del body: el cliente no puede
+  /// inventar la etiqueta de un slot.
+  slotLabel        String?
+  /// Cuál de las N variaciones del slot es. No es deducible para las filas
+  /// viejas: el backfill lo deja en NULL en vez de numerar por fecha, que
+  /// refleja el orden en que un humano fue clickeando "guardar".
+  variationIndex   Int?
+  /// Marca las filas cuyo slot lo dedujo el backfill heurístico por conteo de
+  /// unidades contra el ChannelSpec. Es columna aparte y no un sufijo en
+  /// slotLabel porque tiene que sobrevivir a cualquier edición del texto y ser
+  /// consultable desde SQL. NOT NULL con default false: es una afirmación sobre
+  /// el origen del dato y siempre hay una respuesta correcta.
+  slotInferred     Boolean             @default(false)
+  content          String
+  charCount        Int
+  tags             String[]
+  previousVersions Json                @default("[]")
+  isApproved       Boolean             @default(false)
+  approvalNote     String?
+  savedAt          DateTime            @default(now())
+  client           Client              @relation(fields: [clientId], references: [id])
+  project          Project?            @relation(fields: [projectId], references: [id])
+  reviewItems      ReviewSessionItem[]
+
+  /// La consulta de H2.A: todos los slots de un canal para una marca. Es el
+  /// primer índice de la tabla.
+  @@index([clientId, platform, slot])
 }
 
 model Project {
   id          String           @id @default(uuid())
   name        String
   createdAt   DateTime         @default(now())
-  workspaceId String?
-  workspace   Workspace?       @relation(fields: [workspaceId], references: [id])
+  workspaceId String
+  workspace   Workspace        @relation(fields: [workspaceId], references: [id])
   variations  SavedVariation[]
 }
 
@@ -139,19 +313,28 @@ model NegativeFeedback {
 }
 
 model GenerationPreset {
-  id          String     @id @default(uuid())
+  id          String    @id @default(uuid())
   name        String
-  workspaceId String?
+  workspaceId String
   clientId    String?
   parameters  Json
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-  workspace   Workspace? @relation(fields: [workspaceId], references: [id])
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
 }
 
+/// LEGACY: rol global del usuario. Conservado solo para el backfill.
 enum Role {
   ADMIN
   CLIENT
+}
+
+/// Rol dentro de UN workspace. OWNER y ADMIN administran; MEMBER genera y
+/// consulta pero no gestiona marcas, usuarios ni configuración.
+enum WorkspaceRole {
+  OWNER
+  ADMIN
+  MEMBER
 }
 
 model ReviewSession {
@@ -162,9 +345,9 @@ model ReviewSession {
   expiresAt   DateTime
   createdAt   DateTime            @default(now())
   updatedAt   DateTime            @updatedAt
-  workspaceId String?
+  workspaceId String
   createdById String
-  workspace   Workspace?          @relation(fields: [workspaceId], references: [id])
+  workspace   Workspace           @relation(fields: [workspaceId], references: [id])
   createdBy   User                @relation(fields: [createdById], references: [id])
   items       ReviewSessionItem[]
   submission  ReviewSubmission?

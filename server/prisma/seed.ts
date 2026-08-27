@@ -1,24 +1,48 @@
+/**
+ * Seed base: un workspace con su OWNER y unas marcas de ejemplo.
+ *
+ * Ya no hay password maestro embebido: la contraseña del admin sale de
+ * SEED_ADMIN_PASSWORD y el script falla si no está definida.
+ *
+ *   SEED_ADMIN_EMAIL=admin@empresa.com SEED_ADMIN_PASSWORD=... npm run seed
+ */
 
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, WorkspaceRole } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
 async function main() {
-  const passwordHash = await bcrypt.hash(process.env.MASTER_PASSWORD || 'Lobueno2025*', 10);
-  
-  const admin = await prisma.user.upsert({
-    where: { email: 'admin@lobueno.co' },
+  const email = (process.env.SEED_ADMIN_EMAIL || 'admin@lobueno.co').toLowerCase();
+  const password = process.env.SEED_ADMIN_PASSWORD;
+  const workspaceName = process.env.SEED_WORKSPACE_NAME || 'LoBueno';
+  const workspaceSlug = process.env.SEED_WORKSPACE_SLUG || 'lobueno';
+
+  if (!password) {
+    console.error('[seed] Falta SEED_ADMIN_PASSWORD. Abortado para no crear un usuario con contraseña conocida.');
+    process.exit(1);
+  }
+
+  const workspace = await prisma.workspace.upsert({
+    where: { slug: workspaceSlug },
     update: {},
-    create: {
-      email: 'admin@lobueno.co',
-      passwordHash: passwordHash,
-      name: 'Super Admin Lobueno',
-      role: 'ADMIN',
-    },
+    create: { name: workspaceName, slug: workspaceSlug, plan: 'agency' },
   });
 
-  console.log({ admin });
+  const passwordHash = await bcrypt.hash(password, 10);
+  const admin = await prisma.user.upsert({
+    where: { email },
+    update: {},
+    create: { email, passwordHash, name: 'Admin', workspaceId: workspace.id },
+  });
+
+  await prisma.membership.upsert({
+    where: { userId_workspaceId: { userId: admin.id, workspaceId: workspace.id } },
+    create: { userId: admin.id, workspaceId: workspace.id, role: WorkspaceRole.OWNER },
+    update: { role: WorkspaceRole.OWNER },
+  });
+
+  console.log(`[seed] Workspace "${workspace.name}" con OWNER ${admin.email}`);
 
   const brands = [
     { name: 'Terpel', industry: 'Energía y Combustibles' },
@@ -28,24 +52,23 @@ async function main() {
   ];
 
   for (const brand of brands) {
-    const createdBrand = await prisma.client.upsert({
-      where: { id: brand.name.toLowerCase() }, // Using name based ID for upsert safety in this simple script
-      update: {},
-      create: {
-        name: brand.name,
-        industry: brand.industry,
-      },
+    const existing = await prisma.client.findFirst({
+      where: { name: brand.name, workspaceId: workspace.id },
     });
-    console.log(`Brand created: ${createdBrand.name}`);
+    if (existing) {
+      console.log(`[seed] Marca ya existía: ${existing.name}`);
+      continue;
+    }
+    const created = await prisma.client.create({
+      data: { name: brand.name, industry: brand.industry, workspaceId: workspace.id },
+    });
+    console.log(`[seed] Marca creada: ${created.name}`);
   }
 }
 
 main()
-  .then(async () => {
-    await prisma.$disconnect();
-  })
-  .catch(async (e) => {
+  .catch(e => {
     console.error(e);
-    await prisma.$disconnect();
     process.exit(1);
-  });
+  })
+  .finally(() => prisma.$disconnect());
