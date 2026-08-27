@@ -18,6 +18,15 @@ export default {
         sans: ['-apple-system', 'BlinkMacSystemFont', '"Inter"', 'sans-serif'],
       },
       colors: {
+        /* El negro del producto, uno solo. Antes convivían tres: bg-gray-900
+           (#111827), bg-black (#000) y bg-[#1D1D1F], más la clase
+           apple-btn-primary. Ver docs/oraculo-diseno.md, F3.
+           `ink` es el fondo de las acciones primarias y de los velos de modal;
+           `ink-hover` es su único estado hover. */
+        ink: {
+          DEFAULT: '#1D1D1F',
+          hover: '#3A3A3C',
+        },
         apple: {
           bg: '#F5F5F7',
           text: '#1D1D1F',

@@ -215,7 +215,7 @@ const ParameterForm: React.FC<ParameterFormProps> = ({
               type="button"
               onClick={savePreset}
               disabled={isSavingPreset || !presetName.trim()}
-              className="text-[11px] font-medium bg-gray-900 text-white px-3 py-1.5 rounded-lg hover:bg-black disabled:opacity-50 transition-colors whitespace-nowrap"
+              className="text-[11px] font-medium bg-ink text-white px-3 py-1.5 rounded-lg hover:bg-ink disabled:opacity-50 transition-colors whitespace-nowrap"
             >
               {isSavingPreset ? 'Guardando…' : 'Guardar'}
             </button>
@@ -261,7 +261,7 @@ const ParameterForm: React.FC<ParameterFormProps> = ({
               <div className="flex flex-col items-center gap-1">
                 <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-semibold border-2 transition-colors ${
                   step.done
-                    ? 'bg-gray-900 border-gray-900 text-white'
+                    ? 'bg-ink border-gray-900 text-white'
                     : 'bg-white border-gray-300 text-gray-400'
                 }`}>
                   {step.done ? <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"/></svg> : step.n}
@@ -269,7 +269,7 @@ const ParameterForm: React.FC<ParameterFormProps> = ({
                 <span className={`text-[9px] font-medium ${step.done ? 'text-gray-900' : 'text-gray-400'}`}>{step.label}</span>
               </div>
               {i < arr.length - 1 && (
-                <div className={`flex-1 h-0.5 mb-3 mx-1 ${step.done ? 'bg-gray-900' : 'bg-gray-200'}`} />
+                <div className={`flex-1 h-0.5 mb-3 mx-1 ${step.done ? 'bg-ink' : 'bg-gray-200'}`} />
               )}
             </React.Fragment>
           ))}
@@ -449,7 +449,7 @@ const ParameterForm: React.FC<ParameterFormProps> = ({
                       onClick={() => togglePlatform(p)}
                       className={`inline-flex items-center gap-1.5 pl-1.5 pr-2.5 py-1 rounded-full border text-[11px] font-medium transition-all ${
                         active
-                          ? 'bg-gray-900 text-white border-gray-900 shadow-sm'
+                          ? 'bg-ink text-white border-gray-900 shadow-sm'
                           : 'bg-white text-gray-700 border-gray-200 hover:border-gray-300'
                       }`}
                     >
@@ -474,7 +474,7 @@ const ParameterForm: React.FC<ParameterFormProps> = ({
           className={`w-full py-2.5 rounded-lg font-medium text-[13px] transition-all flex items-center justify-center gap-2 ${
             !canSubmit
               ? 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200'
-              : 'bg-gray-900 text-white hover:bg-black shadow-sm hover:shadow-md'
+              : 'bg-ink text-white hover:bg-ink shadow-sm hover:shadow-md'
           }`}
         >
           {isLoading

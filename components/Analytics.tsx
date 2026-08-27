@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { SCREENS } from '../screens';
 import { analyticsApi } from '../services/api';
 
 interface AnalyticsSummary {
@@ -206,7 +207,7 @@ export default function Analytics() {
     <div className="space-y-6 pb-8">
       {/* Header */}
       <div>
-        <h2 className="text-[15px] font-semibold text-gray-900">Analytics de Copy</h2>
+        <h2 className="text-[20px] font-semibold text-[#1D1D1F] tracking-[-0.01em]">{SCREENS.analytics.name}</h2>
         <p className="text-[12px] text-gray-500 mt-0.5">Métricas de aprobación y rechazo por cliente y plataforma.</p>
       </div>
 

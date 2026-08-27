@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { SCREENS } from '../screens';
 import { Plus, Search, Copy, Pencil, CheckCircle2, Trash2, Check, BookmarkCheck, Tag, X, Square, CheckSquare } from 'lucide-react';
 import { SavedVariation, Project, Client, Platform } from '../types';
 import { PlatformIcon } from './ui/platformIcons';
@@ -272,7 +273,7 @@ const SavedManager: React.FC<SavedManagerProps> = ({
           />
           <div className="flex gap-2 justify-end">
             <button onClick={() => setEditingId(null)} className="px-3 py-1.5 text-[12px] font-medium text-gray-500 hover:text-gray-900">Cancelar</button>
-            <button onClick={() => confirmEdit(v.id)} className="px-3 py-1.5 bg-gray-900 text-white rounded-md text-[12px] font-medium hover:bg-gray-800">Guardar Cambios</button>
+            <button onClick={() => confirmEdit(v.id)} className="px-3 py-1.5 bg-ink text-white rounded-md text-[12px] font-medium hover:bg-ink-hover">Guardar Cambios</button>
           </div>
         </div>
       );
@@ -306,11 +307,11 @@ const SavedManager: React.FC<SavedManagerProps> = ({
       <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
         <div className="px-6 py-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <div className="w-11 h-11 rounded-xl bg-gray-900 text-white flex items-center justify-center shrink-0">
+            <div className="w-11 h-11 rounded-xl bg-ink text-white flex items-center justify-center shrink-0">
               <BookmarkCheck className="w-5 h-5" strokeWidth={2} />
             </div>
             <div>
-              <h2 className="text-[20px] font-medium text-gray-900 leading-tight tracking-tight">Biblioteca de Activos</h2>
+              <h2 className="text-[20px] font-semibold text-[#1D1D1F] tracking-[-0.01em]">{SCREENS.saved.name}</h2>
               <p className="text-[12px] text-gray-500 mt-0.5">{readOnly ? 'Centro de control de marca' : 'Archivo estratégico global'}</p>
             </div>
           </div>
@@ -325,7 +326,7 @@ const SavedManager: React.FC<SavedManagerProps> = ({
               </button>
             )}
             {!readOnly && (
-              <button onClick={() => setIsCreatingProject(!isCreatingProject)} className="bg-gray-900 text-white px-4 py-2 rounded-lg text-[13px] font-medium hover:bg-black transition-colors shadow-sm flex items-center gap-2">
+              <button onClick={() => setIsCreatingProject(!isCreatingProject)} className="bg-ink text-white px-4 py-2 rounded-lg text-[13px] font-medium hover:bg-ink transition-colors shadow-sm flex items-center gap-2">
                 <Plus className="w-3.5 h-3.5" />
                 {isCreatingProject ? 'Cancelar' : 'Nuevo Proyecto'}
               </button>
@@ -577,7 +578,7 @@ const SavedManager: React.FC<SavedManagerProps> = ({
 
       {/* Version history modal */}
       {versionModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setVersionModal(null)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40" onClick={() => setVersionModal(null)}>
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
               <div>
@@ -622,7 +623,7 @@ const SavedManager: React.FC<SavedManagerProps> = ({
       {/* 2A: Sticky batch action bar */}
       {selectionMode && selectedIds.size > 0 && (
         <div className="fixed bottom-0 left-0 right-0 z-50 flex justify-center pointer-events-none">
-          <div className="pointer-events-auto mb-4 flex items-center gap-3 bg-gray-900 text-white px-5 py-3 rounded-xl shadow-2xl border border-gray-700">
+          <div className="pointer-events-auto mb-4 flex items-center gap-3 bg-ink text-white px-5 py-3 rounded-xl shadow-2xl border border-gray-700">
             <span className="text-[13px] font-medium text-gray-300">{selectedIds.size} seleccionadas</span>
             <div className="w-px h-4 bg-gray-600" />
             <button

@@ -5,7 +5,7 @@
 > Última actualización: 2026-08-26
 
 ## Por qué estos dos primero
-
+o
 Todo lo demás del roadmap —composición, analytics de performance, integraciones— asume
 dos cosas que hoy **no son ciertas**:
 

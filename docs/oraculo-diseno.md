@@ -101,22 +101,26 @@ prerrequisito de A2: no se puede tematizar lo que no está tokenizado.
 
 ---
 
-### F4 · MEDIO — Emoji en la navegación principal, iconos vectoriales en el resto
+### F4 · MEDIO — Nueve iconos dibujados a mano, y nueve emoji que nadie renderiza — CORREGIDO
+
+> **Corrección del 2026-08-27.** La primera versión de este hallazgo decía que la navegación
+> mostraba emoji. Es falso: grepeé la *declaración* y no el *render*. `navItems` declaraba
+> `icon: '👥'…` pero el menú nunca leía ese campo — dibujaba nueve SVG inline desde `navIcons`.
+> El arreglo propuesto no cambia; el motivo sí. Queda anotado como recordatorio de la regla de
+> este documento: un grep sobre la declaración no prueba lo que la pantalla muestra.
 
 ```bash
-sed -n '518,527p' App.tsx | grep -oP "icon: '[^']*'"     # 👥 ⚡ 📚 📊 🕓 🤝 🛡️ ⚙️ 📖
+grep -c "navIcons\[" App.tsx                            # 1 — el menú renderiza esto
+grep -n "tab.icon\|item.icon" App.tsx                    # vacío — el emoji era dato muerto
 grep -l "from 'lucide-react'" components/*.tsx | wc -l   # 10
 ```
 
-**Por qué importa:** los emoji los dibuja el sistema operativo, no el producto. El mismo menú se
-ve distinto en macOS, en Windows y en Android, no hereda el color de la marca —lo cual choca de
-frente con A2— y no se puede alinear ópticamente con el resto de los iconos. Diez componentes ya
-importan `lucide-react`: el vocabulario correcto ya está instalado y en uso.
+**Por qué importaba:** nueve SVG escritos a mano en el componente más grande del repo, que
+duplican iconos que `lucide-react` ya provee y que diez componentes ya usan. Más nueve campos
+`icon` con emoji que nadie leía, que es peor que un icono feo: es una mentira en la estructura de
+datos, y fue exactamente lo que me hizo escribir mal el hallazgo.
 
-**Arreglo mínimo:** nueve iconos de `lucide-react` en `navItems`. El canvas ya los tiene elegidos
-en el componente `⚙ Componente · Sidebar`.
-
----
+**Arreglo:** aplicado. Los iconos viven en `SCREENS[id].icon` (`screens.ts`), junto al nombre.
 
 ### F5 · MEDIO — El título de cada pantalla tiene un tamaño distinto
 
@@ -145,6 +149,18 @@ empresas puede generar copy contra la marca equivocada sin notarlo hasta ver el 
 **Arreglo mínimo:** está dibujado en `§ A2 · Selector de workspace`. Entra con A2, no antes.
 
 ---
+
+## Estado de las recomendaciones
+
+R1, R2 y R3 se aplicaron el mismo día que se escribió este documento. Lo que sigue queda como el
+registro de por qué se hicieron, no como trabajo pendiente:
+
+| | Recomendación | Estado |
+|---|---|---|
+| R1 | Diccionario de nombres | **Hecho** — `screens.ts` |
+| R2 | Token de color y escala tipográfica | **Hecho** — `ink` / `ink-hover` en `tailwind.config.js` |
+| R3 | Iconografía única | **Hecho** — `lucide-react` en `SCREENS[id].icon` |
+| R4 | Navegación por etapas | **Hecho** — `NAV_STAGES`, adelantado a A2 |
 
 ## Recomendaciones, en orden
 

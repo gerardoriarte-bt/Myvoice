@@ -126,8 +126,8 @@ const PromptPreview: React.FC<PromptPreviewProps> = ({ client, draft, funnelStag
   };
 
   return (
-    <div className="bg-gray-900 rounded-xl border border-gray-200 overflow-hidden flex flex-col h-full">
-      <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-800 bg-gray-900">
+    <div className="bg-ink rounded-xl border border-gray-200 overflow-hidden flex flex-col h-full">
+      <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-800 bg-ink">
         <div className="flex items-center gap-2">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
           <span className="text-[11px] font-medium text-gray-300 uppercase tracking-wider">

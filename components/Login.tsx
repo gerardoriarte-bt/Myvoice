@@ -39,7 +39,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
 
         {/* Logo mark */}
         <div className="flex flex-col items-center mb-8">
-          <div className="w-12 h-12 rounded-[13px] bg-[#1D1D1F] flex items-center justify-center mb-4 shadow-lg">
+          <div className="w-12 h-12 rounded-[13px] bg-ink flex items-center justify-center mb-4 shadow-lg">
             <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25">
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
             </svg>
