@@ -14,7 +14,7 @@ const PLATFORM_COLORS: Record<string, string> = {
   'Instagram Historia': 'bg-purple-50 text-purple-700 border-purple-200',
   'Instagram Carrusel': 'bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200',
   'Instagram Reel': 'bg-violet-50 text-violet-700 border-violet-200',
-  'TikTok': 'bg-gray-900 text-white border-gray-700',
+  'TikTok': 'bg-ink text-white border-gray-700',
   'YouTube': 'bg-red-50 text-red-700 border-red-200',
   'Email': 'bg-blue-50 text-blue-700 border-blue-200',
   'WhatsApp': 'bg-green-50 text-green-700 border-green-200',
@@ -310,7 +310,7 @@ export default function ReviewPortal({ token, onBack }: ReviewPortalProps) {
             <button
               onClick={handleSubmit}
               disabled={!canSubmit || isSubmitting}
-              className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2 bg-gray-900 text-white rounded-md text-[13px] font-medium hover:bg-gray-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap"
+              className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2 bg-ink text-white rounded-md text-[13px] font-medium hover:bg-gray-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap"
             >
               {isSubmitting ? (
                 <>

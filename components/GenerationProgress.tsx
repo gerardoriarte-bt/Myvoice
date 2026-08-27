@@ -122,7 +122,7 @@ const GenerationProgress: React.FC<Props> = ({
         <div className="pt-1">
           <div className="h-1 bg-gray-100 rounded-full overflow-hidden">
             <div
-              className="h-full bg-gray-900 rounded-full transition-all duration-500"
+              className="h-full bg-ink rounded-full transition-all duration-500"
               style={{ width: `${Math.round((selectedPlatforms.filter(p => channelStatus[p] === 'done').length / selectedPlatforms.length) * 100)}%` }}
             />
           </div>

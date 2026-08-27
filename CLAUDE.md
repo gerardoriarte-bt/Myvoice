@@ -210,5 +210,10 @@ myvoice.lobueno.co. `aws_deployment_plan.md` has the server setup and incident h
 `docs/ROADMAP.md` is the living roadmap (three horizons plus cross-cutting enablers) and the
 place to update status. `docs/plan-h1-multitenant-motor.md` is the detailed plan for the
 current horizon, with file:line references for known open issues.
-`docs/runbook-tenancy.md` is the deploy sequence for the tenancy migration and
-`docs/runbook-mejoras-h1.md` the one for the cost/quota/resilience/slot batch.
+`docs/despliegue-h1.md` is the single sheet for the H1 deploy — the whole ordered sequence,
+including the three steps that surprise an operator. `docs/runbook-tenancy.md` and
+`docs/runbook-mejoras-h1.md` remain the detail behind each step.
+`docs/plan-h2-produccion-auditoria.md` is the next phase (approved copy → assigned piece → AI
+audit); it is design-first and shares no code with the H1 deploy.
+`docs/diseno-sistema.md` holds the design decisions — screen names live in `screens.ts`, colors
+in `tailwind.config.js`; the `.pen` source file is local-only and gitignored.

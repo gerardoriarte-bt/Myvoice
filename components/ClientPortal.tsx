@@ -14,7 +14,7 @@ const PLATFORM_COLORS: Record<string, string> = {
   'Instagram Historia':'bg-purple-50 text-purple-700 border-purple-200',
   'Instagram Carrusel':'bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200',
   'Instagram Reel':    'bg-violet-50 text-violet-700 border-violet-200',
-  'TikTok':            'bg-gray-900 text-white border-gray-700',
+  'TikTok':            'bg-ink text-white border-gray-700',
   'YouTube':           'bg-red-50 text-red-700 border-red-200',
   'Email':             'bg-blue-50 text-blue-700 border-blue-200',
   'WhatsApp':          'bg-green-50 text-green-700 border-green-200',
@@ -63,7 +63,7 @@ export default function ClientPortal({ currentUser, savedVariations, clients, on
       <header className="bg-white border-b border-gray-200 shadow-sm">
         <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-7 h-7 rounded-[6px] bg-[#1D1D1F] flex items-center justify-center shrink-0">
+            <div className="w-7 h-7 rounded-[6px] bg-ink flex items-center justify-center shrink-0">
               <svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
               </svg>
@@ -76,7 +76,7 @@ export default function ClientPortal({ currentUser, savedVariations, clients, on
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <div className="w-7 h-7 rounded-full bg-gray-900 text-white flex items-center justify-center text-[11px] font-semibold">
+            <div className="w-7 h-7 rounded-full bg-ink text-white flex items-center justify-center text-[11px] font-semibold">
               {currentUser.name[0].toUpperCase()}
             </div>
             <span className="text-[12px] text-gray-600 hidden sm:block">{currentUser.name}</span>

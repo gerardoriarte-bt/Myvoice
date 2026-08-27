@@ -58,7 +58,7 @@ const PrintPreview: React.FC<Props> = ({
       `}</style>
 
       {/* Overlay */}
-      <div className="print-modal fixed inset-0 z-50 bg-black/50 overflow-y-auto flex items-start justify-center p-10">
+      <div className="print-modal fixed inset-0 z-50 bg-ink/50 overflow-y-auto flex items-start justify-center p-10">
         <div className="max-w-3xl w-full bg-white rounded-xl p-16 shadow-2xl">
 
           {/* Action bar — hidden when printing */}
@@ -69,7 +69,7 @@ const PrintPreview: React.FC<Props> = ({
             <div className="flex items-center gap-3">
               <button
                 onClick={() => window.print()}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-900 text-white text-[12px] font-medium hover:bg-gray-700 transition-colors"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-ink text-white text-[12px] font-medium hover:bg-gray-700 transition-colors"
               >
                 <svg
                   className="w-4 h-4"
@@ -101,7 +101,7 @@ const PrintPreview: React.FC<Props> = ({
             <div className="flex items-start justify-between border-b border-gray-200 pb-6 mb-8">
               <div className="flex items-center gap-3">
                 {/* Simple My Voice SVG logo */}
-                <div className="w-9 h-9 rounded-lg bg-gray-900 flex items-center justify-center shrink-0">
+                <div className="w-9 h-9 rounded-lg bg-ink flex items-center justify-center shrink-0">
                   <svg
                     className="w-5 h-5 text-white"
                     fill="none"

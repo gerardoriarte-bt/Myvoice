@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { SCREENS } from '../screens';
 import { SavedVariation, Client, ReviewSession, ReviewItemFeedbackDetail } from '../types';
 import { reviewApi } from '../services/api';
 
@@ -20,7 +21,7 @@ const STATUS_LABELS: Record<string, { label: string; className: string }> = {
 const PLATFORM_COLORS: Record<string, string> = {
   'Instagram Post': 'bg-pink-50 text-pink-700',
   'Instagram Historia': 'bg-purple-50 text-purple-700',
-  'TikTok': 'bg-gray-900 text-white',
+  'TikTok': 'bg-ink text-white',
   'Email': 'bg-blue-50 text-blue-700',
   'WhatsApp': 'bg-green-50 text-green-700',
 };
@@ -141,14 +142,14 @@ export default function CollaborationHub({ savedVariations, clients, addNotifica
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <h2 className="text-[15px] font-semibold text-gray-900">Collaboration Hub</h2>
+          <h2 className="text-[20px] font-semibold text-[#1D1D1F] tracking-[-0.01em]">{SCREENS.collaboration.name}</h2>
           <p className="text-[12px] text-gray-500 mt-0.5">
             Crea sesiones de revisión, comparte links con clientes y cierra el bucle de aprobación.
           </p>
         </div>
         <button
           onClick={() => setIsCreating(v => !v)}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-900 text-white rounded-md text-[12px] font-medium hover:bg-gray-700 transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-ink text-white rounded-md text-[12px] font-medium hover:bg-gray-700 transition-colors"
         >
           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
@@ -243,7 +244,7 @@ export default function CollaborationHub({ savedVariations, clients, addNotifica
             <button
               onClick={handleCreate}
               disabled={!newTitle.trim() || selectedIds.size === 0 || isSaving}
-              className="px-4 py-1.5 bg-gray-900 text-white rounded-md text-[12px] font-medium hover:bg-gray-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              className="px-4 py-1.5 bg-ink text-white rounded-md text-[12px] font-medium hover:bg-gray-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {isSaving ? 'Creando...' : 'Crear y copiar link'}
             </button>

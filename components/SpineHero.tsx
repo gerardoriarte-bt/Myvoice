@@ -61,7 +61,7 @@ const SpineHero: React.FC<Props> = ({ spine, client }) => {
         </div>
       </div>
 
-      <div className="bg-black/20 backdrop-blur-sm px-7 py-5 border-t border-white/10">
+      <div className="bg-ink/20 backdrop-blur-sm px-7 py-5 border-t border-white/10">
         <div className="flex items-center gap-2 mb-3">
           <Layers className="w-3.5 h-3.5 text-white/50" />
           <span className="text-[10px] font-medium uppercase tracking-[0.2em] text-white/50">

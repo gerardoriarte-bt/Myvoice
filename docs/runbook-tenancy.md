@@ -23,7 +23,7 @@ Estas cosas dejan de funcionar a propósito. No son regresiones.
 | El rol era global (`ADMIN` / `CLIENT`) | El rol es por workspace (`OWNER` / `ADMIN` / `MEMBER`) |
 
 **Consecuencia operativa:** después del despliegue, un integrante nuevo del equipo no entra
-solo. Alguien con rol OWNER o ADMIN tiene que invitarlo desde la pestaña de miembros.
+solo. Alguien con rol OWNER o ADMIN tiene que invitarlo desde la pestaña **Equipo**.
 
 ## Secuencia de despliegue
 
@@ -211,7 +211,7 @@ En producción, la verificación mínima es manual:
 1. Entrar con un usuario de la agencia → ve sus workspaces en el selector de la barra lateral.
 2. Cambiar de workspace → la lista de marcas cambia por completo.
 3. Entrar con un usuario de empresa → ve solo las marcas de su empresa, sin selector.
-4. Invitar a un email nuevo → llega el enlace (o aparece en los logs) y al aceptarlo entra
+4. Invitar a un email nuevo desde **Equipo** → llega el enlace (o aparece en los logs) y al aceptarlo entra
    directo a ese workspace y a ningún otro.
 
 ## Rollback

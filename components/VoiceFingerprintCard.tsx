@@ -45,7 +45,7 @@ const VoiceFingerprintCard: React.FC<Props> = ({ fingerprint, computedAt, comput
           className={`w-full py-2 rounded-lg text-[12px] font-medium transition-colors border flex items-center justify-center gap-2 ${
             computing
               ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
-              : 'bg-gray-900 text-white border-gray-900 hover:bg-gray-800'
+              : 'bg-ink text-white border-gray-900 hover:bg-ink-hover'
           }`}
         >
           {computing ? <><Loader2 className="w-3.5 h-3.5 animate-spin" />Analizando…</> : <><Sparkles className="w-3.5 h-3.5" />Calcular fingerprint</>}
@@ -58,7 +58,7 @@ const VoiceFingerprintCard: React.FC<Props> = ({ fingerprint, computedAt, comput
   return (
     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
       <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-3">
-        <div className="w-9 h-9 rounded-lg bg-gray-900 flex items-center justify-center text-white shrink-0">
+        <div className="w-9 h-9 rounded-lg bg-ink flex items-center justify-center text-white shrink-0">
           <Fingerprint className="w-4 h-4" />
         </div>
         <div className="flex-1 min-w-0">

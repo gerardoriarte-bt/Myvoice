@@ -71,6 +71,9 @@
 
   /* Button Apple-style */
   .apple-btn-primary {
+    /* Mismo negro que el token `ink` de tailwind.config.js. Si cambia uno,
+       cambia el otro: son la misma decisión escrita dos veces porque esta
+       clase existía antes que el token. */
     background: #1D1D1F;
     color: white;
     border-radius: 980px;
@@ -81,7 +84,7 @@
     border: none;
     cursor: pointer;
   }
-  .apple-btn-primary:hover { background: #333; }
+  .apple-btn-primary:hover { background: #3A3A3C; }
   .apple-btn-primary:active { transform: scale(0.98); }
   .apple-btn-primary:disabled { background: #86868B; cursor: not-allowed; }
 

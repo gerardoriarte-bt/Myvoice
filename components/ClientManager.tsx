@@ -1,4 +1,5 @@
 import React from 'react';
+import { SCREENS } from '../screens';
 import { Check, Circle } from 'lucide-react';
 import { Client, ContentDNAProfile, BrandConfig, FeedbackExample, Platform, SavedVariation } from '../types';
 import TagInput from './TagInput';
@@ -328,7 +329,7 @@ const ClientManager: React.FC<ClientManagerProps> = ({
       {/* GLOBAL STRATEGY CATALOG SECTION */}
       {showGlobalSettings && !activeClientHub && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 animate-in fade-in duration-200">
-           <div className="absolute inset-0 bg-gray-900/40 backdrop-blur-sm" onClick={() => setShowGlobalSettings(false)}></div>
+           <div className="absolute inset-0 bg-ink/40 backdrop-blur-sm" onClick={() => setShowGlobalSettings(false)}></div>
            <div className="relative w-full max-w-4xl bg-white rounded-xl shadow-xl border border-gray-200 animate-in zoom-in-95 duration-300 max-h-[90vh] flex flex-col">
               <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200">
                 <div>
@@ -410,7 +411,7 @@ const ClientManager: React.FC<ClientManagerProps> = ({
       {/* REGISTRATION MODAL */}
       {isAddingClient && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 animate-in fade-in duration-200">
-           <div className="absolute inset-0 bg-gray-900/40 backdrop-blur-sm" onClick={() => setIsAddingClient(false)}></div>
+           <div className="absolute inset-0 bg-ink/40 backdrop-blur-sm" onClick={() => setIsAddingClient(false)}></div>
            <div className="relative w-full max-w-2xl bg-white rounded-xl shadow-xl border border-gray-200 animate-in zoom-in-95 duration-300">
               <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200">
                  <div>
@@ -449,7 +450,7 @@ const ClientManager: React.FC<ClientManagerProps> = ({
                 
                 <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
                    <button type="button" onClick={() => setIsAddingClient(false)} className="px-4 py-2 rounded-lg text-[13px] font-medium text-gray-600 hover:bg-gray-50 border border-transparent transition-colors">Cancelar</button>
-                   <button type="submit" className="px-4 py-2 rounded-lg text-[13px] font-medium bg-gray-900 text-white hover:bg-gray-800 transition-colors shadow-sm">Crear Cliente</button>
+                   <button type="submit" className="px-4 py-2 rounded-lg text-[13px] font-medium bg-ink text-white hover:bg-ink-hover transition-colors shadow-sm">Crear Cliente</button>
                 </div>
               </form>
            </div>
@@ -464,8 +465,8 @@ const ClientManager: React.FC<ClientManagerProps> = ({
            {/* Header Portfolio */}
            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
-                <h2 className="text-[20px] font-medium text-gray-900 tracking-tight">Clientes</h2>
-                <p className="text-gray-500 text-[13px] mt-0.5">Gestiona el ADN y las campañas de tus marcas</p>
+                <h2 className="text-[20px] font-semibold text-[#1D1D1F] tracking-[-0.01em]">{SCREENS.clients.name}</h2>
+                <p className="text-gray-500 text-[13px] mt-0.5">{SCREENS.clients.description}</p>
               </div>
               <div className="flex gap-3">
                 <button 
@@ -476,7 +477,7 @@ const ClientManager: React.FC<ClientManagerProps> = ({
                 </button>
                 <button 
                   onClick={() => setIsAddingClient(true)} 
-                  className="bg-gray-900 text-white px-4 py-2 rounded-lg text-[13px] font-medium shadow-sm hover:bg-gray-800 transition-colors"
+                  className="bg-ink text-white px-4 py-2 rounded-lg text-[13px] font-medium shadow-sm hover:bg-ink-hover transition-colors"
                 >
                   + Nuevo Cliente
                 </button>
@@ -532,7 +533,7 @@ const ClientManager: React.FC<ClientManagerProps> = ({
                           return (
                             <div className="flex items-center gap-1 mt-1.5">
                               {[0,1,2,3,4].map(i => (
-                                <div key={i} className={`w-4 h-1 rounded-full ${i < score ? 'bg-gray-900' : 'bg-gray-200'}`} />
+                                <div key={i} className={`w-4 h-1 rounded-full ${i < score ? 'bg-ink' : 'bg-gray-200'}`} />
                               ))}
                               <span className="text-[9px] text-gray-400 ml-1">ADN {score}/5</span>
                             </div>
@@ -562,7 +563,7 @@ const ClientManager: React.FC<ClientManagerProps> = ({
                       </p>
                       <button
                         onClick={() => setIsAddingClient(true)}
-                        className="mt-2 bg-gray-900 text-white px-4 py-2 rounded-lg text-[12px] font-medium hover:bg-black transition-colors shadow-sm"
+                        className="mt-2 bg-ink text-white px-4 py-2 rounded-lg text-[12px] font-medium hover:bg-ink transition-colors shadow-sm"
                       >
                         + Agregar primera marca
                       </button>
@@ -710,7 +711,7 @@ const ClientManager: React.FC<ClientManagerProps> = ({
                         <label className={`block w-full py-2 rounded-lg font-medium text-[12px] text-center cursor-pointer transition-colors border ${
                           uploadingGuideline
                             ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
-                            : 'bg-gray-900 text-white border-gray-900 hover:bg-gray-800'
+                            : 'bg-ink text-white border-gray-900 hover:bg-ink-hover'
                         }`}>
                            {uploadingGuideline ? (
                              <span className="inline-flex items-center gap-2">
@@ -794,7 +795,7 @@ const ClientManager: React.FC<ClientManagerProps> = ({
                           {clientDetailView === 'campaigns' && !showDnaForm && (
                             <button
                               onClick={() => { resetDnaForm(); setShowDnaForm(true); }}
-                              className="bg-gray-900 text-white px-4 py-2 rounded-lg text-[13px] font-medium shadow-sm hover:bg-gray-800 transition-colors"
+                              className="bg-ink text-white px-4 py-2 rounded-lg text-[13px] font-medium shadow-sm hover:bg-ink-hover transition-colors"
                             >
                               + Crear Campaña
                             </button>
@@ -1083,7 +1084,7 @@ const ClientManager: React.FC<ClientManagerProps> = ({
                                 </select>
                                 <div className="flex-1 flex gap-2">
                                   <input placeholder="Pegá el copy…" className="flex-1 px-3 py-2 bg-white border border-gray-200 rounded-lg text-gray-900 text-[12px] outline-none focus:border-gray-400 transition-colors" value={newFeedback.content} onChange={e => setNewFeedback({...newFeedback, content: e.target.value})} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addFeedback())} />
-                                  <button type="button" onClick={addFeedback} className="bg-gray-900 text-white px-4 rounded-lg font-medium text-[12px] hover:bg-black transition-colors">Añadir</button>
+                                  <button type="button" onClick={addFeedback} className="bg-ink text-white px-4 rounded-lg font-medium text-[12px] hover:bg-ink transition-colors">Añadir</button>
                                 </div>
                               </div>
                               <div className="grid grid-cols-1 gap-2 max-h-56 overflow-y-auto custom-scrollbar pr-1">
@@ -1107,7 +1108,7 @@ const ClientManager: React.FC<ClientManagerProps> = ({
                               <button onClick={() => setShowDnaForm(false)} className="px-4 py-2 rounded-lg text-[13px] font-medium text-gray-600 hover:bg-gray-50 border border-transparent transition-colors">
                                 Cancelar
                               </button>
-                              <button onClick={handleSaveDNA} className="px-6 py-2 bg-gray-900 text-white rounded-lg font-medium text-[13px] hover:bg-black shadow-sm transition-colors">
+                              <button onClick={handleSaveDNA} className="px-6 py-2 bg-ink text-white rounded-lg font-medium text-[13px] hover:bg-ink shadow-sm transition-colors">
                                 {editingProfileId ? 'Actualizar Campaña' : 'Guardar Campaña'}
                               </button>
                             </div>

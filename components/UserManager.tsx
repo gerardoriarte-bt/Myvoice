@@ -1,4 +1,5 @@
 import React from 'react';
+import { SCREENS } from '../screens';
 import { WorkspaceMember, WorkspaceInvite, WorkspaceRole, WORKSPACE_ROLE_LABELS } from '../types';
 import { workspaceApi } from '../services/api';
 
@@ -70,7 +71,7 @@ const UserManager: React.FC<UserManagerProps> = ({
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <header>
-        <h2 className="text-[22px] font-semibold text-[#1D1D1F] tracking-[-0.02em]">Miembros del workspace</h2>
+        <h2 className="text-[20px] font-semibold text-[#1D1D1F] tracking-[-0.01em]">{SCREENS.users.name}</h2>
         <p className="text-[13px] text-[#86868B] mt-1">
           Quién tiene acceso a <span className="text-[#1D1D1F] font-medium">{workspaceName}</span> y con qué permisos.
           Nadie entra por su dominio de email: el acceso se otorga acá.
@@ -109,7 +110,7 @@ const UserManager: React.FC<UserManagerProps> = ({
           <button
             type="submit"
             disabled={busy}
-            className="px-5 py-2.5 bg-[#1D1D1F] text-white rounded-[10px] text-[13px] font-medium hover:bg-black disabled:opacity-40 transition-colors"
+            className="px-5 py-2.5 bg-ink text-white rounded-[10px] text-[13px] font-medium hover:bg-ink disabled:opacity-40 transition-colors"
           >
             {busy ? 'Enviando…' : 'Enviar invitación'}
           </button>

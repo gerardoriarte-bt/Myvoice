@@ -183,7 +183,7 @@ const HomePage: React.FC<HomePageProps> = ({ onLoginSuccess }) => {
         className="sticky top-0 z-50 h-[52px] flex items-center px-8">
         <div className="max-w-6xl mx-auto w-full flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-[7px] bg-[#1D1D1F] flex items-center justify-center">
+            <div className="w-7 h-7 rounded-[7px] bg-ink flex items-center justify-center">
               <svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
               </svg>
@@ -309,7 +309,7 @@ const HomePage: React.FC<HomePageProps> = ({ onLoginSuccess }) => {
       {/* DEMO CARD */}
       <section style={{ background: 'white', borderTop: '1px solid rgba(0,0,0,0.07)' }} className="py-20">
         <div className="max-w-6xl mx-auto px-8">
-          <div className="rounded-2xl bg-[#1D1D1F] p-10 grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
+          <div className="rounded-2xl bg-ink p-10 grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
             <div className="space-y-4">
               <div className="text-[11px] font-semibold uppercase tracking-[0.1em] text-white/40">Output real del motor</div>
               <h3 className="text-[24px] font-semibold text-white tracking-[-0.02em] leading-snug">
@@ -344,7 +344,7 @@ const HomePage: React.FC<HomePageProps> = ({ onLoginSuccess }) => {
       <footer style={{ borderTop: '1px solid rgba(0,0,0,0.07)' }} className="py-10">
         <div className="max-w-6xl mx-auto px-8 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2.5">
-            <div className="w-5 h-5 rounded-[5px] bg-[#1D1D1F] flex items-center justify-center">
+            <div className="w-5 h-5 rounded-[5px] bg-ink flex items-center justify-center">
               <svg className="w-3 h-3 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
               </svg>

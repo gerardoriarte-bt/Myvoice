@@ -178,13 +178,13 @@ export default function HelpGuide() {
             { label: 'Generador', color: '#6366F1' },
             { label: 'Biblioteca', color: '#10B981' },
             { label: 'Colaboracion', color: '#EC4899' },
-            { label: 'Analytics', color: '#0071E3' },
+            { label: 'Métricas', color: '#0071E3' },
           ].map(b => <span key={b.label}><Badge color={b.color}>{b.label}</Badge></span>)}
         </div>
       </div>
 
       {/* ── 1. Generador de copy ── */}
-      <Section id="generador" title="1. Generador de copy" badge="Core" badgeColor="#6366F1" open={open === 'generador'} onToggle={() => toggle('generador')}>
+      <Section id="generador" title="1. Generar" badge="Core" badgeColor="#6366F1" open={open === 'generador'} onToggle={() => toggle('generador')}>
         <SectionHeader
           icon={<IconZap />}
           title="Generador de copy"
@@ -236,7 +236,7 @@ export default function HelpGuide() {
 
         <SubHead>Como usarlo</SubHead>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <Step n={1} title="Accede al historial" desc="Abre la pestana Historial. Las generaciones aparecen agrupadas por fecha, de la mas reciente a la mas antigua." />
+          <Step n={1} title="Accede al historial" desc="Abre la pestaña Historial. Las generaciones aparecen agrupadas por fecha, de la mas reciente a la mas antigua." />
           <Step n={2} title="Filtra por cliente" desc="Usa el filtro de cliente en la parte superior para ver solo las generaciones de una marca especifica." />
           <Step n={3} title="Expande una generacion" desc="Presiona en cualquier generacion para expandirla. Veras la espina de campana (concepto, angulos creativos, mensaje clave) y todas las variaciones generadas por canal." />
           <Step n={4} title="Restaura en el generador" desc="Presiona el boton Restaurar en el generador para cargar esa espina y sus variaciones de vuelta en el editor. Podes editarlas, bloquear partes y regenerar desde donde quedaste." />
@@ -248,10 +248,10 @@ export default function HelpGuide() {
       </Section>
 
       {/* ── 4. Biblioteca de copy ── */}
-      <Section id="biblioteca" title="4. Biblioteca de copy" badge="Biblioteca" badgeColor="#10B981" open={open === 'biblioteca'} onToggle={() => toggle('biblioteca')}>
+      <Section id="biblioteca" title="4. Biblioteca" badge="Biblioteca" badgeColor="#10B981" open={open === 'biblioteca'} onToggle={() => toggle('biblioteca')}>
         <SectionHeader
           icon={<IconBookmark />}
-          title="Biblioteca de copy"
+          title="Biblioteca"
           what="El repositorio central de todo el copy guardado. Organiza, filtra, etiqueta y gestiona las variaciones aprobadas de todos los clientes."
         />
 
@@ -269,11 +269,11 @@ export default function HelpGuide() {
         </Tip>
       </Section>
 
-      {/* ── 5. Collaboration Hub ── */}
-      <Section id="collab" title="5. Collaboration Hub" badge="Colaboracion" badgeColor="#EC4899" open={open === 'collab'} onToggle={() => toggle('collab')}>
+      {/* ── 5. Revisiones ── */}
+      <Section id="collab" title="5. Revisiones" badge="Colaboracion" badgeColor="#EC4899" open={open === 'collab'} onToggle={() => toggle('collab')}>
         <SectionHeader
           icon={<IconUsers />}
-          title="Collaboration Hub"
+          title="Revisiones"
           what="Crea sesiones de revision para compartir variaciones con el cliente via un link publico. El cliente aprueba o rechaza con comentarios sin necesitar cuenta en la plataforma."
         />
 
@@ -282,7 +282,7 @@ export default function HelpGuide() {
           <Step n={1} title="Crea una sesion de revision" desc="Desde la biblioteca, selecciona las variaciones que quieres enviar al cliente (checkbox), luego presiona Crear sesion de revision. Asignale un titulo y define la cantidad de dias de validez del link." />
           <Step n={2} title="Comparte el link publico" desc="Copia el link generado y enviaselo al cliente por el canal que prefieras (email, WhatsApp, Slack). El cliente puede acceder sin iniciar sesion." />
           <Step n={3} title="El cliente revisa" desc="El cliente ve cada variacion y puede aprobarla o rechazarla. Si rechaza, puede escribir un comentario explicando el motivo. Al terminar, ingresa su nombre para identificar quien reviso." />
-          <Step n={4} title="Consulta los resultados" desc="En el Collaboration Hub, abre la sesion para ver el resumen: cuantas variaciones fueron aprobadas, cuantas rechazadas y los motivos de rechazo por variacion." />
+          <Step n={4} title="Consulta los resultados" desc="En Revisiones, abre la sesion para ver el resumen: cuantas variaciones fueron aprobadas, cuantas rechazadas y los motivos de rechazo por variacion." />
           <Step n={5} title="Sincronizacion automatica con la biblioteca" desc="Las variaciones aprobadas por el cliente quedan marcadas automaticamente como aprobadas en la biblioteca central." />
         </div>
 
@@ -311,11 +311,11 @@ export default function HelpGuide() {
         </div>
       </Section>
 
-      {/* ── 7. Analytics ── */}
-      <Section id="analytics" title="7. Analytics" badge="Analytics" badgeColor="#0071E3" open={open === 'analytics'} onToggle={() => toggle('analytics')}>
+      {/* ── 7. Métricas ── */}
+      <Section id="analytics" title="7. Métricas" badge="Métricas" badgeColor="#0071E3" open={open === 'analytics'} onToggle={() => toggle('analytics')}>
         <SectionHeader
           icon={<IconBarChart />}
-          title="Analytics"
+          title="Métricas"
           what="Dashboard de metricas globales de produccion y aprobacion. Identifica que plataformas generan mas friccion y que clientes tienen mejor tasa de aprobacion."
         />
 
@@ -362,7 +362,7 @@ export default function HelpGuide() {
       </Section>
 
       {/* ── 9. Configuracion ── */}
-      <Section id="config" title="9. Configuracion" badge="Settings" badgeColor="#6E6E73" open={open === 'config'} onToggle={() => toggle('config')}>
+      <Section id="config" title="9. Configuración" badge="Settings" badgeColor="#6E6E73" open={open === 'config'} onToggle={() => toggle('config')}>
         <SectionHeader
           icon={<IconSettings />}
           title="Configuracion"
