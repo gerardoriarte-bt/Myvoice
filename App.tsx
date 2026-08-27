@@ -3,18 +3,19 @@ import React from 'react';
 import ParameterForm from './components/ParameterForm';
 import ResultsTable from './components/ResultsTable';
 import GenerationProgress from './components/GenerationProgress';
+import FailedChannelsPanel, { CanalFallido } from './components/FailedChannelsPanel';
 import { runMockGeneration } from './services/mockGeneration';
 import SavedManager from './components/SavedManager';
 import ClientManager from './components/ClientManager';
 import UserManager from './components/UserManager';
 import UserHeader from './components/UserHeader';
 import NotificationSystem, { Notification, NotificationType } from './components/NotificationSystem';
-import { CopyParameters, CopyVariation, Project, SavedVariation, BrandConfig, Client, User, Role, ContentDNAProfile } from './types';
+import { CopyParameters, CopyVariation, Project, SavedVariation, BrandConfig, Client, User, WorkspaceSummary, canManageWorkspace, ContentDNAProfile } from './types';
 import { VOICES, GOALS } from './constants';
 import HomePage from './components/HomePage';
 import AISettings from './components/AISettings';
 import HelpGuide from './components/HelpGuide';
-import { generationApi, clientApi, libraryApi, authApi, refineApi } from './services/api';
+import { generationApi, clientApi, libraryApi, authApi, workspaceApi, refineApi } from './services/api';
 
 import CollaborationHub from './components/CollaborationHub';
 import ReviewPortal from './components/ReviewPortal';
@@ -84,6 +85,8 @@ const App: React.FC = () => {
   const [progressSpineDone, setProgressSpineDone] = React.useState(false);
   const [progressChannelStatus, setProgressChannelStatus] = React.useState<Record<string, 'pending' | 'active' | 'done' | 'error'>>({});
   const [progressCoherenceStatus, setProgressCoherenceStatus] = React.useState<'pending' | 'active' | 'done' | 'error'>('pending');
+  const [progressChannelMeta, setProgressChannelMeta] = React.useState<Record<string, string>>({});
+  const [failedChannels, setFailedChannels] = React.useState<Record<string, CanalFallido>>({});
   const [projects, setProjects] = React.useState<Project[]>([]);
   const [savedVariations, setSavedVariations] = React.useState<SavedVariation[]>([]);
   const [clients, setClients] = React.useState<Client[]>([]);
@@ -98,7 +101,10 @@ const App: React.FC = () => {
   const [notifications, setNotifications] = React.useState<Notification[]>([]);
   const [loadingStep, setLoadingStep] = React.useState(0);
 
-  const isAdmin = currentUser?.role?.toUpperCase() === 'ADMIN' || currentUser?.role === 'Admin';
+  // El rol ya no es global: es el rol del usuario EN EL WORKSPACE ACTIVO, y
+  // cambia al cambiar de workspace.
+  const isAdmin = canManageWorkspace(currentUser?.role);
+  const workspaces: WorkspaceSummary[] = currentUser?.workspaces || [];
   const activeClient = clients.find(c => c.id === activeClientId);
 
   const loadingMessages = [
@@ -124,18 +130,56 @@ const App: React.FC = () => {
     setCurrentUser(null);
   };
 
+  /**
+   * Cambiar de workspace emite un token nuevo: el workspace activo viaja
+   * firmado y el backend lo vuelve a validar contra la membresía en cada
+   * request. Después hay que recargar los datos, porque todo lo que está en
+   * memoria pertenece al workspace anterior.
+   */
+  const handleSwitchWorkspace = async (workspaceId: string) => {
+    if (!workspaceId || workspaceId === currentUser?.workspaceId) return;
+    try {
+      const session = await authApi.switchWorkspace(workspaceId);
+      localStorage.setItem('vt_token', session.token);
+      localStorage.setItem('vt_user', JSON.stringify(session.user));
+      setCurrentUser(session.user);
+      setVariations([]);
+      setSpine(null);
+      setCoherence(null);
+      setActiveClientId('');
+      setIsDataReady(false);
+      const [apiClients, apiSaved, apiProjects] = await Promise.all([
+        clientApi.list(),
+        libraryApi.listSaved(),
+        libraryApi.listProjects(),
+      ]);
+      setClients(apiClients);
+      setSavedVariations(apiSaved);
+      setProjects(apiProjects);
+      setDnaProfiles(apiClients.flatMap((c: any) => c.dnaProfiles || []));
+      setIsDataReady(true);
+      addNotification(`Ahora estás en ${session.user.workspaceName}`, 'success');
+    } catch (err) {
+      addNotification('No se pudo cambiar de workspace', 'error');
+    }
+  };
+
   React.useEffect(() => {
     const token = localStorage.getItem('vt_token');
     const storedUser = localStorage.getItem('vt_user');
     if (token && storedUser) {
       try {
-        const user = JSON.parse(storedUser);
-        const normalizedUser = {
-          ...user,
-          role: user.role === 'ADMIN' ? 'Admin' : (user.role === 'CLIENT' ? 'Cliente' : user.role)
-        };
-        setCurrentUser(normalizedUser);
+        setCurrentUser(JSON.parse(storedUser));
         setIsAuthenticated(true);
+        // La sesión guardada puede estar desactualizada (membresía revocada,
+        // rol cambiado). El backend manda la versión vigente.
+        authApi.me()
+          .then(fresh => {
+            localStorage.setItem('vt_token', fresh.token);
+            localStorage.setItem('vt_user', JSON.stringify(fresh.user));
+            setCurrentUser(fresh.user);
+          })
+          .catch(() => {/* apiRequest ya dispara vt:session-expired en 401 */});
       } catch {
         localStorage.removeItem('vt_token');
         localStorage.removeItem('vt_user');
@@ -261,6 +305,8 @@ const App: React.FC = () => {
     setProgressPlatforms(platforms);
     setProgressSpineDone(false);
     setProgressChannelStatus(Object.fromEntries(platforms.map(p => [p, 'pending'])));
+    setProgressChannelMeta({});
+    setFailedChannels({});
     setProgressCoherenceStatus(platforms.length >= 2 ? 'pending' : 'done');
 
     try {
@@ -301,12 +347,27 @@ const App: React.FC = () => {
           collected.push(...fresh);
           setVariations([...collected]);
           setProgressChannelStatus(prev => ({ ...prev, [event.payload.platform]: 'done' }));
+          setProgressChannelMeta(prev => { const next = { ...prev }; delete next[event.payload.platform]; return next; });
         } else if (event.type === 'channel-error') {
           setProgressChannelStatus(prev => ({ ...prev, [event.payload.platform]: 'error' }));
+          // El panel de canales fallidos sobrevive al fin de la generación; la
+          // notificación se va sola y el canal quedaría invisible.
+          setFailedChannels(prev => ({
+            ...prev,
+            [event.payload.platform]: {
+              message: event.payload.message,
+              terminal: Boolean(event.payload.terminal),
+            },
+          }));
           addNotification(`Error en ${event.payload.platform}: ${event.payload.message}`, 'error');
           if (event.payload.message.includes('ALERTA_CREDITOS')) {
             throw new Error(event.payload.message);
           }
+        } else if (event.type === 'channel-retry') {
+          setProgressChannelMeta(prev => ({
+            ...prev,
+            [event.payload.platform]: `Reintentando ${event.payload.intento}/${event.payload.intentosMax}…`,
+          }));
         } else if (event.type === 'coherence') {
           setCoherence(event.payload);
           setProgressCoherenceStatus('done');
@@ -354,16 +415,30 @@ const App: React.FC = () => {
 
   const handleRegenerateChannel = async (platform: string) => {
     if (!lastParams || !spine) return;
-    const profile = dnaProfiles.find(p => p.clientId === lastParams.clientId);
+    // Mismo criterio que handleGenerate: el brief elegido manda. El fallback por
+    // clientId toma el PRIMER brief de la marca, y reintentar un canal contra el
+    // brief equivocado es peor que no reintentarlo.
+    const profile =
+      (lastParams.dnaProfileId && dnaProfiles.find(p => p.id === lastParams.dnaProfileId)) ||
+      dnaProfiles.find(p => p.clientId === lastParams.clientId);
     if (!profile) return;
     try {
       const result = await generationApi.regenerateChannel(profile.id, platform, spine, lastParams);
       if (result?.variations?.length) {
         setVariations(prev => [...prev.filter(v => v.platform !== platform), ...result.variations]);
+        setFailedChannels(prev => { const next = { ...prev }; delete next[platform]; return next; });
+        setProgressChannelStatus(prev => ({ ...prev, [platform]: 'done' }));
         addNotification(`Canal ${platform} regenerado`, 'success');
+      } else {
+        setFailedChannels(prev => ({
+          ...prev,
+          [platform]: { message: `${platform} volvió a no devolver copy.`, terminal: false },
+        }));
       }
-    } catch {
-      addNotification(`Error al regenerar ${platform}`, 'error');
+    } catch (err: any) {
+      const mensaje = err?.message || `Error al regenerar ${platform}`;
+      setFailedChannels(prev => ({ ...prev, [platform]: { message: mensaje, terminal: false } }));
+      addNotification(mensaje, 'error');
     }
   };
 
@@ -465,15 +540,12 @@ const App: React.FC = () => {
   }
 
   if (isAuthenticated && currentUser && !isAdmin) {
-    const myVariations = currentUser.clientId
-      ? savedVariations.filter(v => v.clientId === currentUser.clientId)
-      : savedVariations;
     return (
       <>
         <NotificationSystem notifications={notifications} onDismiss={dismissNotification} />
         <ClientPortal
           currentUser={currentUser}
-          savedVariations={myVariations}
+          savedVariations={savedVariations}
           clients={clients}
           onLogout={handleLogout}
           isLoading={!isDataReady}
@@ -554,9 +626,24 @@ const App: React.FC = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
               </svg>
             </div>
-            <div>
+            <div className="min-w-0">
               <div className="text-[13px] font-semibold text-[#1D1D1F] tracking-[-0.01em] leading-none">My Voice</div>
-              <div className="text-[10px] text-[#86868B] mt-0.5 leading-none">{currentUser?.workspaceName || 'Workspace'}</div>
+              {workspaces.length > 1 ? (
+                <select
+                  aria-label="Cambiar de workspace"
+                  className="mt-0.5 -ml-1 max-w-[140px] truncate bg-transparent text-[10px] text-[#86868B] leading-none outline-none cursor-pointer hover:text-[#1D1D1F] focus-visible:ring-1 focus-visible:ring-[#1D1D1F] rounded"
+                  value={currentUser?.workspaceId || ''}
+                  onChange={e => handleSwitchWorkspace(e.target.value)}
+                >
+                  {workspaces.map(ws => (
+                    <option key={ws.id} value={ws.id}>{ws.name}</option>
+                  ))}
+                </select>
+              ) : (
+                <div className="text-[10px] text-[#86868B] mt-0.5 leading-none truncate">
+                  {currentUser?.workspaceName || 'Workspace'}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -645,11 +732,19 @@ const App: React.FC = () => {
                     selectedPlatforms={progressPlatforms}
                     spineDone={progressSpineDone}
                     channelStatus={progressChannelStatus}
+                    channelMeta={progressChannelMeta}
                     coherenceStatus={
                       progressPlatforms.every(p => progressChannelStatus[p] === 'done' || progressChannelStatus[p] === 'error')
                         ? (coherence ? 'done' : 'active')
                         : 'pending'
                     }
+                  />
+                )}
+                {Object.keys(failedChannels).length > 0 && (
+                  <FailedChannelsPanel
+                    canales={failedChannels}
+                    onReintentar={handleRegenerateChannel}
+                    disabled={isLoading || !spine}
                   />
                 )}
                 {variations.length > 0 ? (
@@ -781,38 +876,36 @@ const App: React.FC = () => {
             />
           )}
           {activeTab === 'users' && isAdmin && (
-            <UserManager 
-              users={users} 
-              clients={clients} 
-              onAdd={async u => {
-                try {
-                  await authApi.register({ ...u, password: 'password123' });
-                  const updatedUsers = await authApi.list();
-                  setUsers(updatedUsers);
-                  addNotification('Miembro del equipo añadido (con contraseña temporal)', 'success');
-                } catch (err) {
-                  addNotification('Error al añadir miembro', 'error');
-                }
-              }} 
-              onUpdate={(id, u) => {
-                setUsers(prev => prev.map(usr => usr.id === id ? {...usr, ...u} : usr));
-              }} 
-              onRemove={async id => {
-                if (window.confirm('¿Eliminar este acceso?')) {
-                  try {
-                    await authApi.delete(id);
-                    setUsers(prev => prev.filter(usr => usr.id !== id));
-                    addNotification('Acceso eliminado', 'success');
-                  } catch (err) {
-                    addNotification('Error al eliminar acceso', 'error');
-                  }
-                }
-              }} 
+            <UserManager
+              members={users}
+              workspaceName={currentUser?.workspaceName || 'este workspace'}
+              currentUserId={currentUser?.id}
+              onInvite={async (email, role) => {
+                const result = await workspaceApi.invite(email, role);
+                setUsers(await workspaceApi.members());
+                addNotification(
+                  result.added
+                    ? `${email} ya tenía cuenta: quedó agregado al workspace`
+                    : `Invitación enviada a ${email}`,
+                  'success'
+                );
+              }}
+              onChangeRole={async (userId, role) => {
+                await workspaceApi.updateMemberRole(userId, role);
+                setUsers(await workspaceApi.members());
+                addNotification('Rol actualizado', 'success');
+              }}
+              onRemove={async userId => {
+                if (!window.confirm('¿Quitar a esta persona del workspace?')) return;
+                await workspaceApi.removeMember(userId);
+                setUsers(await workspaceApi.members());
+                addNotification('Miembro removido del workspace', 'success');
+              }}
             />
           )}
           {activeTab === 'saved' && (
             <SavedManager 
-              saved={currentUser?.role === 'CLIENT' && currentUser?.clientId ? savedVariations.filter(v => v.clientId === currentUser?.clientId) : savedVariations} 
+              saved={savedVariations} 
               projects={projects} 
               clients={clients} 
               onRemove={async id => {

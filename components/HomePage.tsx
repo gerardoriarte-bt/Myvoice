@@ -95,7 +95,12 @@ const FEATURES = [
   },
 ];
 
+/** Token de invitación que viaja en el enlace del email: /?invite=<token>. */
+const readInviteToken = () =>
+  new URLSearchParams(window.location.search).get('invite') || undefined;
+
 const LoginForm: React.FC<{ onLoginSuccess: (user: any, token: string) => void }> = ({ onLoginSuccess }) => {
+  const inviteToken = readInviteToken();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -107,7 +112,7 @@ const LoginForm: React.FC<{ onLoginSuccess: (user: any, token: string) => void }
     setError('');
     try {
       const data = await authApi.login({ email, password });
-      onLoginSuccess({ ...data.user, role: data.user.role === 'ADMIN' ? 'Admin' : 'Cliente' }, data.token);
+      onLoginSuccess(data.user, data.token);
     } catch (err: any) {
       setError(err.message || 'Credenciales incorrectas');
     } finally {
@@ -129,8 +134,8 @@ const LoginForm: React.FC<{ onLoginSuccess: (user: any, token: string) => void }
             if (!cr.credential) return;
             setIsLoading(true); setError('');
             try {
-              const data = await authApi.googleLogin(cr.credential);
-              onLoginSuccess({ ...data.user, role: data.user.role === 'ADMIN' ? 'Admin' : 'Cliente' }, data.token);
+              const data = await authApi.googleLogin(cr.credential, inviteToken);
+              onLoginSuccess(data.user, data.token);
             } catch (err: any) {
               setError(err.message || 'Error con Google');
             } finally { setIsLoading(false); }

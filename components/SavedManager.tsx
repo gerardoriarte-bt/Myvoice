@@ -473,6 +473,20 @@ const SavedManager: React.FC<SavedManagerProps> = ({
                         <div className="min-w-0">
                           <p className="text-[12px] font-medium text-gray-900 leading-tight truncate">{v.platform}</p>
                           <p className="text-[11px] text-gray-500 mt-0.5">{v.type}</p>
+                          {(v.slotLabel || v.slot) && (
+                            <p className="text-[10px] text-gray-400 mt-0.5 flex items-center gap-1 flex-wrap">
+                              <span className="uppercase tracking-wide">{v.slotLabel || v.slot}</span>
+                              {typeof v.variationIndex === 'number' && <span>#{v.variationIndex}</span>}
+                              {v.slotInferred && (
+                                <span
+                                  className="px-1 py-px rounded bg-amber-50 text-amber-700 border border-amber-200 normal-case"
+                                  title="Slot deducido por el backfill heurístico, no informado por el motor"
+                                >
+                                  inferido
+                                </span>
+                              )}
+                            </p>
+                          )}
                         </div>
                       </div>
                     </td>

@@ -38,7 +38,19 @@ const StageRow: React.FC<{ stage: Stage }> = ({ stage }) => {
       <div className="shrink-0">{stage.icon}</div>
       <div className="flex-1 min-w-0 flex items-center gap-2">
         <span className="text-[12px] font-medium truncate">{stage.label}</span>
-        {stage.meta && <span className="text-[10px] opacity-70 truncate">{stage.meta}</span>}
+        {stage.meta && (
+          <span
+            className={`text-[10px] truncate ${
+              // Un backoff de 8 s se ve idéntico a un cuelgue si el texto no
+              // cambia de color: el reintento va en ámbar, no en gris.
+              stage.status === 'active' && /Reintentando/i.test(stage.meta)
+                ? 'text-amber-600 font-medium'
+                : 'opacity-70'
+            }`}
+          >
+            {stage.meta}
+          </span>
+        )}
       </div>
       <div className="w-5 h-5 rounded-full border border-current/30 flex items-center justify-center shrink-0">
         {indicator}
