@@ -27,7 +27,7 @@ con el consumo medido y facturable.
 
 | # | Iniciativa | Estado | Detalle |
 |---|---|---|---|
-| H1.A | **Multi-tenant real** — aislamiento por workspace, alta de tenants sin deploy, white-label | A0 y A1 implementados, **criterio verificado** (`verify:isolation` 27/27) y secuencia de migración ensayada de punta a punta contra base descartable. Sin desplegar · A2 pendiente | [plan](./plan-h1-multitenant-motor.md) · [runbook](./runbook-tenancy.md) · [oráculo](./oraculo-h1.md) |
+| H1.A | **Multi-tenant real** — aislamiento por workspace, alta de tenants sin deploy, white-label | A0 y A1 implementados, **criterio verificado** (`verify:isolation` 27/27) y secuencia de migración ensayada de punta a punta contra base descartable. Sin desplegar · A2 en diseño (nivel 1) | [plan](./plan-h1-multitenant-motor.md) · [A2](./plan-a2-whitelabel.md) · [runbook](./runbook-tenancy.md) · [oráculo](./oraculo-h1.md) |
 | H1.B | **Motor serio** — telemetría de costo, cuota real, resiliencia, evals | B0–B3 implementados y **los cuatro criterios verificados** en el ensayo: B0 (`/analytics/usage` con costo real), B1 (`UsagePeriod` por periodo, periodo vencido no cuenta), B2 (`verify:resiliencia` 20/20), B3 (slot persistido y backfilleado). Sin desplegar. B4 pendiente (ver E2) | [plan](./plan-h1-multitenant-motor.md) · [runbook](./runbook-mejoras-h1.md) · [oráculo](./oraculo-h1.md) |
 | H1.C | **Onboarding de marca en 5 minutos** — ingesta de ADN desde URL / redes, no solo PDF | Pendiente | Reduce el costo de dar de alta una marca nueva de una sesión con el equipo a pegar un link. Depende de H1.A. |
 
@@ -77,6 +77,11 @@ Sin esto, nada de lo anterior aguanta escala. No son features, son condiciones.
 
 ## Cómo usar este documento
 
-1. Cada iniciativa que se aborda obtiene su propio `docs/plan-<id>.md` con fases, archivos y criterios de aceptación.
-2. El estado se actualiza acá, no en el plan detallado.
-3. Un horizonte no se cierra por fecha sino por su criterio de salida.
+1. **El diseño va primero y vive en `design/MyVoice_Engine.pen`.** Todo avance, mejora o
+   funcionalidad nueva se diseña y se valida ahí antes de escribir una línea de código.
+2. Cada iniciativa que se aborda obtiene su propio `docs/plan-<id>.md`, escrito en **dos
+   niveles**: nivel 1 (qué ve el usuario, se resuelve en el `.pen`) y nivel 2 (cómo se
+   construye: fases, archivos y criterios de aceptación). El nivel 2 no arranca con decisiones
+   de experiencia abiertas.
+3. El estado se actualiza acá, no en el plan detallado.
+4. Un horizonte no se cierra por fecha sino por su criterio de salida.
