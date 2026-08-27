@@ -466,7 +466,7 @@ const ClientManager: React.FC<ClientManagerProps> = ({
            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
                 <h2 className="text-[20px] font-semibold text-[#1D1D1F] tracking-[-0.01em]">{SCREENS.clients.name}</h2>
-                <p className="text-gray-500 text-[13px] mt-0.5">Gestiona el ADN y las campañas de tus marcas</p>
+                <p className="text-gray-500 text-[13px] mt-0.5">{SCREENS.clients.description}</p>
               </div>
               <div className="flex gap-3">
                 <button 

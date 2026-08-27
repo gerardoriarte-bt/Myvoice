@@ -312,7 +312,7 @@ const SavedManager: React.FC<SavedManagerProps> = ({
             </div>
             <div>
               <h2 className="text-[20px] font-semibold text-[#1D1D1F] tracking-[-0.01em]">{SCREENS.saved.name}</h2>
-              <p className="text-[12px] text-gray-500 mt-0.5">{readOnly ? 'Centro de control de marca' : 'Archivo estratégico global'}</p>
+              <p className="text-[12px] text-gray-500 mt-0.5">{SCREENS.saved.description}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
