@@ -26,9 +26,11 @@
  */
 
 import { PrismaClient, WorkspaceRole } from '@prisma/client';
+import { Reporte } from './lib/reporte.js';
 
 const prisma = new PrismaClient();
 const APPLY = process.argv.includes('--apply');
+const reporte = new Reporte('backfill-tenancy', APPLY);
 
 const slugify = (name: string) =>
   name
@@ -232,18 +234,43 @@ async function main() {
   }, {});
   for (const [table, count] of Object.entries(byTable)) console.log(`  · ${table}: ${count}`);
 
+  reporte
+    .leidas('Workspace', workspaces.length)
+    .leidas('User', users.length)
+    .leidas('Client', clients.length)
+    .leidas('Project', projects.length)
+    .leidas('ReviewSession', reviewSessions.length)
+    .leidas('GenerationPreset', presets.length)
+    .planea('Workspace creados', plan.createWorkspaces.length + (createdFallback ? 1 : 0))
+    .planea('Client movidos', plan.moveClients.length)
+    .planea('Membership', plan.memberships.length)
+    .planea('huérfanos reasignados', plan.orphans.filter(o => o.table !== 'Client').length)
+    .planea('User.workspaceId activo', plan.activeWorkspace.length)
+    .saltea('usuarios sin workspace ni marca (hay que invitarlos a mano)', plan.unassignedUsers.length);
+
+  if (plan.unassignedUsers.length > 0) {
+    reporte.advierte(
+      `${plan.unassignedUsers.length} usuarios quedan sin acceso a ningún workspace: ` +
+      plan.unassignedUsers.map(u => u.email).join(', ')
+    );
+  }
+
   if (plan.unassignedUsers.length > 0) {
     console.log(`\n⚠  Usuarios que quedan SIN acceso (${plan.unassignedUsers.length}) — hay que invitarlos a mano:`);
     for (const u of plan.unassignedUsers) console.log(`  · ${u.email} (rol legacy: ${u.role})`);
   }
 
   if (!APPLY) {
-    console.log('\nNada se escribió. Volvé a correr con --apply para aplicarlo.\n');
+    console.log('\nNada se escribió. Volvé a correr con --apply para aplicarlo.');
+    reporte.cierra();
     return;
   }
 
   // ---- aplicar ---------------------------------------------------------
   const realId = new Map<string, string>();
+  const escrito = {
+    workspaces: 0, clients: 0, memberships: 0, huerfanos: 0, activos: 0,
+  };
 
   await prisma.$transaction(async tx => {
     if (createdFallback) {
@@ -251,6 +278,7 @@ async function main() {
         data: { name: fallback.name, slug: fallback.slug, plan: 'agency' },
       });
       realId.set(fallback.id, created.id);
+      escrito.workspaces++;
     }
 
     for (const w of plan.createWorkspaces) {
@@ -258,12 +286,14 @@ async function main() {
         data: { name: w.name, slug: w.slug, plan: 'company' },
       });
       realId.set(w.id, created.id);
+      escrito.workspaces++;
     }
 
     const resolve = (id: string) => realId.get(id) ?? id;
 
     for (const c of plan.moveClients) {
       await tx.client.update({ where: { id: c.clientId }, data: { workspaceId: resolve(c.to) } });
+      escrito.clients++;
     }
 
     for (const m of plan.memberships) {
@@ -272,6 +302,7 @@ async function main() {
         create: { userId: m.userId, workspaceId: resolve(m.workspaceId), role: m.role },
         update: { role: m.role },
       });
+      escrito.memberships++;
     }
 
     for (const o of plan.orphans) {
@@ -280,14 +311,24 @@ async function main() {
       if (o.table === 'Project') await tx.project.update({ where: { id: o.id }, data: target });
       if (o.table === 'ReviewSession') await tx.reviewSession.update({ where: { id: o.id }, data: target });
       if (o.table === 'GenerationPreset') await tx.generationPreset.update({ where: { id: o.id }, data: target });
+      escrito.huerfanos++;
     }
 
     for (const a of plan.activeWorkspace) {
       await tx.user.update({ where: { id: a.userId }, data: { workspaceId: resolve(a.workspaceId) } });
+      escrito.activos++;
     }
   }, { timeout: 120_000 });
 
-  console.log('\n✓ Backfill aplicado. Ahora sí podés correr la migración 20260826000001_workspace_required.\n');
+  reporte
+    .escribio('Workspace creados', escrito.workspaces)
+    .escribio('Client movidos', escrito.clients)
+    .escribio('Membership', escrito.memberships)
+    .escribio('huérfanos reasignados', escrito.huerfanos)
+    .escribio('User.workspaceId activo', escrito.activos);
+
+  console.log('\n✓ Backfill aplicado. Ahora sí podés correr la migración 20260826000001_workspace_required.');
+  reporte.cierra();
 }
 
 main()

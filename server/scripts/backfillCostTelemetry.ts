@@ -20,9 +20,11 @@
  */
 
 import { PrismaClient } from '@prisma/client';
+import { Reporte } from './lib/reporte.js';
 
 const prisma = new PrismaClient();
 const APPLY = process.argv.includes('--apply');
+const reporte = new Reporte('backfill-telemetria', APPLY);
 
 interface UsageEnJson {
   promptTokens?: number;
@@ -115,6 +117,13 @@ async function main() {
   console.log(`Filas con desglose por etapa: ${conStage}`);
   console.log(`Filas a las que además se les completan tokens: ${conTokens}`);
 
+  reporte
+    .leidas('GenerationLog (costUsd NULL)', filas.length)
+    .planea('GenerationLog.telemetria', recuperables.length)
+    .planea('GenerationLog.tokens', conTokens)
+    .saltea('sin usage en outputJson (previas a pricing.ts)', sinUsage.length)
+    .saltea('outputJson nulo o no-objeto', sinOutput.length);
+
   console.log(`\nMuestra (primeras ${Math.min(10, recuperables.length)}):`);
   for (const r of recuperables.slice(0, 10)) {
     const fecha = r.createdAt.toISOString().slice(0, 10);
@@ -126,14 +135,16 @@ async function main() {
   }
 
   if (sinWorkspace > 0) {
-    console.log(
-      `\n⚠  ${sinWorkspace} filas de GenerationLog con workspaceId en NULL. Debería ser 0: ` +
-      `lo rellena la migración 20260827000000_cost_quota_slot. Revisar antes de ponerle NOT NULL.`
-    );
+    const aviso =
+      `${sinWorkspace} filas de GenerationLog con workspaceId en NULL. Debería ser 0: ` +
+      `lo rellena la migración 20260827000000_cost_quota_slot. Revisar antes de ponerle NOT NULL.`;
+    console.log(`\n⚠  ${aviso}`);
+    reporte.advierte(aviso);
   }
 
   if (!APPLY) {
-    console.log('\nNada se escribió. Volvé a correr con --apply para aplicarlo.\n');
+    console.log('\nNada se escribió. Volvé a correr con --apply para aplicarlo.');
+    reporte.cierra();
     return;
   }
 
@@ -158,8 +169,13 @@ async function main() {
     { timeout: 120_000 }
   );
 
+  reporte
+    .escribio('GenerationLog.telemetria', recuperables.length)
+    .escribio('GenerationLog.tokens', conTokens);
+
   console.log(`\n✓ Backfill aplicado sobre ${recuperables.length} filas. ` +
-    `Las ${sinUsage.length + sinOutput.length} restantes quedan en NULL: no hay dato de dónde sacarlo.\n`);
+    `Las ${sinUsage.length + sinOutput.length} restantes quedan en NULL: no hay dato de dónde sacarlo.`);
+  reporte.cierra();
 }
 
 main()

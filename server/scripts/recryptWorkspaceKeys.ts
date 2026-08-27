@@ -20,6 +20,7 @@
 import dotenv from 'dotenv';
 import { PrismaClient } from '@prisma/client';
 import { decryptSecret, encryptSecret, isEncrypted, secretFingerprint } from '../src/lib/crypto.js';
+import { Reporte } from './lib/reporte.js';
 
 // Prisma carga `.env` por su cuenta para DATABASE_URL, pero ENCRYPTION_KEY no
 // llega sola: sin esta línea el script falla contra una base bien configurada.
@@ -27,6 +28,7 @@ dotenv.config();
 
 const prisma = new PrismaClient();
 const APPLY = process.argv.includes('--apply');
+const reporte = new Reporte('recrypt-keys', APPLY);
 
 type Fila = {
   id: string;
@@ -68,6 +70,12 @@ async function main() {
   console.log(`  · texto plano:  ${enPlano.length}`);
   console.log(`  · ilegibles:    ${ilegibles.length}\n`);
 
+  reporte
+    .leidas('Workspace con aiApiKey', workspaces.length)
+    .planea('Workspace.aiApiKey recifrada', enPlano.length)
+    .saltea('ya cifradas (no se tocan)', yaCifradas.length)
+    .saltea('ilegibles con la ENCRYPTION_KEY actual', ilegibles.length);
+
   if (yaCifradas.length > 0) {
     console.log('Ya cifradas (no se tocan):');
     for (const w of yaCifradas) console.log(`  ✓ ${w.slug}  [${w.aiProvider ?? 'sin provider'}]  huella ${w.huella}`);
@@ -86,17 +94,24 @@ async function main() {
   if (ilegibles.length > 0) {
     console.error('✗ Filas cifradas que NO se pueden descifrar con la ENCRYPTION_KEY actual:');
     for (const w of ilegibles) console.error(`  · ${w.slug}  [${w.aiProvider ?? 'sin provider'}]  ${w.motivo}`);
-    console.error('\nRevisá que ENCRYPTION_KEY sea la misma con la que se cifraron. No se escribió nada.\n');
+    console.error('\nRevisá que ENCRYPTION_KEY sea la misma con la que se cifraron. No se escribió nada.');
+    reporte.advierte(
+      `${ilegibles.length} filas con prefijo v1: que no abren con la ENCRYPTION_KEY actual: ` +
+      ilegibles.map(w => w.slug).join(', ')
+    );
+    reporte.cierra();
     process.exit(1);
   }
 
   if (!APPLY) {
-    console.log('Nada se escribió. Volvé a correr con --apply para aplicarlo.\n');
+    console.log('Nada se escribió. Volvé a correr con --apply para aplicarlo.');
+    reporte.cierra();
     return;
   }
 
   if (enPlano.length === 0) {
-    console.log('No hay nada que recifrar.\n');
+    console.log('No hay nada que recifrar.');
+    reporte.cierra();
     return;
   }
 
@@ -116,6 +131,7 @@ async function main() {
       if (count === 0) {
         omitidas++;
         console.log(`  ~ ${w.slug}: cambió mientras corría el script, se omite`);
+        reporte.advierte(`${w.slug}: la clave cambió mientras corría el script, no se recifró.`);
         continue;
       }
       recifradas++;
@@ -140,9 +156,15 @@ async function main() {
     where: { aiApiKey: { not: null }, NOT: { aiApiKey: { startsWith: 'v1:' } } },
   });
 
+  reporte.escribio('Workspace.aiApiKey recifrada', recifradas);
+  if (residuo > 0) {
+    reporte.advierte(`Quedan ${residuo} claves en texto plano después del recifrado. Debería ser 0.`);
+  }
+
   console.log(`\n✓ Recifradas ${recifradas}, omitidas ${omitidas}. Quedan ${residuo} en texto plano.`);
   console.log('Verificación:');
-  console.log('  SELECT count(*) FROM "Workspace" WHERE "aiApiKey" IS NOT NULL AND "aiApiKey" NOT LIKE \'v1:%\';  -- debe dar 0\n');
+  console.log('  SELECT count(*) FROM "Workspace" WHERE "aiApiKey" IS NOT NULL AND "aiApiKey" NOT LIKE \'v1:%\';  -- debe dar 0');
+  reporte.cierra();
 }
 
 main()

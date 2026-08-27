@@ -37,9 +37,11 @@
 import { PrismaClient } from '@prisma/client';
 import { getChannelSpec } from '../src/channels/registry.js';
 import { SlotSpec } from '../src/channels/types.js';
+import { Reporte } from './lib/reporte.js';
 
 const prisma = new PrismaClient();
 const APPLY = process.argv.includes('--apply');
+const reporte = new Reporte('backfill-slots', APPLY);
 
 type Confianza = 'alta' | 'media' | 'baja';
 
@@ -197,8 +199,14 @@ async function main() {
   console.log(`Filas con slot IS NULL: ${pendientes.length}`);
   console.log(`Deducidas: ${aEscribir.length}   ·   Sin deducir (quedan en NULL): ${sinDeducir.length}\n`);
 
+  reporte
+    .leidas('SavedVariation (slot NULL)', pendientes.length)
+    .planea('SavedVariation.slot inferido', aEscribir.length)
+    .saltea('sin slot deducible (quedan en NULL)', sinDeducir.length);
+
   if (pendientes.length === 0) {
-    console.log('No hay nada que backfillear.\n');
+    console.log('No hay nada que backfillear.');
+    reporte.cierra();
     return;
   }
 
@@ -224,6 +232,10 @@ async function main() {
 
   const ambiguas = aEscribir.filter(d => d.confianza !== 'alta');
   if (ambiguas.length > 0) {
+    reporte.advierte(
+      `${ambiguas.length} filas deducidas con confianza media o baja. Todas quedan con ` +
+      `slotInferred = true; revisar a mano con la consulta de auditoría.`
+    );
     console.log(`\nAmbiguas — revisar a mano después de aplicar (${ambiguas.length}):`);
     for (const d of ambiguas) {
       console.log(`  · [${d.confianza}] ${d.platform} → ${d.slot!.id}  (${d.chars} car / ${d.words} pal)`);
@@ -239,7 +251,8 @@ async function main() {
   }
 
   if (!APPLY) {
-    console.log('\nNada se escribió. Volvé a correr con --apply para aplicarlo.\n');
+    console.log('\nNada se escribió. Volvé a correr con --apply para aplicarlo.');
+    reporte.cierra();
     return;
   }
 
@@ -261,8 +274,11 @@ async function main() {
     { timeout: 120_000 }
   );
 
+  reporte.escribio('SavedVariation.slot inferido', aEscribir.length);
+
   console.log(`\n✓ Backfill aplicado sobre ${aEscribir.length} filas (variationIndex sigue en NULL).`);
-  console.log('  Auditoría: SELECT platform, slot, count(*) FROM "SavedVariation" WHERE "slotInferred" GROUP BY 1,2;\n');
+  console.log('  Auditoría: SELECT platform, slot, count(*) FROM "SavedVariation" WHERE "slotInferred" GROUP BY 1,2;');
+  reporte.cierra();
 }
 
 main()
