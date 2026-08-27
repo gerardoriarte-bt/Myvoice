@@ -1,10 +1,11 @@
 import { Request, Response } from 'express';
-import { AuthRequest } from '../middleware/auth.js';
+import { AuthRequest, handleTenantError } from '../middleware/auth.js';
+import { filterVariationsInWorkspace, TenantError } from '../lib/tenancy.js';
 import { prisma } from '../lib/prisma.js';
 import { notifyReviewCompleted } from '../services/notificationService.js';
 
 export const createReviewSession = async (req: AuthRequest, res: Response) => {
-  const user = req.user;
+  const tenant = req.tenant!;
   const { title, variationIds, expiresInDays } = req.body;
 
   if (!title || !Array.isArray(variationIds) || variationIds.length === 0) {
@@ -15,15 +16,24 @@ export const createReviewSession = async (req: AuthRequest, res: Response) => {
   const expiresAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
 
   try {
+    // Una sesión de revisión se publica detrás de un token público: si acá se
+    // colaran ids de otro workspace, su copy quedaría expuesto en un enlace sin
+    // autenticación. Se filtra contra el workspace y se preserva el orden pedido.
+    const owned = new Set(await filterVariationsInWorkspace(tenant, variationIds));
+    const items = variationIds.filter((id: string) => owned.has(id));
+    if (items.length === 0) {
+      throw new TenantError('Ninguna de las variaciones pertenece a este workspace', 404);
+    }
+
     const session = await prisma.reviewSession.create({
       data: {
         title,
         expiresAt,
-        workspaceId: user?.workspaceId ?? undefined,
-        createdById: user!.userId,
+        workspaceId: tenant.workspaceId,
+        createdById: tenant.userId,
         items: {
           createMany: {
-            data: variationIds.map((id: string, index: number) => ({
+            data: items.map((id: string, index: number) => ({
               savedVariationId: id,
               sortOrder: index,
             })),
@@ -37,16 +47,14 @@ export const createReviewSession = async (req: AuthRequest, res: Response) => {
 
     res.status(201).json(session);
   } catch (error) {
-    console.error('createReviewSession error:', error);
-    res.status(500).json({ error: 'Error al crear la sesión de revisión' });
+    handleTenantError(error, res, 'Error al crear la sesión de revisión');
   }
 };
 
 export const listReviewSessions = async (req: AuthRequest, res: Response) => {
-  const user = req.user;
   try {
     const sessions = await prisma.reviewSession.findMany({
-      where: { workspaceId: user?.workspaceId },
+      where: { workspaceId: req.tenant!.workspaceId },
       orderBy: { createdAt: 'desc' },
       include: {
         _count: { select: { items: true } },
@@ -61,7 +69,6 @@ export const listReviewSessions = async (req: AuthRequest, res: Response) => {
 };
 
 export const getReviewSessionDetail = async (req: AuthRequest, res: Response) => {
-  const user = req.user;
   const { id } = req.params;
   try {
     const session = await prisma.reviewSession.findUnique({
@@ -80,8 +87,9 @@ export const getReviewSessionDetail = async (req: AuthRequest, res: Response) =>
         },
       },
     });
-    if (!session) return res.status(404).json({ error: 'Sesión no encontrada' });
-    if (session.workspaceId !== user?.workspaceId) return res.status(403).json({ error: 'Sin permiso' });
+    if (!session || session.workspaceId !== req.tenant!.workspaceId) {
+      return res.status(404).json({ error: 'Sesión no encontrada' });
+    }
     res.json(session);
   } catch (error) {
     console.error('getReviewSessionDetail error:', error);
@@ -90,13 +98,11 @@ export const getReviewSessionDetail = async (req: AuthRequest, res: Response) =>
 };
 
 export const deleteReviewSession = async (req: AuthRequest, res: Response) => {
-  const user = req.user;
   const { id } = req.params;
   try {
     const session = await prisma.reviewSession.findUnique({ where: { id } });
-    if (!session) return res.status(404).json({ error: 'Sesión no encontrada' });
-    if (session.workspaceId !== user?.workspaceId) {
-      return res.status(403).json({ error: 'No tienes permiso para eliminar esta sesión' });
+    if (!session || session.workspaceId !== req.tenant!.workspaceId) {
+      return res.status(404).json({ error: 'Sesión no encontrada' });
     }
     await prisma.reviewSession.delete({ where: { id } });
     res.json({ success: true });

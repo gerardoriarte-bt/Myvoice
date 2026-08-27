@@ -27,7 +27,9 @@ export default function ClientPortal({ currentUser, savedVariations, clients, on
   const [statusFilter, setStatusFilter] = useState<'all' | 'approved' | 'pending'>('all');
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  const myClient = clients.find(c => c.id === currentUser.clientId);
+  // Un miembro ve todas las marcas de su workspace. Cuando hay una sola,
+  // mostramos su nombre como contexto; con varias, el nombre del workspace.
+  const myClient = clients.length === 1 ? clients[0] : undefined;
 
   const filtered = savedVariations.filter(v => {
     const matchesPlatform = !platformFilter || v.platform === platformFilter;

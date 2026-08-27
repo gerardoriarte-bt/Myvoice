@@ -16,7 +16,7 @@ interface ResultsTableProps {
   projects: Project[];
   activeClient?: Client;
   onSave: (variation: CopyVariation, projectId: string) => void;
-  onCreateProject: (name: string) => string;
+  onCreateProject: (name: string) => Promise<string>;
   savedContentList: string[];
   coherence?: CoherenceReport | null;
   spine?: CampaignSpine | null;
@@ -204,9 +204,9 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ variations, projects, activ
     setSavingId(null);
   };
 
-  const handleCreateAndSave = (variation: CopyVariation) => {
+  const handleCreateAndSave = async (variation: CopyVariation) => {
     if (!newProjectName.trim()) return;
-    const projectId = onCreateProject(newProjectName);
+    const projectId = await onCreateProject(newProjectName);
     onSave(variation, projectId);
     setNewProjectName('');
     setSavingId(null);
@@ -800,7 +800,7 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ variations, projects, activ
                               <div className="flex items-center justify-between mb-1.5">
                                 <div className="flex items-center gap-2 flex-wrap">
                                   <span className="text-[9px] font-semibold uppercase tracking-widest text-gray-400">
-                                    {v.slot || 'copy'}
+                                    {v.slotLabel || v.slot || 'copy'}
                                   </span>
                                   {v.budget !== undefined && (
                                     <span className={`text-[9px] font-medium px-1.5 py-0.5 rounded ${
@@ -905,7 +905,7 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ variations, projects, activ
                           {rationaleSlots.map(v => (
                             <p key={v.id} className="text-[11px] text-slate-500 leading-relaxed mb-1">
                               {slots.length > 1 && (
-                                <span className="text-[9px] font-semibold uppercase text-slate-400 mr-1.5">{v.slot}:</span>
+                                <span className="text-[9px] font-semibold uppercase text-slate-400 mr-1.5">{v.slotLabel || v.slot}:</span>
                               )}
                               {v.scoreRationale}
                             </p>

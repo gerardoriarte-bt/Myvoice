@@ -2,7 +2,14 @@ import type OpenAI from "openai";
 import { CampaignSpine, CopyParameters, FunnelStage } from "../types.js";
 import { UsageEntry, extractUsage } from "./pricing.js";
 import { buildLocaleRulesBlock, resolveMarketLocale } from "./localeRules.js";
-import { jsonObjectFormat, stripJsonFence, samplingParams, MAX_TOKENS } from "./aiClient.js";
+import {
+  jsonObjectFormat,
+  stripJsonFence,
+  samplingParams,
+  MAX_TOKENS,
+  TIEMPOS,
+  chatCompletionConRetry,
+} from "./aiClient.js";
 
 const FUNNEL_GUIDANCE: Record<FunnelStage, string> = {
   [FunnelStage.AWARENESS]:
@@ -98,19 +105,26 @@ export const buildCampaignSpine = async (
   params: CopyParameters,
   client: OpenAI,
   model: string,
-  usage?: UsageEntry[]
+  usage?: UsageEntry[],
+  signal?: AbortSignal
 ): Promise<CampaignSpine> => {
   const prompt = buildDirectorPrompt(params);
-  const response = await client.chat.completions.create({
-    model,
-    messages: [
-      { role: "system", content: buildDirectorSystemPrompt(params) },
-      { role: "user", content: prompt },
-    ],
-    response_format: jsonObjectFormat(client),
-    max_tokens: MAX_TOKENS.director,
-    ...samplingParams(model, 0.7),
-  });
+  // Es la etapa más crítica del pipeline: sin espina no hay un solo canal, así
+  // que se reintenta con el presupuesto completo de la generación.
+  const response = await chatCompletionConRetry(
+    client,
+    {
+      model,
+      messages: [
+        { role: "system", content: buildDirectorSystemPrompt(params) },
+        { role: "user", content: prompt },
+      ],
+      response_format: jsonObjectFormat(client),
+      max_tokens: MAX_TOKENS.director,
+      ...samplingParams(model, 0.7),
+    },
+    { etapa: "director", timeoutMs: TIEMPOS.llamada.director, presupuestoMs: TIEMPOS.generacion, signal }
+  );
 
   const u = extractUsage(response, model, "director");
   if (u && usage) usage.push(u);

@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { User, Role } from '../types';
+import { User, canManageWorkspace, WORKSPACE_ROLE_LABELS } from '../types';
 
 interface UserHeaderProps {
   currentUser: User;
@@ -9,6 +9,7 @@ interface UserHeaderProps {
 
 const UserHeader: React.FC<UserHeaderProps> = ({ currentUser, onLogout }) => {
   const [isOpen, setIsOpen] = React.useState(false);
+  const isManager = canManageWorkspace(currentUser.role);
 
   return (
     <div className="glass-header text-slate-900 px-8 py-4 flex justify-between items-center sticky top-[38px] z-[100] border-b border-slate-100">
@@ -25,11 +26,11 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUser, onLogout }) => {
         >
           <div className="text-right hidden md:block">
             <p className="text-[11px] font-black uppercase leading-none mb-1 text-slate-900">{currentUser.name}</p>
-            <p className={`text-[8px] font-black uppercase tracking-[0.2em] ${currentUser.role === Role.ADMIN ? 'text-slate-400' : 'text-slate-300'}`}>
-              {currentUser.role}
+            <p className={`text-[8px] font-black uppercase tracking-[0.2em] ${isManager ? 'text-slate-400' : 'text-slate-300'}`}>
+              {WORKSPACE_ROLE_LABELS[currentUser.role]}
             </p>
           </div>
-          <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black text-xs shrink-0 ${currentUser.role === Role.ADMIN ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-500'}`}>
+          <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black text-xs shrink-0 ${isManager ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-500'}`}>
             {currentUser.name[0]}
           </div>
           <svg className={`w-3 h-3 text-slate-300 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 9l-7 7-7-7" /></svg>

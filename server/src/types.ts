@@ -97,6 +97,8 @@ export interface CopyVariation {
   platform: Platform | string;
   type: string;
   slot?: string;
+  /** Etiqueta legible del slot, resuelta en el servidor contra channels/registry.ts. */
+  slotLabel?: string;
   variationIndex?: number;
   content: string;
   charCount: number;
@@ -139,6 +141,8 @@ export interface SavedVariation extends CopyVariation {
   tags: string[];
   savedAt: number;
   isApproved?: boolean;
+  /** True cuando el slot lo dedujo el backfill heurístico y no el writer. */
+  slotInferred?: boolean;
 }
 
 export interface BrandConfig {

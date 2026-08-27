@@ -1,0 +1,241 @@
+name: CI
+
+# Las cuatro verificaciones que hoy dependen de que alguien se acuerde de
+# correr un comando. Ninguna toca producción ni gasta crédito de IA.
+#
+# Contexto: hasta agosto de 2026 el repo tenía una sola gate y era decorativa —
+# `tsc --noEmit` devolvía verde sobre un frontend que no leía, porque faltaban
+# los tipos de React. El trabajo de este workflow es que eso no pueda repetirse
+# en silencio.
+
+# Push solo en main; las ramas de trabajo se verifican al abrir el PR. El job
+# de aislamiento levanta un Postgres de servicio y es el más caro de los cuatro,
+# así que no conviene pagarlo en cada push intermedio de una rama.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Un push nuevo cancela la corrida anterior de la misma rama.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tipos:
+    name: Tipos y build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20        # la misma que los Dockerfile de producción
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            server/package-lock.json
+
+      - run: npm ci
+      - run: npm ci
+        working-directory: server
+
+      # El cliente de Prisma es la fuente de los tipos de todo el backend: sin
+      # generarlo, los tsc del server fallan por un motivo que no es el código.
+      - run: npx prisma generate
+        working-directory: server
+
+      - name: Frontend
+        run: npx tsc --noEmit
+
+      - name: Server (strict)
+        run: npx tsc --noEmit
+        working-directory: server
+
+      # scripts/ y prisma/ quedan fuera del build (rootDir: src) pero corren con
+      # tsx contra la base de producción: son el código que menos se puede dar
+      # por bueno sin chequear.
+      - name: Scripts y prisma (strict)
+        run: npx tsc --noEmit -p tsconfig.scripts.json
+        working-directory: server
+
+      # La gate no verifica nada si deja de leer los archivos: una sonda con
+      # errores deliberados tiene que hacerla fallar. Si esto pasa en verde, el
+      # tsconfig se rompió y todo lo de arriba es un falso negativo.
+      - name: La gate lee de verdad el frontend
+        run: |
+          cat > sonda-ci.tsx <<'EOF'
+          import React from 'react';
+          export const Sonda = () => {
+            const [n, setN] = React.useState<number>(0);
+            setN('texto');
+            return <div>{n.propiedadInexistente}</div>;
+          };
+          EOF
+          if npx tsc --noEmit; then
+            echo "::error::La sonda con errores deliberados pasó la gate: el tsconfig dejó de leer el frontend."
+            rm sonda-ci.tsx
+            exit 1
+          fi
+          rm sonda-ci.tsx
+          echo "La sonda falló como corresponde."
+
+      - name: Build de producción
+        run: npm run build
+
+      - name: Build del server
+        run: npm run build
+        working-directory: server
+
+  resiliencia:
+    name: Resiliencia del pipeline
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+      - run: npm ci
+        working-directory: server
+      - run: npx prisma generate
+        working-directory: server
+
+      # Cliente falso: ejercita reintentos, backoff, retry-after, errores
+      # terminales y presupuestos de tiempo sin llamar a ningún proveedor.
+      - name: verify:resiliencia
+        run: npm run verify:resiliencia
+        working-directory: server
+
+  aislamiento:
+    name: Aislamiento entre tenants
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: myvoice_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/myvoice_ci?schema=public
+      AI_PROVIDER: openai
+      # El arranque solo exige que la variable del proveedor exista; este job no
+      # llama a ninguna API. A propósito sin forma de key: un literal que parece
+      # credencial enseña a ignorar las alertas del escáner de secretos.
+      OPENAI_API_KEY: no-se-llama-a-ningun-proveedor-en-este-job
+      PORT: 3001
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+      - run: npm ci
+        working-directory: server
+      - run: npx prisma generate
+        working-directory: server
+
+      # JWT_SECRET y ENCRYPTION_KEY se generan acá y viven lo que vive el job.
+      # No van hardcodeados ni salen de los secrets del repo: la base que
+      # protegen se destruye al terminar, así que un valor fijo solo agregaría
+      # un literal con forma de credencial al historial de git.
+      - name: Secretos efímeros del job
+        run: |
+          echo "JWT_SECRET=$(openssl rand -base64 48)" >> "$GITHUB_ENV"
+          echo "ENCRYPTION_KEY=$(openssl rand -base64 32)" >> "$GITHUB_ENV"
+
+      # Base vacía: las tres migraciones del lote aplican de corrido, sin filas
+      # huérfanas que hagan fallar _workspace_required a propósito. Que apliquen
+      # en orden sobre una base limpia es parte de lo que se está verificando.
+      - name: Migraciones
+        run: npx prisma migrate deploy
+        working-directory: server
+
+      # El esquema que describen las migraciones tiene que ser el mismo que
+      # declara schema.prisma. Un drift acá significa que alguien editó el
+      # schema sin migración, o al revés.
+      - name: Sin drift entre migraciones y schema.prisma
+        run: |
+          salida=$(npx prisma migrate diff \
+            --from-url "$DATABASE_URL" \
+            --to-schema-datamodel prisma/schema.prisma)
+          echo "$salida"
+          if ! echo "$salida" | grep -q "No difference detected"; then
+            echo "::error::schema.prisma y las migraciones describen esquemas distintos."
+            exit 1
+          fi
+        working-directory: server
+
+      - name: Levantar la API
+        run: |
+          # nohup + disown: el proceso tiene que sobrevivir al shell de este
+          # paso para que el paso siguiente lo encuentre escuchando.
+          nohup npx tsx src/index.ts > /tmp/api.log 2>&1 &
+          disown
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:3001/health > /dev/null; then
+              echo "API arriba tras ${i}s"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "::error::La API no respondió en /health tras 30s"
+          cat /tmp/api.log
+          exit 1
+        working-directory: server
+
+      # Siembra dos empresas y, como usuario de la segunda, intenta tocar todos
+      # los recursos de la primera. Es el criterio de aceptación de A0.1 y hasta
+      # ahora era un runbook manual que nadie iba a repetir en el lote seis.
+      - name: verify:isolation
+        run: API_URL=http://localhost:3001/api npm run verify:isolation
+        working-directory: server
+
+      - name: Logs de la API si algo falló
+        if: failure()
+        run: cat /tmp/api.log
+
+  docs:
+    name: Enlaces de la documentación
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # docs/runbook-mejoras-h1.md estuvo citado dos veces en CLAUDE.md sin
+      # existir: la secuencia de despliegue de un lote entero apuntaba a un
+      # archivo fantasma. Un enlace roto en un runbook se descubre a las 11 de
+      # la noche, en el peor momento posible.
+      - name: Enlaces internos entre los .md
+        run: |
+          node - <<'EOF'
+          const fs = require('fs');
+          const path = require('path');
+          const archivos = ['CLAUDE.md', ...fs.readdirSync('docs').filter(f => f.endsWith('.md')).map(f => `docs/${f}`)];
+          const rotos = [];
+          for (const archivo of archivos) {
+            const texto = fs.readFileSync(archivo, 'utf8');
+            for (const m of texto.matchAll(/\[[^\]]*\]\(([^)]+)\)/g)) {
+              const destino = m[1].split('#')[0];
+              if (!destino || /^(https?:|mailto:)/.test(destino)) continue;
+              const resuelto = path.resolve(path.dirname(archivo), destino);
+              if (!fs.existsSync(resuelto)) rotos.push(`${archivo} → ${destino}`);
+            }
+          }
+          if (rotos.length) {
+            for (const r of rotos) console.log(`::error::enlace roto: ${r}`);
+            process.exit(1);
+          }
+          console.log(`${archivos.length} archivos revisados, ningún enlace roto.`);
+          EOF

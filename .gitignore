@@ -36,3 +36,9 @@ server/uploads/
 
 # Configuración local del asistente
 .claude/
+
+# Scratch de agentes de auditoría
+server/.oraculo/
+
+# Reportes de corridas de backfill: evidencia de una base concreta, no código
+server/.backfills/

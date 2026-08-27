@@ -11,9 +11,12 @@
     "seed": "tsx prisma/seed.ts",
     "seed:lobueno": "tsx prisma/seedLobueno.ts",
     "smoke": "tsx prisma/smokeTest.ts",
-    "seed:workspaces": "tsx scripts/seedWorkspaces.ts",
-    "eval": "tsx scripts/eval.ts",
-    "seed:mock-brands": "tsx scripts/seedMockBrands.ts"
+    "backfill:tenancy": "tsx scripts/backfillTenancy.ts",
+    "backfill:slots": "tsx scripts/backfillSlots.ts",
+    "backfill:telemetria": "tsx scripts/backfillCostTelemetry.ts",
+    "recrypt:keys": "tsx scripts/recryptWorkspaceKeys.ts",
+    "verify:isolation": "tsx scripts/verifyIsolation.ts",
+    "verify:resiliencia": "AI_BACKOFF_BASE_MS=10 AI_TIMEOUT_CANAL_MS=4000 AI_TIMEOUT_GENERACION_MS=30000 tsx scripts/verifyResiliencia.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.10.0",

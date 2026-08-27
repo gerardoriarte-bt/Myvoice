@@ -1,7 +1,9 @@
 import { Response } from 'express';
-import { AuthRequest } from '../middleware/auth.js';
-import { serverAIConfig, createAIClient, resolveModel } from '../services/aiClient.js';
+import { AuthRequest, handleTenantError } from '../middleware/auth.js';
+import { assertClientInWorkspace } from '../lib/tenancy.js';
+import { serverAIConfig, createAIClient, resolveModel, jsonObjectFormat, stripJsonFence, TIEMPOS, chatCompletionConRetry } from '../services/aiClient.js';
 import { prisma } from '../lib/prisma.js';
+import { decryptWorkspaceApiKey } from '../lib/workspaceSecret.js';
 
 interface CopyVariation {
   id: string;
@@ -26,19 +28,19 @@ export async function refineVariations(req: AuthRequest, res: Response): Promise
   }
 
   try {
-    const client = await prisma.client.findUnique({ where: { id: clientId } });
+    // Sin esta guarda, cualquiera podía refinar contra el clientId de otro
+    // tenant y gastar con la API key de ese workspace.
+    const client = await assertClientInWorkspace(req.tenant!, clientId);
 
     let aiConfig = serverAIConfig();
 
-    if (client?.workspaceId) {
-      const workspace = await prisma.workspace.findUnique({ where: { id: client.workspaceId } });
-      if (workspace?.aiApiKey && workspace?.aiProvider) {
-        aiConfig = {
-          provider: workspace.aiProvider as any,
-          apiKey: workspace.aiApiKey,
-          model: workspace.aiModel || undefined,
-        };
-      }
+    const workspace = await prisma.workspace.findUnique({ where: { id: client.workspaceId } });
+    if (workspace?.aiApiKey && workspace?.aiProvider) {
+      aiConfig = {
+        provider: workspace.aiProvider as any,
+        apiKey: decryptWorkspaceApiKey(workspace.id, workspace.aiApiKey),
+        model: workspace.aiModel || undefined,
+      };
     }
 
     const aiClient = createAIClient(aiConfig);
@@ -53,17 +55,23 @@ export async function refineVariations(req: AuthRequest, res: Response): Promise
       '\n\nVariaciones actuales:\n' +
       JSON.stringify(variations, null, 2);
 
-    const response = await (aiClient as any).chat.completions.create({
-      model: writerModel,
-      messages: [
-        { role: 'system', content: system },
-        { role: 'user', content: user },
-      ],
-      response_format: { type: 'json_object' },
-      temperature: 0.7,
-    });
+    // Sin reintento, un 503 pasajero le hace perder al creativo el trabajo de
+    // toda la tanda de refinamiento.
+    const response = await chatCompletionConRetry(
+      aiClient,
+      {
+        model: writerModel,
+        messages: [
+          { role: 'system', content: system },
+          { role: 'user', content: user },
+        ],
+        response_format: jsonObjectFormat(aiClient),
+        temperature: 0.7,
+      },
+      { etapa: 'refine', timeoutMs: TIEMPOS.llamada.refine }
+    );
 
-    const parsed = JSON.parse(response.choices[0].message.content);
+    const parsed = JSON.parse(stripJsonFence(response.choices[0].message.content || ''));
     const aiVariations: CopyVariation[] = parsed.variations ?? [];
 
     const refined = variations.map((original, index) => {
@@ -77,6 +85,6 @@ export async function refineVariations(req: AuthRequest, res: Response): Promise
 
     res.json({ variations: refined });
   } catch (error) {
-    res.status(500).json({ error: 'AI refinement failed', details: (error as Error).message });
+    handleTenantError(error, res, 'AI refinement failed');
   }
 }

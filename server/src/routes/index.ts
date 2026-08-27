@@ -1,4 +1,3 @@
-
 import { Router } from 'express';
 import multer from 'multer';
 import * as authController from '../controllers/authController.js';
@@ -10,7 +9,7 @@ import * as reviewController from '../controllers/reviewController.js';
 import * as analyticsController from '../controllers/analyticsController.js';
 import * as presetController from '../controllers/presetController.js';
 import * as refineController from '../controllers/refineController.js';
-import { authenticateToken, authorizeRole } from '../middleware/auth.js';
+import { authenticateToken, requireWorkspace, requireManager } from '../middleware/auth.js';
 
 const router = Router();
 const pdfUpload = multer({
@@ -22,67 +21,96 @@ const pdfUpload = multer({
   },
 });
 
-// Auth & User Routes
+/**
+ * Tres niveles de acceso, y toda ruta autenticada usa al menos el segundo:
+ *
+ *   authenticateToken  — hay un usuario válido detrás del token.
+ *   requireWorkspace   — ese usuario tiene membresía en el workspace activo.
+ *                        Deja `req.tenant` verificado contra la base.
+ *   requireManager     — además es OWNER o ADMIN de ese workspace.
+ *
+ * Una ruta con `authenticateToken` a secas solo puede tocar datos del propio
+ * usuario (sesión, lista de sus workspaces). Todo lo que toque datos de negocio
+ * pasa por requireWorkspace.
+ */
+const authed = [authenticateToken] as const;
+const inWorkspace = [authenticateToken, requireWorkspace] as const;
+const asManager = [authenticateToken, requireWorkspace, requireManager] as const;
+
+// ------------------------------------------------------------------- sesión
 router.post('/auth/register', authController.register);
 router.post('/auth/login', authController.login);
 router.post('/auth/google', authController.googleLogin);
-router.get('/users', authenticateToken, authorizeRole(['ADMIN']), authController.getUsers);
-router.delete('/users/:id', authenticateToken, authorizeRole(['ADMIN']), authController.deleteUser);
+router.get('/auth/me', ...authed, authController.me);
+router.post('/auth/switch-workspace', ...authed, authController.switchWorkspace);
 
-// Generation Routes
-router.post('/generate', authenticateToken, generateController.generateCopy);
-router.post('/generate/stream', authenticateToken, generateController.generateCopyStream);
-router.post('/generate/channel', authenticateToken, generateController.regenerateChannel);
-router.get('/generate/history', authenticateToken, generateController.listGenerationHistory);
+// --------------------------------------------------------------- workspaces
+router.get('/workspaces', ...authed, workspaceController.listMyWorkspaces);
+router.post('/workspaces', ...authed, workspaceController.createWorkspace);
+router.get('/workspace/ai-config', ...asManager, workspaceController.getWorkspaceAIConfig);
+router.put('/workspace/ai-config', ...asManager, workspaceController.updateWorkspaceAIConfig);
 
-// Client/Brand Routes
-router.get('/clients', authenticateToken, clientController.getClients);
-router.post('/clients', authenticateToken, authorizeRole(['ADMIN']), clientController.createClient);
-router.put('/clients/:id', authenticateToken, authorizeRole(['ADMIN']), clientController.updateClient);
-router.delete('/clients/:id', authenticateToken, authorizeRole(['ADMIN']), clientController.deleteClient);
-router.post('/clients/:id/brand-guideline', authenticateToken, authorizeRole(['ADMIN']), pdfUpload.single('pdf'), clientController.uploadBrandGuideline);
-router.post('/clients/:id/fingerprint', authenticateToken, authorizeRole(['ADMIN']), clientController.computeFingerprint);
-router.post('/dna-profiles', authenticateToken, authorizeRole(['ADMIN']), clientController.saveDNAProfile);
-router.post('/dna-profiles/:id/duplicate', authenticateToken, authorizeRole(['ADMIN']), clientController.duplicateDNAProfile);
-router.put('/dna-profiles/:id', authenticateToken, authorizeRole(['ADMIN']), clientController.updateDNAProfile);
-router.delete('/dna-profiles/:id', authenticateToken, authorizeRole(['ADMIN']), clientController.deleteDNAProfile);
+// ------------------------------------------------------- miembros e invitaciones
+// `/users` se mantiene como alias del listado de miembros para no romper el
+// frontend; opera siempre sobre el workspace activo.
+router.get('/users', ...inWorkspace, workspaceController.listMembers);
+router.get('/workspace/members', ...inWorkspace, workspaceController.listMembers);
+router.put('/workspace/members/:userId', ...asManager, workspaceController.updateMemberRole);
+router.delete('/workspace/members/:userId', ...asManager, workspaceController.removeMember);
+router.get('/workspace/invites', ...asManager, workspaceController.listInvites);
+router.post('/workspace/invites', ...asManager, workspaceController.createInvite);
+router.delete('/workspace/invites/:id', ...asManager, workspaceController.revokeInvite);
 
-// Generation Presets (ADMIN only)
-router.get('/presets', authenticateToken, authorizeRole(['ADMIN']), presetController.listPresets);
-router.post('/presets', authenticateToken, authorizeRole(['ADMIN']), presetController.createPreset);
-router.delete('/presets/:id', authenticateToken, authorizeRole(['ADMIN']), presetController.deletePreset);
+// ------------------------------------------------------------------ generación
+router.post('/generate', ...inWorkspace, generateController.generateCopy);
+router.post('/generate/stream', ...inWorkspace, generateController.generateCopyStream);
+router.post('/generate/channel', ...inWorkspace, generateController.regenerateChannel);
+router.get('/generate/history', ...inWorkspace, generateController.listGenerationHistory);
+router.post('/copy/refine', ...inWorkspace, refineController.refineVariations);
 
-// Saved Variations & Projects
-router.get('/saved', authenticateToken, savedController.getSavedVariations);
-router.post('/saved', authenticateToken, savedController.saveVariation);
-router.post('/saved/bulk-delete', authenticateToken, savedController.bulkDeleteSaved);
-router.put('/saved/:id', authenticateToken, savedController.updateVariation);
-router.delete('/saved/:id', authenticateToken, savedController.deleteVariation);
-router.get('/projects', authenticateToken, savedController.getProjects);
-router.post('/projects', authenticateToken, savedController.createProject);
-router.delete('/projects/:id', authenticateToken, savedController.deleteProject);
-router.post('/feedback/negative', authenticateToken, savedController.saveNegativeFeedback);
+// ---------------------------------------------------------- marcas y briefs
+router.get('/clients', ...inWorkspace, clientController.getClients);
+router.post('/clients', ...asManager, clientController.createClient);
+router.put('/clients/:id', ...asManager, clientController.updateClient);
+router.delete('/clients/:id', ...asManager, clientController.deleteClient);
+router.post('/clients/:id/brand-guideline', ...asManager, pdfUpload.single('pdf'), clientController.uploadBrandGuideline);
+router.post('/clients/:id/fingerprint', ...asManager, clientController.computeFingerprint);
+router.post('/dna-profiles', ...asManager, clientController.saveDNAProfile);
+router.post('/dna-profiles/:id/duplicate', ...asManager, clientController.duplicateDNAProfile);
+router.put('/dna-profiles/:id', ...asManager, clientController.updateDNAProfile);
+router.delete('/dna-profiles/:id', ...asManager, clientController.deleteDNAProfile);
+router.get('/dna-profiles/:id/insights', ...inWorkspace, clientController.getDNAInsights);
 
-// Workspace AI Config (admin only)
-router.get('/workspace/ai-config', authenticateToken, authorizeRole(['ADMIN']), workspaceController.getWorkspaceAIConfig);
-router.put('/workspace/ai-config', authenticateToken, authorizeRole(['ADMIN']), workspaceController.updateWorkspaceAIConfig);
+// -------------------------------------------------------------------- presets
+router.get('/presets', ...inWorkspace, presetController.listPresets);
+router.post('/presets', ...inWorkspace, presetController.createPreset);
+router.delete('/presets/:id', ...asManager, presetController.deletePreset);
 
-// Analytics (ADMIN)
-router.get('/analytics', authenticateToken, authorizeRole(['ADMIN']), analyticsController.getAnalytics);
+// ---------------------------------------------------------------- biblioteca
+router.get('/saved', ...inWorkspace, savedController.getSavedVariations);
+router.post('/saved', ...inWorkspace, savedController.saveVariation);
+// POST /saved/bulk-delete va antes que DELETE /saved/:id para evitar el choque de rutas.
+router.post('/saved/bulk-delete', ...inWorkspace, savedController.bulkDeleteSaved);
+router.put('/saved/:id', ...inWorkspace, savedController.updateVariation);
+router.delete('/saved/:id', ...inWorkspace, savedController.deleteVariation);
+router.get('/projects', ...inWorkspace, savedController.getProjects);
+router.post('/projects', ...inWorkspace, savedController.createProject);
+router.delete('/projects/:id', ...inWorkspace, savedController.deleteProject);
+router.post('/feedback/negative', ...inWorkspace, savedController.saveNegativeFeedback);
 
-// Refine copy (iterative)
-router.post('/copy/refine', authenticateToken, refineController.refineVariations);
+// ------------------------------------------------------------------ analytics
+router.get('/analytics', ...inWorkspace, analyticsController.getAnalytics);
+// Dato financiero del workspace: va con asManager, no con inWorkspace. La
+// pestaña Analytics del frontend ya está marcada adminOnly.
+router.get('/analytics/usage', ...asManager, analyticsController.getUsageAnalytics);
 
-// DNA Insights
-router.get('/dna-profiles/:id/insights', authenticateToken, authorizeRole(['ADMIN']), clientController.getDNAInsights);
+// -------------------------------------------------------------- revisiones
+router.get('/review-sessions', ...inWorkspace, reviewController.listReviewSessions);
+router.post('/review-sessions', ...inWorkspace, reviewController.createReviewSession);
+router.get('/review-sessions/:id', ...inWorkspace, reviewController.getReviewSessionDetail);
+router.delete('/review-sessions/:id', ...asManager, reviewController.deleteReviewSession);
 
-// Review Sessions (ADMIN — protegidas)
-router.get('/review-sessions', authenticateToken, authorizeRole(['ADMIN']), reviewController.listReviewSessions);
-router.post('/review-sessions', authenticateToken, authorizeRole(['ADMIN']), reviewController.createReviewSession);
-router.get('/review-sessions/:id', authenticateToken, authorizeRole(['ADMIN']), reviewController.getReviewSessionDetail);
-router.delete('/review-sessions/:id', authenticateToken, authorizeRole(['ADMIN']), reviewController.deleteReviewSession);
-
-// Review Public (sin auth — acceso por token UUID)
+// Portal público del cliente final: sin auth, protegido por el token de sesión.
 router.get('/review/public/:token', reviewController.getReviewByToken);
 router.post('/review/public/:token/submit', reviewController.submitReview);
 

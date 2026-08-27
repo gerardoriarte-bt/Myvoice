@@ -3,7 +3,14 @@ import { CopyVariation } from "../types.js";
 import { ChannelBrief, ChannelSpec } from "../channels/types.js";
 import { validateVariation } from "../channels/validators.js";
 import { UsageEntry, extractUsage } from "./pricing.js";
-import { jsonObjectFormat, stripJsonFence, samplingParams, MAX_TOKENS } from "./aiClient.js";
+import {
+  jsonObjectFormat,
+  stripJsonFence,
+  samplingParams,
+  MAX_TOKENS,
+  TIEMPOS,
+  chatCompletionConRetry,
+} from "./aiClient.js";
 
 const isBroken = (v: CopyVariation): boolean => {
   if (v.budgetOk === false) return true;
@@ -133,25 +140,38 @@ export const runAutoFix = async (
   variations: CopyVariation[],
   client: OpenAI,
   model: string,
-  usage?: UsageEntry[]
+  usage?: UsageEntry[],
+  opciones: { signal?: AbortSignal; presupuestoMs?: number } = {}
 ): Promise<CopyVariation[]> => {
   const broken = variations.filter(isBroken);
   if (broken.length === 0) return variations;
 
   try {
-    const response = await client.chat.completions.create({
-      model,
-      messages: [
-        {
-          role: "system",
-          content: "Eres editor de copy especializado en respetar restricciones duras. Respondés SOLO en JSON válido.",
-        },
-        { role: "user", content: buildBatchFixPrompt(brief, spec, broken) },
-      ],
-      response_format: jsonObjectFormat(client),
-      max_tokens: Math.min(MAX_TOKENS.fixer * broken.length, 8_000),
-      ...samplingParams(model, 0.5),
-    });
+    // Igual que el crítico: 2 intentos. Si se rinde, la variación conserva su
+    // contenido original con los flags puestos.
+    const response = await chatCompletionConRetry(
+      client,
+      {
+        model,
+        messages: [
+          {
+            role: "system",
+            content: "Eres editor de copy especializado en respetar restricciones duras. Respondés SOLO en JSON válido.",
+          },
+          { role: "user", content: buildBatchFixPrompt(brief, spec, broken) },
+        ],
+        response_format: jsonObjectFormat(client),
+        max_tokens: Math.min(MAX_TOKENS.fixer * broken.length, 8_000),
+        ...samplingParams(model, 0.5),
+      },
+      {
+        etapa: `fixer:${spec.id}`,
+        timeoutMs: TIEMPOS.llamada.fixer,
+        intentosMax: 2,
+        presupuestoMs: opciones.presupuestoMs,
+        signal: opciones.signal,
+      }
+    );
 
     const u = extractUsage(response, model, `fixer:${spec.id}`);
     if (u && usage) usage.push(u);

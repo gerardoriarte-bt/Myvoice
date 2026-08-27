@@ -35,20 +35,61 @@ export const authApi = {
     method: 'POST',
     body: JSON.stringify(credentials),
   }),
-  googleLogin: (credential: string) => apiRequest('/auth/google', {
+  googleLogin: (credential: string, inviteToken?: string) => apiRequest('/auth/google', {
     method: 'POST',
-    body: JSON.stringify({ credential }),
+    body: JSON.stringify({ credential, inviteToken }),
   }),
   register: (data: any) => apiRequest('/auth/register', {
     method: 'POST',
     body: JSON.stringify(data),
   }),
+  /** Refresca la sesión sin volver a loguearse (rol y workspaces al día). */
+  me: () => apiRequest('/auth/me'),
+  switchWorkspace: (workspaceId: string) => apiRequest('/auth/switch-workspace', {
+    method: 'POST',
+    body: JSON.stringify({ workspaceId }),
+  }),
   list: () => apiRequest('/users'),
-  delete: (id: string) => apiRequest(`/users/${id}`, { method: 'DELETE' }),
+};
+
+/**
+ * Un workspace = una empresa. Miembros e invitaciones siempre operan sobre el
+ * workspace ACTIVO de la sesión; no hace falta pasar su id.
+ */
+export const workspaceApi = {
+  list: () => apiRequest('/workspaces'),
+  create: (name: string, plan?: string) => apiRequest('/workspaces', {
+    method: 'POST',
+    body: JSON.stringify({ name, plan }),
+  }),
+  members: () => apiRequest('/workspace/members'),
+  updateMemberRole: (userId: string, role: string) => apiRequest(`/workspace/members/${userId}`, {
+    method: 'PUT',
+    body: JSON.stringify({ role }),
+  }),
+  removeMember: (userId: string) => apiRequest(`/workspace/members/${userId}`, { method: 'DELETE' }),
+  invites: () => apiRequest('/workspace/invites'),
+  invite: (email: string, role: string) => apiRequest('/workspace/invites', {
+    method: 'POST',
+    body: JSON.stringify({ email, role }),
+  }),
+  revokeInvite: (id: string) => apiRequest(`/workspace/invites/${id}`, { method: 'DELETE' }),
+  getAIConfig: () => apiRequest('/workspace/ai-config'),
+  updateAIConfig: (data: { aiProvider?: string; aiApiKey?: string; aiModel?: string }) =>
+    apiRequest('/workspace/ai-config', { method: 'PUT', body: JSON.stringify(data) }),
 };
 
 export const analyticsApi = {
   get: (clientId?: string) => apiRequest(`/analytics${clientId ? `?clientId=${encodeURIComponent(clientId)}` : ''}`),
+  /** Consumo y costo del workspace. Solo OWNER/ADMIN: el backend responde 403 al resto. */
+  getUsage: (params?: { from?: string; to?: string; clientId?: string; groupBy?: 'day' | 'week' | 'month' }) => {
+    const query = new URLSearchParams();
+    Object.entries(params ?? {}).forEach(([clave, valor]) => {
+      if (valor) query.append(clave, valor);
+    });
+    const qs = query.toString();
+    return apiRequest(`/analytics/usage${qs ? `?${qs}` : ''}`);
+  },
 };
 
 export const generationApi = {
@@ -141,12 +182,6 @@ export const clientApi = {
 export const negativeFeedbackApi = {
   save: (data: { clientId: string; platform: string; content: string; reason: string }) =>
     apiRequest('/feedback/negative', { method: 'POST', body: JSON.stringify(data) }),
-};
-
-export const workspaceApi = {
-  getAIConfig: () => apiRequest('/workspace/ai-config'),
-  updateAIConfig: (data: { aiProvider?: string; aiApiKey?: string; aiModel?: string }) =>
-    apiRequest('/workspace/ai-config', { method: 'PUT', body: JSON.stringify(data) }),
 };
 
 export const libraryApi = {

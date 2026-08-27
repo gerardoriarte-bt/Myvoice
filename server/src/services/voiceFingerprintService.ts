@@ -1,4 +1,4 @@
-import { createAIClient, resolveModel, serverAIConfig, WorkspaceAIConfig, jsonObjectFormat, stripJsonFence, samplingParams, MAX_TOKENS } from "./aiClient.js";
+import { createAIClient, resolveModel, serverAIConfig, WorkspaceAIConfig, jsonObjectFormat, stripJsonFence, samplingParams, MAX_TOKENS, TIEMPOS, chatCompletionConRetry } from "./aiClient.js";
 
 export interface DeterministicStats {
   sampleSize: number;          // # de textos analizados
@@ -113,16 +113,20 @@ export const computeBrandFingerprint = async (
   const openai = createAIClient(config);
   const model = resolveModel(config, false);
 
-  const response = await openai.chat.completions.create({
-    model,
-    messages: [
-      { role: "system", content: "Eres lingüista de marca. Tu output siempre es JSON válido." },
-      { role: "user", content: buildQualPrompt(cleaned, stats) },
-    ],
-    response_format: jsonObjectFormat(openai),
-    max_tokens: MAX_TOKENS.fingerprint,
-    ...samplingParams(model, 0.3),
-  });
+  const response = await chatCompletionConRetry(
+    openai,
+    {
+      model,
+      messages: [
+        { role: "system", content: "Eres lingüista de marca. Tu output siempre es JSON válido." },
+        { role: "user", content: buildQualPrompt(cleaned, stats) },
+      ],
+      response_format: jsonObjectFormat(openai),
+      max_tokens: MAX_TOKENS.fingerprint,
+      ...samplingParams(model, 0.3),
+    },
+    { etapa: "fingerprint", timeoutMs: TIEMPOS.llamada.extraccion, intentosMax: 2 }
+  );
 
   const raw = response.choices[0].message.content;
   if (!raw) throw new Error("La IA devolvió respuesta vacía.");

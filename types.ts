@@ -57,20 +57,63 @@ export const PLATFORM_GROUPS: Record<string, Platform[]> = {
   ]
 };
 
-export enum Role {
-  ADMIN = 'Admin',
-  CLIENT = 'Cliente'
+/**
+ * Rol DENTRO de un workspace. Un mismo usuario puede ser ADMIN en el workspace
+ * de su empresa y MEMBER en el de un cliente: el rol viaja con la membresía,
+ * no con el usuario.
+ */
+export type WorkspaceRole = 'OWNER' | 'ADMIN' | 'MEMBER';
+
+export const canManageWorkspace = (role?: WorkspaceRole | null) =>
+  role === 'OWNER' || role === 'ADMIN';
+
+export const WORKSPACE_ROLE_LABELS: Record<WorkspaceRole, string> = {
+  OWNER: 'Propietario',
+  ADMIN: 'Administrador',
+  MEMBER: 'Miembro'
+};
+
+/** Un workspace al que el usuario tiene acceso, con su rol en él. */
+export interface WorkspaceSummary {
+  id: string;
+  name: string;
+  slug: string;
+  plan?: string;
+  role: WorkspaceRole;
+  clientCount?: number;
 }
 
 export interface User {
   id: string;
   name: string;
-  role: Role;
-  clientId?: string;
   email: string;
-  workspaceId?: string;
-  workspaceName?: string;
-  createdAt: number;
+  /** Rol en el workspace ACTIVO. Cambia al cambiar de workspace. */
+  role: WorkspaceRole;
+  workspaceId?: string | null;
+  workspaceName?: string | null;
+  /** Todos los workspaces donde tiene membresía. Alimenta el selector. */
+  workspaces?: WorkspaceSummary[];
+  createdAt?: number;
+}
+
+/** Miembro de un workspace, tal como lo devuelve GET /workspace/members. */
+export interface WorkspaceMember {
+  id: string;
+  name: string;
+  email: string;
+  role: WorkspaceRole;
+  createdAt?: string;
+  membershipId?: string;
+}
+
+/** Invitación pendiente a un workspace. */
+export interface WorkspaceInvite {
+  id: string;
+  email: string;
+  role: WorkspaceRole;
+  token: string;
+  expiresAt: string;
+  createdAt: string;
 }
 
 export interface Client {
@@ -89,6 +132,9 @@ export interface Client {
   brandFingerprint?: any;
   brandFingerprintAt?: string | number | null;
   createdAt: number;
+  /** La API los devuelve anidados en el cliente; el estado vivo de la app es
+   *  el de `dnaProfiles`, esta copia solo alimenta la carga inicial. */
+  dnaProfiles?: ContentDNAProfile[];
 }
 
 export interface FeedbackExample {
@@ -146,6 +192,8 @@ export interface CopyVariation {
   platform: Platform;
   type: string; // angle: Beneficio | Curiosidad | Urgencia | channel-specific
   slot?: string; // e.g. "shortTitle", "longTitle", "hook", "body", "subject"
+  /** Etiqueta legible del slot, resuelta en el servidor contra channels/registry.ts. */
+  slotLabel?: string;
   variationIndex?: number;
   content: string;
   charCount: number;
@@ -188,6 +236,8 @@ export interface SavedVariation extends CopyVariation {
   savedAt: number;
   isApproved?: boolean;
   previousVersions?: Array<{ content: string; charCount: number; editedAt: string }>;
+  /** True cuando el slot lo dedujo el backfill heurístico y no el writer. */
+  slotInferred?: boolean;
 }
 
 export interface BrandConfig {

@@ -6,7 +6,12 @@ interface LoginProps {
   onLoginSuccess: (user: any, token: string) => void;
 }
 
+/** Token de invitación que viaja en el enlace del email: /?invite=<token>. */
+const readInviteToken = () =>
+  new URLSearchParams(window.location.search).get('invite') || undefined;
+
 const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
+  const inviteToken = readInviteToken();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -18,11 +23,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
     setError('');
     try {
       const data = await authApi.login({ email, password });
-      const normalizedUser = {
-        ...data.user,
-        role: data.user.role === 'ADMIN' ? 'Admin' : 'Cliente'
-      };
-      onLoginSuccess(normalizedUser, data.token);
+      onLoginSuccess(data.user, data.token);
     } catch (err: any) {
       setError(err.message || 'Credenciales incorrectas');
     } finally {
@@ -58,12 +59,8 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                   setIsLoading(true);
                   setError('');
                   try {
-                    const data = await authApi.googleLogin(credentialResponse.credential);
-                    const normalizedUser = {
-                      ...data.user,
-                      role: data.user.role === 'ADMIN' ? 'Admin' : 'Cliente'
-                    };
-                    onLoginSuccess(normalizedUser, data.token);
+                    const data = await authApi.googleLogin(credentialResponse.credential, inviteToken);
+                    onLoginSuccess(data.user, data.token);
                   } catch (err: any) {
                     setError(err.message || 'Error en autenticación con Google');
                   } finally {

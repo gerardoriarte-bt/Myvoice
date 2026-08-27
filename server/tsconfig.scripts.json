@@ -1,0 +1,9 @@
+{
+  "//": "Gate de tipos para scripts/ y prisma/, que quedan fuera del build (rootDir: src) pero corren con tsx contra la base de producción. Misma config estricta que el server: no emite.",
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "rootDir": ".."
+  },
+  "include": ["src/**/*", "scripts/**/*", "prisma/**/*"]
+}
