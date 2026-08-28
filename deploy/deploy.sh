@@ -4,7 +4,17 @@
 set -e
 
 echo "=== Pulling latest changes ==="
-git pull origin main
+# git corre como el DUEÑO del repo, no como root. Este script se invoca con
+# sudo (lo necesita para docker), y un `git pull` como root deja los objetos de
+# .git con propiedad de root: el siguiente `git pull` normal falla con
+# "failed to write object" y no hay pista de por qué. Pasó el 2026-08-28, con
+# 290 archivos afectados.
+DUENO=$(stat -c '%U' "$(git rev-parse --show-toplevel)")
+if [ "$(id -u)" -eq 0 ] && [ "$DUENO" != "root" ]; then
+  sudo -u "$DUENO" git pull origin main
+else
+  git pull origin main
+fi
 
 echo "=== Building & restarting containers ==="
 docker compose -f docker-compose.prod.yaml up -d --build --remove-orphans

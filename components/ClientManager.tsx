@@ -141,11 +141,7 @@ const ClientManager: React.FC<ClientManagerProps> = ({
     setUploadError(null);
     setExtractedSummary(null);
     try {
-      await clientApi.update(clientId, {
-        brandGuidelinePdfUrl: null,
-        brandGuidelineFileName: null,
-        brandGuidelineExtractedAt: null,
-      });
+      await clientApi.deleteBrandGuideline(clientId);
       onUpdate(clientId, {
         brandGuidelinePdfUrl: null,
         brandGuidelineFileName: null,

@@ -74,6 +74,7 @@ router.post('/clients', ...asManager, clientController.createClient);
 router.put('/clients/:id', ...asManager, clientController.updateClient);
 router.delete('/clients/:id', ...asManager, clientController.deleteClient);
 router.post('/clients/:id/brand-guideline', ...asManager, pdfUpload.single('pdf'), clientController.uploadBrandGuideline);
+router.delete('/clients/:id/brand-guideline', ...asManager, clientController.deleteBrandGuideline);
 router.post('/clients/:id/fingerprint', ...asManager, clientController.computeFingerprint);
 router.post('/dna-profiles', ...asManager, clientController.saveDNAProfile);
 router.post('/dna-profiles/:id/duplicate', ...asManager, clientController.duplicateDNAProfile);
