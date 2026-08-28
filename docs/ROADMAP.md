@@ -1,7 +1,7 @@
 # My Voice — Roadmap de crecimiento
 
 > Documento vivo. Fuente de verdad de por dónde crece la herramienta y en qué orden.
-> Última actualización: 2026-08-27
+> Última actualización: 2026-08-28
 
 ## Contexto
 
@@ -20,15 +20,15 @@ lo que ya está construido**.
 
 ---
 
-## Horizonte 1 — Monetizar lo que ya existe (0–4 semanas) · EN CURSO
+## Horizonte 1 — Monetizar lo que ya existe (0–4 semanas) · **DESPLEGADO** el 2026-08-28
 
 Objetivo: pasar de "herramienta interna de una cuenta" a "plataforma vendible a N cuentas",
 con el consumo medido y facturable.
 
 | # | Iniciativa | Estado | Detalle |
 |---|---|---|---|
-| H1.A | **Multi-tenant real** — aislamiento por workspace, alta de tenants sin deploy, white-label | A0 y A1 implementados, **criterio verificado** (`verify:isolation` 27/27) y secuencia de migración ensayada de punta a punta contra base descartable. Sin desplegar · A2 en diseño (nivel 1) | [plan](./plan-h1-multitenant-motor.md) · [A2](./plan-a2-whitelabel.md) · [runbook](./runbook-tenancy.md) · [oráculo](./oraculo-h1.md) |
-| H1.B | **Motor serio** — telemetría de costo, cuota real, resiliencia, evals | B0–B3 implementados y **los cuatro criterios verificados** en el ensayo: B0 (`/analytics/usage` con costo real), B1 (`UsagePeriod` por periodo, periodo vencido no cuenta), B2 (`verify:resiliencia` 20/20), B3 (slot persistido y backfilleado). Sin desplegar. B4 pendiente (ver E2) | [plan](./plan-h1-multitenant-motor.md) · [runbook](./runbook-mejoras-h1.md) · [oráculo](./oraculo-h1.md) |
+| H1.A | **Multi-tenant real** — aislamiento por workspace, alta de tenants sin deploy, white-label | ✅ **A0 y A1 desplegados** (2026-08-28) · A2 en diseño | Criterio verificado (`verify:isolation` 27/27) y secuencia ensayada contra el dump real antes de aplicar. En producción: 18 usuarios con membresía, un OWNER por workspace, cero huérfanos. [despliegue](./despliegue-h1.md) · [A2](./plan-a2-whitelabel.md) · [oráculo](./oraculo-h1.md) |
+| H1.B | **Motor serio** — telemetría de costo, cuota real, resiliencia, evals | ✅ **B0–B3 desplegados** (2026-08-28) · B4 pendiente | Los cuatro criterios verificados. En producción: 38 generaciones con workspace, 30 con costo (USD 4,28 materializados), 28 piezas con slot. `QUOTA_ENFORCE=false`: mide y avisa sin bloquear hasta calibrar. [despliegue](./despliegue-h1.md) |
 | H1.C | **Onboarding de marca en 5 minutos** — ingesta de ADN desde URL / redes, no solo PDF | Pendiente | Reduce el costo de dar de alta una marca nueva de una sesión con el equipo a pegar un link. Depende de H1.A. |
 
 **Criterio de salida del H1:** se puede dar de alta un tenant nuevo sin tocar código,
