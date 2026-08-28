@@ -1,8 +1,6 @@
 import { Response } from 'express';
 import { AuthRequest, handleTenantError } from '../middleware/auth.js';
 import { Prisma } from '@prisma/client';
-import path from 'node:path';
-import fs from 'node:fs/promises';
 import { extractBrandFromPdf } from '../services/brandExtractionService.js';
 import { computeBrandFingerprint } from '../services/voiceFingerprintService.js';
 import { serverAIConfig } from '../services/aiClient.js';
@@ -12,8 +10,8 @@ import {
   pickFields,
 } from '../lib/tenancy.js';
 import { prisma } from '../lib/prisma.js';
+import { claveGuiaDeMarca, storage } from '../lib/storage.js';
 
-const UPLOAD_DIR = path.resolve(process.cwd(), 'uploads');
 
 /**
  * Campos que el cliente puede modificar. El resto del body se descarta: sin
@@ -220,11 +218,11 @@ export const uploadBrandGuideline = async (
     const client = await assertClientInWorkspace(req.tenant!, id);
     if (!req.file) return res.status(400).json({ error: 'No se recibió archivo PDF' });
 
-    await fs.mkdir(UPLOAD_DIR, { recursive: true });
-    const safeName = `${id}-${Date.now()}.pdf`;
-    const fullPath = path.join(UPLOAD_DIR, safeName);
-    await fs.writeFile(fullPath, req.file.buffer);
-    const publicUrl = `/uploads/${safeName}`;
+    // Dónde termina el archivo lo decide el entorno, no este handler: con
+    // S3_BUCKET configurado va al bucket, sin él al disco del contenedor como
+    // siempre. Ver lib/storage.ts y docs/plan-e1-almacenamiento.md.
+    const clave = await storage().put(claveGuiaDeMarca(id), req.file.buffer, 'application/pdf');
+    const publicUrl = await storage().getUrl(clave);
 
     const extracted = await extractBrandFromPdf(
       req.file.buffer,
