@@ -18,6 +18,8 @@
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 /** Clave del objeto, no una URL. Ver D4 del plan: una URL firmada vence. */
 export type StorageKey = string;
@@ -64,7 +66,59 @@ const localDriver: StorageDriver = {
   },
 };
 
+/**
+ * Cuánto vive una URL firmada. Corta a propósito: es un enlace a la guía de
+ * marca de una empresa, y el que la pide ya pasó por `assertClientInWorkspace`.
+ * Si alguien la reenvía, deja de servir en minutos en vez de para siempre —que
+ * es el problema que tenía el driver local servido por express.static.
+ */
+const VENCIMIENTO_URL_SEGUNDOS = Number(process.env.S3_URL_TTL_SEGUNDOS) || 600;
+
+/**
+ * Driver S3. Las credenciales las resuelve el SDK solo: en la EC2 salen del rol
+ * de instancia, así que no hay llaves que rotar ni que puedan aparecer en un
+ * dump de la base. Es la misma lección que dejó `Workspace.aiApiKey`.
+ */
+const crearDriverS3 = (bucket: string): StorageDriver => {
+  const cliente = new S3Client({ region: process.env.AWS_REGION || 'us-east-1' });
+
+  return {
+    nombre: 's3',
+
+    async put(clave, contenido, contentType) {
+      await cliente.send(
+        new PutObjectCommand({ Bucket: bucket, Key: clave, Body: contenido, ContentType: contentType })
+      );
+      return clave;
+    },
+
+    async getUrl(clave, segundos = VENCIMIENTO_URL_SEGUNDOS) {
+      return getSignedUrl(cliente, new GetObjectCommand({ Bucket: bucket, Key: clave }), {
+        expiresIn: segundos,
+      });
+    },
+
+    async delete(clave) {
+      await cliente.send(new DeleteObjectCommand({ Bucket: bucket, Key: clave }));
+    },
+  };
+};
+
 let driverActivo: StorageDriver = localDriver;
+
+/**
+ * Se llama una vez al arrancar. Sin `S3_BUCKET` el producto sigue funcionando
+ * con el disco del contenedor: es lo que permite desplegar este código antes de
+ * que el bucket exista.
+ */
+export const initStorage = (): StorageDriver => {
+  const bucket = process.env.S3_BUCKET?.trim();
+  driverActivo = bucket ? crearDriverS3(bucket) : localDriver;
+  return driverActivo;
+};
+
+/** true cuando los archivos NO están en el disco del contenedor. */
+export const almacenamientoExterno = (): boolean => driverActivo.nombre === 's3';
 
 export const storage = (): StorageDriver => driverActivo;
 

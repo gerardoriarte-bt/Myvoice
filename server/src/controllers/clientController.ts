@@ -52,6 +52,20 @@ const DNA_UPDATABLE = [
  * marcas de su empresa; nunca las de otra, porque el workspace sale de la
  * membresía verificada, no del token ni del email.
  */
+/**
+ * `Client.brandGuidelinePdfUrl` guarda la CLAVE del objeto, no una URL: una URL
+ * firmada vence, y guardar algo que caduca es guardar basura. La URL se arma
+ * acá, al leer, y solo para quien ya pasó el filtro de workspace.
+ *
+ * Las filas anteriores a E1 guardan `/uploads/...`, que ya es una ruta servible:
+ * se devuelven tal cual hasta que el script de migración las convierta.
+ */
+const conUrlDeGuia = async <T extends { brandGuidelinePdfUrl: string | null }>(cliente: T): Promise<T> => {
+  const guardado = cliente.brandGuidelinePdfUrl;
+  if (!guardado || guardado.startsWith('/uploads/') || guardado.startsWith('http')) return cliente;
+  return { ...cliente, brandGuidelinePdfUrl: await storage().getUrl(guardado) };
+};
+
 export const getClients = async (req: AuthRequest, res: Response) => {
   try {
     const clients = await prisma.client.findMany({
@@ -59,7 +73,7 @@ export const getClients = async (req: AuthRequest, res: Response) => {
       include: { dnaProfiles: true },
       orderBy: { createdAt: 'asc' },
     });
-    res.json(clients);
+    res.json(await Promise.all(clients.map(conUrlDeGuia)));
   } catch (error) {
     handleTenantError(error, res, 'Error al obtener marcas');
   }
@@ -98,7 +112,7 @@ export const updateClient = async (req: AuthRequest, res: Response) => {
     if (req.body.logo) data.logoUrl = req.body.logo;
 
     const client = await prisma.client.update({ where: { id }, data });
-    res.json(client);
+    res.json(await conUrlDeGuia(client));
   } catch (error) {
     handleTenantError(error, res, 'Error al actualizar la marca');
   }
@@ -222,7 +236,6 @@ export const uploadBrandGuideline = async (
     // S3_BUCKET configurado va al bucket, sin él al disco del contenedor como
     // siempre. Ver lib/storage.ts y docs/plan-e1-almacenamiento.md.
     const clave = await storage().put(claveGuiaDeMarca(id), req.file.buffer, 'application/pdf');
-    const publicUrl = await storage().getUrl(clave);
 
     const extracted = await extractBrandFromPdf(
       req.file.buffer,
@@ -234,7 +247,7 @@ export const uploadBrandGuideline = async (
     const updated = await prisma.client.update({
       where: { id },
       data: {
-        brandGuidelinePdfUrl: publicUrl,
+        brandGuidelinePdfUrl: clave,
         brandGuidelineFileName: req.file.originalname,
         brandGuidelineExtractedAt: new Date(),
         voice: extracted.voice || client.voice,
@@ -245,7 +258,7 @@ export const uploadBrandGuideline = async (
       },
     });
 
-    res.json({ client: updated, extracted });
+    res.json({ client: await conUrlDeGuia(updated), extracted });
   } catch (error: any) {
     handleTenantError(error, res, error?.message || 'Error procesando el PDF');
   }
@@ -282,7 +295,7 @@ export const computeFingerprint = async (req: AuthRequest, res: Response) => {
       where: { id },
       data: { brandFingerprint: fingerprint as any, brandFingerprintAt: new Date() },
     });
-    res.json({ client: updated, fingerprint });
+    res.json({ client: await conUrlDeGuia(updated), fingerprint });
   } catch (error: any) {
     handleTenantError(error, res, error?.message || 'Error calculando fingerprint');
   }
