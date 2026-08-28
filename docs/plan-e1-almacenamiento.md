@@ -102,10 +102,66 @@ el agujero de los archivos públicos, y `express.static` desaparece.
 
 **4 · Retirar el disco.** Sacar el volumen del compose una vez confirmado que nada lo lee.
 
-## Lo que hace falta de tu lado
+## Lo que hace falta de tu lado: el bucket y el rol
 
-Un **bucket S3** y un **rol de IAM** en la instancia con permiso de lectura y escritura sobre él.
-Nada más: sin eso el código sigue usando el driver local y no rompe nada.
+Verificado el 2026-08-28 contra la instancia: está en **us-east-1** y **no tiene rol de IAM
+asignado**. Hay que crear los dos.
+
+### El bucket
+
+| Ajuste | Valor | Por qué |
+|---|---|---|
+| Región | **us-east-1** | La misma que la EC2. Cruzar región cuesta transferencia y suma latencia a cada firma |
+| Block Public Access | **las cuatro opciones activadas** | El bucket no expone nada. Todo acceso pasa por una URL firmada que vence, y esa firma solo la emite alguien que pasó `assertClientInWorkspace` |
+| Cifrado | **SSE-S3** (el default) | Suficiente y sin costo. SSE-KMS agrega precio por llamada y una llave más que administrar |
+| Versionado de S3 | **desactivado** | Las versiones las maneja la aplicación con la clave del objeto. El versionado de S3 guardaría además cada sobrescritura para siempre — justo la acumulación silenciosa que E1 viene a evitar |
+| CORS | **no hace falta** | El navegador abre la URL firmada como enlace o `<img>`, no por `fetch`. Si algún día una pieza se dibuja en un canvas, ahí sí |
+
+Un solo bucket, con prefijos: `guias/` para los PDF de marca, `piezas/` para los diseños.
+
+### El rol de IAM
+
+Un rol para la instancia EC2 —no un usuario con llaves— con esta política, acotada a este bucket
+y a nada más. Sin llaves que rotar ni que puedan aparecer en un dump: la lección que dejó
+`Workspace.aiApiKey`.
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"],
+      "Resource": "arn:aws:s3:::NOMBRE-DEL-BUCKET/*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": ["s3:ListBucket"],
+      "Resource": "arn:aws:s3:::NOMBRE-DEL-BUCKET"
+    }
+  ]
+}
+```
+
+### Regla de ciclo de vida
+
+Una sola, y recién hace falta con la fase H2:
+
+- Prefijo `piezas/originales/` → **expirar a los 90 días**.
+
+Es la mitad automática de la decisión D6 de esa fase: el archivo pesado se va solo, la evidencia
+liviana se queda. Las guías (`guias/`) no llevan regla: son una por marca y no crecen.
+
+### Después de crearlo
+
+```bash
+# en server/.env.production
+S3_BUCKET=nombre-del-bucket
+AWS_REGION=us-east-1
+```
+
+Desplegar, verificar en los logs la línea `[storage] driver s3`, y correr
+`npm run migrar:archivos` (dry-run primero) para los 5 archivos históricos.
 
 ## Criterio de salida
 

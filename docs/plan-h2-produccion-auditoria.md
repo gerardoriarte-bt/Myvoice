@@ -164,24 +164,39 @@ Lo que no merece columna va como estado en la tarjeta: `Auditando`, `2 hallazgos
 vacía. Si no los tiene, es un estado de la tarjeta. Es lo único que evita que el tablero se
 convierta en el gestor de proyectos a medias que esta misma fase declara fuera de alcance.
 
-**D6 · ¿Cuánto viven las piezas subidas? — abierta.**
-Van al mismo bucket que las guías de marca ([E1](./plan-e1-almacenamiento.md)), con prefijo
-`piezas/`. Pero la regla no puede ser la misma: con las guías vale «una marca, un archivo» porque
-la versión anterior no la mira nadie; con las piezas **las versiones se guardan a propósito** —el
-informe de auditoría compara la devuelta con la corregida, y ese `v1 / v2` es parte del valor.
+**D6 · Peso máximo y qué queda después de aprobar — DECIDIDA.**
 
-Entonces las piezas crecen por diseño, y son órdenes de magnitud más pesadas que un PDF: un reel,
-un carrusel de cuatro láminas, una campaña de catorce canales. **Acá el crecimiento del bucket sí
-es un problema real**, a diferencia de las guías.
+Van al mismo bucket que las guías ([E1](./plan-e1-almacenamiento.md)), con prefijo `piezas/`.
+Pero con dos reglas propias, porque acá el crecimiento sí es real: un reel, un carrusel de cuatro
+láminas, catorce canales por campaña, todos los meses.
 
-Lo que hay que decidir antes de la fase 3, no después:
+**Peso máximo: 10 MB por pieza.** El límite no sale de lo que aguanta el bucket sino de lo que la
+auditoría puede aprovechar: para leer el texto de una pieza alcanza con ~1.600 px en el lado
+largo, y los modelos de visión reescalan la imagen igual antes de mirarla. Subir 50 MB no mejora
+un solo hallazgo — solo cuesta más en transferencia, en almacenamiento y en la llamada al
+proveedor. Formatos: PNG, JPG, WEBP y PDF de una página.
 
-- ¿Las versiones intermedias se conservan para siempre, o solo la última una vez que la pieza
-  queda **Lista**? La discusión que las produjo ya quedó en el informe; el archivo pesado, no
-  necesariamente.
-- ¿Las piezas de campañas cerradas hace un año siguen en almacenamiento caliente?
-- Si el cliente aprueba la pieza (D4), esa versión es evidencia de lo aprobado y probablemente no
-  se toca nunca.
+**El video no se audita automáticamente.** Es una corrección al dibujo: el tablero mostraba un
+reel «en auditoría», y eso era optimista. Un chequeo de texto sobre video exigiría extraer
+cuadros y auditarlos uno por uno, con un costo que no se justifica en la fase 3. Los canales de
+video suben su pieza igual —queda como entregable y como evidencia— pero pasan directo a **Por
+revisar** sin informe automático. Si se quiere auditar, el diseñador sube además la portada.
+
+**Después de aprobada, snapshot y listo.** My Voice no vuelve a hacer nada con el archivo pesado:
+
+| Qué | Dónde | Cuánto vive |
+|---|---|---|
+| Original subido | `piezas/originales/` | **90 días**, y lo borra la regla de ciclo de vida del bucket |
+| Snapshot (JPG, lado largo 1.600 px) | `piezas/snapshots/` | permanente — pesa ~1 % del original |
+| Informe de auditoría | la base | permanente: es texto |
+
+Así queda la evidencia de qué se aprobó y con qué hallazgos, sin arrastrar los archivos pesados
+para siempre. Y el snapshot se paga solo dos veces: **es también la miniatura que el tablero
+muestra en cada tarjeta**, así que hay que generarlo igual.
+
+Consecuencia técnica de la fase 3: hace falta una librería de imagen en el servidor (`sharp`) para
+generar el snapshot. Es la primera dependencia nativa del backend; conviene verificar que compile
+en `node:20-slim` antes de comprometerla.
 
 ## Estados límite
 
