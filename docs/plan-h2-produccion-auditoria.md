@@ -132,9 +132,28 @@ mentalmente y no vuelva.
 Es el argumento comercial más fuerte de la fase: el cliente aprueba el copy y después la pieza,
 en la misma herramienta, sin cadenas de mail. *Recomendación:* sí, pero como fase 4.
 
-**D5 · ¿Qué estados tiene una pieza?**
-Cada estado es una columna y una transición que alguien ejecuta. *Recomendación:* los mínimos, y
-agregar solo los que alguien pida.
+**D5 · ¿Qué estados tiene una pieza? — DECIDIDA: cuatro columnas, cada una con dueño.**
+
+| Columna | Dueño | Qué la saca de ahí |
+|---|---|---|
+| Por asignar | Quien produce | Asignar a un diseñador |
+| En diseño | El diseñador | Subir la pieza terminada |
+| Por revisar | Quien aprueba | Aceptar, o devolver a diseño |
+| Lista | Nadie: es el final | — |
+
+El criterio que las define: **cada columna tiene un dueño y una acción que la vacía.** Una
+columna sin dueño humano es una columna donde las cosas se quedan.
+
+Eso corrigió dos errores del primer dibujo. «En auditoría» **no es columna**: dura minutos, la
+mueve el sistema y nadie puede desatascarla. Y una pieza con hallazgos **no puede estar en
+«Lista»**: falta que alguien decida si se aceptan, y ese estado —«Por revisar»— no existía.
+
+Lo que no merece columna va como estado en la tarjeta: `Auditando`, `2 hallazgos`, `Verificada`,
+`Devuelta`.
+
+**La regla para cuando alguien pida una columna nueva:** que traiga su dueño y la acción que la
+vacía. Si no los tiene, es un estado de la tarjeta. Es lo único que evita que el tablero se
+convierta en el gestor de proyectos a medias que esta misma fase declara fuera de alcance.
 
 ## Estados límite
 
