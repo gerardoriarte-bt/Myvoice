@@ -223,6 +223,51 @@ export const getDNAInsights = async (req: AuthRequest, res: Response) => {
 
 // ------------------------------------------------------------- brand assets
 
+/**
+ * Borra la guía de marca: limpia las tres columnas Y el objeto del bucket.
+ *
+ * Es un endpoint propio y no un campo más de `updateClient` por una razón de
+ * seguridad, no de estilo: si `brandGuidelinePdfUrl` entrara en la allow-list,
+ * cualquier miembro podría escribir ahí la clave de la guía de OTRA marca y
+ * leerla con la URL firmada que el servidor genera al leer. El campo lo escribe
+ * el servidor o no lo escribe nadie.
+ *
+ * Hasta ahora la app mandaba los tres campos por `PUT /clients/:id`, donde
+ * `pickFields` los descartaba en silencio: el frontend mostraba el manual
+ * borrado y la base lo conservaba. Y el archivo quedaba huérfano en el disco —
+ * es el origen de los 53 MB de PDF sin dueño que había en producción.
+ */
+export const deleteBrandGuideline = async (req: AuthRequest, res: Response) => {
+  const { id } = req.params;
+  try {
+    const client = await assertClientInWorkspace(req.tenant!, id);
+    const anterior = client.brandGuidelinePdfUrl;
+
+    const updated = await prisma.client.update({
+      where: { id },
+      data: {
+        brandGuidelinePdfUrl: null,
+        brandGuidelineFileName: null,
+        brandGuidelineExtractedAt: null,
+      },
+    });
+
+    // El archivo se borra DESPUÉS de que la base dejó de apuntarlo: si esto
+    // falla, queda un objeto huérfano —basura— y no una fila que apunta a algo
+    // que ya no existe. El ADN extraído no se toca: es lo que alimenta al motor
+    // y borrar la guía no debería vaciar la marca.
+    if (anterior && !anterior.startsWith('/uploads/') && !anterior.startsWith('http')) {
+      await storage().delete(anterior).catch(err => {
+        console.warn(`[storage] no se pudo borrar la guía ${anterior}: ${err?.message}`);
+      });
+    }
+
+    res.json(updated);
+  } catch (error) {
+    handleTenantError(error, res, 'Error al eliminar el manual de marca');
+  }
+};
+
 export const uploadBrandGuideline = async (
   req: AuthRequest & { file?: Express.Multer.File },
   res: Response

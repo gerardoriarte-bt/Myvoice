@@ -177,6 +177,14 @@ export const clientApi = {
     }
     return response.json();
   },
+
+  /**
+   * Borrar el manual es su propio endpoint, no un PUT con los campos en null:
+   * el servidor tiene que borrar además el archivo del bucket, y
+   * `brandGuidelinePdfUrl` no puede estar en la allow-list de actualización.
+   */
+  deleteBrandGuideline: (id: string) =>
+    apiRequest(`/clients/${id}/brand-guideline`, { method: 'DELETE' }),
 };
 
 export const negativeFeedbackApi = {
