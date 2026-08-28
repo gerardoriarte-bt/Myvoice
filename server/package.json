@@ -15,10 +15,13 @@
     "backfill:slots": "tsx scripts/backfillSlots.ts",
     "backfill:telemetria": "tsx scripts/backfillCostTelemetry.ts",
     "recrypt:keys": "tsx scripts/recryptWorkspaceKeys.ts",
+    "migrar:archivos": "tsx scripts/migrarArchivosAS3.ts",
     "verify:isolation": "tsx scripts/verifyIsolation.ts",
     "verify:resiliencia": "AI_BACKOFF_BASE_MS=10 AI_TIMEOUT_CANAL_MS=4000 AI_TIMEOUT_GENERACION_MS=30000 tsx scripts/verifyResiliencia.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1120.0",
+    "@aws-sdk/s3-request-presigner": "^3.1120.0",
     "@prisma/client": "^5.10.0",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",

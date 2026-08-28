@@ -1,8 +1,6 @@
 import { Response } from 'express';
 import { AuthRequest, handleTenantError } from '../middleware/auth.js';
 import { Prisma } from '@prisma/client';
-import path from 'node:path';
-import fs from 'node:fs/promises';
 import { extractBrandFromPdf } from '../services/brandExtractionService.js';
 import { computeBrandFingerprint } from '../services/voiceFingerprintService.js';
 import { serverAIConfig } from '../services/aiClient.js';
@@ -12,8 +10,8 @@ import {
   pickFields,
 } from '../lib/tenancy.js';
 import { prisma } from '../lib/prisma.js';
+import { claveGuiaDeMarca, storage } from '../lib/storage.js';
 
-const UPLOAD_DIR = path.resolve(process.cwd(), 'uploads');
 
 /**
  * Campos que el cliente puede modificar. El resto del body se descarta: sin
@@ -54,6 +52,20 @@ const DNA_UPDATABLE = [
  * marcas de su empresa; nunca las de otra, porque el workspace sale de la
  * membresía verificada, no del token ni del email.
  */
+/**
+ * `Client.brandGuidelinePdfUrl` guarda la CLAVE del objeto, no una URL: una URL
+ * firmada vence, y guardar algo que caduca es guardar basura. La URL se arma
+ * acá, al leer, y solo para quien ya pasó el filtro de workspace.
+ *
+ * Las filas anteriores a E1 guardan `/uploads/...`, que ya es una ruta servible:
+ * se devuelven tal cual hasta que el script de migración las convierta.
+ */
+const conUrlDeGuia = async <T extends { brandGuidelinePdfUrl: string | null }>(cliente: T): Promise<T> => {
+  const guardado = cliente.brandGuidelinePdfUrl;
+  if (!guardado || guardado.startsWith('/uploads/') || guardado.startsWith('http')) return cliente;
+  return { ...cliente, brandGuidelinePdfUrl: await storage().getUrl(guardado) };
+};
+
 export const getClients = async (req: AuthRequest, res: Response) => {
   try {
     const clients = await prisma.client.findMany({
@@ -61,7 +73,7 @@ export const getClients = async (req: AuthRequest, res: Response) => {
       include: { dnaProfiles: true },
       orderBy: { createdAt: 'asc' },
     });
-    res.json(clients);
+    res.json(await Promise.all(clients.map(conUrlDeGuia)));
   } catch (error) {
     handleTenantError(error, res, 'Error al obtener marcas');
   }
@@ -100,7 +112,7 @@ export const updateClient = async (req: AuthRequest, res: Response) => {
     if (req.body.logo) data.logoUrl = req.body.logo;
 
     const client = await prisma.client.update({ where: { id }, data });
-    res.json(client);
+    res.json(await conUrlDeGuia(client));
   } catch (error) {
     handleTenantError(error, res, 'Error al actualizar la marca');
   }
@@ -220,11 +232,23 @@ export const uploadBrandGuideline = async (
     const client = await assertClientInWorkspace(req.tenant!, id);
     if (!req.file) return res.status(400).json({ error: 'No se recibió archivo PDF' });
 
-    await fs.mkdir(UPLOAD_DIR, { recursive: true });
-    const safeName = `${id}-${Date.now()}.pdf`;
-    const fullPath = path.join(UPLOAD_DIR, safeName);
-    await fs.writeFile(fullPath, req.file.buffer);
-    const publicUrl = `/uploads/${safeName}`;
+    // Dónde termina el archivo lo decide el entorno, no este handler: con
+    // S3_BUCKET configurado va al bucket, sin él al disco del contenedor como
+    // siempre. Ver lib/storage.ts y docs/plan-e1-almacenamiento.md.
+    // Una marca, un archivo. Sin esto cada resubida deja el objeto anterior
+    // huérfano en el bucket para siempre: la acumulación no es un PDF por marca
+    // sino todas las versiones que alguna vez se subieron. Se borra DESPUÉS de
+    // subir la nueva, y solo si la anterior era una clave nuestra —las filas
+    // previas a E1 guardan una ruta /uploads/... que el driver no sabe borrar.
+    const anterior = client.brandGuidelinePdfUrl;
+    const clave = await storage().put(claveGuiaDeMarca(id), req.file.buffer, 'application/pdf');
+    if (anterior && !anterior.startsWith('/uploads/') && !anterior.startsWith('http')) {
+      await storage().delete(anterior).catch(err => {
+        // Un archivo viejo que no se pudo borrar es basura, no un error: la
+        // guía nueva ya está arriba y la fila se va a actualizar igual.
+        console.warn(`[storage] no se pudo borrar la guía anterior ${anterior}: ${err?.message}`);
+      });
+    }
 
     const extracted = await extractBrandFromPdf(
       req.file.buffer,
@@ -236,7 +260,7 @@ export const uploadBrandGuideline = async (
     const updated = await prisma.client.update({
       where: { id },
       data: {
-        brandGuidelinePdfUrl: publicUrl,
+        brandGuidelinePdfUrl: clave,
         brandGuidelineFileName: req.file.originalname,
         brandGuidelineExtractedAt: new Date(),
         voice: extracted.voice || client.voice,
@@ -247,7 +271,7 @@ export const uploadBrandGuideline = async (
       },
     });
 
-    res.json({ client: updated, extracted });
+    res.json({ client: await conUrlDeGuia(updated), extracted });
   } catch (error: any) {
     handleTenantError(error, res, error?.message || 'Error procesando el PDF');
   }
@@ -284,7 +308,7 @@ export const computeFingerprint = async (req: AuthRequest, res: Response) => {
       where: { id },
       data: { brandFingerprint: fingerprint as any, brandFingerprintAt: new Date() },
     });
-    res.json({ client: updated, fingerprint });
+    res.json({ client: await conUrlDeGuia(updated), fingerprint });
   } catch (error: any) {
     handleTenantError(error, res, error?.message || 'Error calculando fingerprint');
   }

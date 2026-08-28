@@ -164,6 +164,40 @@ Lo que no merece columna va como estado en la tarjeta: `Auditando`, `2 hallazgos
 vacía. Si no los tiene, es un estado de la tarjeta. Es lo único que evita que el tablero se
 convierta en el gestor de proyectos a medias que esta misma fase declara fuera de alcance.
 
+**D6 · Peso máximo y qué queda después de aprobar — DECIDIDA.**
+
+Van al mismo bucket que las guías ([E1](./plan-e1-almacenamiento.md)), con prefijo `piezas/`.
+Pero con dos reglas propias, porque acá el crecimiento sí es real: un reel, un carrusel de cuatro
+láminas, catorce canales por campaña, todos los meses.
+
+**Peso máximo: 10 MB por pieza.** El límite no sale de lo que aguanta el bucket sino de lo que la
+auditoría puede aprovechar: para leer el texto de una pieza alcanza con ~1.600 px en el lado
+largo, y los modelos de visión reescalan la imagen igual antes de mirarla. Subir 50 MB no mejora
+un solo hallazgo — solo cuesta más en transferencia, en almacenamiento y en la llamada al
+proveedor. Formatos: PNG, JPG, WEBP y PDF de una página.
+
+**El video no se audita automáticamente.** Es una corrección al dibujo: el tablero mostraba un
+reel «en auditoría», y eso era optimista. Un chequeo de texto sobre video exigiría extraer
+cuadros y auditarlos uno por uno, con un costo que no se justifica en la fase 3. Los canales de
+video suben su pieza igual —queda como entregable y como evidencia— pero pasan directo a **Por
+revisar** sin informe automático. Si se quiere auditar, el diseñador sube además la portada.
+
+**Después de aprobada, snapshot y listo.** My Voice no vuelve a hacer nada con el archivo pesado:
+
+| Qué | Dónde | Cuánto vive |
+|---|---|---|
+| Original subido | `piezas/originales/` | **90 días**, y lo borra la regla de ciclo de vida del bucket |
+| Snapshot (JPG, lado largo 1.600 px) | `piezas/snapshots/` | permanente — pesa ~1 % del original |
+| Informe de auditoría | la base | permanente: es texto |
+
+Así queda la evidencia de qué se aprobó y con qué hallazgos, sin arrastrar los archivos pesados
+para siempre. Y el snapshot se paga solo dos veces: **es también la miniatura que el tablero
+muestra en cada tarjeta**, así que hay que generarlo igual.
+
+Consecuencia técnica de la fase 3: hace falta una librería de imagen en el servidor (`sharp`) para
+generar el snapshot. Es la primera dependencia nativa del backend; conviene verificar que compile
+en `node:20-slim` antes de comprometerla.
+
 ## Estados límite
 
 - Una pieza que sirve a **dos canales** (el mismo visual para Post e Historia).
@@ -187,7 +221,9 @@ Sin estimar hasta que la fase 0 cierre. Estimarla antes sería inventar.
 producción se coordina por fuera del sistema.
 
 **Fase 3 · Subida y auditoría.** Entrada de imagen en `aiClient`, con su costo medido como una
-etapa más. Los dos chequeos son dos llamadas distintas: comparar contra un texto conocido es
+etapa más. La pieza llega al modelo desde el bucket —URL firmada o bytes, según lo que acepte el
+proveedor—, lo que significa que **el diseño de un cliente sale hacia la API de IA**. Es el mismo
+camino que ya recorre su copy, pero conviene decirlo antes de que alguien lo pregunte. Los dos chequeos son dos llamadas distintas: comparar contra un texto conocido es
 barato; auditar estilo contra el ADN es del mismo tipo que el Critic y puede reusar su prompt.
 
 **Fase 4 · La pieza vuelve al cliente**, si D4 se confirma.

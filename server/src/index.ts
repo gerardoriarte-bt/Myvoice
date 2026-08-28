@@ -44,6 +44,7 @@ try {
 
 import { PrismaClient } from '@prisma/client';
 import { Request, Response, NextFunction } from 'express';
+import { almacenamientoExterno, initStorage } from './lib/storage.js';
 import multer from 'multer';
 import routes from './routes/index.js';
 
@@ -53,7 +54,19 @@ const PORT = process.env.PORT || 3001;
 
 app.use(cors());
 app.use(express.json({ limit: '20mb' }));
-app.use('/uploads', express.static(path.resolve(process.cwd(), 'uploads')));
+// El almacenamiento se resuelve una sola vez, al arrancar: con S3_BUCKET los
+// archivos van al bucket, sin él al disco del contenedor.
+const almacenamiento = initStorage();
+console.log(`[storage] driver ${almacenamiento.nombre}`);
+
+// `express.static` sirve archivos SIN autenticación y SIN chequeo de workspace:
+// cualquiera con la URL descarga la guía de marca de cualquier empresa, sin
+// vencimiento y sin forma de revocar. Es el único lugar donde el aislamiento de
+// lib/tenancy.ts no llega. Por eso se monta SOLO con el driver local, que es
+// desarrollo. En producción, con S3, las URLs se firman por pedido y vencen.
+if (!almacenamientoExterno()) {
+  app.use('/uploads', express.static(path.resolve(process.cwd(), 'uploads')));
+}
 
 // Basic health check
 app.get('/health', (_req, res) => {
