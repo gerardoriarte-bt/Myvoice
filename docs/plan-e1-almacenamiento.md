@@ -1,5 +1,11 @@
 # Plan E1 — Almacenamiento de archivos fuera del contenedor
 
+> ✅ **Desplegado el 2026-08-28.** Bucket `myvoice-bucket-151241089385-us-east-1-an` en us-east-1,
+> rol de instancia `myvoice-rol`. Verificado en producción: escritura OK, lectura firmada 200,
+> **lectura sin firma 403**, borrado OK, `/uploads` devuelve 404 y los 53 MB de archivos huérfanos
+> quedaron eliminados. Falta solo la regla de ciclo de vida de `piezas/`, que recién hace falta
+> con la fase H2.
+>
 > Habilitador. No cambia nada de lo que el usuario ve, y es **prerrequisito duro** de la
 > [fase H2](./plan-h2-produccion-auditoria.md): sin esto, la subida de piezas de diseño repite un
 > incidente conocido.
