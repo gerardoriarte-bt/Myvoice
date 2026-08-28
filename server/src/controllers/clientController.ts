@@ -235,7 +235,20 @@ export const uploadBrandGuideline = async (
     // Dónde termina el archivo lo decide el entorno, no este handler: con
     // S3_BUCKET configurado va al bucket, sin él al disco del contenedor como
     // siempre. Ver lib/storage.ts y docs/plan-e1-almacenamiento.md.
+    // Una marca, un archivo. Sin esto cada resubida deja el objeto anterior
+    // huérfano en el bucket para siempre: la acumulación no es un PDF por marca
+    // sino todas las versiones que alguna vez se subieron. Se borra DESPUÉS de
+    // subir la nueva, y solo si la anterior era una clave nuestra —las filas
+    // previas a E1 guardan una ruta /uploads/... que el driver no sabe borrar.
+    const anterior = client.brandGuidelinePdfUrl;
     const clave = await storage().put(claveGuiaDeMarca(id), req.file.buffer, 'application/pdf');
+    if (anterior && !anterior.startsWith('/uploads/') && !anterior.startsWith('http')) {
+      await storage().delete(anterior).catch(err => {
+        // Un archivo viejo que no se pudo borrar es basura, no un error: la
+        // guía nueva ya está arriba y la fila se va a actualizar igual.
+        console.warn(`[storage] no se pudo borrar la guía anterior ${anterior}: ${err?.message}`);
+      });
+    }
 
     const extracted = await extractBrandFromPdf(
       req.file.buffer,

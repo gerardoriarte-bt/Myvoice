@@ -65,6 +65,19 @@ Sí, y es lo que obliga al script: hoy se guarda `/uploads/<archivo>`, una ruta.
 la **clave del objeto**, y la URL se genera al leer. Una URL firmada tiene vencimiento; guardarla
 sería guardar algo que caduca.
 
+**D5 · ¿Se descarta el PDF después de extraer el ADN?**
+El motor no lo vuelve a leer nunca: la extracción corre una vez y deja campos estructurados.
+Descartarlo sería más simple. *Decisión: no se descarta*, por tres cosas que se pierden y que ya
+están comprometidas — volver a extraer con un prompt o un modelo mejor (hoy el corte son 18.000
+caracteres), la recuperación sobre el manual completo (H2.D), y la auditoría de la fase H2 contra
+el manual entero en vez de contra la lista corta de prohibiciones. Además es una función del
+producto: `ClientManager.tsx:681` muestra el enlace a la guía.
+
+Lo que sí se corrige es la acumulación real, que **no es un PDF por marca sino todas las
+versiones que alguna vez se subieron**: cada resubida creaba un objeto nuevo y dejaba el anterior
+huérfano para siempre. Ahora se borra el anterior al subir el nuevo. Una marca, un archivo: con
+100 marcas es ~1 GB estable, dos centavos de dólar al mes, que no crece.
+
 ## Fases
 
 **1 · La abstracción y el driver local.** `lib/storage.ts` con `put`, `getUrl` y `delete`. El
