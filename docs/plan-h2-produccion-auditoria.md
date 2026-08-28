@@ -86,23 +86,28 @@ cinco estados límite dibujados. Sin eso, la fase 1 arranca adivinando.
 
 ## Pantallas
 
-1. **Tablero de producción.** Las piezas aprobadas, agrupadas y asignables. Es la pantalla que
-   define qué es una "pieza" para el producto — la más importante de las seis.
-2. **Orden de trabajo.** Lo que ve el diseñador: el copy aprobado por slot, el brief de
-   producción del canal, la marca, sus prohibiciones y el formato esperado.
-3. **Subida de la pieza**, con la auditoría corriendo.
-4. **Informe de auditoría.** Los dos chequeos en un mismo lugar, distinguibles: uno compara
-   contra un texto conocido, el otro juzga contra reglas.
-5. **El tablero del que aprueba**, que no es el del diseñador.
+Eran seis; son cinco. La subida dejó de ser pantalla y pasó a ser un estado de la tarjeta.
+
+1. **Tablero de producción** — dibujado. Alcance **por marca**, con la identidad de la marca
+   activa en el encabezado, igual que el resto del producto.
+2. **Orden de trabajo** — dibujada. Lo que ve el diseñador antes de abrir Figma.
+3. ~~Subida de la pieza~~ → **absorbida en la tarjeta**. Se sube desde el tablero o desde la
+   orden de trabajo; no necesita pantalla propia.
+4. **Informe de auditoría** — dibujado.
+5. **Vista «Mis piezas»** — pendiente. El tablero es por marca, pero el equipo de diseño trabaja
+   cruzando marcas: alguien con tres piezas de Terpel y dos de Huggies no puede tener que
+   cambiar de marca para ver su propio trabajo. Misma data, alcance por persona.
 6. **La navegación de seis etapas**, actualizando la de cuatro que ya está implementada.
 
 ## Decisiones
 
-**D1 · ¿La unidad del tablero es la pieza o la variación de copy?**
-Una pieza gráfica combina varios slots —hook, cuerpo, hashtags— y a veces sirve a dos canales.
-Si la unidad es la variación, el diseñador recibe tres tarjetas para un solo diseño.
-*Recomendación:* la **pieza**, agrupando uno o más slots aprobados. Es la decisión más cara de
-revertir: define una entidad nueva.
+**D1 · ¿La unidad del tablero es la pieza o la variación de copy? — DECIDIDA: la pieza.**
+Las dos opciones se dibujaron con la misma campaña y los mismos aprobados: la pieza da **6
+tarjetas**, la variación da **13**, cuatro de ellas un mismo carrusel. El argumento que decidió
+no fue el conteo sino que **el brief de producción que el motor ya emite describe una pieza, no
+un slot**: en el modelo por variación no hay dónde ponerlo, y es justamente lo que hace que el
+tablero valga más que una lista de textos aprobados. Costo asumido: una entidad nueva y su
+migración.
 
 **D2 · ¿La auditoría bloquea o avisa?**
 *Recomendación:* avisa. El mismo criterio que la cuota, que se desplegó en observación por una
@@ -111,6 +116,17 @@ historial. Un bloqueo mal calibrado se desactiva en una semana y no vuelve.
 
 **D3 · ¿Quién ve el informe y con qué detalle?**
 *Recomendación:* el diseñador ve cada hallazgo; quien aprueba ve un semáforo y puede abrir.
+
+**La regla de la auditoría, que salió de dibujarla:** los dos chequeos **no son la misma clase
+de cosa y no pueden verse iguales**. «¿Dice lo que se aprobó?» compara contra una verdad conocida
+—el copy está en la base con su slot— y muestra el texto exacto de los dos lados: es un hecho.
+«¿Respeta la marca?» es un juicio, del mismo tipo que el Critic. Mezclarlos en una lista destruye
+la confianza en el primero.
+
+Y el estado que decide si la herramienta sobrevive a la primera semana: **«no se pudo leer»**.
+Cuando la auditoría no puede extraer un texto —6 px sobre una foto—, lo dice y aclara que eso no
+significa que esté mal. Reportar un falso «no coincide» ahí hace que el diseñador la desactive
+mentalmente y no vuelva.
 
 **D4 · ¿La pieza vuelve al portal del cliente?**
 Es el argumento comercial más fuerte de la fase: el cliente aprueba el copy y después la pieza,
