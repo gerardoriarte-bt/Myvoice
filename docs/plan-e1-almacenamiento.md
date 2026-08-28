@@ -78,6 +78,17 @@ versiones que alguna vez se subieron**: cada resubida creaba un objeto nuevo y d
 huérfano para siempre. Ahora se borra el anterior al subir el nuevo. Una marca, un archivo: con
 100 marcas es ~1 GB estable, dos centavos de dólar al mes, que no crece.
 
+### Lo que va a guardar, más allá de las guías
+
+El bucket es también donde van a vivir **las piezas de diseño** de la
+[fase H2](./plan-h2-produccion-auditoria.md), con prefijo `piezas/`. Esa es la razón por la que
+E1 es prerrequisito y no una mejora: un PDF de 10 MB por marca el disco lo aguanta; varias piezas
+por campaña, no.
+
+Y con una regla distinta a la de las guías: las versiones de una pieza **se conservan a
+propósito**, porque el informe de auditoría compara la devuelta con la corregida. Cuánto tiempo,
+es la decisión D6 de esa fase.
+
 ## Fases
 
 **1 · La abstracción y el driver local.** `lib/storage.ts` con `put`, `getUrl` y `delete`. El

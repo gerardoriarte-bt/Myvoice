@@ -164,6 +164,25 @@ Lo que no merece columna va como estado en la tarjeta: `Auditando`, `2 hallazgos
 vacía. Si no los tiene, es un estado de la tarjeta. Es lo único que evita que el tablero se
 convierta en el gestor de proyectos a medias que esta misma fase declara fuera de alcance.
 
+**D6 · ¿Cuánto viven las piezas subidas? — abierta.**
+Van al mismo bucket que las guías de marca ([E1](./plan-e1-almacenamiento.md)), con prefijo
+`piezas/`. Pero la regla no puede ser la misma: con las guías vale «una marca, un archivo» porque
+la versión anterior no la mira nadie; con las piezas **las versiones se guardan a propósito** —el
+informe de auditoría compara la devuelta con la corregida, y ese `v1 / v2` es parte del valor.
+
+Entonces las piezas crecen por diseño, y son órdenes de magnitud más pesadas que un PDF: un reel,
+un carrusel de cuatro láminas, una campaña de catorce canales. **Acá el crecimiento del bucket sí
+es un problema real**, a diferencia de las guías.
+
+Lo que hay que decidir antes de la fase 3, no después:
+
+- ¿Las versiones intermedias se conservan para siempre, o solo la última una vez que la pieza
+  queda **Lista**? La discusión que las produjo ya quedó en el informe; el archivo pesado, no
+  necesariamente.
+- ¿Las piezas de campañas cerradas hace un año siguen en almacenamiento caliente?
+- Si el cliente aprueba la pieza (D4), esa versión es evidencia de lo aprobado y probablemente no
+  se toca nunca.
+
 ## Estados límite
 
 - Una pieza que sirve a **dos canales** (el mismo visual para Post e Historia).
@@ -187,7 +206,9 @@ Sin estimar hasta que la fase 0 cierre. Estimarla antes sería inventar.
 producción se coordina por fuera del sistema.
 
 **Fase 3 · Subida y auditoría.** Entrada de imagen en `aiClient`, con su costo medido como una
-etapa más. Los dos chequeos son dos llamadas distintas: comparar contra un texto conocido es
+etapa más. La pieza llega al modelo desde el bucket —URL firmada o bytes, según lo que acepte el
+proveedor—, lo que significa que **el diseño de un cliente sale hacia la API de IA**. Es el mismo
+camino que ya recorre su copy, pero conviene decirlo antes de que alguien lo pregunte. Los dos chequeos son dos llamadas distintas: comparar contra un texto conocido es
 barato; auditar estilo contra el ADN es del mismo tipo que el Critic y puede reusar su prompt.
 
 **Fase 4 · La pieza vuelve al cliente**, si D4 se confirma.
