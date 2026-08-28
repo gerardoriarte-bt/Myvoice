@@ -241,8 +241,10 @@ Sin estimar hasta que la fase 0 cierre. Estimarla antes sería inventar.
 `lib/tenancy.ts` desde el primer handler. **Entrega valor sola**: hoy el paso de aprobado a
 producción se coordina por fuera del sistema.
 
-**Fase 3 · Subida y auditoría.** Entrada de imagen en `aiClient`, con su costo medido como una
-etapa más. La pieza llega al modelo desde el bucket —URL firmada o bytes, según lo que acepte el
+**Fase 3 · Subida y auditoría.** Empieza creando la **regla de ciclo de vida** del bucket
+—`piezas/originales/` → expirar a los 90 días—, que es la mitad automática de D6 y no se creó
+antes a propósito: hasta esta fase ese prefijo no existe y sería una regla vigilando la nada.
+Después, entrada de imagen en `aiClient`, con su costo medido como una etapa más. La pieza llega al modelo desde el bucket —URL firmada o bytes, según lo que acepte el
 proveedor—, lo que significa que **el diseño de un cliente sale hacia la API de IA**. Es el mismo
 camino que ya recorre su copy, pero conviene decirlo antes de que alguien lo pregunte. Los dos chequeos son dos llamadas distintas: comparar contra un texto conocido es
 barato; auditar estilo contra el ADN es del mismo tipo que el Critic y puede reusar su prompt.

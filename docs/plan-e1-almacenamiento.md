@@ -156,7 +156,8 @@ Una sola, y recién hace falta con la fase H2:
 - Prefijo `piezas/originales/` → **expirar a los 90 días**.
 
 Es la mitad automática de la decisión D6 de esa fase: el archivo pesado se va solo, la evidencia
-liviana se queda. Las guías (`guias/`) no llevan regla: son una por marca y no crecen.
+liviana se queda. **Se crea al empezar la fase 3, no antes**: hasta entonces el prefijo no existe.
+Las guías (`guias/`) no llevan regla: son una por marca y no crecen.
 
 ### Después de crearlo
 
