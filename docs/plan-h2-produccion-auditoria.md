@@ -67,8 +67,9 @@ diseño, con el brief de producción que el motor ya emite.
   Acá vive la orden de trabajo y la verificación, no el archivo editable.
 - **Ser un gestor de proyectos.** Estados mínimos. Si el equipo ya vive en otra herramienta,
   competir con ella se pierde.
-- **La aprobación de la pieza por el cliente.** Es el cierre natural del círculo (D4) y quedó
-  fuera del alcance inicial a propósito: primero el ciclo interno funcionando.
+- **La aprobación de la pieza por el cliente** queda para la **fase 4**, no para el alcance
+  inicial: primero el ciclo interno funcionando. La decisión ya está tomada (D4) y la pantalla
+  dibujada; lo que se difiere es construirla.
 
 ---
 
@@ -137,9 +138,29 @@ Cuando la auditoría no puede extraer un texto —6 px sobre una foto—, lo dic
 significa que esté mal. Reportar un falso «no coincide» ahí hace que el diseñador la desactive
 mentalmente y no vuelva.
 
-**D4 · ¿La pieza vuelve al portal del cliente?**
+**D4 · ¿La pieza vuelve al portal del cliente? — DECIDIDA: sí, en la fase 4, con tres límites.**
+
 Es el argumento comercial más fuerte de la fase: el cliente aprueba el copy y después la pieza,
-en la misma herramienta, sin cadenas de mail. *Recomendación:* sí, pero como fase 4.
+en la misma herramienta y sin cadenas de mail. Y no exige pantalla nueva — es el portal que ya
+existe, en un segundo momento.
+
+**Límite 1 · El cliente ve el resultado, no el proceso.** Nada del informe de auditoría, los
+hallazgos, quién diseñó la pieza ni cuántas veces volvió. Ve la pieza y el texto que él mismo
+aprobó, para poder comparar. Todo lo demás es interno, y mezclarlo convierte una herramienta de
+aprobación en una ventana a cómo trabaja la agencia.
+
+**Límite 2 · No agrega columnas al tablero.** La decisión del cliente es un estado de la pieza,
+no una etapa: aprobada por el cliente, o «pidió cambios», que la devuelve a **En diseño** con el
+comentario, reusando el camino de *Devuelta* que D5 ya definió. Sin esto, cada aprobación externa
+sumaría una columna y el tablero se convierte en lo que esta fase declara fuera de alcance.
+
+**Límite 3 · La URL de la pieza se firma contra el token de la sesión, no contra un usuario.**
+Es el punto delicado y por eso queda escrito: el portal **no tiene autenticación** —vive de un
+token en la URL— así que todo lo que se agregue ahí queda accesible con solo tener el enlace. La
+regla es la misma que rige el resto del producto, con el token como sujeto en lugar del usuario:
+el servidor emite una URL firmada de vida corta, solo para piezas que pertenecen a esa sesión, y
+nunca entrega una URL del bucket que el cliente pueda guardar. Hoy el portal expone texto; a
+partir de acá expone archivos, y esa diferencia importa.
 
 **D5 · ¿Qué estados tiene una pieza? — DECIDIDA: cuatro columnas, cada una con dueño.**
 
