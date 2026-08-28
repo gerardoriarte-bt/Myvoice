@@ -33,12 +33,21 @@ El proceso completo tiene seis etapas. Las dos del medio no existen:
 
 ```
 1 Preparar   Marcas — el ADN                            ✓ existe
-2 Producir   Generar · Biblioteca · Historial           ✓ existe
+2 Escribir   Generar · Biblioteca · Historial           ✓ existe (hoy se llama «Producir»)
 3 Aprobar    Revisiones — el cliente aprueba el copy    ✓ existe
-4 Asignar    Tablero: la pieza se ordena y se asigna    ← esta fase
-5 Auditar    Se sube la pieza; la IA la verifica        ← esta fase
-6 Medir      Métricas                                    ✓ existe
+4 Producir   Producción · Mis piezas                    ← esta fase
+   ↳ auditar  no es un ítem del menú: pasa al subir una pieza
+5 Medir      Métricas                                    ✓ existe
 ```
+
+**Seis etapas en el proceso, cinco en la navegación.** No es una omisión: **auditar no es un
+lugar al que se va.** Es lo que pasa cuando alguien sube una pieza, y su informe se abre desde la
+tarjeta. Un ítem de menú «Auditoría» sería un destino vacío — una pantalla que solo tiene sentido
+con una pieza concreta delante.
+
+**Y «Producir» cambia de dueño.** Hoy la etapa 2 se llama así y lo que produce es texto. Cuando
+entra la etapa que produce la pieza, dos cosas distintas comparten nombre. Escribir / Producir
+las separa con las palabras que el equipo ya usa.
 
 **4 · Asignar.** Lo aprobado se agrupa en piezas, se ordena y se asigna a alguien del equipo de
 diseño, con el brief de producción que el motor ya emite.
@@ -94,10 +103,10 @@ Eran seis; son cinco. La subida dejó de ser pantalla y pasó a ser un estado de
 3. ~~Subida de la pieza~~ → **absorbida en la tarjeta**. Se sube desde el tablero o desde la
    orden de trabajo; no necesita pantalla propia.
 4. **Informe de auditoría** — dibujado.
-5. **Vista «Mis piezas»** — pendiente. El tablero es por marca, pero el equipo de diseño trabaja
-   cruzando marcas: alguien con tres piezas de Terpel y dos de Huggies no puede tener que
-   cambiar de marca para ver su propio trabajo. Misma data, alcance por persona.
-6. **La navegación de seis etapas**, actualizando la de cuatro que ya está implementada.
+5. **Vista «Mis piezas»** — dibujada. Misma data que el tablero, alcance por persona. Y un
+   orden distinto: para el diseñador la urgencia no es el estado sino **lo devuelto**, que es
+   trabajo que ya hizo y volvió, con el motivo a la vista. Va primero a propósito.
+6. **La navegación** — dibujada, y con una corrección: son **cinco etapas, no seis**.
 
 ## Decisiones
 
