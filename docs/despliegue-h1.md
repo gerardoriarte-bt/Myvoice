@@ -17,6 +17,31 @@ Lo que **no** entra: la fase de producción y auditoría de piezas
 ([plan](./plan-h2-produccion-auditoria.md)). No comparte código ni migraciones. Si aparece acá,
 algo se mezcló.
 
+## ⛔ Lo primero: NO empezar por `deploy.sh`
+
+El contenedor del backend corre las migraciones al arrancar:
+
+```
+server/Dockerfile:24 → CMD ["sh", "-c", "npx prisma migrate deploy && node dist/index.js"]
+```
+
+Si el primer comando del día es `deploy.sh`, esto pasa: el contenedor levanta con el código
+nuevo, intenta aplicar `_workspace_required`, **falla porque el backfill todavía no corrió**, el
+`&&` corta y `node dist/index.js` nunca se ejecuta. **El backend queda caído**, y Prisma anota la
+migración como fallida, así que no se recupera solo ni cuando el backfill termine.
+
+`deploy.sh` va en el **paso 7**, cuando las tres migraciones ya están aplicadas. Para entonces el
+`migrate deploy` del contenedor no tiene nada que hacer y arranca limpio.
+
+**Si ya pasó** (el backend está caído y la migración marcada como fallida):
+
+```bash
+npx prisma migrate resolve --rolled-back 20260826000001_workspace_required
+npm run backfill:tenancy            # dry-run, revisar
+npm run backfill:tenancy -- --apply
+docker compose -f docker-compose.prod.yaml restart backend
+```
+
 ## Antes de empezar
 
 - [ ] `pg_dump` de la base. **No es opcional**: el backfill crea workspaces y mueve marcas, y
@@ -38,13 +63,51 @@ algo se mezcló.
 4  npm run backfill:tenancy                   ← dry-run, revisar el plan
 5  npm run backfill:tenancy -- --apply
 6  npx prisma migrate deploy                  ← ahora sí, y aplica también cost_quota_slot
-7  deploy.sh                                  ← backend y frontend juntos
+7  deploy.sh                                  ← recién acá. Antes deja el backend caído
 8  npm run recrypt:keys        → -- --apply
 9  npm run backfill:telemetria → -- --apply
 10 npm run backfill:slots      → -- --apply
 11 Verificación
 12 Invitar a los que quedaron sin acceso
 ```
+
+### El caso Terpel
+
+La data de Terpel es la data real de producción; el workspace **LoBueno era un demo**. El backfill
+no borra nada —crea workspaces, mueve marcas y otorga membresías— pero **sí decide dónde queda
+cada marca**, y hay una forma concreta de que Terpel termine mal ubicada:
+
+`backfillTenancy.ts:79` elige como workspace de fallback el de slug `lobueno`, o el primero que
+exista. Si la marca Terpel está huérfana (`workspaceId IS NULL`) **y no tiene usuarios propios**,
+la regla 2 la manda al fallback: quedaría **dentro del workspace demo**, con las marcas del demo
+como hermanas y compartiendo su cuota.
+
+No se pierde información, pero el reparto sale mal y corregirlo después implica mover marcas a
+mano con la app ya en producción.
+
+**Qué mirar en el dry-run del paso 4**, antes de aplicar:
+
+```
+Marcas a mover (N):
+  · Terpel: (huérfana) → LoBueno        ← MAL. Parar acá.
+  · Terpel: LoBueno → Terpel            ← BIEN: se recortó a su propio workspace
+```
+
+Si sale la primera, **no aplicar**. Crear el workspace de Terpel a mano, mover la marca, y recién
+entonces correr el backfill: con la marca ya ubicada, la regla 2 la deja donde está.
+
+```sql
+-- solo si el dry-run manda Terpel al fallback
+INSERT INTO "Workspace" (id, name, slug, plan, "createdAt", "updatedAt")
+VALUES (gen_random_uuid(), 'Terpel', 'terpel', 'company', now(), now());
+
+UPDATE "Client" SET "workspaceId" = (SELECT id FROM "Workspace" WHERE slug = 'terpel')
+ WHERE name ILIKE '%terpel%';
+```
+
+Lo mismo aplica a `Project`, `ReviewSession` y `GenerationPreset` de Terpel que estén huérfanos:
+la regla 2 los manda al fallback igual. El dry-run los cuenta en «Registros huérfanos a
+reasignar».
 
 ### Los tres pasos que sorprenden
 

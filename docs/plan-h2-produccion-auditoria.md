@@ -33,12 +33,21 @@ El proceso completo tiene seis etapas. Las dos del medio no existen:
 
 ```
 1 Preparar   Marcas — el ADN                            ✓ existe
-2 Producir   Generar · Biblioteca · Historial           ✓ existe
+2 Escribir   Generar · Biblioteca · Historial           ✓ existe (hoy se llama «Producir»)
 3 Aprobar    Revisiones — el cliente aprueba el copy    ✓ existe
-4 Asignar    Tablero: la pieza se ordena y se asigna    ← esta fase
-5 Auditar    Se sube la pieza; la IA la verifica        ← esta fase
-6 Medir      Métricas                                    ✓ existe
+4 Producir   Producción · Mis piezas                    ← esta fase
+   ↳ auditar  no es un ítem del menú: pasa al subir una pieza
+5 Medir      Métricas                                    ✓ existe
 ```
+
+**Seis etapas en el proceso, cinco en la navegación.** No es una omisión: **auditar no es un
+lugar al que se va.** Es lo que pasa cuando alguien sube una pieza, y su informe se abre desde la
+tarjeta. Un ítem de menú «Auditoría» sería un destino vacío — una pantalla que solo tiene sentido
+con una pieza concreta delante.
+
+**Y «Producir» cambia de dueño.** Hoy la etapa 2 se llama así y lo que produce es texto. Cuando
+entra la etapa que produce la pieza, dos cosas distintas comparten nombre. Escribir / Producir
+las separa con las palabras que el equipo ya usa.
 
 **4 · Asignar.** Lo aprobado se agrupa en piezas, se ordena y se asigna a alguien del equipo de
 diseño, con el brief de producción que el motor ya emite.
@@ -86,23 +95,28 @@ cinco estados límite dibujados. Sin eso, la fase 1 arranca adivinando.
 
 ## Pantallas
 
-1. **Tablero de producción.** Las piezas aprobadas, agrupadas y asignables. Es la pantalla que
-   define qué es una "pieza" para el producto — la más importante de las seis.
-2. **Orden de trabajo.** Lo que ve el diseñador: el copy aprobado por slot, el brief de
-   producción del canal, la marca, sus prohibiciones y el formato esperado.
-3. **Subida de la pieza**, con la auditoría corriendo.
-4. **Informe de auditoría.** Los dos chequeos en un mismo lugar, distinguibles: uno compara
-   contra un texto conocido, el otro juzga contra reglas.
-5. **El tablero del que aprueba**, que no es el del diseñador.
-6. **La navegación de seis etapas**, actualizando la de cuatro que ya está implementada.
+Eran seis; son cinco. La subida dejó de ser pantalla y pasó a ser un estado de la tarjeta.
+
+1. **Tablero de producción** — dibujado. Alcance **por marca**, con la identidad de la marca
+   activa en el encabezado, igual que el resto del producto.
+2. **Orden de trabajo** — dibujada. Lo que ve el diseñador antes de abrir Figma.
+3. ~~Subida de la pieza~~ → **absorbida en la tarjeta**. Se sube desde el tablero o desde la
+   orden de trabajo; no necesita pantalla propia.
+4. **Informe de auditoría** — dibujado.
+5. **Vista «Mis piezas»** — dibujada. Misma data que el tablero, alcance por persona. Y un
+   orden distinto: para el diseñador la urgencia no es el estado sino **lo devuelto**, que es
+   trabajo que ya hizo y volvió, con el motivo a la vista. Va primero a propósito.
+6. **La navegación** — dibujada, y con una corrección: son **cinco etapas, no seis**.
 
 ## Decisiones
 
-**D1 · ¿La unidad del tablero es la pieza o la variación de copy?**
-Una pieza gráfica combina varios slots —hook, cuerpo, hashtags— y a veces sirve a dos canales.
-Si la unidad es la variación, el diseñador recibe tres tarjetas para un solo diseño.
-*Recomendación:* la **pieza**, agrupando uno o más slots aprobados. Es la decisión más cara de
-revertir: define una entidad nueva.
+**D1 · ¿La unidad del tablero es la pieza o la variación de copy? — DECIDIDA: la pieza.**
+Las dos opciones se dibujaron con la misma campaña y los mismos aprobados: la pieza da **6
+tarjetas**, la variación da **13**, cuatro de ellas un mismo carrusel. El argumento que decidió
+no fue el conteo sino que **el brief de producción que el motor ya emite describe una pieza, no
+un slot**: en el modelo por variación no hay dónde ponerlo, y es justamente lo que hace que el
+tablero valga más que una lista de textos aprobados. Costo asumido: una entidad nueva y su
+migración.
 
 **D2 · ¿La auditoría bloquea o avisa?**
 *Recomendación:* avisa. El mismo criterio que la cuota, que se desplegó en observación por una
@@ -112,13 +126,43 @@ historial. Un bloqueo mal calibrado se desactiva en una semana y no vuelve.
 **D3 · ¿Quién ve el informe y con qué detalle?**
 *Recomendación:* el diseñador ve cada hallazgo; quien aprueba ve un semáforo y puede abrir.
 
+**La regla de la auditoría, que salió de dibujarla:** los dos chequeos **no son la misma clase
+de cosa y no pueden verse iguales**. «¿Dice lo que se aprobó?» compara contra una verdad conocida
+—el copy está en la base con su slot— y muestra el texto exacto de los dos lados: es un hecho.
+«¿Respeta la marca?» es un juicio, del mismo tipo que el Critic. Mezclarlos en una lista destruye
+la confianza en el primero.
+
+Y el estado que decide si la herramienta sobrevive a la primera semana: **«no se pudo leer»**.
+Cuando la auditoría no puede extraer un texto —6 px sobre una foto—, lo dice y aclara que eso no
+significa que esté mal. Reportar un falso «no coincide» ahí hace que el diseñador la desactive
+mentalmente y no vuelva.
+
 **D4 · ¿La pieza vuelve al portal del cliente?**
 Es el argumento comercial más fuerte de la fase: el cliente aprueba el copy y después la pieza,
 en la misma herramienta, sin cadenas de mail. *Recomendación:* sí, pero como fase 4.
 
-**D5 · ¿Qué estados tiene una pieza?**
-Cada estado es una columna y una transición que alguien ejecuta. *Recomendación:* los mínimos, y
-agregar solo los que alguien pida.
+**D5 · ¿Qué estados tiene una pieza? — DECIDIDA: cuatro columnas, cada una con dueño.**
+
+| Columna | Dueño | Qué la saca de ahí |
+|---|---|---|
+| Por asignar | Quien produce | Asignar a un diseñador |
+| En diseño | El diseñador | Subir la pieza terminada |
+| Por revisar | Quien aprueba | Aceptar, o devolver a diseño |
+| Lista | Nadie: es el final | — |
+
+El criterio que las define: **cada columna tiene un dueño y una acción que la vacía.** Una
+columna sin dueño humano es una columna donde las cosas se quedan.
+
+Eso corrigió dos errores del primer dibujo. «En auditoría» **no es columna**: dura minutos, la
+mueve el sistema y nadie puede desatascarla. Y una pieza con hallazgos **no puede estar en
+«Lista»**: falta que alguien decida si se aceptan, y ese estado —«Por revisar»— no existía.
+
+Lo que no merece columna va como estado en la tarjeta: `Auditando`, `2 hallazgos`, `Verificada`,
+`Devuelta`.
+
+**La regla para cuando alguien pida una columna nueva:** que traiga su dueño y la acción que la
+vacía. Si no los tiene, es un estado de la tarjeta. Es lo único que evita que el tablero se
+convierta en el gestor de proyectos a medias que esta misma fase declara fuera de alcance.
 
 ## Estados límite
 
