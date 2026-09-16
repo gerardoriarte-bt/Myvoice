@@ -450,10 +450,15 @@ const App: React.FC = () => {
       const result = await refineApi.refine({ variations, instruction, clientId });
       if (result?.variations?.length > 0) {
         setVariations(result.variations);
-        addNotification('Copy refinado correctamente', 'success');
+        const fallidos: string[] = result.failedPlatforms ?? [];
+        if (fallidos.length > 0) {
+          addNotification(`Copy refinado, salvo ${fallidos.join(', ')}: esos canales conservan el texto anterior`, 'info');
+        } else {
+          addNotification('Copy refinado correctamente', 'success');
+        }
       }
-    } catch {
-      addNotification('Error al refinar el copy', 'error');
+    } catch (err: any) {
+      addNotification(err?.message || 'Error al refinar el copy', 'error');
     }
   }, [variations, lastParams, addNotification]);
 
