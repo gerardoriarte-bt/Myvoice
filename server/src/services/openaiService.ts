@@ -28,7 +28,7 @@ import {
 } from "./aiClient.js";
 import { resolveMarketLocale, brandUsesVoseo } from "./localeRules.js";
 
-const createSemaphore = (max: number) => {
+export const createSemaphore = (max: number) => {
   let running = 0;
   const queue: Array<() => void> = [];
   const acquire = (): Promise<void> => new Promise(resolve => {

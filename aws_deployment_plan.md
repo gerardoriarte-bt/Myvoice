@@ -94,6 +94,9 @@ Archivo: `/etc/nginx/sites-available/myvoice`
 - `/` → `http://127.0.0.1:8080` (frontend)
 - `/api` → `http://127.0.0.1:3001/api` (backend)
 - `/api/generate/stream` — proxy sin buffering (SSE)
+- `/api` debe llevar `proxy_read_timeout 300s;` y `proxy_send_timeout 300s;`. Sin eso nginx
+  usa el default de 60 s: el 16-sep-2026 cada `POST /api/copy/refine` devolvió 504 mientras
+  el backend seguía llamando al proveedor ~3,5 min más. El nginx del contenedor ya tiene 300 s.
 
 ```bash
 sudo nginx -t && sudo systemctl reload nginx
