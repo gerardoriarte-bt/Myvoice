@@ -80,7 +80,7 @@ Fase 0 · DISEÑO          en el .pen · no se escribe código
 Fase 1 · E1 — S3         prerrequisito duro, no es parte de la funcionalidad
 Fase 2 · Modelo + tablero    ya entrega valor sin auditoría
 Fase 3 · Subida + auditoría  las dos verificaciones
-Fase 4 · La pieza al cliente  si D4 se confirma
+Fase 4 · La pieza al cliente  D4 decidida, con tres límites
 ```
 
 Ninguna fase arranca con decisiones de la anterior abiertas. La 0 no es una formalidad: **la
@@ -305,30 +305,271 @@ porque una caída del servicio no es una opinión sobre la pieza.
 
 ---
 
-# Fases 1 a 4 · Implementación
+# Nivel 2 · Cómo se construye
 
-Sin estimar hasta que la fase 0 cierre. Estimarla antes sería inventar.
+> Escrito el 2026-09-22, con la fase 0 cerrada. **Una decisión nueva queda abierta, D7**, y
+> bloquea la fase 2: apareció al bajar el diseño al modelo y no está dibujada.
 
-**Fase 1 · E1 — migrar uploads a S3.** No es parte de la funcionalidad: es su piso.
+## Lo que el código dice y el diseño no veía
 
-**Fase 2 · Modelo y tablero.** La entidad pieza con sus estados, su relación con las
-`SavedVariation` aprobadas que la componen y su asignación a un miembro del workspace. Guardas de
-`lib/tenancy.ts` desde el primer handler. **Entrega valor sola**: hoy el paso de aprobado a
-producción se coordina por fuera del sistema.
+Tres hechos del código actual que cambian cómo se construye:
 
-**Fase 3 · Subida y auditoría.** Empieza creando la **regla de ciclo de vida** del bucket
-—`piezas/originales/` → expirar a los 90 días—, que es la mitad automática de D6 y no se creó
-antes a propósito: hasta esta fase ese prefijo no existe y sería una regla vigilando la nada.
-Después, entrada de imagen en `aiClient`, con su costo medido como una etapa más. La pieza llega al modelo desde el bucket —URL firmada o bytes, según lo que acepte el
-proveedor—, lo que significa que **el diseño de un cliente sale hacia la API de IA**. Es el mismo
-camino que ya recorre su copy, pero conviene decirlo antes de que alguien lo pregunte. Los dos chequeos son dos llamadas distintas: comparar contra un texto conocido es
-barato; auditar estilo contra el ADN es del mismo tipo que el Critic y puede reusar su prompt.
+**1 · «Aprobado» tiene dos orígenes.** `SavedVariation.isApproved` lo pone en `true` el portal
+del cliente (`reviewController.ts:203`) **y** cualquier miembro desde la Biblioteca, porque
+`isApproved` está en la allow-list de `savedController.ts` (`VARIATION_UPDATABLE`). El tablero
+toma los dos: para producción, aprobado es aprobado. Pero implica que un aprobado se puede
+**desaprobar** después de creada la pieza, y la tarjeta lo tiene que decir. Es el mismo aviso
+que el estado límite 3.
 
-**Fase 4 · La pieza vuelve al cliente**, si D4 se confirma.
+**2 · El diseñador hoy no ve casi nada.** En `App.tsx` todas las pantallas salvo Biblioteca y
+Guía están detrás de `isAdmin`. Un diseñador es `MEMBER`, así que el tablero y Mis piezas son
+las **primeras pantallas de trabajo pensadas para alguien que no administra**. Van con
+`adminOnly: false` en `screens.ts`, y el backend las monta con `inWorkspace`, no con `asManager`.
+
+**3 · La campaña es opcional.** Las tarjetas dicen «Rendimiento · Octubre», que es el `Project`.
+Pero `SavedVariation.projectId` es nullable y hay copy guardado sin proyecto. La pieza no puede
+exigir campaña sin dejar afuera ese copy: `Pieza.projectId` es nullable, y la tarjeta muestra el
+título de la pieza cuando no hay proyecto.
+
+## D7 · ¿Cómo nace una pieza? — ABIERTA
+
+El diseño de D1 lo dejó escrito sin resolver: *«alguien tiene que decidir qué slots entran en
+cada pieza; automático la mayoría de las veces, no siempre»*. Los estados límite fijaron qué es
+una pieza (un canal, un archivo), pero no **quién la crea ni cuándo**. Hay dos caminos:
+
+- **Automático:** cada aprobado de un canal con pieza aterriza en *Por asignar*, agrupado por
+  (proyecto, canal). Falla en tres casos reales: los aprobados de la Biblioteca llegan de a uno,
+  así que la pieza nace incompleta; el copy sin proyecto no tiene con qué agruparse; y si hay dos
+  hooks aprobados para el mismo Post, el sistema no sabe si es un A/B (dos piezas) o una
+  alternativa descartada.
+- **Explícito, con propuesta:** quien produce elige «Mandar a producción» sobre un grupo de
+  aprobados. El sistema **propone** las piezas —una por canal, un aprobado por slot, el formato
+  por defecto del canal— y la persona confirma o corrige. Cuando un slot tiene dos aprobados,
+  pregunta: ¿una pieza con el elegido, o dos piezas?
+
+*Recomendación:* **explícito, con propuesta.** Es la columna *Por asignar* con su dueño: quien
+produce. Y es coherente con D5: el sistema no mueve trabajo entre personas por su cuenta.
+
+**Qué falta:** dibujarlo en el `.pen`. Desde dónde se dispara —la Biblioteca, el cierre de una
+sesión de revisión, o los dos— y cómo se ve la propuesta. Hasta que eso esté, la fase 2 puede
+avanzar en el modelo, la máquina de estados y el tablero, pero **no en el alta de piezas**.
+
+## Fase 1 · E1 — almacenamiento en S3 — **hecha**
+
+Desplegada el 2026-08-28 ([plan E1](./plan-e1-almacenamiento.md)).
+
+## Fase 2 · Modelo, tablero y orden de trabajo
+
+**Entrega valor sola, sin IA:** en esta fase la pieza se entrega con un **enlace** (Figma, Drive)
+en vez de un archivo. Es la regla del video del estado límite 4, extendida a todo mientras no
+exista la subida. El equipo coordina la producción dentro del sistema desde el primer día, y la
+fase 3 agrega archivo y auditoría encima, sin cambiar el tablero.
+
+### Modelo — `server/prisma/schema.prisma`
+
+Una migración aditiva: no toca tablas existentes.
+
+```prisma
+enum PiezaEstado { POR_ASIGNAR  EN_DISENO  POR_REVISAR  LISTA }
+enum PiezaTipo   { GRAFICA  VIDEO  AUDIO }
+
+model Pieza {
+  id               String      @id @default(uuid())
+  /// Denormalizado desde Client, como GenerationLog: el guard y el tablero
+  /// filtran por acá sin join.
+  workspaceId      String
+  clientId         String
+  projectId        String?     // estado de hecho 3: la campaña es opcional
+  platform         String      // valor de Platform; su spec dice tipo y formatos
+  tipo             PiezaTipo
+  formato          String      // "1080×1080", "300×250" — uno de spec.pieza.formatos
+  titulo           String      // "pieza principal de feed"
+  estado           PiezaEstado @default(POR_ASIGNAR)
+  asignadaAId      String?
+  /// Hermanas (estado límite 1): mismo uuid, sin tabla aparte.
+  grupoId          String?
+  /// Entregable de la fase 2, y el de video para siempre.
+  enlace           String?
+  creadaPorId      String
+  estadoDesde      DateTime    @default(now())
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+  slots            PiezaSlot[]
+  eventos          PiezaEvento[]
+
+  @@index([workspaceId, clientId, estado])  // el tablero
+  @@index([asignadaAId, estado])            // Mis piezas
+}
+
+model PiezaSlot {
+  id               String   @id @default(uuid())
+  piezaId          String
+  /// SetNull, no Cascade: borrar el copy de la Biblioteca no puede borrar
+  /// una pieza en producción. La tarjeta avisa que el original ya no existe.
+  savedVariationId String?  @unique   // un aprobado, a lo sumo una pieza
+  slot             String
+  slotLabel        String   // del registry, nunca del body
+  /// Estado límite 3: el texto tal como estaba al asignarse. La auditoría
+  /// compara contra esto, no contra el original.
+  textoCongelado   String
+  /// visualBrief, animationBrief, structure, production: van a la orden de
+  /// trabajo pero no se auditan contra la pieza.
+  esInstruccion    Boolean  @default(false)
+  orden            Int      @default(0)
+}
+
+model PiezaEvento {
+  id        String   @id @default(uuid())
+  piezaId   String
+  tipo      String   // CREADA · ASIGNADA · ENTREGADA · ACEPTADA · DEVUELTA · REABIERTA · COPY_ACTUALIZADO
+  deEstado  PiezaEstado?
+  aEstado   PiezaEstado?
+  autorId   String
+  nota      String?  // obligatoria en DEVUELTA y REABIERTA
+  createdAt DateTime @default(now())
+  @@index([piezaId, createdAt])
+}
+```
+
+`PiezaEvento` es append-only y cumple tres funciones: el historial de la tarjeta, el motivo de
+«Devuelta» que Mis piezas muestra primero, y el tiempo en cada columna. Es la misma idea que
+[E6](./plan-e6-registro-consumo.md), aplicada a decisiones en vez de a consumo.
+
+«El copy cambió» **no es una columna**: se calcula al leer, comparando `textoCongelado` con el
+`content` del original. Cubre también el original borrado (`savedVariationId` en NULL) y el
+original desaprobado (`isApproved = false`).
+
+### Canales — `server/src/channels/types.ts` y `specs/*.ts`
+
+`ChannelSpec` gana un campo, y con él el estado límite 2 queda en el spec, no en una lista
+escrita en otro lado:
+
+```ts
+pieza: { tipo: "grafica" | "video" | "audio"; formatos: string[] } | null;
+```
+
+| Canal | `pieza` |
+|---|---|
+| Instagram Post / Historia / Carrusel | gráfica · `1080×1080` / `1080×1920` / `1080×1080` |
+| Google Display | gráfica · `300×250`, `728×90`, `160×600`, `320×50` |
+| Rich Media · Pop up · Email | gráfica · formatos a confirmar con el equipo de diseño |
+| Instagram Reel · TikTok · YouTube | video |
+| Cuña de Radio | audio |
+| Google Ads · Push Notification · WhatsApp | `null` |
+
+Se audita lo gráfico; video y audio pasan directo a *Por revisar*. `registry.ts` expone
+`esSlotDeInstruccion(slotId)` para las cuatro instrucciones, en vez de repetir la lista.
+
+### Máquina de estados — `server/src/services/piezaService.ts`
+
+Un archivo nuevo con **la tabla de transiciones como dato**, y cada acción un endpoint. Así
+«qué la saca de esta columna» (D5) queda escrito en un solo lugar:
+
+| Acción | De → a | Exige |
+|---|---|---|
+| asignar | *Por asignar* → *En diseño* | `userId` con membresía (`assertMemberOfWorkspace`) |
+| reasignar | *En diseño* → *En diseño* | ídem |
+| entregar | *En diseño* → *Por revisar* | `enlace` en la fase 2; archivo en la fase 3 |
+| aceptar | *Por revisar* → *Lista* | `nota` si hay hallazgos (fase 3) |
+| devolver | *Por revisar* → *En diseño* | `nota` obligatoria |
+| reabrir | *Lista* → *En diseño* | `nota` obligatoria (estado límite 3) |
+| actualizar copy | sin cambio de estado | vuelve a congelar desde los originales |
+
+**Sin roles nuevos.** El dueño de cada columna es una persona, no un rol: cualquier miembro del
+workspace puede ejecutar cualquier acción, y el `PiezaEvento` registra quién. El rol DESIGNER
+es H3.D y no se adelanta.
+
+**Concurrencia:** cada transición hace `updateMany({ where: { id, estado: <el esperado> } })` y
+devuelve **409** si no actualizó nada. Dos personas que aceptan y devuelven la misma pieza a la
+vez no pueden dejarla en un estado que ninguna de las dos eligió.
+
+### API — `routes/index.ts` + `controllers/piezaController.ts`
+
+Todo con `...inWorkspace`. **Guard nuevo en `lib/tenancy.ts`: `assertPiezaInWorkspace`**, con
+404 y no 403, como el resto.
+
+| Método | Ruta | Guard |
+|---|---|---|
+| GET | `/piezas?clientId=` | `assertClientInWorkspace` — el tablero, por marca |
+| GET | `/piezas/mias` | filtra por `asignadaAId = yo` y el workspace activo |
+| GET | `/piezas/:id` | `assertPiezaInWorkspace` — la orden de trabajo |
+| POST | `/piezas` | cada `savedVariationId` con `assertVariationInWorkspace`, más: misma marca, mismo canal, aprobado, `spec.pieza` no nulo; el `@unique` responde 409 si ya está en otra pieza |
+| POST | `/piezas/:id/{asignar,entregar,aceptar,devolver,reabrir,actualizar-copy}` | `assertPiezaInWorkspace` |
+| PATCH | `/piezas/:id` | `pickFields(['titulo'])` — nada más se edita a mano |
+
+`slotLabel` se resuelve con `resolveSlotLabel` del registry, como en `SavedVariation`. El body
+nunca trae etiquetas ni estados.
+
+### Frontend
+
+- **`screens.ts`:** pantalla `produccion` («Producción»), `adminOnly: false`, con el selector de
+  vista *Por marca / Mis piezas* que dibuja el tablero. `NAV_STAGES` pasa a las cinco etapas de
+  `§ H2 · Navegación con producción`: el copy se **escribe**, la pieza se **produce**.
+- **`components/produccion/`**, carpeta nueva: `TableroProduccion.tsx`, `TarjetaPieza.tsx`,
+  `OrdenDeTrabajo.tsx`, `MisPiezas.tsx` y el modal de D7. **El estado vive ahí, no en
+  `App.tsx`**: la pantalla pide sus datos y `App.tsx` solo la monta según `activeTab`. Es el
+  primer pedazo de E3 que se paga sin refactorizar nada.
+- **`services/api.ts`:** `piezasApi` con tipos de respuesta propios. No hereda el `any` de
+  `apiRequest` (E2, punto 4).
+
+### Criterio de aceptación de la fase 2
+
+- Un aprobado de Google Ads no puede crear pieza (400); un aprobado ya usado responde 409.
+- Las seis acciones respetan la tabla de transiciones. Una transición desde un estado que no
+  corresponde responde 409, y dos transiciones simultáneas no dejan un estado intermedio.
+- *Devolver* y *reabrir* sin nota responden 400. Cada transición deja su `PiezaEvento`.
+- Editar el texto de un aprobado ya congelado muestra «El copy cambió» en su tarjeta, y la
+  pieza sigue con el texto viejo hasta que alguien elige *actualizar copy*.
+- Borrar un aprobado de la Biblioteca no borra la pieza.
+- Un `MEMBER` ve el tablero y Mis piezas; un usuario sin membresía recibe 404.
+- **`verify:isolation`** suma los casos de pieza: listar, leer, crear con un aprobado ajeno,
+  asignar a un usuario de otro workspace y cada transición sobre una pieza ajena. Todo 404.
+- Las tres gates de tipos en verde. El chequeo de drift de CI cubre la migración nueva.
+
+## Fase 3 · Subida y auditoría
+
+Menos detallada a propósito: se afina con la fase 2 funcionando.
+
+- **Primero, la regla de ciclo de vida** del bucket, `piezas/originales/` → 90 días (D6).
+- **`sharp` en `node:20-slim`**, verificado en el Dockerfile **antes** de comprometerlo: es la
+  primera dependencia nativa del backend.
+- **Modelo:** `PiezaVersion` (v1, v2… con clave del original, clave del snapshot, medidas,
+  peso, estado de la auditoría `PENDIENTE · COMPLETA · NO_DISPONIBLE` y costo) y `Hallazgo`
+  (`HECHO · JUICIO · ILEGIBLE · MEDIDAS`, slot, esperado, encontrado, y la decisión con su nota
+  y su autor). **La decisión por hallazgo es obligatoria de guardar**: es la métrica que D2
+  necesita para algún día darle autoridad a la auditoría.
+- **Subida:** `storage.put()` con prefijo `piezas/`; rechazo por peso y tipo en el navegador
+  **y** en el servidor (estado límite 4).
+- **`aiClient`:** entrada de imagen en `chatCompletionConRetry`, sin abrir un segundo call site
+  del SDK. Dos llamadas por versión: la comparación contra el texto congelado (barata) y el
+  juicio de marca (reusa el prompt del Critic). El costo se mide como una etapa más con la
+  telemetría actual, y entra al inventario de [E6](./plan-e6-registro-consumo.md).
+- **Una falla del proveedor es `NO_DISPONIBLE`, no un hallazgo** (estado límite 5), y no cuenta
+  en las métricas de acierto.
+
+## Fase 4 · La pieza vuelve al cliente
+
+- `ReviewSessionPieza` al lado de `ReviewSessionItem`: una sesión puede llevar piezas, y la
+  decisión del cliente es un estado de la pieza, no una columna (D4, límite 2).
+- **La URL de la pieza se firma contra el token de la sesión** (D4, límite 3): el handler
+  público verifica que la pieza pertenece a esa sesión y emite una URL de vida corta. Nunca una
+  URL del bucket que se pueda guardar.
+- Lo que el cliente **no** recibe se verifica sobre la respuesta del endpoint público, no sobre
+  la pantalla: ni hallazgos, ni autor, ni historial (D4, límite 1).
+
+## Orden y dependencias
+
+```
+D7 dibujada ──┐
+              ├─► Fase 2 ─► Fase 3 ─► Fase 4
+PR #8 y #9 ───┘            (sharp verificado antes)
+```
+
+Sin estimación todavía: se estima cuando D7 cierre. Es lo único que puede agregar una pantalla.
 
 ## Prerrequisitos duros
 
-**E1 · Migrar uploads a S3.** Pasa de recomendable a bloqueante. Hoy los archivos van al disco
+**E1 · Migrar uploads a S3.** ✅ Hecho el 2026-08-28. Era bloqueante: Hoy los archivos van al disco
 local del contenedor y **ya hubo un outage por disco lleno** con PDFs de marca. Las piezas de
 diseño pesan órdenes de magnitud más y llegan varias por campaña. Construir la fase 3 sobre ese
 disco es repetir un incidente conocido, más rápido.
