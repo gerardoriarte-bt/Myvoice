@@ -1,5 +1,5 @@
 import React from 'react';
-import { AlertTriangle, Check, Copy, Loader2, Pencil, X } from 'lucide-react';
+import { AlertTriangle, Check, Copy, Loader2, Pencil, Send, X } from 'lucide-react';
 import { Pieza, PiezaDetalle } from '../../types';
 import { piezasApi } from '../../services/api';
 import AccionesPieza from './AccionesPieza';
@@ -32,6 +32,7 @@ export default function OrdenDeTrabajo({ piezaId, miembros, onCerrar, onCambio, 
   const [copiado, setCopiado] = React.useState<string | null>(null);
   /** El título es lo único editable a mano: el estado se mueve con acciones. */
   const [titulo, setTitulo] = React.useState<string | null>(null);
+  const [comentario, setComentario] = React.useState('');
 
   const cargar = React.useCallback(async () => {
     try {
@@ -69,6 +70,22 @@ export default function OrdenDeTrabajo({ piezaId, miembros, onCerrar, onCambio, 
       onError(e instanceof Error ? e.message : 'No se pudo renombrar la pieza');
     } finally {
       setTitulo(null);
+    }
+  };
+
+  /**
+   * Un comentario no mueve la pieza: va al mismo historial que las decisiones,
+   * porque al leer una pieza lo que importa es la secuencia completa.
+   */
+  const comentar = async () => {
+    const nota = comentario.trim();
+    if (!pieza || !nota) return;
+    try {
+      onCambio(await piezasApi.comentar(pieza.id, nota));
+      setComentario('');
+      await cargar();
+    } catch (e) {
+      onError(e instanceof Error ? e.message : 'No se pudo comentar');
     }
   };
 
@@ -231,6 +248,34 @@ export default function OrdenDeTrabajo({ piezaId, miembros, onCerrar, onCambio, 
             </section>
           )}
 
+          {pieza && (
+            <section>
+              <h3 className="text-[11px] font-semibold uppercase tracking-wide text-apple-tertiary">
+                Comentarios
+              </h3>
+              <p className="mt-1 text-[11px] text-apple-secondary">
+                Para lo que hay que decir sobre la pieza y no es un motivo de devolución. No cambia su estado.
+              </p>
+              <div className="mt-2 flex items-start gap-2">
+                <textarea
+                  value={comentario}
+                  onChange={e => setComentario(e.target.value)}
+                  rows={2}
+                  placeholder="El logo tiene que ir sobre fondo claro…"
+                  className="flex-1 rounded-lg border border-apple-border px-2.5 py-2 text-[12px] text-apple-text"
+                />
+                <button
+                  onClick={() => void comentar()}
+                  disabled={!comentario.trim()}
+                  className="flex items-center gap-1.5 rounded-lg bg-ink px-3 py-2 text-[11px] font-medium text-white hover:bg-ink-hover disabled:opacity-40"
+                >
+                  <Send className="h-3 w-3" />
+                  Comentar
+                </button>
+              </div>
+            </section>
+          )}
+
           {pieza && pieza.eventos.length > 0 && (
             <section>
               <h3 className="text-[11px] font-semibold uppercase tracking-wide text-apple-tertiary">
@@ -239,7 +284,9 @@ export default function OrdenDeTrabajo({ piezaId, miembros, onCerrar, onCambio, 
               <ul className="mt-2 space-y-1.5">
                 {pieza.eventos.map(e => (
                   <li key={e.id} className="text-[11px] text-apple-secondary">
-                    <span className="font-medium text-apple-text">{e.tipo.toLowerCase()}</span>
+                    <span className="font-medium text-apple-text">
+                      {e.tipo === 'COMENTARIO' ? 'comentario' : e.tipo.toLowerCase()}
+                    </span>
                     {e.autor ? ` · ${e.autor.name}` : ''} ·{' '}
                     {new Date(e.createdAt).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })}
                     {e.nota && <span className="block text-apple-text">«{e.nota}»</span>}

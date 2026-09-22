@@ -2,6 +2,7 @@ import React from 'react';
 import { Loader2 } from 'lucide-react';
 import { SCREENS } from '../../screens';
 import { Client, Pieza, PiezaEstado } from '../../types';
+import { COLORES_ESTADO, COLUMNAS } from './columnas';
 import { authApi, piezasApi } from '../../services/api';
 import TarjetaPieza from './TarjetaPieza';
 import OrdenDeTrabajo from './OrdenDeTrabajo';
@@ -27,13 +28,6 @@ interface Props {
   clients: Client[];
   addNotification: (mensaje: string, tipo?: string) => void;
 }
-
-const COLUMNAS: { estado: PiezaEstado; nombre: string; dueño: string }[] = [
-  { estado: 'POR_ASIGNAR', nombre: 'Por asignar', dueño: 'quien produce' },
-  { estado: 'EN_DISENO', nombre: 'En diseño', dueño: 'el diseñador' },
-  { estado: 'POR_REVISAR', nombre: 'Por revisar', dueño: 'quien aprueba' },
-  { estado: 'LISTA', nombre: 'Lista', dueño: 'nadie: es el final' },
-];
 
 export default function TableroProduccion({ clients, addNotification }: Props) {
   const [vista, setVista] = React.useState<'marca' | 'mias'>('marca');
@@ -146,13 +140,48 @@ export default function TableroProduccion({ clients, addNotification }: Props) {
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
           {COLUMNAS.map(col => {
             const suyas = porColumna(col.estado);
+            const color = COLORES_ESTADO[col.estado];
             return (
               <section key={col.estado} className="rounded-xl bg-apple-bg p-3">
-                <header className="flex items-baseline justify-between px-1">
-                  <h3 className="text-[12px] font-semibold text-apple-text">{col.nombre}</h3>
-                  <span className="text-[11px] text-apple-tertiary">{suyas.length}</span>
+                {/*
+                  La cabecera dice qué es la columna, quién la mueve y qué la
+                  vacía. Sin eso, cuatro títulos sobre fondo gris no se leen
+                  como las etapas de un proceso.
+                */}
+                <header
+                  className="rounded-lg border px-2.5 py-2"
+                  style={{ backgroundColor: color.fondo, borderColor: color.borde }}
+                >
+                  <div className="flex items-center gap-2">
+                    <span
+                      className="flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-bold text-white"
+                      style={{ backgroundColor: color.texto }}
+                    >
+                      {col.numero}
+                    </span>
+                    <h3 className="flex-1 text-[12px] font-bold" style={{ color: color.texto }}>
+                      {col.nombre}
+                    </h3>
+                    <span className="text-[11px] font-semibold" style={{ color: color.texto }}>
+                      {suyas.length}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-[10px] leading-snug text-apple-secondary">{col.que}</p>
+                  <dl className="mt-1.5 space-y-0.5">
+                    <div className="flex gap-1.5 text-[9px]">
+                      <dt className="w-14 shrink-0 font-bold uppercase tracking-wide" style={{ color: color.texto }}>
+                        Dueño
+                      </dt>
+                      <dd className="text-apple-secondary">{col.dueño}</dd>
+                    </div>
+                    <div className="flex gap-1.5 text-[9px]">
+                      <dt className="w-14 shrink-0 font-bold uppercase tracking-wide" style={{ color: color.texto }}>
+                        La vacía
+                      </dt>
+                      <dd className="text-apple-secondary">{col.vacia}</dd>
+                    </div>
+                  </dl>
                 </header>
-                <p className="px-1 text-[10px] text-apple-tertiary">{col.dueño}</p>
                 <div className="mt-3 space-y-3">
                   {suyas.map(p => (
                     <TarjetaPieza
@@ -204,6 +233,7 @@ export default function TableroProduccion({ clients, addNotification }: Props) {
             return (
               <section key={estado}>
                 <h3 className="text-[12px] font-semibold text-apple-text">{col.nombre}</h3>
+                <p className="text-[11px] text-apple-tertiary">{col.que}</p>
                 <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
                   {suyas.map(p => (
                     <TarjetaPieza

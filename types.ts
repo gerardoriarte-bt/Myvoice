@@ -366,6 +366,9 @@ export interface Pieza {
   slots: PiezaSlot[];
   desfases: SlotDesfasado[];
   asignadaA?: { id: string; name: string; email: string } | null;
+  /** Cuántos comentarios tiene la pieza, y el último, para la tarjeta. */
+  comentarios: number;
+  ultimoComentario: { nota: string | null; autor: string | null; createdAt: string } | null;
   client?: { id: string; name: string };
   project?: { id: string; name: string } | null;
 }

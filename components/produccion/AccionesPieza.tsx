@@ -21,7 +21,7 @@ interface Props {
 
 const AYUDA: Record<PiezaEstado, string> = {
   POR_ASIGNAR: 'Elegí quién la diseña.',
-  EN_DISENO: 'Cuando esté lista, pegá el enlace a la pieza.',
+  EN_DISENO: 'Cuando esté lista, pegá el enlace de Drive. Compartido como «cualquiera con el enlace» se ve la previa acá mismo.',
   POR_REVISAR: 'Miralo contra la orden de trabajo y decidí.',
   LISTA: 'Terminada. Se puede reabrir con un motivo.',
 };
@@ -89,7 +89,7 @@ export default function AccionesPieza({ pieza, miembros, onCambio, onError, comp
             <input
               value={enlace}
               onChange={e => setEnlace(e.target.value)}
-              placeholder="https://figma.com/…"
+              placeholder="https://drive.google.com/file/d/…"
               className="min-w-0 flex-1 rounded-lg border border-apple-border px-2 py-1.5 text-[11px] text-apple-text"
             />
             <button
@@ -141,7 +141,8 @@ export default function AccionesPieza({ pieza, miembros, onCambio, onError, comp
         </button>
       )}
 
-      {pieza.enlace && pieza.estado !== 'EN_DISENO' && (
+      {/* En la tarjeta el enlace ya está arriba, con la previa: acá duplicaba. */}
+      {pieza.enlace && pieza.estado !== 'EN_DISENO' && !compacto && (
         <a
           href={pieza.enlace}
           target="_blank"

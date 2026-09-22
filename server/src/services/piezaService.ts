@@ -51,6 +51,7 @@ const TIPO_POR_SPEC: Record<'grafica' | 'video' | 'audio', PiezaTipo> = {
 };
 
 export type AccionPieza =
+  | 'comentar'
   | 'asignar'
   | 'reasignar'
   | 'entregar'
@@ -82,6 +83,13 @@ export const TRANSICIONES: Record<AccionPieza, Transicion> = {
   aceptar:            { desde: [PiezaEstado.POR_REVISAR], hacia: PiezaEstado.LISTA,       evento: 'ACEPTADA' },
   devolver:           { desde: [PiezaEstado.POR_REVISAR], hacia: PiezaEstado.EN_DISENO,   evento: 'DEVUELTA',  exigeNota: true },
   reabrir:            { desde: [PiezaEstado.LISTA],       hacia: PiezaEstado.EN_DISENO,   evento: 'REABIERTA', exigeNota: true },
+  /**
+   * Un comentario no mueve la pieza: solo dice algo. Vive en el mismo
+   * historial append-only que las decisiones —quién asignó, quién devolvió y
+   * por qué— en vez de en un chat aparte, porque al leer una pieza lo que
+   * importa es la secuencia completa, no dos listas que hay que intercalar.
+   */
+  comentar:           { desde: [PiezaEstado.POR_ASIGNAR, PiezaEstado.EN_DISENO, PiezaEstado.POR_REVISAR, PiezaEstado.LISTA], hacia: null, evento: 'COMENTARIO', exigeNota: true },
   'actualizar-copy':  { desde: [PiezaEstado.POR_ASIGNAR, PiezaEstado.EN_DISENO, PiezaEstado.POR_REVISAR], hacia: null, evento: 'COPY_ACTUALIZADO' },
 };
 
@@ -96,6 +104,13 @@ const INCLUDE_PIEZA = {
     },
   },
   asignadaA: { select: { id: true, name: true, email: true } },
+  /** Solo el último comentario: la tarjeta muestra uno, la orden todos. */
+  eventos: {
+    where: { tipo: 'COMENTARIO' },
+    orderBy: { createdAt: 'desc' as const },
+    take: 1,
+    include: { autor: { select: { id: true, name: true } } },
+  },
   client: { select: { id: true, name: true } },
   project: { select: { id: true, name: true } },
 } satisfies Prisma.PiezaInclude;
@@ -130,10 +145,31 @@ export const desfasesDeCopy = (pieza: PiezaConSlots): SlotDesfasado[] =>
     return [];
   });
 
-export const conDesfases = (pieza: PiezaConSlots) => ({
-  ...pieza,
-  desfases: desfasesDeCopy(pieza),
-});
+/**
+ * La cuenta de comentarios sale de un groupBy y no de traerlos todos: una pieza
+ * con veinte comentarios no tiene por qué pesar veinte veces en el tablero.
+ */
+const contarComentarios = async (piezaIds: string[]): Promise<Map<string, number>> => {
+  if (!piezaIds.length) return new Map();
+  const filas = await prisma.piezaEvento.groupBy({
+    by: ['piezaId'],
+    where: { piezaId: { in: piezaIds }, tipo: 'COMENTARIO' },
+    _count: { _all: true },
+  });
+  return new Map(filas.map(f => [f.piezaId, f._count._all]));
+};
+
+export const conDesfases = (pieza: PiezaConSlots, comentarios = 0) => {
+  const { eventos, ...resto } = pieza;
+  return {
+    ...resto,
+    desfases: desfasesDeCopy(pieza),
+    comentarios,
+    ultimoComentario: eventos[0]
+      ? { nota: eventos[0].nota, autor: eventos[0].autor?.name ?? null, createdAt: eventos[0].createdAt }
+      : null,
+  };
+};
 
 // --------------------------------------------------------------- propuesta
 
@@ -438,7 +474,14 @@ export const ejecutarAccion = async (
     cambios.estadoDesde = new Date();
   }
 
-  return prisma.$transaction(async tx => {
+  // Comentar y actualizar-copy no cambian ninguna columna de Pieza, y un
+  // updateMany con `data` vacío no toca ninguna fila: sin esto, su guarda de
+  // concurrencia daría siempre 409. Tocar `updatedAt` mantiene la guarda —la
+  // condición sobre el estado sigue ahí— y deja constancia de que la pieza se
+  // movió.
+  if (Object.keys(cambios).length === 0) cambios.updatedAt = new Date();
+
+  await prisma.$transaction(async tx => {
     const { count } = await tx.pieza.updateMany({
       where: { id: piezaId, estado: actual.estado },
       data: cambios,
@@ -459,8 +502,18 @@ export const ejecutarAccion = async (
       },
     });
 
-    return tx.pieza.findUniqueOrThrow({ where: { id: piezaId }, include: INCLUDE_PIEZA });
   });
+
+  // Se relee fuera de la transacción y con la misma forma que el tablero: la
+  // pantalla reemplaza la tarjeta con lo que devuelve esta llamada, así que
+  // tiene que traer los desfases y los comentarios o la tarjeta se vacía.
+  return leerUna(piezaId);
+};
+
+const leerUna = async (piezaId: string) => {
+  const pieza = await prisma.pieza.findUniqueOrThrow({ where: { id: piezaId }, include: INCLUDE_PIEZA });
+  const comentarios = await contarComentarios([piezaId]);
+  return conDesfases(pieza, comentarios.get(piezaId) ?? 0);
 };
 
 /**
@@ -490,7 +543,8 @@ export const listarPorMarca = async (tenant: TenantContext, clientId: string) =>
     include: INCLUDE_PIEZA,
     orderBy: [{ estado: 'asc' }, { estadoDesde: 'asc' }],
   });
-  return piezas.map(conDesfases);
+  const comentarios = await contarComentarios(piezas.map(p => p.id));
+  return piezas.map(p => conDesfases(p, comentarios.get(p.id) ?? 0));
 };
 
 /**
@@ -503,7 +557,8 @@ export const listarMias = async (tenant: TenantContext) => {
     include: INCLUDE_PIEZA,
     orderBy: { estadoDesde: 'asc' },
   });
-  return piezas.map(conDesfases);
+  const comentarios = await contarComentarios(piezas.map(p => p.id));
+  return piezas.map(p => conDesfases(p, comentarios.get(p.id) ?? 0));
 };
 
 export const detalle = async (tenant: TenantContext, piezaId: string) => {
@@ -528,7 +583,11 @@ export const detalle = async (tenant: TenantContext, piezaId: string) => {
       })
     : [];
 
-  return { ...conDesfases(pieza), eventos: pieza.eventos, hermanas };
+  // En el detalle `eventos` trae el historial completo, así que el último
+  // comentario se calcula sobre los comentarios y no sobre el último evento.
+  const comentarios = pieza.eventos.filter(e => e.tipo === 'COMENTARIO');
+  const base = conDesfases({ ...pieza, eventos: comentarios.slice(0, 1) }, comentarios.length);
+  return { ...base, eventos: pieza.eventos, hermanas };
 };
 
 /**
@@ -541,5 +600,5 @@ export const renombrar = async (tenant: TenantContext, piezaId: string, titulo: 
     data: { titulo: titulo.slice(0, 160) },
   });
   if (count === 0) throw new TenantError('Pieza no encontrada', 404);
-  return prisma.pieza.findUniqueOrThrow({ where: { id: piezaId }, include: INCLUDE_PIEZA });
+  return leerUna(piezaId);
 };

@@ -273,6 +273,8 @@ export const piezasApi = {
   devolver: (id: string, nota: string): Promise<Pieza> => accion(id, 'devolver', { nota }),
   reabrir: (id: string, nota: string): Promise<Pieza> => accion(id, 'reabrir', { nota }),
   actualizarCopy: (id: string): Promise<Pieza> => accion(id, 'actualizar-copy', {}),
+  /** Un comentario no mueve la pieza: queda en su historial. */
+  comentar: (id: string, nota: string): Promise<Pieza> => accion(id, 'comentar', { nota }),
 };
 
 const accion = (id: string, nombre: string, datos: Record<string, unknown>): Promise<Pieza> =>

@@ -329,6 +329,10 @@ async function main() {
       method: 'POST',
       body: JSON.stringify({ nota: 'intruso' }),
     });
+    await expectDenied('POST /piezas/:id/comentar de A', `/piezas/${piezaA.id}/comentar`, B.token, {
+      method: 'POST',
+      body: JSON.stringify({ nota: 'intruso' }),
+    });
     await expectDenied('POST /piezas con un aprobado de A', '/piezas', B.token, {
       method: 'POST',
       body: JSON.stringify({
@@ -407,6 +411,21 @@ async function main() {
 
       const sinNota = await api(`/piezas/${piezaB.id}/devolver`, B.token, { method: 'POST', body: JSON.stringify({}) });
       record('Devolver sin motivo responde 400', sinNota.status === 400, `respondió ${sinNota.status}`);
+
+      // Comentar no cambia ninguna columna de Pieza. La primera versión daba
+      // 409 por eso: el updateMany con data vacío no tocaba ninguna fila.
+      const sinTexto = await api(`/piezas/${piezaB.id}/comentar`, B.token, { method: 'POST', body: JSON.stringify({}) });
+      record('Comentar sin texto responde 400', sinTexto.status === 400, `respondió ${sinTexto.status}`);
+
+      const comentada = await api(`/piezas/${piezaB.id}/comentar`, B.token, {
+        method: 'POST',
+        body: JSON.stringify({ nota: 'El logo va sobre fondo claro' }),
+      });
+      record(
+        'Comentar deja el comentario y NO cambia el estado',
+        comentada.status === 200 && comentada.body?.comentarios === 1 && comentada.body?.estado === 'POR_REVISAR',
+        `respondió ${comentada.status}, estado ${comentada.body?.estado}, comentarios ${comentada.body?.comentarios}`
+      );
 
       const aceptada = await api(`/piezas/${piezaB.id}/aceptar`, B.token, { method: 'POST' });
       record('POST /piezas/:id/aceptar mueve a Lista', aceptada.body?.estado === 'LISTA', `quedó en ${aceptada.body?.estado}`);
