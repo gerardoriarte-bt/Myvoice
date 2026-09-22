@@ -259,7 +259,8 @@ por eso se dibujaron antes de la migración.
 —1080×1080 y 1080×1920—, cada uno con su copy aprobado, y una pieza con dos canales no sabría
 contra qué texto auditar. *Regla:* **una pieza es un canal y un archivo.** Lo compartido se
 expresa asignándolas juntas y mostrando la hermana en la orden de trabajo, no fusionándolas.
-Cada copy aprobado pertenece a una sola pieza por formato (afinado en D7).
+Un mismo aprobado sí puede ir a dos piezas cuando es deliberado —otro formato, o el A/B—; lo que
+no puede repetirse es la pieza entera (afinado en D7 y al implementarla).
 
 **2 · Un canal que no produce pieza gráfica.** Si todo lo aprobado entra al tablero, se llena de
 tarjetas que nadie puede trabajar. *Regla:* **entra al tablero todo canal cuyo copy aprobado no
@@ -297,7 +298,7 @@ porque una caída del servicio no es una opinión sobre la pieza.
 
 **Lo que esto fija para el nivel 2:**
 
-1. `Pieza` → un canal y un archivo. `SavedVariation` → a lo sumo una pieza por formato. Las hermanas se enlazan.
+1. `Pieza` → un canal y un archivo. Lo que no se repite es la pieza entera. Las hermanas se enlazan.
 2. El `ChannelSpec` declara qué pieza produce: gráfica, video, audio o ninguna.
 3. La pieza guarda una copia del texto de cada slot al asignarse, más la referencia al original.
 4. Archivo con tope de peso y tipo; medidas como hallazgo; video como enlace.
@@ -331,7 +332,7 @@ Pero `SavedVariation.projectId` es nullable y hay copy guardado sin proyecto. La
 exigir campaña sin dejar afuera ese copy: `Pieza.projectId` es nullable, y la tarjeta muestra el
 título de la pieza cuando no hay proyecto.
 
-## D7 · ¿Cómo nace una pieza? — DIBUJADA, por confirmar
+## D7 · ¿Cómo nace una pieza? — DECIDIDA: explícito, con propuesta
 
 El diseño de D1 lo dejó escrito sin resolver: *«alguien tiene que decidir qué slots entran en
 cada pieza; automático la mayoría de las veces, no siempre»*. Los estados límite fijaron qué es
@@ -350,8 +351,7 @@ una pieza (un canal, un archivo), pero no **quién la crea ni cuándo**. Hay dos
 *Recomendación:* **explícito, con propuesta.** Es la columna *Por asignar* con su dueño: quien
 produce. Y es coherente con D5: el sistema no mueve trabajo entre personas por su cuenta.
 
-**Dibujada** en `§ H2 · D7 · cómo nace una pieza`, **a la espera de confirmación.** Lo que
-muestra:
+**Dibujada** en `§ H2 · D7 · cómo nace una pieza` y **confirmada el 2026-09-22.** Lo que muestra:
 
 - **Dos puertas, una sola propuesta.** La principal es **cerrar una sesión de revisión**: el
   cliente aprobó un lote y todo lo que va a producción llegó junto. Aparece un botón «Mandar
@@ -370,12 +370,17 @@ muestra:
 - **Las piezas nacen en *Por asignar* y sin nadie asignado.** Crear y asignar son dos
   decisiones, y la segunda es del dueño de esa columna.
 
-**Corrección al modelo que salió de dibujarla:** «otro formato» pone un mismo aprobado en dos
-piezas —Display 300×250 y 728×90, mismo copy—, así que «un aprobado, una sola pieza» (estado
-límite 1) se afina a **un aprobado, una sola pieza por formato**. `PiezaSlot` copia el `formato`
-de su pieza, que no cambia después del alta, y la base lo garantiza con
-`@@unique([savedVariationId, formato])`. Postgres admite varios NULL en un unique, así que los
-slots cuyo original se borró no chocan entre sí.
+**Corrección al modelo, en dos pasos.** Dibujar D7 mostró que «otro formato» pone un mismo
+aprobado en dos piezas —Display 300×250 y 728×90, mismo copy—, así que «un aprobado, una sola
+pieza» (estado límite 1) se afinó a «una sola pieza **por formato**». Implementarla mostró que eso
+**también estaba mal**: en un A/B las dos piezas son del mismo formato y comparten el cuerpo y los
+hashtags; lo único que cambia es el hook. La primera versión del modelo prohibía el A/B sin
+querer, y se descubrió creando uno en el navegador, no leyendo el esquema.
+
+La regla correcta es sobre el **conjunto**: lo que no puede repetirse es la pieza entera. `Pieza`
+guarda una `huella` —el formato más los aprobados que la componen, ordenados— con
+`@@unique([workspaceId, huella])`. Rechaza la pieza repetida —el doble clic, dos personas mandando
+el mismo lote— y deja pasar los dos casos en que compartir un aprobado es a propósito.
 
 ## Fase 1 · E1 — almacenamiento en S3 — **hecha**
 
@@ -407,6 +412,7 @@ model Pieza {
   tipo             PiezaTipo
   formato          String      // "1080×1080", "300×250" — uno de spec.pieza.formatos
   titulo           String      // "pieza principal de feed"
+  huella           String      // formato + aprobados ordenados: la pieza, no el copy
   estado           PiezaEstado @default(POR_ASIGNAR)
   asignadaAId      String?
   /// Hermanas (estado límite 1): mismo uuid, sin tabla aparte.
@@ -420,6 +426,7 @@ model Pieza {
   slots            PiezaSlot[]
   eventos          PiezaEvento[]
 
+  @@unique([workspaceId, huella])           // la pieza repetida, no el copy repetido
   @@index([workspaceId, clientId, estado])  // el tablero
   @@index([asignadaAId, estado])            // Mis piezas
 }
@@ -522,7 +529,7 @@ Todo con `...inWorkspace`. **Guard nuevo en `lib/tenancy.ts`: `assertPiezaInWork
 | GET | `/piezas?clientId=` | `assertClientInWorkspace` — el tablero, por marca |
 | GET | `/piezas/mias` | filtra por `asignadaAId = yo` y el workspace activo |
 | GET | `/piezas/:id` | `assertPiezaInWorkspace` — la orden de trabajo |
-| POST | `/piezas` | cada `savedVariationId` con `assertVariationInWorkspace`, más: misma marca, mismo canal, aprobado, `spec.pieza` no nulo; responde 409 si ya está en otra pieza del mismo formato |
+| POST | `/piezas` | cada `savedVariationId` con `assertVariationInWorkspace`, más: misma marca, mismo canal, aprobado, `spec.pieza` no nulo; responde 409 si esa misma pieza ya existe |
 | POST | `/piezas/:id/{asignar,entregar,aceptar,devolver,reabrir,actualizar-copy}` | `assertPiezaInWorkspace` |
 | PATCH | `/piezas/:id` | `pickFields(['titulo'])` — nada más se edita a mano |
 
@@ -543,7 +550,7 @@ nunca trae etiquetas ni estados.
 
 ### Criterio de aceptación de la fase 2
 
-- Un aprobado de Google Ads no puede crear pieza (400); un aprobado ya usado en el mismo formato responde 409, y en otro formato se acepta.
+- Un aprobado de Google Ads no puede crear pieza (400); la pieza repetida responde 409, y el A/B —mismo formato, otro conjunto— se crea.
 - Las seis acciones respetan la tabla de transiciones. Una transición desde un estado que no
   corresponde responde 409, y dos transiciones simultáneas no dejan un estado intermedio.
 - *Devolver* y *reabrir* sin nota responden 400. Cada transición deja su `PiezaEvento`.
