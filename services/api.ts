@@ -1,5 +1,6 @@
 import type {
   Pieza,
+  PiezaDetalle as _PiezaDetalle,
   PiezaAConfirmar,
   PiezaDetalle,
   PropuestaDePiezas,
@@ -275,6 +276,31 @@ export const piezasApi = {
   actualizarCopy: (id: string): Promise<Pieza> => accion(id, 'actualizar-copy', {}),
   /** Un comentario no mueve la pieza: queda en su historial. */
   comentar: (id: string, nota: string): Promise<Pieza> => accion(id, 'comentar', { nota }),
+  /**
+   * La entrega de un canal gráfico: el archivo, no un enlace. Va por fetch
+   * directo y no por `apiRequest` porque este manda `Content-Type: json`, y un
+   * multipart necesita que el navegador arme el boundary.
+   */
+  subirArchivo: async (id: string, archivo: File): Promise<Pieza> => {
+    const cuerpo = new FormData();
+    cuerpo.append('archivo', archivo);
+    const token = localStorage.getItem('vt_token');
+    const respuesta = await fetch(`${API_URL}/piezas/${id}/archivo`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: cuerpo,
+    });
+    const datos = await respuesta.json().catch(() => ({}));
+    if (!respuesta.ok) throw new Error(datos.error || 'No se pudo subir la pieza');
+    return datos;
+  },
+  /** NO_DISPONIBLE es una caída del proveedor, no un veredicto. */
+  reauditar: (id: string): Promise<Pieza> => apiRequest(`/piezas/${id}/reauditar`, { method: 'POST' }),
+  decidirHallazgo: (hallazgoId: string, decision: 'ACEPTADO' | 'CORREGIDO', nota?: string): Promise<Pieza> =>
+    apiRequest(`/piezas/hallazgos/${hallazgoId}/decision`, {
+      method: 'POST',
+      body: JSON.stringify({ decision, nota }),
+    }),
 };
 
 const accion = (id: string, nombre: string, datos: Record<string, unknown>): Promise<Pieza> =>

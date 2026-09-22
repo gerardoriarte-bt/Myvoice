@@ -560,26 +560,38 @@ nunca trae etiquetas ni estados.
   asignar a un usuario de otro workspace y cada transición sobre una pieza ajena. Todo 404.
 - Las tres gates de tipos en verde. El chequeo de drift de CI cubre la migración nueva.
 
-## Fase 3 · Subida y auditoría
+## Fase 3 · Subida y auditoría — construida
 
-Menos detallada a propósito: se afina con la fase 2 funcionando.
+- **`sharp` verificado en `node:20-slim`** antes de comprometerlo: instala y corre con los
+  binarios precompilados (libvips 8.15.3), sin paquetes de sistema extra.
+- **Se cae el PDF de D6.** `sharp` precompilado no rasteriza PDF —haría falta libvips con
+  poppler, o sea compilarlo—, y un PDF aceptado sin snapshot es una pieza sin previa y sin
+  auditoría. Se aceptan **PNG, JPG y WEBP**, y el rechazo dice qué hacer. Si el equipo entrega
+  PDF a menudo, ahí sí conviene pagar esa compilación.
+- **Modelo:** `PiezaVersion` (original, snapshot, medidas, peso, estado de auditoría, costo y
+  modelo) y `Hallazgo` (`HECHO · JUICIO · MEDIDAS · ILEGIBLE`, con los dos lados y la decisión).
+  Cada entrega es una versión: devolver y volver a subir es el camino normal, y el informe de la
+  v1 tiene que sobrevivir a la v2.
+- **Las medidas distintas son un hallazgo escrito sin preguntarle a ningún modelo**, porque es un
+  hecho que se sabe al medir el archivo. No bloquea (D2).
+- **La auditoría son dos llamadas**, y la imagen viaja como data URL: no depende de que el
+  proveedor alcance nuestro bucket ni deja una URL del cliente en logs de terceros. El costo se
+  mide como una etapa más y se guarda en la versión.
+- **Corre en segundo plano.** El diseñador ya entregó; esperar dos llamadas de visión sería
+  cobrarle a él un costo que no es suyo. La tarjeta dice «Auditando».
+- **`NO_DISPONIBLE` se puede reintentar**, y el reintento borra los hallazgos de la corrida
+  anterior salvo los de medidas: mezclar dos corridas hace ilegible el informe.
+- **La previa pasa a salir del snapshot** y no del enlace: es nuestra, no depende de permisos
+  ajenos y es exactamente la imagen que miró la auditoría.
 
-- **Primero, la regla de ciclo de vida** del bucket, `piezas/originales/` → 90 días (D6).
-- **`sharp` en `node:20-slim`**, verificado en el Dockerfile **antes** de comprometerlo: es la
-  primera dependencia nativa del backend.
-- **Modelo:** `PiezaVersion` (v1, v2… con clave del original, clave del snapshot, medidas,
-  peso, estado de la auditoría `PENDIENTE · COMPLETA · NO_DISPONIBLE` y costo) y `Hallazgo`
-  (`HECHO · JUICIO · ILEGIBLE · MEDIDAS`, slot, esperado, encontrado, y la decisión con su nota
-  y su autor). **La decisión por hallazgo es obligatoria de guardar**: es la métrica que D2
-  necesita para algún día darle autoridad a la auditoría.
-- **Subida:** `storage.put()` con prefijo `piezas/`; rechazo por peso y tipo en el navegador
-  **y** en el servidor (estado límite 4).
-- **`aiClient`:** entrada de imagen en `chatCompletionConRetry`, sin abrir un segundo call site
-  del SDK. Dos llamadas por versión: la comparación contra el texto congelado (barata) y el
-  juicio de marca (reusa el prompt del Critic). El costo se mide como una etapa más con la
-  telemetría actual, y entra al inventario de [E6](./plan-e6-registro-consumo.md).
-- **Una falla del proveedor es `NO_DISPONIBLE`, no un hallazgo** (estado límite 5), y no cuenta
-  en las métricas de acierto.
+**Verificado con dos corridas reales** contra el proveedor (USD 0,031 en total): una pieza
+correcta devolvió cero hallazgos, y una con errores deliberados devolvió los dos hechos —el texto
+cambiado y las tildes faltantes en el CTA— y, por separado, la palabra vetada por el ADN y tres
+observaciones de ortografía.
+
+**Queda pendiente de la fase:** la regla de ciclo de vida del bucket
+(`piezas/originales/` → 90 días), que es un paso de infraestructura en la cuenta de AWS y no de
+código. Va **antes** del despliegue: ver [la hoja del H2](./despliegue-h2.md).
 
 ## Fase 4 · La pieza vuelve al cliente
 

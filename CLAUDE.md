@@ -215,6 +215,9 @@ open, the decisions (E6, D2, D3, D7), what the uniqueness rule got wrong about t
 six corrections that came from looking at the screen working.
 `docs/bitacora-2026-08-28.md` records the H1 + E1 deploy day: what shipped, what the rehearsal
 against the real dump caught before it hit production, and the pending items with owners.
+`docs/despliegue-h2.md` is the single sheet for the H2 deploy (production board + piece audit):
+the bucket lifecycle rule goes **before** the deploy, the migrations are additive so `deploy.sh`
+can go first, and the audit spend does not count toward the quota yet.
 `docs/despliegue-h1.md` is the single sheet for the H1 deploy — the whole ordered sequence,
 including the three steps that surprise an operator. `docs/runbook-tenancy.md` and
 `docs/runbook-mejoras-h1.md` remain the detail behind each step.

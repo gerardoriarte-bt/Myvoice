@@ -349,6 +349,53 @@ export interface SlotDesfasado {
   textoActual: string | null;
 }
 
+export type AuditoriaEstado = 'PENDIENTE' | 'COMPLETA' | 'NO_DISPONIBLE';
+export type HallazgoTipo = 'HECHO' | 'JUICIO' | 'MEDIDAS' | 'ILEGIBLE';
+export type HallazgoDecision = 'PENDIENTE' | 'ACEPTADO' | 'CORREGIDO';
+
+/**
+ * El semáforo de D3: tres estados, y ninguno rojo — el rojo prometería un
+ * bloqueo que D2 dice que no existe.
+ */
+export type Semaforo = 'verificada' | 'hallazgos' | 'revisar-a-ojo' | 'sin-auditoria' | 'auditando' | null;
+
+export interface Hallazgo {
+  id: string;
+  tipo: HallazgoTipo;
+  slot: string | null;
+  slotLabel: string | null;
+  /** Solo en HECHO: los dos lados de la comparación. */
+  esperado: string | null;
+  encontrado: string | null;
+  detalle: string;
+  decision: HallazgoDecision;
+  notaDecision: string | null;
+  decididoPor?: { name: string } | null;
+  decididoAt: string | null;
+}
+
+export interface PiezaVersionResumen {
+  id: string;
+  numero: number;
+  anchoPx: number | null;
+  altoPx: number | null;
+  pesoBytes: number | null;
+  estadoAuditoria: AuditoriaEstado;
+  hallazgos: number;
+  /** Hallazgos sin decidir, sin contar los ilegibles. */
+  pendientes: number;
+}
+
+export interface InformeAuditoria extends PiezaVersionResumen {
+  motivoNoDisponible: string | null;
+  auditadaAt: string | null;
+  costoUsd: string | number | null;
+  modelo: string | null;
+  createdAt: string;
+  subidaPor?: { name: string } | null;
+  hallazgos: never;
+}
+
 export interface Pieza {
   id: string;
   clientId: string;
@@ -369,6 +416,11 @@ export interface Pieza {
   /** Cuántos comentarios tiene la pieza, y el último, para la tarjeta. */
   comentarios: number;
   ultimoComentario: { nota: string | null; autor: string | null; createdAt: string } | null;
+  /** La última entrega con archivo, si la hay. */
+  version: PiezaVersionResumen | null;
+  semaforo: Semaforo;
+  /** URL firmada del snapshot: nuestra, no depende de permisos ajenos. */
+  previaUrl: string | null;
   client?: { id: string; name: string };
   project?: { id: string; name: string } | null;
 }
@@ -386,6 +438,10 @@ export interface PiezaEvento {
 export interface PiezaDetalle extends Pieza {
   eventos: PiezaEvento[];
   hermanas: { id: string; platform: string; formato: string; estado: PiezaEstado; titulo: string }[];
+  /** El informe completo de la última versión: lo ve el diseñador y quien aprueba (D3). */
+  informe:
+    | (Omit<InformeAuditoria, 'hallazgos' | 'pendientes'> & { hallazgos: Hallazgo[] })
+    | null;
 }
 
 export interface SlotPropuesto {

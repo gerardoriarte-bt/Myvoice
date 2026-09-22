@@ -1,4 +1,5 @@
 import React from 'react';
+import { Loader2, Upload } from 'lucide-react';
 import { Pieza, PiezaEstado } from '../../types';
 import { piezasApi } from '../../services/api';
 
@@ -27,7 +28,7 @@ interface Props {
 
 const AYUDA: Record<PiezaEstado, string> = {
   POR_ASIGNAR: 'Elegí quién la diseña.',
-  EN_DISENO: 'Cuando esté lista, pegá el enlace de Drive. Compartido como «cualquiera con el enlace» se ve la previa acá mismo.',
+  EN_DISENO: 'Cuando esté lista, subila. De ahí salen la previa y la verificación automática.',
   POR_REVISAR: 'Miralo contra la orden de trabajo y decidí.',
   LISTA: 'Terminada. Se puede reabrir con un motivo.',
 };
@@ -54,6 +55,28 @@ export default function AccionesPieza({ pieza, miembros, onCambio, onError, comp
   const [ocupado, setOcupado] = React.useState(false);
   const [pidiendo, setPidiendo] = React.useState<ConMotivo | null>(null);
   const [motivo, setMotivo] = React.useState('');
+  const [subiendo, setSubiendo] = React.useState(false);
+  const archivoRef = React.useRef<HTMLInputElement>(null);
+
+  /**
+   * Los canales gráficos entregan el ARCHIVO: es lo único que la auditoría
+   * puede leer, y lo que convierte la previa en evidencia. El video y el audio
+   * siguen con enlace — con el tope de 10 MB un reel no entra.
+   */
+  const grafica = pieza.tipo === 'GRAFICA';
+
+  const subir = async (archivo: File | undefined) => {
+    if (!archivo) return;
+    setSubiendo(true);
+    try {
+      onCambio(await piezasApi.subirArchivo(pieza.id, archivo));
+    } catch (e) {
+      onError(e instanceof Error ? e.message : 'No se pudo subir la pieza');
+    } finally {
+      setSubiendo(false);
+      if (archivoRef.current) archivoRef.current.value = '';
+    }
+  };
 
   const correr = async (fn: () => Promise<Pieza>) => {
     setOcupado(true);
@@ -148,13 +171,44 @@ export default function AccionesPieza({ pieza, miembros, onCambio, onError, comp
         </div>
       )}
 
-      {pieza.estado === 'EN_DISENO' && (
+      {pieza.estado === 'EN_DISENO' && grafica && (
+        <div className="space-y-2">
+          <input
+            ref={archivoRef}
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            onChange={e => void subir(e.target.files?.[0])}
+            className="hidden"
+          />
+          <button
+            disabled={subiendo || ocupado}
+            onClick={() => archivoRef.current?.click()}
+            className={`${primario} flex w-full items-center justify-center gap-1.5`}
+          >
+            {subiendo ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+            {subiendo ? 'Subiendo y auditando…' : 'Subir la pieza'}
+          </button>
+          <p className="text-[10px] text-apple-tertiary">PNG, JPG o WEBP · hasta 10 MB</p>
+          {!compacto && quien && (
+            <button
+              disabled={ocupado}
+              onClick={() => correr(() => piezasApi.reasignar(pieza.id, quien))}
+              className={secundario}
+            >
+              Reasignar a quien esté elegido
+            </button>
+          )}
+        </div>
+      )}
+
+      {pieza.estado === 'EN_DISENO' && !grafica && (
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <input
               value={enlace}
               onChange={e => setEnlace(e.target.value)}
               placeholder="https://drive.google.com/file/d/…"
+              title="El video y el audio se entregan con un enlace"
               className="min-w-0 flex-1 rounded-lg border border-apple-border px-2 py-1.5 text-[11px] text-apple-text"
             />
             <button
