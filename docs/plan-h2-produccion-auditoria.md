@@ -259,7 +259,7 @@ por eso se dibujaron antes de la migración.
 —1080×1080 y 1080×1920—, cada uno con su copy aprobado, y una pieza con dos canales no sabría
 contra qué texto auditar. *Regla:* **una pieza es un canal y un archivo.** Lo compartido se
 expresa asignándolas juntas y mostrando la hermana en la orden de trabajo, no fusionándolas.
-Cada copy aprobado pertenece a una sola pieza.
+Cada copy aprobado pertenece a una sola pieza por formato (afinado en D7).
 
 **2 · Un canal que no produce pieza gráfica.** Si todo lo aprobado entra al tablero, se llena de
 tarjetas que nadie puede trabajar. *Regla:* **entra al tablero todo canal cuyo copy aprobado no
@@ -297,7 +297,7 @@ porque una caída del servicio no es una opinión sobre la pieza.
 
 **Lo que esto fija para el nivel 2:**
 
-1. `Pieza` → un canal y un archivo. `SavedVariation` → a lo sumo una pieza. Las hermanas se enlazan.
+1. `Pieza` → un canal y un archivo. `SavedVariation` → a lo sumo una pieza por formato. Las hermanas se enlazan.
 2. El `ChannelSpec` declara qué pieza produce: gráfica, video, audio o ninguna.
 3. La pieza guarda una copia del texto de cada slot al asignarse, más la referencia al original.
 4. Archivo con tope de peso y tipo; medidas como hallazgo; video como enlace.
@@ -307,8 +307,8 @@ porque una caída del servicio no es una opinión sobre la pieza.
 
 # Nivel 2 · Cómo se construye
 
-> Escrito el 2026-09-22, con la fase 0 cerrada. **Una decisión nueva queda abierta, D7**, y
-> bloquea la fase 2: apareció al bajar el diseño al modelo y no está dibujada.
+> Escrito el 2026-09-22, con la fase 0 cerrada. **Una decisión nueva, D7**, apareció al bajar el
+> diseño al modelo. Está dibujada y espera confirmación; bloquea solo el alta de piezas.
 
 ## Lo que el código dice y el diseño no veía
 
@@ -331,7 +331,7 @@ Pero `SavedVariation.projectId` es nullable y hay copy guardado sin proyecto. La
 exigir campaña sin dejar afuera ese copy: `Pieza.projectId` es nullable, y la tarjeta muestra el
 título de la pieza cuando no hay proyecto.
 
-## D7 · ¿Cómo nace una pieza? — ABIERTA
+## D7 · ¿Cómo nace una pieza? — DIBUJADA, por confirmar
 
 El diseño de D1 lo dejó escrito sin resolver: *«alguien tiene que decidir qué slots entran en
 cada pieza; automático la mayoría de las veces, no siempre»*. Los estados límite fijaron qué es
@@ -350,9 +350,32 @@ una pieza (un canal, un archivo), pero no **quién la crea ni cuándo**. Hay dos
 *Recomendación:* **explícito, con propuesta.** Es la columna *Por asignar* con su dueño: quien
 produce. Y es coherente con D5: el sistema no mueve trabajo entre personas por su cuenta.
 
-**Qué falta:** dibujarlo en el `.pen`. Desde dónde se dispara —la Biblioteca, el cierre de una
-sesión de revisión, o los dos— y cómo se ve la propuesta. Hasta que eso esté, la fase 2 puede
-avanzar en el modelo, la máquina de estados y el tablero, pero **no en el alta de piezas**.
+**Dibujada** en `§ H2 · D7 · cómo nace una pieza`, **a la espera de confirmación.** Lo que
+muestra:
+
+- **Dos puertas, una sola propuesta.** La principal es **cerrar una sesión de revisión**: el
+  cliente aprobó un lote y todo lo que va a producción llegó junto. Aparece un botón «Mandar
+  aprobados a producción» en la sesión completada. La otra es **la Biblioteca**, para lo aprobado
+  internamente: se seleccionan filas aprobadas (las no aprobadas no cuentan) y se manda el grupo.
+- **La propuesta:** una pieza por canal, un aprobado por slot, el formato por defecto del
+  canal. Cada pieza se puede destildar.
+  - **Dos aprobados en el mismo slot** → pregunta: ¿una pieza con cuál, o dos piezas (A/B)? El
+    que no entra no se borra ni se desaprueba: queda libre en la Biblioteca.
+  - **Hermanas:** un interruptor, «misma idea visual que el Post — se asignan juntas», que
+    escribe el mismo `grupoId`.
+  - **Formato:** un selector con los formatos del spec, y «otro formato», que crea otra pieza con
+    el mismo copy (ver la corrección al modelo, abajo).
+  - **Fuera de la propuesta**, con el motivo: los canales sin pieza, y los aprobados que ya
+    están en otra pieza.
+- **Las piezas nacen en *Por asignar* y sin nadie asignado.** Crear y asignar son dos
+  decisiones, y la segunda es del dueño de esa columna.
+
+**Corrección al modelo que salió de dibujarla:** «otro formato» pone un mismo aprobado en dos
+piezas —Display 300×250 y 728×90, mismo copy—, así que «un aprobado, una sola pieza» (estado
+límite 1) se afina a **un aprobado, una sola pieza por formato**. `PiezaSlot` copia el `formato`
+de su pieza, que no cambia después del alta, y la base lo garantiza con
+`@@unique([savedVariationId, formato])`. Postgres admite varios NULL en un unique, así que los
+slots cuyo original se borró no chocan entre sí.
 
 ## Fase 1 · E1 — almacenamiento en S3 — **hecha**
 
@@ -406,7 +429,11 @@ model PiezaSlot {
   piezaId          String
   /// SetNull, no Cascade: borrar el copy de la Biblioteca no puede borrar
   /// una pieza en producción. La tarjeta avisa que el original ya no existe.
-  savedVariationId String?  @unique   // un aprobado, a lo sumo una pieza
+  /// Un aprobado, a lo sumo una pieza por formato (D7: «otro formato»).
+  savedVariationId String?
+  /// Copiado de Pieza.formato, que no cambia tras el alta: existe para que
+  /// la base garantice la unicidad sin un trigger.
+  formato          String
   slot             String
   slotLabel        String   // del registry, nunca del body
   /// Estado límite 3: el texto tal como estaba al asignarse. La auditoría
@@ -416,6 +443,8 @@ model PiezaSlot {
   /// trabajo pero no se auditan contra la pieza.
   esInstruccion    Boolean  @default(false)
   orden            Int      @default(0)
+
+  @@unique([savedVariationId, formato])
 }
 
 model PiezaEvento {
@@ -493,7 +522,7 @@ Todo con `...inWorkspace`. **Guard nuevo en `lib/tenancy.ts`: `assertPiezaInWork
 | GET | `/piezas?clientId=` | `assertClientInWorkspace` — el tablero, por marca |
 | GET | `/piezas/mias` | filtra por `asignadaAId = yo` y el workspace activo |
 | GET | `/piezas/:id` | `assertPiezaInWorkspace` — la orden de trabajo |
-| POST | `/piezas` | cada `savedVariationId` con `assertVariationInWorkspace`, más: misma marca, mismo canal, aprobado, `spec.pieza` no nulo; el `@unique` responde 409 si ya está en otra pieza |
+| POST | `/piezas` | cada `savedVariationId` con `assertVariationInWorkspace`, más: misma marca, mismo canal, aprobado, `spec.pieza` no nulo; responde 409 si ya está en otra pieza del mismo formato |
 | POST | `/piezas/:id/{asignar,entregar,aceptar,devolver,reabrir,actualizar-copy}` | `assertPiezaInWorkspace` |
 | PATCH | `/piezas/:id` | `pickFields(['titulo'])` — nada más se edita a mano |
 
@@ -514,7 +543,7 @@ nunca trae etiquetas ni estados.
 
 ### Criterio de aceptación de la fase 2
 
-- Un aprobado de Google Ads no puede crear pieza (400); un aprobado ya usado responde 409.
+- Un aprobado de Google Ads no puede crear pieza (400); un aprobado ya usado en el mismo formato responde 409, y en otro formato se acepta.
 - Las seis acciones respetan la tabla de transiciones. Una transición desde un estado que no
   corresponde responde 409, y dos transiciones simultáneas no dejan un estado intermedio.
 - *Devolver* y *reabrir* sin nota responden 400. Cada transición deja su `PiezaEvento`.
@@ -560,12 +589,12 @@ Menos detallada a propósito: se afina con la fase 2 funcionando.
 ## Orden y dependencias
 
 ```
-D7 dibujada ──┐
+D7 confirmada ┐
               ├─► Fase 2 ─► Fase 3 ─► Fase 4
 PR #8 y #9 ───┘            (sharp verificado antes)
 ```
 
-Sin estimación todavía: se estima cuando D7 cierre. Es lo único que puede agregar una pantalla.
+Sin estimación todavía: se estima cuando D7 se confirme.
 
 ## Prerrequisitos duros
 
