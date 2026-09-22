@@ -210,6 +210,9 @@ myvoice.lobueno.co. `aws_deployment_plan.md` has the server setup and incident h
 `docs/ROADMAP.md` is the living roadmap (three horizons plus cross-cutting enablers) and the
 place to update status. `docs/plan-h1-multitenant-motor.md` is the detailed plan for the
 current horizon, with file:line references for known open issues.
+`docs/bitacora-2026-09-22.md` records the day the H2 went from plan to screen: the four PRs left
+open, the decisions (E6, D2, D3, D7), what the uniqueness rule got wrong about the A/B, and the
+six corrections that came from looking at the screen working.
 `docs/bitacora-2026-08-28.md` records the H1 + E1 deploy day: what shipped, what the rehearsal
 against the real dump caught before it hit production, and the pending items with owners.
 `docs/despliegue-h1.md` is the single sheet for the H1 deploy — the whole ordered sequence,
