@@ -16,6 +16,7 @@
  * Ver docs/plan-h2-produccion-auditoria.md.
  */
 
+import { createHash } from 'node:crypto';
 import { Prisma, PiezaEstado, PiezaTipo } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import { TenantContext, TenantError } from '../lib/tenancy.js';
@@ -27,6 +28,17 @@ import {
   getPiezaSpec,
   resolveSlotLabel,
 } from '../channels/registry.js';
+
+/**
+ * Identidad de una pieza por su contenido: el formato más los aprobados que la
+ * componen. Es lo que la base usa para rechazar la pieza REPETIDA —un doble
+ * clic, dos personas mandando el mismo lote a producir— sin estorbar los dos
+ * casos en que un mismo aprobado va a más de una pieza a propósito: otro
+ * formato de Display, y el A/B, donde las dos piezas comparten el cuerpo y solo
+ * cambia el hook.
+ */
+const huellaDe = (formato: string, savedVariationIds: string[]): string =>
+  createHash('sha256').update([formato, ...[...savedVariationIds].sort()].join('|')).digest('hex');
 
 /** Posición del slot en el spec del canal; -1 si el spec ya no lo declara. */
 const ordenDeSlot = (platform: string, slot: string): number =>
@@ -328,12 +340,12 @@ export const crearPiezas = async (tenant: TenantContext, piezas: PiezaAConfirmar
         tipo: TIPO_POR_SPEC[spec.tipo],
         formato: p.formato,
         titulo: (p.titulo || p.platform).slice(0, 160),
+        huella: huellaDe(p.formato, suyas.map(v => v.id)),
         grupoId: grupos.get(i) ?? null,
         creadaPorId: tenant.userId,
       },
       slots: suyas.map((v, orden) => ({
         savedVariationId: v.id,
-        formato: p.formato,
         slot: v.slot ?? 'sinSlot',
         slotLabel: resolveSlotLabel(v.platform, v.slot) ?? v.slotLabel ?? (v.slot ?? 'sinSlot'),
         textoCongelado: v.content,
@@ -360,11 +372,11 @@ export const crearPiezas = async (tenant: TenantContext, piezas: PiezaAConfirmar
       return creadas;
     });
   } catch (e) {
-    // El unique (savedVariationId, formato) es la última línea: dos personas
-    // mandando el mismo aprobado a producción a la vez chocan acá, no en una
-    // lectura previa que podría quedar vieja.
+    // El unique (workspaceId, huella) es la última línea: dos personas mandando
+    // el mismo lote a producir a la vez chocan acá, no en una lectura previa
+    // que para entonces ya quedó vieja.
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002')
-      throw new TenantError('Ese copy ya está en una pieza de ese formato', 409);
+      throw new TenantError('Esa misma pieza ya existe', 409);
     throw e;
   }
 };

@@ -438,6 +438,12 @@ model Pieza {
   /// unicidad de PiezaSlot depende de eso.
   formato     String
   titulo      String
+  /// Huella del contenido de la pieza: formato + los aprobados que la componen,
+  /// ordenados. Existe para que la BASE impida la pieza repetida —el doble
+  /// clic, los dos que mandan a producir el mismo lote— sin impedir el A/B,
+  /// donde dos piezas del mismo formato comparten el cuerpo y difieren en el
+  /// hook. La unicidad es del CONJUNTO, no de cada copy por separado.
+  huella      String
   estado      PiezaEstado @default(POR_ASIGNAR)
   /// Crear y asignar son dos decisiones: una pieza nace sin dueño, en
   /// Por asignar, y la segunda decisión es del dueño de esa columna (D7).
@@ -464,6 +470,7 @@ model Pieza {
   eventos   PiezaEvento[]
 
   /// Los dos ejes del tablero: por marca (la pantalla) y por persona (Mis piezas).
+  @@unique([workspaceId, huella])
   @@index([workspaceId, clientId, estado])
   @@index([asignadaAId, estado])
   @@index([grupoId])
@@ -476,12 +483,11 @@ model PiezaSlot {
   /// SetNull y no Cascade: borrar un copy de la Biblioteca no puede borrar una
   /// pieza que está en producción. NULL significa "el original ya no existe", y
   /// la tarjeta lo dice.
+  /// Un mismo aprobado puede estar en varias piezas a propósito: otro formato
+  /// de Display (D7), o la otra mitad de un A/B, donde las dos piezas comparten
+  /// el cuerpo y solo cambia el hook. Lo que no puede repetirse es la pieza
+  /// entera, y de eso se ocupa Pieza.huella.
   savedVariationId String?
-  /// Copiado de Pieza.formato, que no cambia tras el alta. Existe para que la
-  /// base garantice la unicidad sin un trigger: un aprobado va a una sola pieza
-  /// POR FORMATO, porque el mismo copy en dos medidas de Display son dos
-  /// piezas distintas (D7).
-  formato          String
   slot             String
   /// Resuelto SIEMPRE con resolveSlotLabel del registry, nunca copiado del body.
   slotLabel        String
@@ -499,10 +505,8 @@ model PiezaSlot {
   pieza          Pieza           @relation(fields: [piezaId], references: [id], onDelete: Cascade)
   savedVariation SavedVariation? @relation(fields: [savedVariationId], references: [id], onDelete: SetNull)
 
-  /// Postgres admite varios NULL en un unique, así que los slots cuyo original
-  /// se borró no chocan entre sí.
-  @@unique([savedVariationId, formato])
   @@index([piezaId])
+  @@index([savedVariationId])
 }
 
 /// Historial append-only de la pieza. No es auditoría de sistema: es lo que

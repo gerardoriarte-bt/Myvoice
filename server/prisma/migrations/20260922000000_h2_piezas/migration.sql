@@ -9,10 +9,9 @@
 --
 --   * PiezaSlot.savedVariationId es SET NULL, no CASCADE: borrar un copy de la
 --     Biblioteca no puede borrar una pieza que está en producción.
---   * El unique es (savedVariationId, formato) y no solo savedVariationId: el
---     mismo copy en dos medidas de Display son dos piezas distintas. Postgres
---     admite varios NULL en un unique, así que los slots cuyo original se borró
---     no chocan entre sí.
+--   * Lo único en Pieza es (workspaceId, huella): la huella resume el formato
+--     más los aprobados que la componen, así que impide la pieza repetida sin
+--     impedir el A/B, donde dos piezas comparten el cuerpo y cambia el hook.
 --   * PiezaEvento es append-only; nada en el código la actualiza ni la borra.
 
 -- CreateEnum
@@ -31,6 +30,7 @@ CREATE TABLE "Pieza" (
     "tipo" "PiezaTipo" NOT NULL,
     "formato" TEXT NOT NULL,
     "titulo" TEXT NOT NULL,
+    "huella" TEXT NOT NULL,
     "estado" "PiezaEstado" NOT NULL DEFAULT 'POR_ASIGNAR',
     "asignadaAId" TEXT,
     "grupoId" TEXT,
@@ -48,7 +48,6 @@ CREATE TABLE "PiezaSlot" (
     "id" TEXT NOT NULL,
     "piezaId" TEXT NOT NULL,
     "savedVariationId" TEXT,
-    "formato" TEXT NOT NULL,
     "slot" TEXT NOT NULL,
     "slotLabel" TEXT NOT NULL,
     "textoCongelado" TEXT NOT NULL,
@@ -82,10 +81,13 @@ CREATE INDEX "Pieza_asignadaAId_estado_idx" ON "Pieza"("asignadaAId", "estado");
 CREATE INDEX "Pieza_grupoId_idx" ON "Pieza"("grupoId");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "Pieza_workspaceId_huella_key" ON "Pieza"("workspaceId", "huella");
+
+-- CreateIndex
 CREATE INDEX "PiezaSlot_piezaId_idx" ON "PiezaSlot"("piezaId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "PiezaSlot_savedVariationId_formato_key" ON "PiezaSlot"("savedVariationId", "formato");
+CREATE INDEX "PiezaSlot_savedVariationId_idx" ON "PiezaSlot"("savedVariationId");
 
 -- CreateIndex
 CREATE INDEX "PiezaEvento_piezaId_createdAt_idx" ON "PiezaEvento"("piezaId", "createdAt");

@@ -1,9 +1,10 @@
 
 import React from 'react';
 import { SCREENS } from '../screens';
-import { Plus, Search, Copy, Pencil, CheckCircle2, Trash2, Check, BookmarkCheck, Tag, X, Square, CheckSquare } from 'lucide-react';
+import { Plus, Search, Copy, Pencil, CheckCircle2, Trash2, Check, BookmarkCheck, LayoutGrid, Tag, X, Square, CheckSquare } from 'lucide-react';
 import { SavedVariation, Project, Client, Platform } from '../types';
 import { PlatformIcon } from './ui/platformIcons';
+import CrearPiezasModal from './produccion/CrearPiezasModal';
 import { libraryApi, reviewApi } from '../services/api';
 
 interface SavedManagerProps {
@@ -49,6 +50,7 @@ const SavedManager: React.FC<SavedManagerProps> = ({
   const [sortOrder, setSortOrder] = React.useState<'newest' | 'oldest' | 'approved'>('newest');
 
   // 2A: Batch selection state
+  const [mandandoAProduccion, setMandandoAProduccion] = React.useState<string[] | null>(null);
   const [selectionMode, setSelectionMode] = React.useState(false);
   const [selectedIds, setSelectedIds] = React.useState<Set<string>>(new Set());
 
@@ -634,6 +636,13 @@ const SavedManager: React.FC<SavedManagerProps> = ({
               Eliminar
             </button>
             <button
+              onClick={() => setMandandoAProduccion(Array.from(selectedIds))}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-white text-ink hover:bg-gray-100 rounded-lg text-[12px] font-medium transition-colors"
+            >
+              <LayoutGrid className="w-3.5 h-3.5" />
+              Mandar a produccion
+            </button>
+            <button
               onClick={handleCreateReviewSession}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 rounded-lg text-[12px] font-medium transition-colors"
             >
@@ -641,6 +650,25 @@ const SavedManager: React.FC<SavedManagerProps> = ({
             </button>
           </div>
         </div>
+      )}
+      {/*
+        D7 · el alta de piezas es explícita y sale de acá: lo aprobado
+        internamente llega de a uno, así que nadie puede armar la pieza salvo
+        quien la manda a producir. El servidor arma la propuesta.
+      */}
+      {mandandoAProduccion && (
+        <CrearPiezasModal
+          savedVariationIds={mandandoAProduccion}
+          onClose={() => setMandandoAProduccion(null)}
+          onCreadas={cantidad => {
+            setMandandoAProduccion(null);
+            exitSelectionMode();
+            addNotification?.(
+              `${cantidad} pieza${cantidad === 1 ? '' : 's'} en el tablero, sin asignar`,
+              'success'
+            );
+          }}
+        />
       )}
     </div>
   );

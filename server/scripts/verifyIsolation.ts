@@ -291,11 +291,11 @@ async function main() {
         tipo: 'GRAFICA',
         formato: '1080×1080',
         titulo: 'Pieza de A',
+        huella: 'verif-a-' + aprobadoA.id,
         creadaPorId: A.user.id,
         slots: {
           create: {
             savedVariationId: aprobadoA.id,
-            formato: '1080×1080',
             slot: 'hook',
             slotLabel: 'Hook (línea 1)',
             textoCongelado: aprobadoA.content,
@@ -362,9 +362,27 @@ async function main() {
       }),
     });
     record(
-      'POST /piezas rechaza con 409 el aprobado ya usado en ese formato',
+      'POST /piezas rechaza con 409 la pieza repetida',
       repetida.status === 409,
-      `respondió ${repetida.status} — el unique (savedVariationId, formato) es la última línea`
+      `respondió ${repetida.status} — el unique (workspaceId, huella) es la última línea`
+    );
+
+    // El A/B comparte el cuerpo y cambia el hook: son dos piezas del mismo
+    // formato con un aprobado en común, y eso tiene que poder crearse. La
+    // primera versión del modelo lo prohibía sin querer.
+    const segundoHook = await aprobado(B.client.id, B.project.id);
+    const ab = await api('/piezas', B.token, {
+      method: 'POST',
+      body: JSON.stringify({
+        piezas: [
+          { platform: 'Instagram Post', formato: '1080×1080', titulo: 'A/B — variante', savedVariationIds: [segundoHook.id] },
+        ],
+      }),
+    });
+    record(
+      'POST /piezas permite el A/B: misma marca y formato, otro conjunto',
+      ab.status === 201,
+      `respondió ${ab.status} ${JSON.stringify(ab.body)?.slice(0, 90)}`
     );
 
     if (piezaB?.id) {

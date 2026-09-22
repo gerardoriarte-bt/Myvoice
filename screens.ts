@@ -21,6 +21,7 @@ import {
   Building2,
   ClipboardCheck,
   History,
+  LayoutGrid,
   Library,
   Settings,
   Sparkles,
@@ -34,11 +35,18 @@ export type ScreenId =
   | 'analytics'
   | 'history'
   | 'collaboration'
+  | 'produccion'
   | 'users'
   | 'settings'
   | 'help';
 
-export type StageId = 'preparar' | 'producir' | 'aprobar' | 'administrar';
+/**
+ * Cinco etapas, no cuatro: cuando entra la pieza, «producir» dejaba de
+ * distinguir dos cosas distintas —producir el copy y producir el arte— con el
+ * mismo nombre. El copy se ESCRIBE; la pieza se PRODUCE. Auditar es una etapa
+ * del proceso pero no un destino del menú: su informe se abre desde la tarjeta.
+ */
+export type StageId = 'preparar' | 'escribir' | 'producir' | 'aprobar' | 'administrar';
 
 export interface ScreenDef {
   id: ScreenId;
@@ -66,7 +74,7 @@ export const SCREENS: Record<ScreenId, ScreenDef> = {
     name: 'Generar',
     description: 'Elegí marca, campaña y canales. El motor arma el concepto y escribe cada canal.',
     icon: Sparkles,
-    stage: 'producir',
+    stage: 'escribir',
     adminOnly: true,
   },
   saved: {
@@ -74,7 +82,7 @@ export const SCREENS: Record<ScreenId, ScreenDef> = {
     name: 'Biblioteca',
     description: 'Contenido guardado por proyecto y marca.',
     icon: Library,
-    stage: 'producir',
+    stage: 'escribir',
     adminOnly: false,
   },
   history: {
@@ -82,7 +90,7 @@ export const SCREENS: Record<ScreenId, ScreenDef> = {
     name: 'Historial',
     description: 'Cada corrida del motor, con su concepto, su costo y su modelo.',
     icon: History,
-    stage: 'producir',
+    stage: 'escribir',
     adminOnly: true,
   },
   collaboration: {
@@ -100,6 +108,16 @@ export const SCREENS: Record<ScreenId, ScreenDef> = {
     icon: BarChart3,
     stage: 'aprobar',
     adminOnly: true,
+  },
+  produccion: {
+    id: 'produccion',
+    name: 'Producción',
+    description: 'Las piezas aprobadas, de quién es cada una y en qué va.',
+    icon: LayoutGrid,
+    stage: 'producir',
+    // La primera pantalla de trabajo que ve alguien que no administra: un
+    // diseñador es MEMBER y hasta acá solo tenía la Biblioteca.
+    adminOnly: false,
   },
   users: {
     id: 'users',
@@ -134,7 +152,8 @@ export const SCREENS: Record<ScreenId, ScreenDef> = {
  */
 export const NAV_STAGES: { id: StageId; label: string; screens: ScreenId[] }[] = [
   { id: 'preparar', label: 'Preparar', screens: ['clients'] },
-  { id: 'producir', label: 'Producir', screens: ['generator', 'saved', 'history'] },
+  { id: 'escribir', label: 'Escribir', screens: ['generator', 'saved', 'history'] },
+  { id: 'producir', label: 'Producir', screens: ['produccion'] },
   { id: 'aprobar', label: 'Aprobar y medir', screens: ['collaboration', 'analytics'] },
   { id: 'administrar', label: 'Administrar', screens: ['users', 'settings', 'help'] },
 ];
