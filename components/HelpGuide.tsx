@@ -123,6 +123,11 @@ const IconUsers = () => (
     <path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
   </svg>
 );
+const IconTablero = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0EA5E9" strokeWidth="2">
+    <rect x="3" y="3" width="7" height="18" rx="1" /><rect x="14" y="3" width="7" height="11" rx="1" />
+  </svg>
+);
 const IconUser = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8B5CF6" strokeWidth="2">
     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
@@ -291,8 +296,41 @@ export default function HelpGuide() {
         </Tip>
       </Section>
 
+      {/* ── 6. Producción ── */}
+      <Section id="produccion" title="6. Producción" badge="Nuevo" badgeColor="#0EA5E9" open={open === 'produccion'} onToggle={() => toggle('produccion')}>
+        <SectionHeader
+          icon={<IconTablero />}
+          title="Producción"
+          what="El tablero donde el copy aprobado se convierte en pieza: quién la diseña, en qué va y qué texto exacto lleva adentro. Es la mitad del proceso que antes se coordinaba por fuera del sistema."
+        />
+
+        <SubHead>Como usarlo</SubHead>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <Step n={1} title="Manda el copy aprobado a producción" desc="Desde la Biblioteca, seleccioná las variaciones aprobadas y presioná Mandar a producción. El sistema propone las piezas —una por canal, un aprobado por slot, el formato por defecto del canal— y vos confirmás o corregís. Nada entra al tablero solo." />
+          <Step n={2} title="Resolvé las preguntas de la propuesta" desc="Si hay dos aprobados para el mismo slot, la propuesta pregunta si va uno solo o si son dos piezas (un A/B). El que no entra no se borra ni se desaprueba: queda en la Biblioteca para otra pieza. Si el mismo visual va a dos canales, marcá 'mismo visual' y las dos piezas se asignan juntas." />
+          <Step n={3} title="Asigná" desc="Las piezas nacen en Por asignar y sin dueño. Elegí a quién se la das y pasa a En diseño. Crear y asignar son dos decisiones distintas." />
+          <Step n={4} title="El diseñador trabaja con la orden de trabajo" desc="Abrí la tarjeta: ahí está el copy exacto para copiar y pegar —no retipear—, el brief de producción que el motor emite (idea visual, estructura, indicaciones), las piezas hermanas y el historial de quién hizo qué." />
+          <Step n={5} title="Entregá y revisá" desc="El diseñador pega el enlace a la pieza terminada (Figma, Drive) y pasa a Por revisar. Quien aprueba la acepta, y va a Lista, o la devuelve a diseño con un motivo escrito. El motivo es obligatorio: es lo que evita la devolución sin explicación." />
+          <Step n={6} title="Mis piezas" desc="Cambiá la vista con el selector de arriba a la derecha. El tablero es por marca, pero Mis piezas cruza todas las marcas del workspace y muestra solo lo tuyo." />
+        </div>
+
+        <SubHead>Qué canales entran</SubHead>
+        <p style={{ fontSize: 13, color: '#6E6E73', lineHeight: 1.6, margin: '0 0 10px' }}>
+          Entra al tablero todo canal cuyo copy aprobado no es lo que se publica. Instagram (Post, Historia,
+          Carrusel), Google Display, Rich Media, Pop up y Email producen pieza gráfica. Reel, TikTok y YouTube
+          entregan un enlace al video, y la Cuña de Radio su audio. Google Ads, Push Notification y WhatsApp
+          no entran: ahí el copy aprobado ya es la pieza.
+        </p>
+
+        <Tip>
+          Si alguien edita en la Biblioteca un copy que ya está en una pieza, la tarjeta avisa «El copy cambió»
+          y la pieza conserva el texto con el que se mandó a producir. Actualizarla es una decisión que tomás
+          vos desde la orden de trabajo, no algo que pase solo mientras el diseñador trabaja.
+        </Tip>
+      </Section>
+
       {/* ── 6. Portal del cliente ── */}
-      <Section id="portal" title="6. Portal del cliente (rol CLIENT)" badge="CLIENT" badgeColor="#8B5CF6" open={open === 'portal'} onToggle={() => toggle('portal')}>
+      <Section id="portal" title="7. Portal del cliente (rol CLIENT)" badge="CLIENT" badgeColor="#8B5CF6" open={open === 'portal'} onToggle={() => toggle('portal')}>
         <SectionHeader
           icon={<IconUser />}
           title="Portal del cliente"
@@ -312,7 +350,7 @@ export default function HelpGuide() {
       </Section>
 
       {/* ── 7. Métricas ── */}
-      <Section id="analytics" title="7. Métricas" badge="Métricas" badgeColor="#0071E3" open={open === 'analytics'} onToggle={() => toggle('analytics')}>
+      <Section id="analytics" title="8. Métricas" badge="Métricas" badgeColor="#0071E3" open={open === 'analytics'} onToggle={() => toggle('analytics')}>
         <SectionHeader
           icon={<IconBarChart />}
           title="Métricas"
@@ -342,7 +380,7 @@ export default function HelpGuide() {
       </Section>
 
       {/* ── 8. Scorecard por cliente ── */}
-      <Section id="scorecard" title="8. Scorecard por cliente" badge="Nuevo" badgeColor="#F59E0B" open={open === 'scorecard'} onToggle={() => toggle('scorecard')}>
+      <Section id="scorecard" title="9. Scorecard por cliente" badge="Nuevo" badgeColor="#F59E0B" open={open === 'scorecard'} onToggle={() => toggle('scorecard')}>
         <SectionHeader
           icon={<IconAward />}
           title="Scorecard por cliente"
@@ -362,7 +400,7 @@ export default function HelpGuide() {
       </Section>
 
       {/* ── 9. Configuracion ── */}
-      <Section id="config" title="9. Configuración" badge="Settings" badgeColor="#6E6E73" open={open === 'config'} onToggle={() => toggle('config')}>
+      <Section id="config" title="10. Configuración" badge="Settings" badgeColor="#6E6E73" open={open === 'config'} onToggle={() => toggle('config')}>
         <SectionHeader
           icon={<IconSettings />}
           title="Configuracion"
@@ -382,7 +420,7 @@ export default function HelpGuide() {
       </Section>
 
       {/* ── 10. Notificaciones por email ── */}
-      <Section id="email" title="10. Notificaciones por email" badge="Opcional" badgeColor="#10B981" open={open === 'email'} onToggle={() => toggle('email')}>
+      <Section id="email" title="11. Notificaciones por email" badge="Opcional" badgeColor="#10B981" open={open === 'email'} onToggle={() => toggle('email')}>
         <SectionHeader
           icon={<IconMail />}
           title="Notificaciones por email"

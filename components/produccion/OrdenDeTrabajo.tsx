@@ -1,5 +1,5 @@
 import React from 'react';
-import { AlertTriangle, Copy, Loader2, X } from 'lucide-react';
+import { AlertTriangle, Check, Copy, Loader2, Pencil, X } from 'lucide-react';
 import { Pieza, PiezaDetalle } from '../../types';
 import { piezasApi } from '../../services/api';
 import AccionesPieza from './AccionesPieza';
@@ -30,6 +30,8 @@ const MOTIVO: Record<string, string> = {
 export default function OrdenDeTrabajo({ piezaId, miembros, onCerrar, onCambio, onError }: Props) {
   const [pieza, setPieza] = React.useState<PiezaDetalle | null>(null);
   const [copiado, setCopiado] = React.useState<string | null>(null);
+  /** El título es lo único editable a mano: el estado se mueve con acciones. */
+  const [titulo, setTitulo] = React.useState<string | null>(null);
 
   const cargar = React.useCallback(async () => {
     try {
@@ -54,6 +56,22 @@ export default function OrdenDeTrabajo({ piezaId, miembros, onCerrar, onCambio, 
     }
   };
 
+  const guardarTitulo = async () => {
+    const nuevo = (titulo ?? '').trim();
+    if (!pieza || !nuevo || nuevo === pieza.titulo) {
+      setTitulo(null);
+      return;
+    }
+    try {
+      onCambio(await piezasApi.renombrar(pieza.id, nuevo));
+      setPieza({ ...pieza, titulo: nuevo });
+    } catch (e) {
+      onError(e instanceof Error ? e.message : 'No se pudo renombrar la pieza');
+    } finally {
+      setTitulo(null);
+    }
+  };
+
   const tras = (actualizada: Pieza) => {
     onCambio(actualizada);
     void cargar();
@@ -67,9 +85,36 @@ export default function OrdenDeTrabajo({ piezaId, miembros, onCerrar, onCambio, 
       <div className="flex max-h-[88vh] w-full max-w-3xl flex-col rounded-2xl bg-white shadow-2xl">
         <header className="flex items-start justify-between border-b border-apple-border px-6 py-5">
           <div>
-            <h2 className="text-[17px] font-semibold text-apple-text">
-              {pieza ? pieza.titulo : 'Orden de trabajo'}
-            </h2>
+            {titulo === null ? (
+              <h2 className="group flex items-center gap-2 text-[17px] font-semibold text-apple-text">
+                {pieza ? pieza.titulo : 'Orden de trabajo'}
+                {pieza && (
+                  <button
+                    onClick={() => setTitulo(pieza.titulo)}
+                    title="Renombrar"
+                    className="text-apple-tertiary opacity-0 transition-opacity hover:text-apple-text group-hover:opacity-100"
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </h2>
+            ) : (
+              <div className="flex items-center gap-2">
+                <input
+                  autoFocus
+                  value={titulo}
+                  onChange={e => setTitulo(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') void guardarTitulo();
+                    if (e.key === 'Escape') setTitulo(null);
+                  }}
+                  className="rounded-lg border border-apple-border px-2 py-1 text-[15px] font-semibold text-apple-text"
+                />
+                <button onClick={() => void guardarTitulo()} className="text-apple-secondary hover:text-apple-text">
+                  <Check className="h-4 w-4" />
+                </button>
+              </div>
+            )}
             {pieza && (
               <p className="mt-1 text-[12px] text-apple-secondary">
                 {pieza.platform} · {pieza.formato}
