@@ -22,6 +22,19 @@ const pdfUpload = multer({
   },
 });
 
+/** D6: 10 MB por pieza, y solo lo que la auditoría puede leer. */
+const piezaUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    // Sin PDF: sharp precompilado no lo rasteriza, y una pieza sin snapshot se
+    // queda sin previa y sin auditoría. Ver services/piezaArchivo.ts.
+    const aceptados = ['image/png', 'image/jpeg', 'image/webp'];
+    if (aceptados.includes(file.mimetype)) return cb(null, true);
+    cb(new Error('Se aceptan PNG, JPG y WEBP'));
+  },
+});
+
 /**
  * Tres niveles de acceso, y toda ruta autenticada usa al menos el segundo:
  *
@@ -120,6 +133,14 @@ router.post('/piezas/propuesta', ...inWorkspace, piezaController.proponer);
 router.post('/piezas', ...inWorkspace, piezaController.crear);
 router.get('/piezas/:id', ...inWorkspace, piezaController.detalle);
 router.patch('/piezas/:id', ...inWorkspace, piezaController.renombrar);
+/**
+ * La subida va antes que `/:accion` porque comparte la forma de la URL, y
+ * Express resuelve por orden. El tope de 10 MB es el de D6 y lo aplica multer
+ * antes de que el archivo entre en memoria.
+ */
+router.post('/piezas/:id/archivo', ...inWorkspace, piezaUpload.single('archivo'), piezaController.subirArchivo);
+router.post('/piezas/hallazgos/:hallazgoId/decision', ...inWorkspace, piezaController.decidirHallazgo);
+router.post('/piezas/:id/reauditar', ...inWorkspace, piezaController.reauditar);
 router.post('/piezas/:id/:accion', ...inWorkspace, piezaController.ejecutarAccion);
 
 router.get('/review-sessions', ...inWorkspace, reviewController.listReviewSessions);

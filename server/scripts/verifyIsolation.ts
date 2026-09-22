@@ -339,6 +339,46 @@ async function main() {
         piezas: [{ platform: 'Instagram Post', formato: '1080×1080', titulo: 'Robo', savedVariationIds: [aprobadoA.id] }],
       }),
     });
+    // Fase 3: el archivo y su auditoría son de la pieza, así que heredan su
+    // dueño. Un PNG mínimo de 1×1 alcanza para probar el camino completo.
+    const pngMinimo = Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+      'base64'
+    );
+    const subirComoB = async (piezaId: string) => {
+      const form = new FormData();
+      form.append('archivo', new Blob([pngMinimo], { type: 'image/png' }), 'pieza.png');
+      const res = await fetch(`${API_URL}/piezas/${piezaId}/archivo`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${B.token}` },
+        body: form,
+      });
+      return { status: res.status, body: await res.json().catch(() => null) };
+    };
+    const subidaAjena = await subirComoB(piezaA.id);
+    record(
+      'POST /piezas/:id/archivo de A',
+      subidaAjena.status === 403 || subidaAjena.status === 404,
+      `respondió ${subidaAjena.status}`
+    );
+    await expectDenied('POST /piezas/:id/reauditar de A', `/piezas/${piezaA.id}/reauditar`, B.token, { method: 'POST' });
+
+    const hallazgoDeA = await prisma.piezaVersion.create({
+      data: {
+        piezaId: piezaA.id,
+        numero: 1,
+        subidaPorId: A.user.id,
+        hallazgos: { create: { tipo: 'JUICIO', detalle: 'Hallazgo de A' } },
+      },
+      include: { hallazgos: true },
+    });
+    await expectDenied(
+      'POST /piezas/hallazgos/:id/decision de A',
+      `/piezas/hallazgos/${hallazgoDeA.hallazgos[0].id}/decision`,
+      B.token,
+      { method: 'POST', body: JSON.stringify({ decision: 'ACEPTADO', nota: 'intruso' }) }
+    );
+
     const propuesta = await api('/piezas/propuesta', B.token, {
       method: 'POST',
       body: JSON.stringify({ savedVariationIds: [aprobadoA.id] }),
@@ -403,11 +443,17 @@ async function main() {
         `respondió ${fueraDeOrden.status} — la tabla de transiciones es la única fuente`
       );
 
-      const entregada = await api(`/piezas/${piezaB.id}/entregar`, B.token, {
-        method: 'POST',
-        body: JSON.stringify({ enlace: 'https://figma.com/file/verif' }),
-      });
-      record('POST /piezas/:id/entregar mueve a Por revisar', entregada.body?.estado === 'POR_REVISAR', `quedó en ${entregada.body?.estado}`);
+
+      // La subida propia: mueve la pieza a Por revisar y deja una versión con
+      // su auditoría pendiente. La auditoría misma no corre en esta prueba
+      // —no hay proveedor de IA— y queda en NO_DISPONIBLE, que es justamente
+      // el estado que el tablero tiene que saber mostrar.
+      const subidaPropia = await subirComoB(piezaB.id);
+      record(
+        'POST /piezas/:id/archivo entrega la pieza propia y crea su versión',
+        subidaPropia.status === 200 && subidaPropia.body?.estado === 'POR_REVISAR' && subidaPropia.body?.version?.numero === 1,
+        `respondió ${subidaPropia.status}, estado ${subidaPropia.body?.estado}`
+      );
 
       const sinNota = await api(`/piezas/${piezaB.id}/devolver`, B.token, { method: 'POST', body: JSON.stringify({}) });
       record('Devolver sin motivo responde 400', sinNota.status === 400, `respondió ${sinNota.status}`);
@@ -465,6 +511,7 @@ async function main() {
     // Limpieza: el orden respeta las FK.
     for (const t of [A, B]) {
       // Las piezas primero: referencian marca y workspace.
+      await prisma.piezaVersion.deleteMany({ where: { pieza: { workspaceId: t.workspace.id } } });
       await prisma.pieza.deleteMany({ where: { workspaceId: t.workspace.id } });
       await prisma.savedVariation.deleteMany({ where: { clientId: t.client.id } });
       await prisma.negativeFeedback.deleteMany({ where: { clientId: t.client.id } });

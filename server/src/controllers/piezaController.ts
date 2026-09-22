@@ -108,3 +108,47 @@ export const renombrar = async (req: AuthRequest, res: Response) => {
     handleTenantError(error, res, 'Error al renombrar la pieza');
   }
 };
+
+/**
+ * La entrega de un canal gráfico en la fase 3: el archivo.
+ *
+ * El límite de peso lo aplica multer antes de que el buffer llegue acá, y el
+ * servicio lo vuelve a validar junto con el tipo: el navegador puede mentir
+ * sobre los dos.
+ */
+export const subirArchivo = async (req: AuthRequest, res: Response) => {
+  try {
+    await assertPiezaInWorkspace(req.tenant!, req.params.id);
+    const archivo = (req as AuthRequest & { file?: Express.Multer.File }).file;
+    if (!archivo) {
+      res.status(400).json({ error: 'No llegó ningún archivo' });
+      return;
+    }
+    res.json(await piezas.entregarArchivo(req.tenant!, req.params.id, archivo));
+  } catch (error) {
+    handleTenantError(error, res, 'Error al subir la pieza');
+  }
+};
+
+export const decidirHallazgo = async (req: AuthRequest, res: Response) => {
+  const decision = req.body?.decision;
+  try {
+    if (decision !== 'ACEPTADO' && decision !== 'CORREGIDO') {
+      res.status(400).json({ error: 'La decisión es aceptar o corregir' });
+      return;
+    }
+    res.json(await piezas.decidirHallazgo(req.tenant!, req.params.hallazgoId, decision, req.body?.nota));
+  } catch (error) {
+    handleTenantError(error, res, 'Error al decidir el hallazgo');
+  }
+};
+
+/** Reintentar la auditoría: NO_DISPONIBLE es una caída, no un veredicto. */
+export const reauditar = async (req: AuthRequest, res: Response) => {
+  try {
+    await assertPiezaInWorkspace(req.tenant!, req.params.id);
+    res.json(await piezas.reauditar(req.tenant!, req.params.id));
+  } catch (error) {
+    handleTenantError(error, res, 'Error al reintentar la auditoría');
+  }
+};

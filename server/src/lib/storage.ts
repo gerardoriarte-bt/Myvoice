@@ -33,6 +33,12 @@ export interface StorageDriver {
    * no puede firmar nada — es una de las razones por las que no va a producción.
    */
   getUrl(clave: StorageKey, segundos?: number): Promise<string>;
+  /**
+   * Los bytes del objeto. Existe para la auditoría de la fase 3: el modelo
+   * necesita la imagen, y reintentar una auditoría que falló no puede depender
+   * de que quien subió la pieza siga teniendo el archivo a mano.
+   */
+  get(clave: StorageKey): Promise<Buffer>;
   delete(clave: StorageKey): Promise<void>;
 }
 
@@ -59,6 +65,10 @@ const localDriver: StorageDriver = {
 
   async getUrl(clave) {
     return `/uploads/${clave}`;
+  },
+
+  async get(clave) {
+    return fs.readFile(path.join(UPLOAD_DIR, clave));
   },
 
   async delete(clave) {
@@ -96,6 +106,13 @@ const crearDriverS3 = (bucket: string): StorageDriver => {
       return getSignedUrl(cliente, new GetObjectCommand({ Bucket: bucket, Key: clave }), {
         expiresIn: segundos,
       });
+    },
+
+    async get(clave) {
+      const salida = await cliente.send(new GetObjectCommand({ Bucket: bucket, Key: clave }));
+      const bytes = await salida.Body?.transformToByteArray();
+      if (!bytes) throw new Error(`El objeto ${clave} no tiene contenido`);
+      return Buffer.from(bytes);
     },
 
     async delete(clave) {

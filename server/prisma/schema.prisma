@@ -62,6 +62,8 @@ model User {
   piezasAsignadas       Pieza[]           @relation("PiezaAsignada")
   piezasCreadas         Pieza[]           @relation("PiezaAutor")
   eventosDePieza        PiezaEvento[]
+  versionesSubidas      PiezaVersion[]
+  hallazgosDecididos    Hallazgo[]
 }
 
 /// La única fuente de verdad de "quién puede entrar a qué workspace".
@@ -461,13 +463,14 @@ model Pieza {
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 
-  workspace Workspace     @relation(fields: [workspaceId], references: [id])
-  client    Client        @relation(fields: [clientId], references: [id])
-  project   Project?      @relation(fields: [projectId], references: [id])
-  asignadaA User?         @relation("PiezaAsignada", fields: [asignadaAId], references: [id])
-  creadaPor User          @relation("PiezaAutor", fields: [creadaPorId], references: [id])
+  workspace Workspace      @relation(fields: [workspaceId], references: [id])
+  client    Client         @relation(fields: [clientId], references: [id])
+  project   Project?       @relation(fields: [projectId], references: [id])
+  asignadaA User?          @relation("PiezaAsignada", fields: [asignadaAId], references: [id])
+  creadaPor User           @relation("PiezaAutor", fields: [creadaPorId], references: [id])
   slots     PiezaSlot[]
   eventos   PiezaEvento[]
+  versiones PiezaVersion[]
 
   /// Los dos ejes del tablero: por marca (la pantalla) y por persona (Mis piezas).
   @@unique([workspaceId, huella])
@@ -529,4 +532,98 @@ model PiezaEvento {
   autor User  @relation(fields: [autorId], references: [id])
 
   @@index([piezaId, createdAt])
+}
+
+/// En qué quedó la auditoría de una versión. Los tres son estados distintos y
+/// se muestran distinto (docs/plan-h2-produccion-auditoria.md, D2 y D3):
+///   PENDIENTE     — se subió y todavía no corrió.
+///   COMPLETA      — corrió y dejó sus hallazgos, aunque sean cero.
+///   NO_DISPONIBLE — el proveedor falló. NO es "sin hallazgos": no miró nada,
+///                   y por eso no cuenta en las métricas de acierto.
+enum AuditoriaEstado {
+  PENDIENTE
+  COMPLETA
+  NO_DISPONIBLE
+}
+
+/// Qué clase de cosa encontró la auditoría. La distinción es el corazón del
+/// informe: HECHO se compara contra una verdad conocida —el texto congelado— y
+/// muestra los dos lados; JUICIO es una opinión del mismo tipo que el Critic.
+/// Mezclarlos en una sola lista destruye la confianza en el primero.
+///   MEDIDAS — la pieza no mide lo que pedía el canal. Es un hecho, y no
+///             bloquea: se sube igual y alguien decide (estado límite 4).
+///   ILEGIBLE — no se pudo leer un texto. NO significa que esté mal.
+enum HallazgoTipo {
+  HECHO
+  JUICIO
+  MEDIDAS
+  ILEGIBLE
+}
+
+/// Qué hizo la persona con el hallazgo. Guardarlo es obligatorio y es la razón
+/// por la que D2 puede, algún día, darle autoridad a la auditoría: sin esta
+/// columna nunca se sabría si acierta.
+enum HallazgoDecision {
+  PENDIENTE
+  ACEPTADO
+  CORREGIDO
+}
+
+/// Cada entrega de una pieza. Son versiones y no una sola fila porque devolver
+/// a diseño y volver a subir es el camino normal, y el informe de la v1 tiene
+/// que sobrevivir a la v2: es lo que permite ver si el hallazgo se corrigió.
+model PiezaVersion {
+  id                 String          @id @default(uuid())
+  piezaId            String
+  numero             Int
+  /// `piezas/originales/…` — lo borra a los 90 días la regla de ciclo de vida
+  /// del bucket (D6). Por eso puede quedar en NULL sin que la fila mienta.
+  claveOriginal      String?
+  /// `piezas/snapshots/…` — JPG de 1.600 px de lado largo, permanente. Pesa
+  /// ~1 % del original y se paga solo dos veces: es también la miniatura del
+  /// tablero.
+  claveSnapshot      String?
+  anchoPx            Int?
+  altoPx             Int?
+  pesoBytes          Int?
+  contentType        String?
+  estadoAuditoria    AuditoriaEstado @default(PENDIENTE)
+  /// Por qué no corrió, cuando el estado es NO_DISPONIBLE.
+  motivoNoDisponible String?
+  auditadaAt         DateTime?
+  /// Costo de auditar esta versión, medido como una etapa más del motor.
+  costoUsd           Decimal?        @db.Decimal(12, 6)
+  modelo             String?
+  subidaPorId        String
+  createdAt          DateTime        @default(now())
+
+  pieza     Pieza      @relation(fields: [piezaId], references: [id], onDelete: Cascade)
+  subidaPor User       @relation(fields: [subidaPorId], references: [id])
+  hallazgos Hallazgo[]
+
+  @@unique([piezaId, numero])
+  @@index([piezaId, createdAt])
+}
+
+model Hallazgo {
+  id             String           @id @default(uuid())
+  piezaVersionId String
+  tipo           HallazgoTipo
+  /// Contra qué slot se encontró, cuando aplica. Un juicio de marca sobre la
+  /// pieza entera no tiene slot.
+  slot           String?
+  slotLabel      String?
+  /// Solo en HECHO: los dos lados de la comparación, para mostrarlos juntos.
+  esperado       String?
+  encontrado     String?
+  detalle        String
+  decision       HallazgoDecision @default(PENDIENTE)
+  notaDecision   String?
+  decididoPorId  String?
+  decididoAt     DateTime?
+
+  version     PiezaVersion @relation(fields: [piezaVersionId], references: [id], onDelete: Cascade)
+  decididoPor User?        @relation(fields: [decididoPorId], references: [id])
+
+  @@index([piezaVersionId])
 }

@@ -3,6 +3,7 @@ import { AlertTriangle, ExternalLink, EyeOff, ImageIcon, Maximize2, MessageSquar
 import { Pieza, PiezaEstado } from '../../types';
 import AccionesPieza from './AccionesPieza';
 import PreviaGrande from './PreviaGrande';
+import ChipSemaforo from './semaforo';
 import { motivoSinPrevia, previaDelEnlace } from './previa';
 import { COLORES_ESTADO } from './columnas';
 
@@ -49,7 +50,11 @@ const desde = (fecha: string): string => {
 export default function TarjetaPieza({ pieza, miembros, mostrarMarca, onAbrir, onCambio, onError }: Props) {
   const publicables = pieza.slots.filter(s => !s.esInstruccion);
   const color = COLORES_ESTADO[pieza.estado];
-  const previa = CON_PREVIA.includes(pieza.estado) ? previaDelEnlace(pieza.enlace) : null;
+  // El snapshot gana sobre el enlace: es nuestro, no depende de permisos
+  // ajenos y es la misma imagen que miró la auditoría.
+  const previa = CON_PREVIA.includes(pieza.estado)
+    ? pieza.previaUrl ?? previaDelEnlace(pieza.enlace)
+    : null;
   const [previaRota, setPreviaRota] = React.useState(false);
   const [ampliada, setAmpliada] = React.useState(false);
   const previaVisible = previa && !previaRota;
@@ -89,6 +94,14 @@ export default function TarjetaPieza({ pieza, miembros, mostrarMarca, onAbrir, o
         </div>
 
         <div className="space-y-2.5 p-3">
+          {pieza.semaforo && (
+            <div className="flex items-center justify-between gap-2">
+              <ChipSemaforo estado={pieza.semaforo} hallazgos={pieza.version?.hallazgos ?? 0} />
+              {pieza.version && pieza.version.numero > 1 && (
+                <span className="text-[9px] text-apple-tertiary">v{pieza.version.numero}</span>
+              )}
+            </div>
+          )}
           {CON_PREVIA.includes(pieza.estado) && (
             <div className="flex gap-3">
               <Aparte className="shrink-0">
@@ -127,7 +140,11 @@ export default function TarjetaPieza({ pieza, miembros, mostrarMarca, onAbrir, o
               <div className="min-w-0 flex-1">
                 <p className="text-[15px] font-bold leading-tight text-apple-text">{pieza.formato}</p>
                 <p className="mt-1 text-[10px] leading-snug text-apple-secondary">
-                  {previaVisible ? 'Previa del enlace · clic para verla en grande' : motivoSinPrevia(pieza.enlace)}
+                  {previaVisible
+                    ? pieza.previaUrl
+                      ? 'La pieza subida · clic para verla en grande'
+                      : 'Previa del enlace · clic para verla en grande'
+                    : motivoSinPrevia(pieza.enlace)}
                 </p>
               </div>
             </div>

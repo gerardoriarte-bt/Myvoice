@@ -3,6 +3,7 @@ import { AlertTriangle, Check, Copy, Loader2, Pencil, Send, X } from 'lucide-rea
 import { Pieza, PiezaDetalle } from '../../types';
 import { piezasApi } from '../../services/api';
 import AccionesPieza from './AccionesPieza';
+import Informe from './Informe';
 
 /**
  * La orden de trabajo: lo que ve el diseñador antes de abrir Figma.
@@ -246,6 +247,12 @@ export default function OrdenDeTrabajo({ piezaId, miembros, onCerrar, onCambio, 
                 ))}
               </ul>
             </section>
+          )}
+
+          {/* El informe va ARRIBA de los comentarios y abajo del copy: quien
+              aprueba entra a esto, y el diseñador lo lee antes que nadie (D3). */}
+          {pieza?.informe && (
+            <Informe pieza={pieza} onCambio={onCambio} onError={onError} onRecargar={() => void cargar()} />
           )}
 
           {pieza && (

@@ -20,6 +20,9 @@ import { createHash } from 'node:crypto';
 import { Prisma, PiezaEstado, PiezaTipo } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import { TenantContext, TenantError } from '../lib/tenancy.js';
+import { guardarVersion, medidasDelFormato, urlDeSnapshot, ArchivoSubido } from './piezaArchivo.js';
+import { auditarEnSegundoPlano } from './auditoriaService.js';
+import { AuditoriaEstado } from '@prisma/client';
 import {
   esFormatoValido,
   esSlotDeInstruccion,
@@ -113,6 +116,12 @@ const INCLUDE_PIEZA = {
   },
   client: { select: { id: true, name: true } },
   project: { select: { id: true, name: true } },
+  /** La última entrega: de ahí salen la previa y el semáforo de la tarjeta. */
+  versiones: {
+    orderBy: { numero: 'desc' as const },
+    take: 1,
+    include: { hallazgos: { orderBy: { tipo: 'asc' as const } } },
+  },
 } satisfies Prisma.PiezaInclude;
 
 type PiezaConSlots = Prisma.PiezaGetPayload<{ include: typeof INCLUDE_PIEZA }>;
@@ -159,11 +168,47 @@ const contarComentarios = async (piezaIds: string[]): Promise<Map<string, number
   return new Map(filas.map(f => [f.piezaId, f._count._all]));
 };
 
+/**
+ * El semáforo de D3, calculado y no guardado: sale de los hallazgos de la
+ * última versión. Tres estados y ninguno rojo — el rojo prometería un bloqueo
+ * que D2 dice que no existe.
+ *
+ *   verificada    — todo coincide y la marca no tiene observaciones.
+ *   hallazgos     — al menos una diferencia o un juicio. Gana sobre los otros.
+ *   revisar-a-ojo — algo no se pudo leer y lo demás coincide. No es un hallazgo.
+ *   sin-auditoria — el proveedor falló. No cuenta como resultado.
+ *   auditando     — está corriendo.
+ */
+export type Semaforo = 'verificada' | 'hallazgos' | 'revisar-a-ojo' | 'sin-auditoria' | 'auditando' | null;
+
+const semaforoDe = (version: { estadoAuditoria: string; hallazgos: { tipo: string }[] } | undefined): Semaforo => {
+  if (!version) return null;
+  if (version.estadoAuditoria === 'PENDIENTE') return 'auditando';
+  if (version.estadoAuditoria === 'NO_DISPONIBLE') return 'sin-auditoria';
+  const reales = version.hallazgos.filter(h => h.tipo !== 'ILEGIBLE');
+  if (reales.length > 0) return 'hallazgos';
+  return version.hallazgos.length > 0 ? 'revisar-a-ojo' : 'verificada';
+};
+
 export const conDesfases = (pieza: PiezaConSlots, comentarios = 0) => {
-  const { eventos, ...resto } = pieza;
+  const { eventos, versiones, ...resto } = pieza;
+  const ultima = versiones[0];
   return {
     ...resto,
     desfases: desfasesDeCopy(pieza),
+    version: ultima
+      ? {
+          id: ultima.id,
+          numero: ultima.numero,
+          anchoPx: ultima.anchoPx,
+          altoPx: ultima.altoPx,
+          pesoBytes: ultima.pesoBytes,
+          estadoAuditoria: ultima.estadoAuditoria,
+          hallazgos: ultima.hallazgos.length,
+          pendientes: ultima.hallazgos.filter(h => h.decision === 'PENDIENTE' && h.tipo !== 'ILEGIBLE').length,
+        }
+      : null,
+    semaforo: semaforoDe(ultima),
     comentarios,
     ultimoComentario: eventos[0]
       ? { nota: eventos[0].nota, autor: eventos[0].autor?.name ?? null, createdAt: eventos[0].createdAt }
@@ -417,6 +462,97 @@ export const crearPiezas = async (tenant: TenantContext, piezas: PiezaAConfirmar
   }
 };
 
+// ----------------------------------------------------------- entrega real
+
+/**
+ * La entrega de la fase 3 para los canales gráficos: el archivo, no un enlace.
+ *
+ * Es lo que hace posible la auditoría —una pieza en un Drive privado no se
+ * puede leer— y lo que convierte la previa en evidencia de qué se aprobó. El
+ * video y el audio siguen entregándose con enlace: con el tope de 10 MB un reel
+ * no entra, y subir ese tope metería en el bucket justo los archivos que D6
+ * quería evitar.
+ *
+ * Cada entrega es una VERSIÓN nueva. Devolver a diseño y volver a subir es el
+ * camino normal, y el informe de la v1 tiene que sobrevivir a la v2: es lo que
+ * después permite ver si el hallazgo se corrigió.
+ */
+export const entregarArchivo = async (tenant: TenantContext, piezaId: string, archivo: ArchivoSubido) => {
+  const pieza = await prisma.pieza.findUnique({ where: { id: piezaId } });
+  if (!pieza || pieza.workspaceId !== tenant.workspaceId) throw new TenantError('Pieza no encontrada', 404);
+  if (pieza.tipo !== PiezaTipo.GRAFICA)
+    throw new TenantError('Los canales de video y audio se entregan con un enlace, no con un archivo', 400);
+  if (pieza.estado !== PiezaEstado.EN_DISENO)
+    throw new TenantError(`Una pieza en "${pieza.estado}" no admite esta acción`, 409);
+
+  const ultima = await prisma.piezaVersion.aggregate({ where: { piezaId }, _max: { numero: true } });
+  const numero = (ultima._max.numero ?? 0) + 1;
+
+  // Se guarda ANTES de la transacción a propósito: subir al bucket puede tardar
+  // segundos y una transacción abierta ese tiempo traba la tabla. Si la
+  // transacción falla después, quedan un original y un snapshot huérfanos —
+  // los limpia la regla de ciclo de vida, y es preferible a lo contrario: una
+  // versión en la base apuntando a un archivo que no existe.
+  const guardada = await guardarVersion(piezaId, numero, archivo);
+
+  const esperadas = medidasDelFormato(pieza.formato);
+  const midioDistinto =
+    esperadas && guardada.anchoPx && guardada.altoPx
+      ? guardada.anchoPx !== esperadas.ancho || guardada.altoPx !== esperadas.alto
+      : false;
+
+  await prisma.$transaction(async tx => {
+    const { count } = await tx.pieza.updateMany({
+      where: { id: piezaId, estado: PiezaEstado.EN_DISENO },
+      data: { estado: PiezaEstado.POR_REVISAR, estadoDesde: new Date() },
+    });
+    if (count === 0) throw new TenantError('Alguien más movió esta pieza mientras la mirabas', 409);
+
+    await tx.piezaVersion.create({
+      data: {
+        piezaId,
+        numero,
+        ...guardada,
+        subidaPorId: tenant.userId,
+        // Las medidas distintas son un HECHO que se sabe sin preguntarle a
+        // ningún modelo, así que el hallazgo se escribe acá y no en la
+        // auditoría. No bloquea: se sube igual y alguien decide (D2).
+        hallazgos: midioDistinto
+          ? {
+              create: {
+                tipo: 'MEDIDAS',
+                detalle: 'La pieza no mide lo que pide el canal.',
+                esperado: pieza.formato,
+                encontrado: `${guardada.anchoPx}×${guardada.altoPx}`,
+              },
+            }
+          : undefined,
+      },
+    });
+
+    await tx.piezaEvento.create({
+      data: {
+        piezaId,
+        tipo: 'ENTREGADA',
+        deEstado: PiezaEstado.EN_DISENO,
+        aEstado: PiezaEstado.POR_REVISAR,
+        autorId: tenant.userId,
+        nota: `Versión ${numero}`,
+      },
+    });
+  });
+
+  const version = await prisma.piezaVersion.findFirstOrThrow({
+    where: { piezaId, numero },
+    select: { id: true },
+  });
+  // La auditoría corre después de responder: el diseñador ya entregó y no
+  // tiene por qué esperar dos llamadas de visión. La tarjeta dice «Auditando».
+  auditarEnSegundoPlano(version.id);
+
+  return leerUna(piezaId);
+};
+
 // ------------------------------------------------------------- transiciones
 
 export interface DatosTransicion {
@@ -513,7 +649,7 @@ export const ejecutarAccion = async (
 const leerUna = async (piezaId: string) => {
   const pieza = await prisma.pieza.findUniqueOrThrow({ where: { id: piezaId }, include: INCLUDE_PIEZA });
   const comentarios = await contarComentarios([piezaId]);
-  return conDesfases(pieza, comentarios.get(piezaId) ?? 0);
+  return presentar(pieza, comentarios.get(piezaId) ?? 0);
 };
 
 /**
@@ -535,6 +671,19 @@ const recongelarCopy = async (tx: Prisma.TransactionClient, piezaId: string) => 
   }
 };
 
+/**
+ * La forma con la que viaja una pieza a la pantalla.
+ *
+ * La previa sale del SNAPSHOT guardado y no del enlace: es nuestra, no depende
+ * de los permisos de un Drive ajeno y es exactamente la imagen que miró la
+ * auditoría. La URL está firmada y vence, así que se pide en cada lectura en
+ * vez de guardarse.
+ */
+const presentar = async (pieza: PiezaConSlots, comentarios = 0) => ({
+  ...conDesfases(pieza, comentarios),
+  previaUrl: await urlDeSnapshot(pieza.versiones[0]?.claveSnapshot),
+});
+
 // ---------------------------------------------------------------- lecturas
 
 export const listarPorMarca = async (tenant: TenantContext, clientId: string) => {
@@ -544,7 +693,7 @@ export const listarPorMarca = async (tenant: TenantContext, clientId: string) =>
     orderBy: [{ estado: 'asc' }, { estadoDesde: 'asc' }],
   });
   const comentarios = await contarComentarios(piezas.map(p => p.id));
-  return piezas.map(p => conDesfases(p, comentarios.get(p.id) ?? 0));
+  return Promise.all(piezas.map(p => presentar(p, comentarios.get(p.id) ?? 0)));
 };
 
 /**
@@ -558,7 +707,7 @@ export const listarMias = async (tenant: TenantContext) => {
     orderBy: { estadoDesde: 'asc' },
   });
   const comentarios = await contarComentarios(piezas.map(p => p.id));
-  return piezas.map(p => conDesfases(p, comentarios.get(p.id) ?? 0));
+  return Promise.all(piezas.map(p => presentar(p, comentarios.get(p.id) ?? 0)));
 };
 
 export const detalle = async (tenant: TenantContext, piezaId: string) => {
@@ -586,8 +735,19 @@ export const detalle = async (tenant: TenantContext, piezaId: string) => {
   // En el detalle `eventos` trae el historial completo, así que el último
   // comentario se calcula sobre los comentarios y no sobre el último evento.
   const comentarios = pieza.eventos.filter(e => e.tipo === 'COMENTARIO');
-  const base = conDesfases({ ...pieza, eventos: comentarios.slice(0, 1) }, comentarios.length);
-  return { ...base, eventos: pieza.eventos, hermanas };
+  const base = await presentar({ ...pieza, eventos: comentarios.slice(0, 1) }, comentarios.length);
+  // La orden de trabajo muestra el informe completo: los hallazgos de la
+  // última versión con sus dos lados, no solo el semáforo (D3).
+  const version = pieza.versiones[0]
+    ? await prisma.piezaVersion.findUnique({
+        where: { id: pieza.versiones[0].id },
+        include: {
+          hallazgos: { orderBy: [{ tipo: 'asc' }, { slot: 'asc' }], include: { decididoPor: { select: { name: true } } } },
+          subidaPor: { select: { name: true } },
+        },
+      })
+    : null;
+  return { ...base, eventos: pieza.eventos, hermanas, informe: version };
 };
 
 /**
@@ -600,5 +760,73 @@ export const renombrar = async (tenant: TenantContext, piezaId: string, titulo: 
     data: { titulo: titulo.slice(0, 160) },
   });
   if (count === 0) throw new TenantError('Pieza no encontrada', 404);
+  return leerUna(piezaId);
+};
+
+/**
+ * Qué hizo una persona con un hallazgo.
+ *
+ * Es obligatorio guardarlo, y no por prolijidad: es la única medida de si la
+ * auditoría acierta. D2 la dejó avisando en vez de bloqueando justamente
+ * porque un chequeo automático tiene que ganarse esa autoridad con historial,
+ * y este es el historial.
+ *
+ * Aceptar un hallazgo pide nota; corregirlo no, porque corregir ya es la
+ * respuesta.
+ */
+export const decidirHallazgo = async (
+  tenant: TenantContext,
+  hallazgoId: string,
+  decision: 'ACEPTADO' | 'CORREGIDO',
+  nota?: string
+) => {
+  const hallazgo = await prisma.hallazgo.findUnique({
+    where: { id: hallazgoId },
+    include: { version: { include: { pieza: { select: { id: true, workspaceId: true } } } } },
+  });
+  if (!hallazgo || hallazgo.version.pieza.workspaceId !== tenant.workspaceId)
+    throw new TenantError('Hallazgo no encontrado', 404);
+
+  const texto = typeof nota === 'string' ? nota.trim() : '';
+  if (decision === 'ACEPTADO' && !texto)
+    throw new TenantError('Aceptar un hallazgo pide una nota: queda registrado quién decidió pasarlo por alto', 400);
+
+  await prisma.hallazgo.update({
+    where: { id: hallazgoId },
+    data: {
+      decision,
+      notaDecision: texto || null,
+      decididoPorId: tenant.userId,
+      decididoAt: new Date(),
+    },
+  });
+
+  return leerUna(hallazgo.version.pieza.id);
+};
+
+/**
+ * Reintenta la auditoría de la última versión. Existe porque NO_DISPONIBLE es
+ * una caída del proveedor, no un veredicto: la pieza no tiene por qué quedarse
+ * sin informe porque un servicio estuvo caído dos minutos.
+ */
+export const reauditar = async (tenant: TenantContext, piezaId: string) => {
+  const pieza = await prisma.pieza.findUnique({
+    where: { id: piezaId },
+    include: { versiones: { orderBy: { numero: 'desc' }, take: 1 } },
+  });
+  if (!pieza || pieza.workspaceId !== tenant.workspaceId) throw new TenantError('Pieza no encontrada', 404);
+  const version = pieza.versiones[0];
+  if (!version) throw new TenantError('Esta pieza todavía no tiene un archivo para auditar', 400);
+
+  // Los hallazgos de la corrida anterior se borran: son de una auditoría que no
+  // terminó, y mezclarlos con los nuevos haría imposible leer el informe.
+  await prisma.$transaction([
+    prisma.hallazgo.deleteMany({ where: { piezaVersionId: version.id, tipo: { not: 'MEDIDAS' } } }),
+    prisma.piezaVersion.update({
+      where: { id: version.id },
+      data: { estadoAuditoria: AuditoriaEstado.PENDIENTE, motivoNoDisponible: null, auditadaAt: null },
+    }),
+  ]);
+  auditarEnSegundoPlano(version.id);
   return leerUna(piezaId);
 };
