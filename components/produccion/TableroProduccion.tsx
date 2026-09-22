@@ -1,8 +1,9 @@
 import React from 'react';
-import { Loader2 } from 'lucide-react';
+import { Download, Loader2 } from 'lucide-react';
 import { SCREENS } from '../../screens';
 import { Client, Pieza, PiezaEstado } from '../../types';
 import { COLORES_ESTADO, COLUMNAS } from './columnas';
+import { exportPiezasToExcel } from '../../services/exportPiezasToExcel';
 import { authApi, piezasApi } from '../../services/api';
 import TarjetaPieza from './TarjetaPieza';
 import OrdenDeTrabajo from './OrdenDeTrabajo';
@@ -167,6 +168,24 @@ export default function TableroProduccion({ clients, addNotification }: Props) {
                     </span>
                   </div>
                   <p className="mt-1 text-[10px] leading-snug text-apple-secondary">{col.que}</p>
+                  {/*
+                    Lo aprobado sale de la herramienta hacia quien programa y
+                    publica. Exportar desde la columna, y no desde un menú
+                    general, mantiene el alcance obvio: es esto, lo que está
+                    listo, lo que se lleva.
+                  */}
+                  {col.estado === 'LISTA' && suyas.length > 0 && (
+                    <button
+                      onClick={() =>
+                        exportPiezasToExcel(suyas, clients.find(c => c.id === clientId)?.name ?? 'marca')
+                      }
+                      className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-md border bg-white px-2 py-1.5 text-[10px] font-semibold hover:bg-apple-fill"
+                      style={{ borderColor: color.borde, color: color.texto }}
+                    >
+                      <Download className="h-3 w-3" />
+                      Exportar a Excel
+                    </button>
+                  )}
                   <dl className="mt-1.5 space-y-0.5">
                     <div className="flex gap-1.5 text-[9px]">
                       <dt className="w-14 shrink-0 font-bold uppercase tracking-wide" style={{ color: color.texto }}>
