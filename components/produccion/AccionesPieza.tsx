@@ -8,6 +8,12 @@ import { piezasApi } from '../../services/api';
  * Cada estado tiene exactamente una salida hacia adelante y, donde corresponde,
  * una hacia atrás que exige motivo escrito. El servidor vuelve a validar la
  * transición: esto decide qué se muestra, no qué se permite.
+ *
+ * **El motivo se escribe acá adentro, no en un `window.prompt`.** Es un dato
+ * que queda guardado en el historial y que alguien va a leer después —es lo
+ * primero que busca un diseñador cuando le devuelven una pieza—, así que
+ * merece un campo del producto: uno que se pueda revisar antes de mandar,
+ * cancelar sin perder nada y que no congele la pestaña mientras está abierto.
  */
 
 interface Props {
@@ -26,10 +32,28 @@ const AYUDA: Record<PiezaEstado, string> = {
   LISTA: 'Terminada. Se puede reabrir con un motivo.',
 };
 
+/** Las acciones que no existen sin motivo: el texto es el dato, no un adorno. */
+type ConMotivo = 'devolver' | 'reabrir';
+
+const PEDIDO: Record<ConMotivo, { titulo: string; ejemplo: string; boton: string }> = {
+  devolver: {
+    titulo: '¿Por qué vuelve a diseño?',
+    ejemplo: 'El logo quedó sobre la foto y no se lee…',
+    boton: 'Devolver',
+  },
+  reabrir: {
+    titulo: '¿Por qué se reabre?',
+    ejemplo: 'El cliente pidió cambiar la fecha del evento…',
+    boton: 'Reabrir',
+  },
+};
+
 export default function AccionesPieza({ pieza, miembros, onCambio, onError, compacto }: Props) {
   const [enlace, setEnlace] = React.useState(pieza.enlace ?? '');
   const [quien, setQuien] = React.useState(pieza.asignadaAId ?? '');
   const [ocupado, setOcupado] = React.useState(false);
+  const [pidiendo, setPidiendo] = React.useState<ConMotivo | null>(null);
+  const [motivo, setMotivo] = React.useState('');
 
   const correr = async (fn: () => Promise<Pieza>) => {
     setOcupado(true);
@@ -44,16 +68,57 @@ export default function AccionesPieza({ pieza, miembros, onCambio, onError, comp
     }
   };
 
-  /** Devolver y reabrir no existen sin motivo: es el dato, no un adorno. */
-  const conMotivo = (pregunta: string, fn: (nota: string) => Promise<Pieza>) => {
-    const nota = window.prompt(pregunta)?.trim();
-    if (!nota) return;
-    void correr(() => fn(nota));
+  const confirmarMotivo = async () => {
+    const nota = motivo.trim();
+    if (!pidiendo || !nota) return;
+    const accion = pidiendo === 'devolver' ? piezasApi.devolver : piezasApi.reabrir;
+    await correr(() => accion(pieza.id, nota));
+    setPidiendo(null);
+    setMotivo('');
+  };
+
+  const pedir = (cual: ConMotivo) => {
+    setPidiendo(cual);
+    setMotivo('');
   };
 
   const boton = 'rounded-lg px-2.5 py-1.5 text-[11px] font-medium disabled:opacity-40';
   const primario = `${boton} bg-ink text-white hover:bg-ink-hover`;
   const secundario = `${boton} border border-apple-border text-apple-text hover:bg-apple-fill`;
+
+  // Mientras se escribe el motivo, esa es la única acción visible: evita
+  // aceptar por error una pieza que se estaba por devolver.
+  if (pidiendo) {
+    const { titulo, ejemplo, boton: etiqueta } = PEDIDO[pidiendo];
+    return (
+      <div className="space-y-2">
+        <p className="text-[11px] font-semibold text-apple-text">{titulo}</p>
+        <textarea
+          autoFocus
+          rows={2}
+          value={motivo}
+          onChange={e => setMotivo(e.target.value)}
+          onKeyDown={e => {
+            if (e.key === 'Escape') setPidiendo(null);
+            if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) void confirmarMotivo();
+          }}
+          placeholder={ejemplo}
+          className="w-full rounded-lg border border-apple-border px-2 py-1.5 text-[11px] text-apple-text"
+        />
+        <p className="text-[10px] text-apple-tertiary">
+          Queda en el historial de la pieza, con tu nombre y la fecha.
+        </p>
+        <div className="flex items-center gap-2">
+          <button disabled={!motivo.trim() || ocupado} onClick={() => void confirmarMotivo()} className={primario}>
+            {etiqueta}
+          </button>
+          <button disabled={ocupado} onClick={() => setPidiendo(null)} className={secundario}>
+            Cancelar
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-2">
@@ -114,29 +179,17 @@ export default function AccionesPieza({ pieza, miembros, onCambio, onError, comp
 
       {pieza.estado === 'POR_REVISAR' && (
         <div className="flex items-center gap-2">
-          <button
-            disabled={ocupado}
-            onClick={() => correr(() => piezasApi.aceptar(pieza.id))}
-            className={primario}
-          >
+          <button disabled={ocupado} onClick={() => correr(() => piezasApi.aceptar(pieza.id))} className={primario}>
             Aceptar
           </button>
-          <button
-            disabled={ocupado}
-            onClick={() => conMotivo('¿Por qué vuelve a diseño?', nota => piezasApi.devolver(pieza.id, nota))}
-            className={secundario}
-          >
+          <button disabled={ocupado} onClick={() => pedir('devolver')} className={secundario}>
             Devolver a diseño
           </button>
         </div>
       )}
 
       {pieza.estado === 'LISTA' && (
-        <button
-          disabled={ocupado}
-          onClick={() => conMotivo('¿Por qué se reabre?', nota => piezasApi.reabrir(pieza.id, nota))}
-          className={secundario}
-        >
+        <button disabled={ocupado} onClick={() => pedir('reabrir')} className={secundario}>
           Reabrir
         </button>
       )}
