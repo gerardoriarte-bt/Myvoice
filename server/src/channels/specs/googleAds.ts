@@ -12,5 +12,6 @@ export const googleAds: ChannelSpec = {
     { id: "description", label: "Descripción", count: 4, unit: "char", max: 90,
       guidance: "Descripciones que se rotarán con los títulos. MAX 90 CARACTERES. Cada una con un beneficio distinto." }
   ],
-  guidance: "Optimizado para CTR y Quality Score. Diferentes ángulos: precio, beneficio, urgencia, social proof."
+  guidance: "Optimizado para CTR y Quality Score. Diferentes ángulos: precio, beneficio, urgencia, social proof.",
+  pieza: null,
 };

@@ -11,6 +11,7 @@ import UserManager from './components/UserManager';
 import UserHeader from './components/UserHeader';
 import NotificationSystem, { Notification, NotificationType } from './components/NotificationSystem';
 import { CopyParameters, CopyVariation, Project, SavedVariation, BrandConfig, Client, User, WorkspaceMember, WorkspaceSummary, canManageWorkspace, ContentDNAProfile } from './types';
+import TableroProduccion from './components/produccion/TableroProduccion';
 import { NAV_STAGES, SCREENS, ScreenId } from './screens';
 import { VOICES, GOALS } from './constants';
 import HomePage from './components/HomePage';
@@ -74,7 +75,9 @@ const MOCK_DNA: ContentDNAProfile[] = [
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = React.useState(false);
-  const [activeTab, setActiveTab] = React.useState<'generator' | 'saved' | 'clients' | 'users' | 'settings' | 'help' | 'collaboration' | 'analytics' | 'history'>('clients');
+  // La lista de pantallas vive en screens.ts y en ningún otro lado: repetirla
+  // acá como unión literal ya dejó una pantalla fuera al agregarla.
+  const [activeTab, setActiveTab] = React.useState<ScreenId>('clients');
   const [reviewToken, setReviewToken] = React.useState(() => new URLSearchParams(window.location.search).get('review'));
   const [completedSessionsCount, setCompletedSessionsCount] = React.useState(0);
   const [variations, setVariations] = React.useState<CopyVariation[]>([]);
@@ -672,7 +675,7 @@ const App: React.FC = () => {
         {/* HEADER */}
         <header className="apple-header h-[48px] sticky top-0 z-40 flex items-center px-7">
           <div className="flex items-center gap-2">
-            <span className="text-[13px] font-semibold text-[#1D1D1F]">{SCREENS[activeTab as ScreenId]?.name}</span>
+            <span className="text-[13px] font-semibold text-[#1D1D1F]">{SCREENS[activeTab]?.name}</span>
           </div>
         </header>
 
@@ -917,6 +920,9 @@ const App: React.FC = () => {
               }}
               readOnly={!isAdmin}
             />
+          )}
+          {activeTab === 'produccion' && (
+            <TableroProduccion clients={clients} addNotification={addNotification} />
           )}
           {activeTab === 'history' && isAdmin && (
             <GenerationHistory

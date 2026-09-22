@@ -16,5 +16,6 @@ export const email: ChannelSpec = {
     { id: "cta", label: "CTA del botón", count: 3, unit: "char", max: 25,
       guidance: "Verbo de acción específico. Evitar \"Click aquí\" / \"Continuar\"." }
   ],
-  guidance: "Subject + preheader trabajan juntos: el preheader extiende la promesa. Body en voz humana, no marketing-speak."
+  guidance: "Subject + preheader trabajan juntos: el preheader extiende la promesa. Body en voz humana, no marketing-speak.",
+  pieza: { tipo: "grafica", formatos: ["600 px de ancho"] },
 };

@@ -10,5 +10,6 @@ export const cunaRadio: ChannelSpec = {
     { id: "production", label: "Indicaciones de producción", count: 1, unit: "char",
       guidance: "Tono del locutor, música sugerida, efectos. Una línea por indicación." }
   ],
-  guidance: "Texto pensado para SER ESCUCHADO. Frases cortas, ritmo, sin palabras complejas que se traben."
+  guidance: "Texto pensado para SER ESCUCHADO. Frases cortas, ritmo, sin palabras complejas que se traben.",
+  pieza: { tipo: "audio", formatos: ["20 s", "30 s"] },
 };

@@ -16,5 +16,6 @@ export const instagramReel: ChannelSpec = {
     { id: "cta", label: "CTA final", count: 1, unit: "char", max: 60,
       guidance: "Acción concreta que cierra el reel." }
   ],
-  guidance: "Guion para video. El hook verbal y el visual deben funcionar juntos en 3 segundos."
+  guidance: "Guion para video. El hook verbal y el visual deben funcionar juntos en 3 segundos.",
+  pieza: { tipo: "video", formatos: ["1080×1920"] },
 };

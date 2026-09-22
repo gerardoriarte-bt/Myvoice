@@ -263,6 +263,183 @@ async function main() {
       `respondió ${session.status} — un token público con copy ajeno sería una filtración`
     );
 
+    console.log('\nPIEZAS — el tablero de producción no puede cruzar tenants');
+    // El copy sembrado arriba es de Push Notification, que no produce pieza:
+    // para el tablero hace falta un canal que sí, y aprobado.
+    const aprobado = (clientId: string, projectId: string | null) =>
+      prisma.savedVariation.create({
+        data: {
+          clientId,
+          projectId,
+          platform: 'Instagram Post',
+          type: 'Beneficio',
+          content: `Hook aprobado ${clientId.slice(0, 6)}`,
+          charCount: 20,
+          tags: [],
+          slot: 'hook',
+          slotLabel: 'Hook (línea 1)',
+          isApproved: true,
+        },
+      });
+    const aprobadoA = await aprobado(A.client.id, A.project.id);
+    const aprobadoB = await aprobado(B.client.id, B.project.id);
+    const piezaA = await prisma.pieza.create({
+      data: {
+        workspaceId: A.workspace.id,
+        clientId: A.client.id,
+        platform: 'Instagram Post',
+        tipo: 'GRAFICA',
+        formato: '1080×1080',
+        titulo: 'Pieza de A',
+        huella: 'verif-a-' + aprobadoA.id,
+        creadaPorId: A.user.id,
+        slots: {
+          create: {
+            savedVariationId: aprobadoA.id,
+            slot: 'hook',
+            slotLabel: 'Hook (línea 1)',
+            textoCongelado: aprobadoA.content,
+          },
+        },
+      },
+    });
+
+    const tablero = await api(`/piezas?clientId=${A.client.id}`, B.token);
+    record(
+      'GET /piezas de la marca de A',
+      tablero.status === 403 || tablero.status === 404,
+      `respondió ${tablero.status}`
+    );
+    const mias = await api('/piezas/mias', B.token);
+    record(
+      'GET /piezas/mias no incluye piezas de A',
+      Array.isArray(mias.body) && !mias.body.some((p: any) => p.id === piezaA.id),
+      `devolvió ${JSON.stringify(mias.body)?.slice(0, 120)}`
+    );
+    await expectDenied('GET /piezas/:id de A', `/piezas/${piezaA.id}`, B.token);
+    await expectDenied('PATCH /piezas/:id de A', `/piezas/${piezaA.id}`, B.token, {
+      method: 'PATCH',
+      body: JSON.stringify({ titulo: 'Secuestrada' }),
+    });
+    await expectDenied('POST /piezas/:id/asignar de A', `/piezas/${piezaA.id}/asignar`, B.token, {
+      method: 'POST',
+      body: JSON.stringify({ asignadaAId: B.user.id }),
+    });
+    await expectDenied('POST /piezas/:id/devolver de A', `/piezas/${piezaA.id}/devolver`, B.token, {
+      method: 'POST',
+      body: JSON.stringify({ nota: 'intruso' }),
+    });
+    await expectDenied('POST /piezas/:id/comentar de A', `/piezas/${piezaA.id}/comentar`, B.token, {
+      method: 'POST',
+      body: JSON.stringify({ nota: 'intruso' }),
+    });
+    await expectDenied('POST /piezas con un aprobado de A', '/piezas', B.token, {
+      method: 'POST',
+      body: JSON.stringify({
+        piezas: [{ platform: 'Instagram Post', formato: '1080×1080', titulo: 'Robo', savedVariationIds: [aprobadoA.id] }],
+      }),
+    });
+    const propuesta = await api('/piezas/propuesta', B.token, {
+      method: 'POST',
+      body: JSON.stringify({ savedVariationIds: [aprobadoA.id] }),
+    });
+    record(
+      'POST /piezas/propuesta ignora el copy de A',
+      propuesta.status >= 200 && propuesta.status < 300 && propuesta.body?.piezas?.length === 0,
+      `respondió ${propuesta.status} ${JSON.stringify(propuesta.body)?.slice(0, 120)}`
+    );
+
+    console.log('\nPIEZAS — el ciclo propio de B sí funciona');
+    const creada = await api('/piezas', B.token, {
+      method: 'POST',
+      body: JSON.stringify({
+        piezas: [{ platform: 'Instagram Post', formato: '1080×1080', titulo: 'Pieza de B', savedVariationIds: [aprobadoB.id] }],
+      }),
+    });
+    const piezaB = creada.body?.[0];
+    record('POST /piezas crea la pieza propia', creada.status === 201 && !!piezaB?.id, `respondió ${creada.status}`);
+
+    const repetida = await api('/piezas', B.token, {
+      method: 'POST',
+      body: JSON.stringify({
+        piezas: [{ platform: 'Instagram Post', formato: '1080×1080', titulo: 'Duplicada', savedVariationIds: [aprobadoB.id] }],
+      }),
+    });
+    record(
+      'POST /piezas rechaza con 409 la pieza repetida',
+      repetida.status === 409,
+      `respondió ${repetida.status} — el unique (workspaceId, huella) es la última línea`
+    );
+
+    // El A/B comparte el cuerpo y cambia el hook: son dos piezas del mismo
+    // formato con un aprobado en común, y eso tiene que poder crearse. La
+    // primera versión del modelo lo prohibía sin querer.
+    const segundoHook = await aprobado(B.client.id, B.project.id);
+    const ab = await api('/piezas', B.token, {
+      method: 'POST',
+      body: JSON.stringify({
+        piezas: [
+          { platform: 'Instagram Post', formato: '1080×1080', titulo: 'A/B — variante', savedVariationIds: [segundoHook.id] },
+        ],
+      }),
+    });
+    record(
+      'POST /piezas permite el A/B: misma marca y formato, otro conjunto',
+      ab.status === 201,
+      `respondió ${ab.status} ${JSON.stringify(ab.body)?.slice(0, 90)}`
+    );
+
+    if (piezaB?.id) {
+      const asignada = await api(`/piezas/${piezaB.id}/asignar`, B.token, {
+        method: 'POST',
+        body: JSON.stringify({ asignadaAId: B.user.id }),
+      });
+      record('POST /piezas/:id/asignar mueve a En diseño', asignada.body?.estado === 'EN_DISENO', `quedó en ${asignada.body?.estado}`);
+
+      const fueraDeOrden = await api(`/piezas/${piezaB.id}/aceptar`, B.token, { method: 'POST' });
+      record(
+        'Aceptar desde En diseño responde 409',
+        fueraDeOrden.status === 409,
+        `respondió ${fueraDeOrden.status} — la tabla de transiciones es la única fuente`
+      );
+
+      const entregada = await api(`/piezas/${piezaB.id}/entregar`, B.token, {
+        method: 'POST',
+        body: JSON.stringify({ enlace: 'https://figma.com/file/verif' }),
+      });
+      record('POST /piezas/:id/entregar mueve a Por revisar', entregada.body?.estado === 'POR_REVISAR', `quedó en ${entregada.body?.estado}`);
+
+      const sinNota = await api(`/piezas/${piezaB.id}/devolver`, B.token, { method: 'POST', body: JSON.stringify({}) });
+      record('Devolver sin motivo responde 400', sinNota.status === 400, `respondió ${sinNota.status}`);
+
+      // Comentar no cambia ninguna columna de Pieza. La primera versión daba
+      // 409 por eso: el updateMany con data vacío no tocaba ninguna fila.
+      const sinTexto = await api(`/piezas/${piezaB.id}/comentar`, B.token, { method: 'POST', body: JSON.stringify({}) });
+      record('Comentar sin texto responde 400', sinTexto.status === 400, `respondió ${sinTexto.status}`);
+
+      const comentada = await api(`/piezas/${piezaB.id}/comentar`, B.token, {
+        method: 'POST',
+        body: JSON.stringify({ nota: 'El logo va sobre fondo claro' }),
+      });
+      record(
+        'Comentar deja el comentario y NO cambia el estado',
+        comentada.status === 200 && comentada.body?.comentarios === 1 && comentada.body?.estado === 'POR_REVISAR',
+        `respondió ${comentada.status}, estado ${comentada.body?.estado}, comentarios ${comentada.body?.comentarios}`
+      );
+
+      const aceptada = await api(`/piezas/${piezaB.id}/aceptar`, B.token, { method: 'POST' });
+      record('POST /piezas/:id/aceptar mueve a Lista', aceptada.body?.estado === 'LISTA', `quedó en ${aceptada.body?.estado}`);
+
+      await prisma.savedVariation.update({ where: { id: aprobadoB.id }, data: { content: 'Hook editado después' } });
+      const conDesfase = await api(`/piezas/${piezaB.id}`, B.token);
+      record(
+        'La pieza avisa que el copy cambió, y conserva el texto congelado',
+        conDesfase.body?.desfases?.[0]?.motivo === 'editado' &&
+          conDesfase.body?.slots?.[0]?.textoCongelado !== 'Hook editado después',
+        `desfases ${JSON.stringify(conDesfase.body?.desfases)?.slice(0, 120)}`
+      );
+    }
+
     console.log('\nCONTROL POSITIVO — B sí puede con lo suyo');
     await expectAllowed('PUT /clients/:id propio', `/clients/${B.client.id}`, B.token, {
       method: 'PUT',
@@ -287,6 +464,8 @@ async function main() {
   } finally {
     // Limpieza: el orden respeta las FK.
     for (const t of [A, B]) {
+      // Las piezas primero: referencian marca y workspace.
+      await prisma.pieza.deleteMany({ where: { workspaceId: t.workspace.id } });
       await prisma.savedVariation.deleteMany({ where: { clientId: t.client.id } });
       await prisma.negativeFeedback.deleteMany({ where: { clientId: t.client.id } });
       await prisma.contentDNAProfile.deleteMany({ where: { clientId: t.client.id } });

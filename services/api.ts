@@ -1,3 +1,10 @@
+import type {
+  Pieza,
+  PiezaAConfirmar,
+  PiezaDetalle,
+  PropuestaDePiezas,
+} from '../types';
+
 
 const API_URL = import.meta.env.VITE_API_URL || '/api';
 
@@ -231,3 +238,44 @@ export const reviewApi = {
       body: JSON.stringify(data),
     }).then(r => r.json()),
 };
+
+/**
+ * Tablero de producción (H2 fase 2).
+ *
+ * Es el único cliente tipado del archivo: `apiRequest` devuelve `any`, así que
+ * cada método declara qué trae. Las transiciones son acciones con nombre y no
+ * un PUT de `estado` — la máquina de estados vive en el servidor, y varias
+ * acciones exigen un motivo escrito.
+ */
+export const piezasApi = {
+  /** El tablero, por marca. */
+  listar: (clientId: string): Promise<Pieza[]> =>
+    apiRequest(`/piezas?clientId=${encodeURIComponent(clientId)}`),
+  /** Mis piezas: cruza las marcas del workspace. */
+  mias: (): Promise<Pieza[]> => apiRequest('/piezas/mias'),
+  detalle: (id: string): Promise<PiezaDetalle> => apiRequest(`/piezas/${id}`),
+  /** Solo lectura: se puede pedir cada vez que cambia la selección. */
+  proponer: (savedVariationIds: string[]): Promise<PropuestaDePiezas> =>
+    apiRequest('/piezas/propuesta', {
+      method: 'POST',
+      body: JSON.stringify({ savedVariationIds }),
+    }),
+  crear: (piezas: PiezaAConfirmar[]): Promise<Pieza[]> =>
+    apiRequest('/piezas', { method: 'POST', body: JSON.stringify({ piezas }) }),
+  renombrar: (id: string, titulo: string): Promise<Pieza> =>
+    apiRequest(`/piezas/${id}`, { method: 'PATCH', body: JSON.stringify({ titulo }) }),
+  asignar: (id: string, asignadaAId: string): Promise<Pieza> =>
+    accion(id, 'asignar', { asignadaAId }),
+  reasignar: (id: string, asignadaAId: string): Promise<Pieza> =>
+    accion(id, 'reasignar', { asignadaAId }),
+  entregar: (id: string, enlace: string): Promise<Pieza> => accion(id, 'entregar', { enlace }),
+  aceptar: (id: string, nota?: string): Promise<Pieza> => accion(id, 'aceptar', { nota }),
+  devolver: (id: string, nota: string): Promise<Pieza> => accion(id, 'devolver', { nota }),
+  reabrir: (id: string, nota: string): Promise<Pieza> => accion(id, 'reabrir', { nota }),
+  actualizarCopy: (id: string): Promise<Pieza> => accion(id, 'actualizar-copy', {}),
+  /** Un comentario no mueve la pieza: queda en su historial. */
+  comentar: (id: string, nota: string): Promise<Pieza> => accion(id, 'comentar', { nota }),
+};
+
+const accion = (id: string, nombre: string, datos: Record<string, unknown>): Promise<Pieza> =>
+  apiRequest(`/piezas/${id}/${nombre}`, { method: 'POST', body: JSON.stringify(datos) });

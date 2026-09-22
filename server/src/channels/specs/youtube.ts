@@ -12,5 +12,6 @@ export const youtube: ChannelSpec = {
     { id: "description", label: "Descripción", count: 3, unit: "char", max: 90, varyByAngle: true,
       guidance: "Primera línea de la descripción que aparece sin expandir. MAX 90 CARACTERES." }
   ],
-  guidance: "Cada combinación headLine + longLine + description debe ser coherente entre sí (mismo ángulo)."
+  guidance: "Cada combinación headLine + longLine + description debe ser coherente entre sí (mismo ángulo).",
+  pieza: { tipo: "video", formatos: ["1920×1080", "1080×1920"] },
 };

@@ -14,5 +14,6 @@ export const popUp: ChannelSpec = {
     { id: "rejectMicrocopy", label: "Microcopy de rechazo", count: 3, unit: "char", max: 60,
       guidance: "Texto del 'No, gracias' que refuerza el costo de rechazar la oferta. Ej: 'No, prefiero seguir pagando más'." }
   ],
-  guidance: "El microcopy de rechazo es CLAVE — hace explícito el costo de oportunidad."
+  guidance: "El microcopy de rechazo es CLAVE — hace explícito el costo de oportunidad.",
+  pieza: { tipo: "grafica", formatos: ["600×400", "1080×1080"] },
 };

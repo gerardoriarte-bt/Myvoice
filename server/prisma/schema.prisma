@@ -33,6 +33,7 @@ model Workspace {
   presets        GenerationPreset[]
   generationLogs GenerationLog[]
   usagePeriods   UsagePeriod[]
+  Pieza          Pieza[]
 }
 
 model User {
@@ -58,6 +59,9 @@ model User {
   memberships           Membership[]
   invitesSent           WorkspaceInvite[] @relation("InviteAuthor")
   createdReviewSessions ReviewSession[]
+  piezasAsignadas       Pieza[]           @relation("PiezaAsignada")
+  piezasCreadas         Pieza[]           @relation("PiezaAutor")
+  eventosDePieza        PiezaEvento[]
 }
 
 /// La única fuente de verdad de "quién puede entrar a qué workspace".
@@ -136,6 +140,7 @@ model Client {
   variations                SavedVariation[]
   users                     User[]
   usagePeriods              UsagePeriod[]
+  piezas                    Pieza[]
 }
 
 /// Una fila por generación. Además del rastro de auditoría, es la tabla de
@@ -287,6 +292,7 @@ model SavedVariation {
   client           Client              @relation(fields: [clientId], references: [id])
   project          Project?            @relation(fields: [projectId], references: [id])
   reviewItems      ReviewSessionItem[]
+  piezaSlots       PiezaSlot[]
 
   /// La consulta de H2.A: todos los slots de un canal para una marca. Es el
   /// primer índice de la tabla.
@@ -300,6 +306,7 @@ model Project {
   workspaceId String
   workspace   Workspace        @relation(fields: [workspaceId], references: [id])
   variations  SavedVariation[]
+  piezas      Pieza[]
 }
 
 model NegativeFeedback {
@@ -389,4 +396,137 @@ enum ReviewSessionStatus {
 enum ReviewDecision {
   APPROVED
   REJECTED
+}
+
+/// Las cuatro columnas de D5, cada una con su dueño y la acción que la vacía.
+/// "En auditoría" NO es un estado: dura minutos, la mueve el sistema y nadie
+/// puede desatascarla (ver docs/plan-h2-produccion-auditoria.md).
+enum PiezaEstado {
+  POR_ASIGNAR
+  EN_DISENO
+  POR_REVISAR
+  LISTA
+}
+
+/// Lo declara el spec del canal (channels/types.ts, campo `pieza`), no la
+/// campaña: un canal produce siempre la misma clase de entregable, y hay
+/// canales que no producen ninguno.
+enum PiezaTipo {
+  GRAFICA
+  VIDEO
+  AUDIO
+}
+
+/// Una pieza es UN canal y UN archivo (estado límite 1). El mismo visual para
+/// Post e Historia son dos piezas hermanas —mismo `grupoId`—, no una pieza con
+/// dos canales: si fuera una sola, la auditoría no sabría contra qué copy
+/// comparar.
+model Pieza {
+  id          String      @id @default(uuid())
+  /// Denormalizado desde Client, igual que en GenerationLog: el guard de
+  /// tenancy y el tablero filtran por acá sin join, y una marca que se mueva de
+  /// empresa no arrastra el trabajo ya hecho.
+  workspaceId String
+  clientId    String
+  /// La campaña es OPCIONAL porque SavedVariation.projectId lo es: exigirla
+  /// dejaría fuera de producción todo el copy guardado sin proyecto.
+  projectId   String?
+  /// Valor del enum Platform ("Instagram Post"). Su spec dice tipo y formatos.
+  platform    String
+  tipo        PiezaTipo
+  /// Uno de spec.pieza.formatos ("1080×1080"). No cambia después del alta: la
+  /// unicidad de PiezaSlot depende de eso.
+  formato     String
+  titulo      String
+  /// Huella del contenido de la pieza: formato + los aprobados que la componen,
+  /// ordenados. Existe para que la BASE impida la pieza repetida —el doble
+  /// clic, los dos que mandan a producir el mismo lote— sin impedir el A/B,
+  /// donde dos piezas del mismo formato comparten el cuerpo y difieren en el
+  /// hook. La unicidad es del CONJUNTO, no de cada copy por separado.
+  huella      String
+  estado      PiezaEstado @default(POR_ASIGNAR)
+  /// Crear y asignar son dos decisiones: una pieza nace sin dueño, en
+  /// Por asignar, y la segunda decisión es del dueño de esa columna (D7).
+  asignadaAId String?
+  /// Piezas hermanas: el mismo visual en dos canales. Es un uuid compartido y
+  /// no una tabla, porque no tiene datos propios.
+  grupoId     String?
+  /// El entregable de la fase 2 —y el de los canales de video para siempre:
+  /// con el tope de 10 MB de D6 un reel no entra (estado límite 4).
+  enlace      String?
+  creadaPorId String
+  /// Cuándo entró al estado actual. Es el dato que responde "cuánto lleva esto
+  /// acá", que es la pregunta que se le hace a un tablero.
+  estadoDesde DateTime    @default(now())
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  workspace Workspace     @relation(fields: [workspaceId], references: [id])
+  client    Client        @relation(fields: [clientId], references: [id])
+  project   Project?      @relation(fields: [projectId], references: [id])
+  asignadaA User?         @relation("PiezaAsignada", fields: [asignadaAId], references: [id])
+  creadaPor User          @relation("PiezaAutor", fields: [creadaPorId], references: [id])
+  slots     PiezaSlot[]
+  eventos   PiezaEvento[]
+
+  /// Los dos ejes del tablero: por marca (la pantalla) y por persona (Mis piezas).
+  @@unique([workspaceId, huella])
+  @@index([workspaceId, clientId, estado])
+  @@index([asignadaAId, estado])
+  @@index([grupoId])
+}
+
+/// El copy aprobado que va adentro de la pieza, congelado.
+model PiezaSlot {
+  id               String  @id @default(uuid())
+  piezaId          String
+  /// SetNull y no Cascade: borrar un copy de la Biblioteca no puede borrar una
+  /// pieza que está en producción. NULL significa "el original ya no existe", y
+  /// la tarjeta lo dice.
+  /// Un mismo aprobado puede estar en varias piezas a propósito: otro formato
+  /// de Display (D7), o la otra mitad de un A/B, donde las dos piezas comparten
+  /// el cuerpo y solo cambia el hook. Lo que no puede repetirse es la pieza
+  /// entera, y de eso se ocupa Pieza.huella.
+  savedVariationId String?
+  slot             String
+  /// Resuelto SIEMPRE con resolveSlotLabel del registry, nunca copiado del body.
+  slotLabel        String
+  /// El texto tal como estaba al crearse la pieza. La auditoría compara contra
+  /// esto y no contra el original: si alguien edita el copy mientras el
+  /// diseñador trabaja, la pieza sigue siendo la que se mandó a producir
+  /// (estado límite 3).
+  textoCongelado   String
+  /// visualBrief, animationBrief, structure, production: van a la orden de
+  /// trabajo como brief, pero no se auditan contra la pieza — no son texto que
+  /// deba aparecer en el arte.
+  esInstruccion    Boolean @default(false)
+  orden            Int     @default(0)
+
+  pieza          Pieza           @relation(fields: [piezaId], references: [id], onDelete: Cascade)
+  savedVariation SavedVariation? @relation(fields: [savedVariationId], references: [id], onDelete: SetNull)
+
+  @@index([piezaId])
+  @@index([savedVariationId])
+}
+
+/// Historial append-only de la pieza. No es auditoría de sistema: es lo que
+/// responde "quién decidió esto y por qué" —el motivo de una devolución, la
+/// nota de quien aceptó con hallazgos (D2)— y lo que permite medir cuánto
+/// tiempo pasa una pieza en cada columna.
+model PiezaEvento {
+  id        String       @id @default(uuid())
+  piezaId   String
+  /// CREADA · ASIGNADA · ENTREGADA · ACEPTADA · DEVUELTA · REABIERTA · COPY_ACTUALIZADO
+  tipo      String
+  deEstado  PiezaEstado?
+  aEstado   PiezaEstado?
+  autorId   String
+  /// Obligatoria en DEVUELTA y REABIERTA; el servicio lo exige.
+  nota      String?
+  createdAt DateTime     @default(now())
+
+  pieza Pieza @relation(fields: [piezaId], references: [id], onDelete: Cascade)
+  autor User  @relation(fields: [autorId], references: [id])
+
+  @@index([piezaId, createdAt])
 }

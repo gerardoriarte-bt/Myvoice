@@ -319,3 +319,111 @@ export interface GenerationPreset {
   createdAt?: number;
   updatedAt?: number;
 }
+
+// ------------------------------------------------------------------ piezas
+
+/**
+ * El tablero de producción (H2 fase 2). Los tipos son explícitos y no `any`
+ * porque `apiRequest` devuelve `any` (E2, punto 4): si la pantalla nueva
+ * heredara eso, el tablero entero quedaría fuera de la gate de tipos.
+ */
+export type PiezaEstado = 'POR_ASIGNAR' | 'EN_DISENO' | 'POR_REVISAR' | 'LISTA';
+export type PiezaTipo = 'GRAFICA' | 'VIDEO' | 'AUDIO';
+
+export interface PiezaSlot {
+  id: string;
+  slot: string;
+  slotLabel: string;
+  textoCongelado: string;
+  esInstruccion: boolean;
+  orden: number;
+  savedVariationId: string | null;
+}
+
+/** Por qué el copy de la pieza ya no coincide con el de la Biblioteca. */
+export interface SlotDesfasado {
+  slot: string;
+  slotLabel: string;
+  motivo: 'editado' | 'desaprobado' | 'borrado';
+  textoCongelado: string;
+  textoActual: string | null;
+}
+
+export interface Pieza {
+  id: string;
+  clientId: string;
+  projectId: string | null;
+  platform: string;
+  tipo: PiezaTipo;
+  formato: string;
+  titulo: string;
+  estado: PiezaEstado;
+  asignadaAId: string | null;
+  grupoId: string | null;
+  enlace: string | null;
+  estadoDesde: string;
+  createdAt: string;
+  slots: PiezaSlot[];
+  desfases: SlotDesfasado[];
+  asignadaA?: { id: string; name: string; email: string } | null;
+  /** Cuántos comentarios tiene la pieza, y el último, para la tarjeta. */
+  comentarios: number;
+  ultimoComentario: { nota: string | null; autor: string | null; createdAt: string } | null;
+  client?: { id: string; name: string };
+  project?: { id: string; name: string } | null;
+}
+
+export interface PiezaEvento {
+  id: string;
+  tipo: string;
+  deEstado: PiezaEstado | null;
+  aEstado: PiezaEstado | null;
+  nota: string | null;
+  createdAt: string;
+  autor?: { id: string; name: string };
+}
+
+export interface PiezaDetalle extends Pieza {
+  eventos: PiezaEvento[];
+  hermanas: { id: string; platform: string; formato: string; estado: PiezaEstado; titulo: string }[];
+}
+
+export interface SlotPropuesto {
+  savedVariationId: string;
+  slot: string;
+  slotLabel: string;
+  contenido: string;
+  esInstruccion: boolean;
+  /** Otros aprobados del mismo slot: la pregunta «¿una pieza o dos?» de D7. */
+  alternativas: { savedVariationId: string; contenido: string }[];
+}
+
+export interface PiezaPropuesta {
+  platform: string;
+  tipo: PiezaTipo;
+  formato: string;
+  formatosDisponibles: string[];
+  titulo: string;
+  clientId: string;
+  projectId: string | null;
+  proyectoNombre: string | null;
+  slots: SlotPropuesto[];
+}
+
+export interface PropuestaDePiezas {
+  piezas: PiezaPropuesta[];
+  excluidos: {
+    savedVariationId: string;
+    platform: string;
+    motivo: 'sin-pieza' | 'no-aprobado' | 'ya-en-pieza';
+    detalle: string;
+  }[];
+}
+
+export interface PiezaAConfirmar {
+  platform: string;
+  formato: string;
+  titulo: string;
+  savedVariationIds: string[];
+  hermanaDe?: number;
+}

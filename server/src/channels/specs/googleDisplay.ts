@@ -12,5 +12,6 @@ export const googleDisplay: ChannelSpec = {
     { id: "description", label: "Descripción", count: 4, unit: "char", max: 90,
       guidance: "Body acompañante. MAX 90 CARACTERES." }
   ],
-  guidance: "Display rota titulares con creatividades; cada título debe poder leerse aislado y vender solo."
+  guidance: "Display rota titulares con creatividades; cada título debe poder leerse aislado y vender solo.",
+  pieza: { tipo: "grafica", formatos: ["300×250", "728×90", "160×600", "320×50", "300×600"] },
 };
