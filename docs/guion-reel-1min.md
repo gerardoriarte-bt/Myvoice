@@ -3,6 +3,8 @@
 > Para producir en **Remotion**. Formato vertical 1080×1920, 30 fps, **1800 frames** exactos.
 > Las capturas de pantalla ya están exportadas del `.pen` en `design/exports/` (2x, PNG).
 >
+> Estado: **guión cerrado, sin producir.** El proyecto de Remotion queda para una próxima sesión.
+>
 > El reel se tiene que entender **sin sonido**: el texto en pantalla cuenta la historia completa y
 > la locución la refuerza. Así se mira en un feed, y así se muestra en una reunión sin parlantes.
 
@@ -18,9 +20,9 @@ contra lo que se aprobó.*
 
 ## Antes de publicarlo
 
-- [ ] **Las capturas dicen «Vive Terpel» y «LoBueno».** Son marcas reales. O se pide permiso, o se
-      reemplazan por una marca ficticia en el `.pen` y se vuelve a exportar. Es el único bloqueante
-      real de este video.
+- [x] **Las marcas reales se mantienen.** Decidido el 2026-09-22: las capturas muestran Vive
+      Terpel y LoBueno tal cual. Es la versión más fuerte del video —son campañas que existieron—
+      y evita el aire de demo que tiene una marca inventada.
 - [ ] Los números que aparecen (14 canales, 5 capas) son verdaderos. **No inflarlos**: el producto
       se vende solo con lo que hace.
 
@@ -162,7 +164,6 @@ video/
 
 ## Qué falta para producirlo
 
-- [ ] Resolver el permiso de las marcas reales en las capturas.
 - [ ] Definir si lleva locución humana o queda solo con texto y música.
 - [ ] Elegir la música: **corte marcado alrededor del segundo 10**, donde el problema se convierte
       en producto.
