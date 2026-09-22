@@ -436,11 +436,9 @@ model PiezaSlot {
   piezaId          String
   /// SetNull, no Cascade: borrar el copy de la Biblioteca no puede borrar
   /// una pieza en producción. La tarjeta avisa que el original ya no existe.
-  /// Un aprobado, a lo sumo una pieza por formato (D7: «otro formato»).
+  /// Sin unique: un mismo aprobado va a varias piezas cuando es deliberado
+  /// —otro formato, o el A/B—. Lo que no se repite es la pieza entera.
   savedVariationId String?
-  /// Copiado de Pieza.formato, que no cambia tras el alta: existe para que
-  /// la base garantice la unicidad sin un trigger.
-  formato          String
   slot             String
   slotLabel        String   // del registry, nunca del body
   /// Estado límite 3: el texto tal como estaba al asignarse. La auditoría
@@ -451,7 +449,7 @@ model PiezaSlot {
   esInstruccion    Boolean  @default(false)
   orden            Int      @default(0)
 
-  @@unique([savedVariationId, formato])
+  @@index([savedVariationId])
 }
 
 model PiezaEvento {
