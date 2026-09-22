@@ -80,7 +80,7 @@ Fase 0 · DISEÑO          en el .pen · no se escribe código
 Fase 1 · E1 — S3         prerrequisito duro, no es parte de la funcionalidad
 Fase 2 · Modelo + tablero    ya entrega valor sin auditoría
 Fase 3 · Subida + auditoría  las dos verificaciones
-Fase 4 · La pieza al cliente  si D4 se confirma
+Fase 4 · La pieza al cliente  D4 decidida, con tres límites
 ```
 
 Ninguna fase arranca con decisiones de la anterior abiertas. La 0 no es una formalidad: **la
@@ -90,8 +90,8 @@ decisión D1 define una entidad nueva en la base**, y equivocarla se paga con un
 
 # Fase 0 · Diseño
 
-**Entregable:** `design/MyVoice_Engine.pen`. **Criterio de cierre:** las seis pantallas
-dibujadas, las cinco decisiones resueltas con una nota que diga qué se eligió y por qué, y los
+**Entregable:** `design/MyVoice_Engine.pen`. **Criterio de cierre:** las cinco pantallas
+dibujadas, las seis decisiones resueltas con una nota que diga qué se eligió y por qué, y los
 cinco estados límite dibujados. Sin eso, la fase 1 arranca adivinando.
 
 ## Pantallas
@@ -119,13 +119,43 @@ un slot**: en el modelo por variación no hay dónde ponerlo, y es justamente lo
 tablero valga más que una lista de textos aprobados. Costo asumido: una entidad nueva y su
 migración.
 
-**D2 · ¿La auditoría bloquea o avisa?**
-*Recomendación:* avisa. El mismo criterio que la cuota, que se desplegó en observación por una
-razón: un chequeo automático que corta el trabajo de alguien tiene que ganarse esa autoridad con
-historial. Un bloqueo mal calibrado se desactiva en una semana y no vuelve.
+**D2 · ¿La auditoría bloquea o avisa? — DECIDIDA: avisa.**
+Es el mismo criterio que la cuota, que se desplegó en observación por una razón: un chequeo
+automático que corta el trabajo de alguien tiene que ganarse esa autoridad con historial. Un
+bloqueo mal calibrado se desactiva en una semana y no vuelve. En concreto:
 
-**D3 · ¿Quién ve el informe y con qué detalle?**
-*Recomendación:* el diseñador ve cada hallazgo; quien aprueba ve un semáforo y puede abrir.
+- **Ninguna pieza queda trabada por la auditoría.** «Aceptar con hallazgos» está siempre
+  disponible para quien aprueba, también cuando el texto difiere del copy aprobado: la auditoría
+  puede leer mal una tilde, y una persona mira la pieza y decide.
+- **Pasar por encima de un hallazgo pide una nota.** Queda quién aceptó, cuándo y por qué. Esa
+  nota es el historial que algún día puede darle autoridad a la auditoría; sin ella nunca se
+  sabría si acierta. Obliga a guardar la decisión por hallazgo en la fase 3, no solo el estado de
+  la pieza.
+- **El semáforo no tiene rojo.** El rojo promete un bloqueo que no existe.
+
+Cuándo se revisa: se mide desde el primer día cuántos hallazgos de cada tipo se corrigen y
+cuántos se aceptan con nota. Solo la **diferencia contra el copy aprobado** podría llegar a
+bloquear, porque es un hecho contra un texto conocido; el **juicio de marca no bloquea nunca**.
+Bloquear queda fuera de la fase 3: si se decide, es una fase propia con esos números en la mano.
+
+**D3 · ¿Quién ve el informe y con qué detalle? — DECIDIDA: el mismo informe, tres niveles.**
+
+| Quién | Qué ve | Dónde | Qué hace |
+|---|---|---|---|
+| El diseñador | Cada hallazgo, con el texto exacto de los dos lados, y lo que no se pudo leer dicho como tal | Mis piezas y la orden de trabajo, apenas termina la auditoría, **antes** de que la pieza llegue a quien aprueba | Corregir y volver a subir, o dejarla como está |
+| Quien aprueba | Un semáforo en la tarjeta de *Por revisar*; un clic abre el informe completo, el mismo que ve el diseñador | El tablero | Aceptar —con nota si hay hallazgos— o devolver a diseño |
+| El cliente | Nada del informe: la pieza y el texto que él aprobó (límite 1 de D4) | El portal, en la fase 4 | Aprobar o pedir cambios |
+
+No hay dos informes: hay uno, y las acciones del pie dependen del rol. El semáforo tiene **tres
+estados**:
+
+| Estado | Cuándo |
+|---|---|
+| **Verificada** | Todo el texto coincide y la marca no tiene observaciones |
+| **N hallazgos** | Al menos una diferencia contra el copy o un juicio de marca. Gana sobre los otros dos: si además hay partes ilegibles, se cuentan adentro del informe |
+| **Revisar a ojo** | Una parte no se pudo leer y el resto coincide. No es un hallazgo: es la auditoría diciendo hasta dónde llegó |
+
+Dibujadas en `§ H2 · D2 y D3 · la auditoría`.
 
 **La regla de la auditoría, que salió de dibujarla:** los dos chequeos **no son la misma clase
 de cosa y no pueden verse iguales**. «¿Dice lo que se aprobó?» compara contra una verdad conocida
@@ -200,8 +230,9 @@ proveedor. Formatos: PNG, JPG, WEBP y PDF de una página.
 **El video no se audita automáticamente.** Es una corrección al dibujo: el tablero mostraba un
 reel «en auditoría», y eso era optimista. Un chequeo de texto sobre video exigiría extraer
 cuadros y auditarlos uno por uno, con un costo que no se justifica en la fase 3. Los canales de
-video suben su pieza igual —queda como entregable y como evidencia— pero pasan directo a **Por
-revisar** sin informe automático. Si se quiere auditar, el diseñador sube además la portada.
+video pasan directo a **Por
+revisar** sin informe automático, y entregan un enlace, no un archivo (corregido en el estado
+límite 4). Si se quiere auditar, el diseñador sube además la portada.
 
 **Después de aprobada, snapshot y listo.** My Voice no vuelve a hacer nada con el archivo pesado:
 
@@ -219,41 +250,360 @@ Consecuencia técnica de la fase 3: hace falta una librería de imagen en el ser
 generar el snapshot. Es la primera dependencia nativa del backend; conviene verificar que compile
 en `node:20-slim` antes de comprometerla.
 
-## Estados límite
+## Estados límite — dibujados
 
-- Una pieza que sirve a **dos canales** (el mismo visual para Post e Historia).
-- El copy aprobado **cambia** después de asignada la pieza.
-- Una pieza subida en formato inesperado, o de 40 MB.
-- La auditoría **no puede leer** el texto: tipografía fina, texto sobre foto, curvas.
-- Un canal que **no produce pieza gráfica** (Cuña de Radio). No todo lo aprobado va al tablero, y
-  el diseño tiene que decir cuál sí — o el tablero se llena de tarjetas que nadie puede trabajar.
+En `§ H2 · Estados límite`. Cada caso trae su regla, y cada regla fija algo del modelo de datos:
+por eso se dibujaron antes de la migración.
+
+**1 · Una pieza que sirve a dos canales.** El mismo visual para Post e Historia son dos archivos
+—1080×1080 y 1080×1920—, cada uno con su copy aprobado, y una pieza con dos canales no sabría
+contra qué texto auditar. *Regla:* **una pieza es un canal y un archivo.** Lo compartido se
+expresa asignándolas juntas y mostrando la hermana en la orden de trabajo, no fusionándolas.
+Un mismo aprobado sí puede ir a dos piezas cuando es deliberado —otro formato, o el A/B—; lo que
+no puede repetirse es la pieza entera (afinado en D7 y al implementarla).
+
+**2 · Un canal que no produce pieza gráfica.** Si todo lo aprobado entra al tablero, se llena de
+tarjetas que nadie puede trabajar. *Regla:* **entra al tablero todo canal cuyo copy aprobado no
+es lo que se publica**, y es una propiedad del canal, declarada en su spec, no una elección por
+campaña:
+
+| | Canales |
+|---|---|
+| Entra, con auditoría | Instagram Post · Historia · Carrusel · Google Display · Rich Media · Pop up · Email |
+| Entra, sin auditoría | Instagram Reel · TikTok · YouTube (enlace al video) · Cuña de Radio (audio) |
+| No entra | Google Ads · Push Notification · WhatsApp |
+
+**3 · El copy aprobado cambia después de asignada la pieza.** Si la pieza apunta al texto vivo,
+el diseñador trabaja sobre algo que cambió sin avisarle, y la auditoría compara contra un texto
+que él nunca vio. *Regla:* **la pieza congela el texto al asignarse**, además de guardar la
+referencia al original. Si difieren, la tarjeta muestra «El copy cambió» y quien produce decide
+actualizar la orden. Nunca se actualiza sola, y una pieza en *Lista* no se reabre sola.
+
+**4 · Un archivo de 40 MB, o en formato inesperado.** Son dos casos distintos. *Regla:* **el
+peso y el tipo se rechazan antes de subir**, diciendo qué hacer («exportá en PNG o JPG, con 1.600
+px en el lado largo alcanza»). **Las medidas distintas se aceptan y quedan como hallazgo**, igual
+que D2: una pieza de 728×90 cuando se pidió 300×250 está mal, pero es un hecho que alguien tiene
+que ver, no un archivo inservible.
+
+**Y corrige D6: el video no se sube, se pega el enlace** (Drive, Frame.io, Vimeo). D6 decía que
+los canales de video suben su pieza como entregable, pero con el tope de 10 MB un reel no entra,
+y subir el tope para video metería en el bucket justo los archivos que D6 quería evitar. La
+Cuña de Radio sí sube su archivo: 30 segundos de audio entran de sobra.
+
+**5 · La auditoría no puede leer el texto, o no corre.** Parecen lo mismo y no lo son: en el
+primero la auditoría miró y llegó hasta cierto punto; en el segundo el proveedor falló y no miró
+nada. *Regla:* **ninguno detiene la pieza.** «Revisar a ojo» dice qué parte no se leyó. «Sin
+auditoría» dice que falló, ofrece reintentar y **no cuenta en las métricas de acierto** de D2,
+porque una caída del servicio no es una opinión sobre la pieza.
+
+**Lo que esto fija para el nivel 2:**
+
+1. `Pieza` → un canal y un archivo. Lo que no se repite es la pieza entera. Las hermanas se enlazan.
+2. El `ChannelSpec` declara qué pieza produce: gráfica, video, audio o ninguna.
+3. La pieza guarda una copia del texto de cada slot al asignarse, más la referencia al original.
+4. Archivo con tope de peso y tipo; medidas como hallazgo; video como enlace.
+5. El estado de la auditoría distingue «no se pudo leer» de «no corrió».
 
 ---
 
-# Fases 1 a 4 · Implementación
+# Nivel 2 · Cómo se construye
 
-Sin estimar hasta que la fase 0 cierre. Estimarla antes sería inventar.
+> Escrito el 2026-09-22, con la fase 0 cerrada. **Una decisión nueva, D7**, apareció al bajar el
+> diseño al modelo. Está dibujada y espera confirmación; bloquea solo el alta de piezas.
 
-**Fase 1 · E1 — migrar uploads a S3.** No es parte de la funcionalidad: es su piso.
+## Lo que el código dice y el diseño no veía
 
-**Fase 2 · Modelo y tablero.** La entidad pieza con sus estados, su relación con las
-`SavedVariation` aprobadas que la componen y su asignación a un miembro del workspace. Guardas de
-`lib/tenancy.ts` desde el primer handler. **Entrega valor sola**: hoy el paso de aprobado a
-producción se coordina por fuera del sistema.
+Tres hechos del código actual que cambian cómo se construye:
 
-**Fase 3 · Subida y auditoría.** Empieza creando la **regla de ciclo de vida** del bucket
-—`piezas/originales/` → expirar a los 90 días—, que es la mitad automática de D6 y no se creó
-antes a propósito: hasta esta fase ese prefijo no existe y sería una regla vigilando la nada.
-Después, entrada de imagen en `aiClient`, con su costo medido como una etapa más. La pieza llega al modelo desde el bucket —URL firmada o bytes, según lo que acepte el
-proveedor—, lo que significa que **el diseño de un cliente sale hacia la API de IA**. Es el mismo
-camino que ya recorre su copy, pero conviene decirlo antes de que alguien lo pregunte. Los dos chequeos son dos llamadas distintas: comparar contra un texto conocido es
-barato; auditar estilo contra el ADN es del mismo tipo que el Critic y puede reusar su prompt.
+**1 · «Aprobado» tiene dos orígenes.** `SavedVariation.isApproved` lo pone en `true` el portal
+del cliente (`reviewController.ts:203`) **y** cualquier miembro desde la Biblioteca, porque
+`isApproved` está en la allow-list de `savedController.ts` (`VARIATION_UPDATABLE`). El tablero
+toma los dos: para producción, aprobado es aprobado. Pero implica que un aprobado se puede
+**desaprobar** después de creada la pieza, y la tarjeta lo tiene que decir. Es el mismo aviso
+que el estado límite 3.
 
-**Fase 4 · La pieza vuelve al cliente**, si D4 se confirma.
+**2 · El diseñador hoy no ve casi nada.** En `App.tsx` todas las pantallas salvo Biblioteca y
+Guía están detrás de `isAdmin`. Un diseñador es `MEMBER`, así que el tablero y Mis piezas son
+las **primeras pantallas de trabajo pensadas para alguien que no administra**. Van con
+`adminOnly: false` en `screens.ts`, y el backend las monta con `inWorkspace`, no con `asManager`.
+
+**3 · La campaña es opcional.** Las tarjetas dicen «Rendimiento · Octubre», que es el `Project`.
+Pero `SavedVariation.projectId` es nullable y hay copy guardado sin proyecto. La pieza no puede
+exigir campaña sin dejar afuera ese copy: `Pieza.projectId` es nullable, y la tarjeta muestra el
+título de la pieza cuando no hay proyecto.
+
+## D7 · ¿Cómo nace una pieza? — DECIDIDA: explícito, con propuesta
+
+El diseño de D1 lo dejó escrito sin resolver: *«alguien tiene que decidir qué slots entran en
+cada pieza; automático la mayoría de las veces, no siempre»*. Los estados límite fijaron qué es
+una pieza (un canal, un archivo), pero no **quién la crea ni cuándo**. Hay dos caminos:
+
+- **Automático:** cada aprobado de un canal con pieza aterriza en *Por asignar*, agrupado por
+  (proyecto, canal). Falla en tres casos reales: los aprobados de la Biblioteca llegan de a uno,
+  así que la pieza nace incompleta; el copy sin proyecto no tiene con qué agruparse; y si hay dos
+  hooks aprobados para el mismo Post, el sistema no sabe si es un A/B (dos piezas) o una
+  alternativa descartada.
+- **Explícito, con propuesta:** quien produce elige «Mandar a producción» sobre un grupo de
+  aprobados. El sistema **propone** las piezas —una por canal, un aprobado por slot, el formato
+  por defecto del canal— y la persona confirma o corrige. Cuando un slot tiene dos aprobados,
+  pregunta: ¿una pieza con el elegido, o dos piezas?
+
+*Recomendación:* **explícito, con propuesta.** Es la columna *Por asignar* con su dueño: quien
+produce. Y es coherente con D5: el sistema no mueve trabajo entre personas por su cuenta.
+
+**Dibujada** en `§ H2 · D7 · cómo nace una pieza` y **confirmada el 2026-09-22.** Lo que muestra:
+
+- **Dos puertas, una sola propuesta.** La principal es **cerrar una sesión de revisión**: el
+  cliente aprobó un lote y todo lo que va a producción llegó junto. Aparece un botón «Mandar
+  aprobados a producción» en la sesión completada. La otra es **la Biblioteca**, para lo aprobado
+  internamente: se seleccionan filas aprobadas (las no aprobadas no cuentan) y se manda el grupo.
+- **La propuesta:** una pieza por canal, un aprobado por slot, el formato por defecto del
+  canal. Cada pieza se puede destildar.
+  - **Dos aprobados en el mismo slot** → pregunta: ¿una pieza con cuál, o dos piezas (A/B)? El
+    que no entra no se borra ni se desaprueba: queda libre en la Biblioteca.
+  - **Hermanas:** un interruptor, «misma idea visual que el Post — se asignan juntas», que
+    escribe el mismo `grupoId`.
+  - **Formato:** un selector con los formatos del spec, y «otro formato», que crea otra pieza con
+    el mismo copy (ver la corrección al modelo, abajo).
+  - **Fuera de la propuesta**, con el motivo: los canales sin pieza, y los aprobados que ya
+    están en otra pieza.
+- **Las piezas nacen en *Por asignar* y sin nadie asignado.** Crear y asignar son dos
+  decisiones, y la segunda es del dueño de esa columna.
+
+**Corrección al modelo, en dos pasos.** Dibujar D7 mostró que «otro formato» pone un mismo
+aprobado en dos piezas —Display 300×250 y 728×90, mismo copy—, así que «un aprobado, una sola
+pieza» (estado límite 1) se afinó a «una sola pieza **por formato**». Implementarla mostró que eso
+**también estaba mal**: en un A/B las dos piezas son del mismo formato y comparten el cuerpo y los
+hashtags; lo único que cambia es el hook. La primera versión del modelo prohibía el A/B sin
+querer, y se descubrió creando uno en el navegador, no leyendo el esquema.
+
+La regla correcta es sobre el **conjunto**: lo que no puede repetirse es la pieza entera. `Pieza`
+guarda una `huella` —el formato más los aprobados que la componen, ordenados— con
+`@@unique([workspaceId, huella])`. Rechaza la pieza repetida —el doble clic, dos personas mandando
+el mismo lote— y deja pasar los dos casos en que compartir un aprobado es a propósito.
+
+## Fase 1 · E1 — almacenamiento en S3 — **hecha**
+
+Desplegada el 2026-08-28 ([plan E1](./plan-e1-almacenamiento.md)).
+
+## Fase 2 · Modelo, tablero y orden de trabajo
+
+**Entrega valor sola, sin IA:** en esta fase la pieza se entrega con un **enlace** (Figma, Drive)
+en vez de un archivo. Es la regla del video del estado límite 4, extendida a todo mientras no
+exista la subida. El equipo coordina la producción dentro del sistema desde el primer día, y la
+fase 3 agrega archivo y auditoría encima, sin cambiar el tablero.
+
+### Modelo — `server/prisma/schema.prisma`
+
+Una migración aditiva: no toca tablas existentes.
+
+```prisma
+enum PiezaEstado { POR_ASIGNAR  EN_DISENO  POR_REVISAR  LISTA }
+enum PiezaTipo   { GRAFICA  VIDEO  AUDIO }
+
+model Pieza {
+  id               String      @id @default(uuid())
+  /// Denormalizado desde Client, como GenerationLog: el guard y el tablero
+  /// filtran por acá sin join.
+  workspaceId      String
+  clientId         String
+  projectId        String?     // estado de hecho 3: la campaña es opcional
+  platform         String      // valor de Platform; su spec dice tipo y formatos
+  tipo             PiezaTipo
+  formato          String      // "1080×1080", "300×250" — uno de spec.pieza.formatos
+  titulo           String      // "pieza principal de feed"
+  huella           String      // formato + aprobados ordenados: la pieza, no el copy
+  estado           PiezaEstado @default(POR_ASIGNAR)
+  asignadaAId      String?
+  /// Hermanas (estado límite 1): mismo uuid, sin tabla aparte.
+  grupoId          String?
+  /// Entregable de la fase 2, y el de video para siempre.
+  enlace           String?
+  creadaPorId      String
+  estadoDesde      DateTime    @default(now())
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+  slots            PiezaSlot[]
+  eventos          PiezaEvento[]
+
+  @@unique([workspaceId, huella])           // la pieza repetida, no el copy repetido
+  @@index([workspaceId, clientId, estado])  // el tablero
+  @@index([asignadaAId, estado])            // Mis piezas
+}
+
+model PiezaSlot {
+  id               String   @id @default(uuid())
+  piezaId          String
+  /// SetNull, no Cascade: borrar el copy de la Biblioteca no puede borrar
+  /// una pieza en producción. La tarjeta avisa que el original ya no existe.
+  /// Sin unique: un mismo aprobado va a varias piezas cuando es deliberado
+  /// —otro formato, o el A/B—. Lo que no se repite es la pieza entera.
+  savedVariationId String?
+  slot             String
+  slotLabel        String   // del registry, nunca del body
+  /// Estado límite 3: el texto tal como estaba al asignarse. La auditoría
+  /// compara contra esto, no contra el original.
+  textoCongelado   String
+  /// visualBrief, animationBrief, structure, production: van a la orden de
+  /// trabajo pero no se auditan contra la pieza.
+  esInstruccion    Boolean  @default(false)
+  orden            Int      @default(0)
+
+  @@index([savedVariationId])
+}
+
+model PiezaEvento {
+  id        String   @id @default(uuid())
+  piezaId   String
+  tipo      String   // CREADA · ASIGNADA · ENTREGADA · ACEPTADA · DEVUELTA · REABIERTA · COPY_ACTUALIZADO
+  deEstado  PiezaEstado?
+  aEstado   PiezaEstado?
+  autorId   String
+  nota      String?  // obligatoria en DEVUELTA y REABIERTA
+  createdAt DateTime @default(now())
+  @@index([piezaId, createdAt])
+}
+```
+
+`PiezaEvento` es append-only y cumple tres funciones: el historial de la tarjeta, el motivo de
+«Devuelta» que Mis piezas muestra primero, y el tiempo en cada columna. Es la misma idea que
+[E6](./plan-e6-registro-consumo.md), aplicada a decisiones en vez de a consumo.
+
+«El copy cambió» **no es una columna**: se calcula al leer, comparando `textoCongelado` con el
+`content` del original. Cubre también el original borrado (`savedVariationId` en NULL) y el
+original desaprobado (`isApproved = false`).
+
+### Canales — `server/src/channels/types.ts` y `specs/*.ts`
+
+`ChannelSpec` gana un campo, y con él el estado límite 2 queda en el spec, no en una lista
+escrita en otro lado:
+
+```ts
+pieza: { tipo: "grafica" | "video" | "audio"; formatos: string[] } | null;
+```
+
+| Canal | `pieza` |
+|---|---|
+| Instagram Post / Historia / Carrusel | gráfica · `1080×1080` / `1080×1920` / `1080×1080` |
+| Google Display | gráfica · `300×250`, `728×90`, `160×600`, `320×50` |
+| Rich Media · Pop up · Email | gráfica · formatos a confirmar con el equipo de diseño |
+| Instagram Reel · TikTok · YouTube | video |
+| Cuña de Radio | audio |
+| Google Ads · Push Notification · WhatsApp | `null` |
+
+Se audita lo gráfico; video y audio pasan directo a *Por revisar*. `registry.ts` expone
+`esSlotDeInstruccion(slotId)` para las cuatro instrucciones, en vez de repetir la lista.
+
+### Máquina de estados — `server/src/services/piezaService.ts`
+
+Un archivo nuevo con **la tabla de transiciones como dato**, y cada acción un endpoint. Así
+«qué la saca de esta columna» (D5) queda escrito en un solo lugar:
+
+| Acción | De → a | Exige |
+|---|---|---|
+| asignar | *Por asignar* → *En diseño* | `userId` con membresía (`assertMemberOfWorkspace`) |
+| reasignar | *En diseño* → *En diseño* | ídem |
+| entregar | *En diseño* → *Por revisar* | `enlace` en la fase 2; archivo en la fase 3 |
+| aceptar | *Por revisar* → *Lista* | `nota` si hay hallazgos (fase 3) |
+| devolver | *Por revisar* → *En diseño* | `nota` obligatoria |
+| reabrir | *Lista* → *En diseño* | `nota` obligatoria (estado límite 3) |
+| actualizar copy | sin cambio de estado | vuelve a congelar desde los originales |
+
+**Sin roles nuevos.** El dueño de cada columna es una persona, no un rol: cualquier miembro del
+workspace puede ejecutar cualquier acción, y el `PiezaEvento` registra quién. El rol DESIGNER
+es H3.D y no se adelanta.
+
+**Concurrencia:** cada transición hace `updateMany({ where: { id, estado: <el esperado> } })` y
+devuelve **409** si no actualizó nada. Dos personas que aceptan y devuelven la misma pieza a la
+vez no pueden dejarla en un estado que ninguna de las dos eligió.
+
+### API — `routes/index.ts` + `controllers/piezaController.ts`
+
+Todo con `...inWorkspace`. **Guard nuevo en `lib/tenancy.ts`: `assertPiezaInWorkspace`**, con
+404 y no 403, como el resto.
+
+| Método | Ruta | Guard |
+|---|---|---|
+| GET | `/piezas?clientId=` | `assertClientInWorkspace` — el tablero, por marca |
+| GET | `/piezas/mias` | filtra por `asignadaAId = yo` y el workspace activo |
+| GET | `/piezas/:id` | `assertPiezaInWorkspace` — la orden de trabajo |
+| POST | `/piezas` | cada `savedVariationId` con `assertVariationInWorkspace`, más: misma marca, mismo canal, aprobado, `spec.pieza` no nulo; responde 409 si esa misma pieza ya existe |
+| POST | `/piezas/:id/{asignar,entregar,aceptar,devolver,reabrir,actualizar-copy}` | `assertPiezaInWorkspace` |
+| PATCH | `/piezas/:id` | `pickFields(['titulo'])` — nada más se edita a mano |
+
+`slotLabel` se resuelve con `resolveSlotLabel` del registry, como en `SavedVariation`. El body
+nunca trae etiquetas ni estados.
+
+### Frontend
+
+- **`screens.ts`:** pantalla `produccion` («Producción»), `adminOnly: false`, con el selector de
+  vista *Por marca / Mis piezas* que dibuja el tablero. `NAV_STAGES` pasa a las cinco etapas de
+  `§ H2 · Navegación con producción`: el copy se **escribe**, la pieza se **produce**.
+- **`components/produccion/`**, carpeta nueva: `TableroProduccion.tsx`, `TarjetaPieza.tsx`,
+  `OrdenDeTrabajo.tsx`, `MisPiezas.tsx` y el modal de D7. **El estado vive ahí, no en
+  `App.tsx`**: la pantalla pide sus datos y `App.tsx` solo la monta según `activeTab`. Es el
+  primer pedazo de E3 que se paga sin refactorizar nada.
+- **`services/api.ts`:** `piezasApi` con tipos de respuesta propios. No hereda el `any` de
+  `apiRequest` (E2, punto 4).
+
+### Criterio de aceptación de la fase 2
+
+- Un aprobado de Google Ads no puede crear pieza (400); la pieza repetida responde 409, y el A/B —mismo formato, otro conjunto— se crea.
+- Las seis acciones respetan la tabla de transiciones. Una transición desde un estado que no
+  corresponde responde 409, y dos transiciones simultáneas no dejan un estado intermedio.
+- *Devolver* y *reabrir* sin nota responden 400. Cada transición deja su `PiezaEvento`.
+- Editar el texto de un aprobado ya congelado muestra «El copy cambió» en su tarjeta, y la
+  pieza sigue con el texto viejo hasta que alguien elige *actualizar copy*.
+- Borrar un aprobado de la Biblioteca no borra la pieza.
+- Un `MEMBER` ve el tablero y Mis piezas; un usuario sin membresía recibe 404.
+- **`verify:isolation`** suma los casos de pieza: listar, leer, crear con un aprobado ajeno,
+  asignar a un usuario de otro workspace y cada transición sobre una pieza ajena. Todo 404.
+- Las tres gates de tipos en verde. El chequeo de drift de CI cubre la migración nueva.
+
+## Fase 3 · Subida y auditoría
+
+Menos detallada a propósito: se afina con la fase 2 funcionando.
+
+- **Primero, la regla de ciclo de vida** del bucket, `piezas/originales/` → 90 días (D6).
+- **`sharp` en `node:20-slim`**, verificado en el Dockerfile **antes** de comprometerlo: es la
+  primera dependencia nativa del backend.
+- **Modelo:** `PiezaVersion` (v1, v2… con clave del original, clave del snapshot, medidas,
+  peso, estado de la auditoría `PENDIENTE · COMPLETA · NO_DISPONIBLE` y costo) y `Hallazgo`
+  (`HECHO · JUICIO · ILEGIBLE · MEDIDAS`, slot, esperado, encontrado, y la decisión con su nota
+  y su autor). **La decisión por hallazgo es obligatoria de guardar**: es la métrica que D2
+  necesita para algún día darle autoridad a la auditoría.
+- **Subida:** `storage.put()` con prefijo `piezas/`; rechazo por peso y tipo en el navegador
+  **y** en el servidor (estado límite 4).
+- **`aiClient`:** entrada de imagen en `chatCompletionConRetry`, sin abrir un segundo call site
+  del SDK. Dos llamadas por versión: la comparación contra el texto congelado (barata) y el
+  juicio de marca (reusa el prompt del Critic). El costo se mide como una etapa más con la
+  telemetría actual, y entra al inventario de [E6](./plan-e6-registro-consumo.md).
+- **Una falla del proveedor es `NO_DISPONIBLE`, no un hallazgo** (estado límite 5), y no cuenta
+  en las métricas de acierto.
+
+## Fase 4 · La pieza vuelve al cliente
+
+- `ReviewSessionPieza` al lado de `ReviewSessionItem`: una sesión puede llevar piezas, y la
+  decisión del cliente es un estado de la pieza, no una columna (D4, límite 2).
+- **La URL de la pieza se firma contra el token de la sesión** (D4, límite 3): el handler
+  público verifica que la pieza pertenece a esa sesión y emite una URL de vida corta. Nunca una
+  URL del bucket que se pueda guardar.
+- Lo que el cliente **no** recibe se verifica sobre la respuesta del endpoint público, no sobre
+  la pantalla: ni hallazgos, ni autor, ni historial (D4, límite 1).
+
+## Orden y dependencias
+
+```
+D7 confirmada ┐
+              ├─► Fase 2 ─► Fase 3 ─► Fase 4
+PR #8 y #9 ───┘            (sharp verificado antes)
+```
+
+Sin estimación todavía: se estima cuando D7 se confirme.
 
 ## Prerrequisitos duros
 
-**E1 · Migrar uploads a S3.** Pasa de recomendable a bloqueante. Hoy los archivos van al disco
+**E1 · Migrar uploads a S3.** ✅ Hecho el 2026-08-28. Era bloqueante: Hoy los archivos van al disco
 local del contenedor y **ya hubo un outage por disco lleno** con PDFs de marca. Las piezas de
 diseño pesan órdenes de magnitud más y llegan varias por campaña. Construir la fase 3 sobre ese
 disco es repetir un incidente conocido, más rápido.
