@@ -230,8 +230,9 @@ proveedor. Formatos: PNG, JPG, WEBP y PDF de una página.
 **El video no se audita automáticamente.** Es una corrección al dibujo: el tablero mostraba un
 reel «en auditoría», y eso era optimista. Un chequeo de texto sobre video exigiría extraer
 cuadros y auditarlos uno por uno, con un costo que no se justifica en la fase 3. Los canales de
-video suben su pieza igual —queda como entregable y como evidencia— pero pasan directo a **Por
-revisar** sin informe automático. Si se quiere auditar, el diseñador sube además la portada.
+video pasan directo a **Por
+revisar** sin informe automático, y entregan un enlace, no un archivo (corregido en el estado
+límite 4). Si se quiere auditar, el diseñador sube además la portada.
 
 **Después de aprobada, snapshot y listo.** My Voice no vuelve a hacer nada con el archivo pesado:
 
@@ -249,14 +250,58 @@ Consecuencia técnica de la fase 3: hace falta una librería de imagen en el ser
 generar el snapshot. Es la primera dependencia nativa del backend; conviene verificar que compile
 en `node:20-slim` antes de comprometerla.
 
-## Estados límite
+## Estados límite — dibujados
 
-- Una pieza que sirve a **dos canales** (el mismo visual para Post e Historia).
-- El copy aprobado **cambia** después de asignada la pieza.
-- Una pieza subida en formato inesperado, o de 40 MB.
-- La auditoría **no puede leer** el texto: tipografía fina, texto sobre foto, curvas.
-- Un canal que **no produce pieza gráfica** (Cuña de Radio). No todo lo aprobado va al tablero, y
-  el diseño tiene que decir cuál sí — o el tablero se llena de tarjetas que nadie puede trabajar.
+En `§ H2 · Estados límite`. Cada caso trae su regla, y cada regla fija algo del modelo de datos:
+por eso se dibujaron antes de la migración.
+
+**1 · Una pieza que sirve a dos canales.** El mismo visual para Post e Historia son dos archivos
+—1080×1080 y 1080×1920—, cada uno con su copy aprobado, y una pieza con dos canales no sabría
+contra qué texto auditar. *Regla:* **una pieza es un canal y un archivo.** Lo compartido se
+expresa asignándolas juntas y mostrando la hermana en la orden de trabajo, no fusionándolas.
+Cada copy aprobado pertenece a una sola pieza.
+
+**2 · Un canal que no produce pieza gráfica.** Si todo lo aprobado entra al tablero, se llena de
+tarjetas que nadie puede trabajar. *Regla:* **entra al tablero todo canal cuyo copy aprobado no
+es lo que se publica**, y es una propiedad del canal, declarada en su spec, no una elección por
+campaña:
+
+| | Canales |
+|---|---|
+| Entra, con auditoría | Instagram Post · Historia · Carrusel · Google Display · Rich Media · Pop up · Email |
+| Entra, sin auditoría | Instagram Reel · TikTok · YouTube (enlace al video) · Cuña de Radio (audio) |
+| No entra | Google Ads · Push Notification · WhatsApp |
+
+**3 · El copy aprobado cambia después de asignada la pieza.** Si la pieza apunta al texto vivo,
+el diseñador trabaja sobre algo que cambió sin avisarle, y la auditoría compara contra un texto
+que él nunca vio. *Regla:* **la pieza congela el texto al asignarse**, además de guardar la
+referencia al original. Si difieren, la tarjeta muestra «El copy cambió» y quien produce decide
+actualizar la orden. Nunca se actualiza sola, y una pieza en *Lista* no se reabre sola.
+
+**4 · Un archivo de 40 MB, o en formato inesperado.** Son dos casos distintos. *Regla:* **el
+peso y el tipo se rechazan antes de subir**, diciendo qué hacer («exportá en PNG o JPG, con 1.600
+px en el lado largo alcanza»). **Las medidas distintas se aceptan y quedan como hallazgo**, igual
+que D2: una pieza de 728×90 cuando se pidió 300×250 está mal, pero es un hecho que alguien tiene
+que ver, no un archivo inservible.
+
+**Y corrige D6: el video no se sube, se pega el enlace** (Drive, Frame.io, Vimeo). D6 decía que
+los canales de video suben su pieza como entregable, pero con el tope de 10 MB un reel no entra,
+y subir el tope para video metería en el bucket justo los archivos que D6 quería evitar. La
+Cuña de Radio sí sube su archivo: 30 segundos de audio entran de sobra.
+
+**5 · La auditoría no puede leer el texto, o no corre.** Parecen lo mismo y no lo son: en el
+primero la auditoría miró y llegó hasta cierto punto; en el segundo el proveedor falló y no miró
+nada. *Regla:* **ninguno detiene la pieza.** «Revisar a ojo» dice qué parte no se leyó. «Sin
+auditoría» dice que falló, ofrece reintentar y **no cuenta en las métricas de acierto** de D2,
+porque una caída del servicio no es una opinión sobre la pieza.
+
+**Lo que esto fija para el nivel 2:**
+
+1. `Pieza` → un canal y un archivo. `SavedVariation` → a lo sumo una pieza. Las hermanas se enlazan.
+2. El `ChannelSpec` declara qué pieza produce: gráfica, video, audio o ninguna.
+3. La pieza guarda una copia del texto de cada slot al asignarse, más la referencia al original.
+4. Archivo con tope de peso y tipo; medidas como hallazgo; video como enlace.
+5. El estado de la auditoría distingue «no se pudo leer» de «no corrió».
 
 ---
 
