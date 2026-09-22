@@ -591,7 +591,7 @@ observaciones de ortografía.
 
 **Queda pendiente de la fase:** la regla de ciclo de vida del bucket
 (`piezas/originales/` → 90 días), que es un paso de infraestructura en la cuenta de AWS y no de
-código.
+código. Va **antes** del despliegue: ver [la hoja del H2](./despliegue-h2.md).
 
 ## Fase 4 · La pieza vuelve al cliente
 
