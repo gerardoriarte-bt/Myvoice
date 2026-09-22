@@ -14,5 +14,6 @@ export const instagramCarrusel: ChannelSpec = {
     { id: "caption", label: "Caption del post", count: 1, unit: "char", max: 800,
       guidance: "Resumen del valor del carrusel. Incluir CTA secundario." }
   ],
-  guidance: "Narrativa con progresión. Cada slide debe pagar la promesa del anterior."
+  guidance: "Narrativa con progresión. Cada slide debe pagar la promesa del anterior.",
+  pieza: { tipo: "grafica", formatos: ["1080×1080", "1080×1350"] },
 };

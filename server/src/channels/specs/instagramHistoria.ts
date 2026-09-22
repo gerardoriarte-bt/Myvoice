@@ -12,5 +12,6 @@ export const instagramHistoria: ChannelSpec = {
     { id: "swipeCTA", label: "CTA / swipe-up", count: 1, unit: "char", max: 30,
       guidance: "Texto del botón o sticker de link. Verbo de acción." }
   ],
-  guidance: "Tono directo, conversacional. Cada historia debe poder ser autónoma."
+  guidance: "Tono directo, conversacional. Cada historia debe poder ser autónoma.",
+  pieza: { tipo: "grafica", formatos: ["1080×1920"] },
 };

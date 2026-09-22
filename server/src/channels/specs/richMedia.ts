@@ -14,5 +14,6 @@ export const richMedia: ChannelSpec = {
     { id: "animationBrief", label: "Indicación de animación", count: 1, unit: "char",
       guidance: "Concepto visual + animación sugerida." }
   ],
-  guidance: "Espacio MUY limitado. Una idea por banner. Los 5 títulos+textos deben rotar ángulos."
+  guidance: "Espacio MUY limitado. Una idea por banner. Los 5 títulos+textos deben rotar ángulos.",
+  pieza: { tipo: "grafica", formatos: ["300×250", "728×90", "980×250"] },
 };

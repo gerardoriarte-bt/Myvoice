@@ -1,4 +1,4 @@
-import { ChannelSpec, SlotSpec } from "./types.js";
+import { ChannelSpec, PiezaSpec, SlotSpec } from "./types.js";
 import { instagramPost } from "./specs/instagramPost.js";
 import { instagramHistoria } from "./specs/instagramHistoria.js";
 import { instagramCarrusel } from "./specs/instagramCarrusel.js";
@@ -51,3 +51,27 @@ export const getSlotSpec = (platformId: string, slotId: string): SlotSpec | unde
  */
 export const resolveSlotLabel = (platformId: string, slotId?: string | null): string | null =>
   slotId ? getSlotSpec(platformId, slotId)?.label ?? null : null;
+
+/**
+ * Los cuatro slots que el motor emite como INSTRUCCIÓN de producción y no como
+ * copy publicable. Van a la orden de trabajo del diseñador, pero no se auditan
+ * contra la pieza: no son texto que deba aparecer en el arte.
+ */
+const SLOTS_DE_INSTRUCCION = new Set(["visualBrief", "animationBrief", "structure", "production"]);
+
+export const esSlotDeInstruccion = (slotId?: string | null): boolean =>
+  !!slotId && SLOTS_DE_INSTRUCCION.has(slotId);
+
+/**
+ * El entregable del canal, o null si no produce ninguno. Un canal sin spec
+ * también devuelve null: lo desconocido no entra al tablero.
+ */
+export const getPiezaSpec = (platformId: string): PiezaSpec | null =>
+  CHANNEL_REGISTRY.get(platformId)?.pieza ?? null;
+
+/** El formato por defecto que la propuesta de alta ofrece para el canal. */
+export const formatoPorDefecto = (platformId: string): string | null =>
+  getPiezaSpec(platformId)?.formatos[0] ?? null;
+
+export const esFormatoValido = (platformId: string, formato: string): boolean =>
+  !!getPiezaSpec(platformId)?.formatos.includes(formato);

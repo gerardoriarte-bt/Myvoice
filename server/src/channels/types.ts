@@ -47,6 +47,22 @@ export interface ChannelBrief {
   checkVoseo: boolean;
 }
 
+/**
+ * Qué entregable de diseño produce el canal, cuando produce alguno.
+ *
+ * Vive en el spec y no en una lista aparte porque es una propiedad del canal,
+ * no una elección por campaña: `null` significa que el copy aprobado ES lo que
+ * se publica —Google Ads, Push, WhatsApp— y por eso ese canal no entra al
+ * tablero de producción. Solo `grafica` se audita: el video se entrega como
+ * enlace y el audio pasa directo a revisión (docs/plan-h2-produccion-auditoria.md,
+ * estados límite 2 y 4).
+ */
+export interface PiezaSpec {
+  tipo: "grafica" | "video" | "audio";
+  /** Medidas ofrecidas al crear la pieza; la primera es la de por defecto. */
+  formatos: string[];
+}
+
 export interface ChannelSpec {
   id: string;            // matches Platform enum value, e.g., "Instagram Post"
   group: ChannelGroup;
@@ -54,6 +70,8 @@ export interface ChannelSpec {
   slots: SlotSpec[];
   /** plain-text guidance injected into the prompt — channel-specific tactics */
   guidance: string;
+  /** null = no produce pieza de diseño; ver PiezaSpec */
+  pieza: PiezaSpec | null;
 }
 
 export interface ChannelGenerationResult {

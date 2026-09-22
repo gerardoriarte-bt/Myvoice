@@ -9,6 +9,7 @@ import * as reviewController from '../controllers/reviewController.js';
 import * as analyticsController from '../controllers/analyticsController.js';
 import * as presetController from '../controllers/presetController.js';
 import * as refineController from '../controllers/refineController.js';
+import * as piezaController from '../controllers/piezaController.js';
 import { authenticateToken, requireWorkspace, requireManager } from '../middleware/auth.js';
 
 const router = Router();
@@ -106,6 +107,21 @@ router.get('/analytics', ...inWorkspace, analyticsController.getAnalytics);
 router.get('/analytics/usage', ...asManager, analyticsController.getUsageAnalytics);
 
 // -------------------------------------------------------------- revisiones
+// -------------------------------------------------------------- producción
+/**
+ * El tablero del H2. Va con `inWorkspace` y NO con `asManager`: un diseñador
+ * es MEMBER, y esta es la primera pantalla de trabajo que no administra nada.
+ * Las transiciones son acciones con nombre —no un PUT de `estado`— porque cada
+ * columna tiene una acción que la vacía (D5) y varias exigen un motivo escrito.
+ */
+router.get('/piezas', ...inWorkspace, piezaController.listarPorMarca);
+router.get('/piezas/mias', ...inWorkspace, piezaController.listarMias);
+router.post('/piezas/propuesta', ...inWorkspace, piezaController.proponer);
+router.post('/piezas', ...inWorkspace, piezaController.crear);
+router.get('/piezas/:id', ...inWorkspace, piezaController.detalle);
+router.patch('/piezas/:id', ...inWorkspace, piezaController.renombrar);
+router.post('/piezas/:id/:accion', ...inWorkspace, piezaController.ejecutarAccion);
+
 router.get('/review-sessions', ...inWorkspace, reviewController.listReviewSessions);
 router.post('/review-sessions', ...inWorkspace, reviewController.createReviewSession);
 router.get('/review-sessions/:id', ...inWorkspace, reviewController.getReviewSessionDetail);

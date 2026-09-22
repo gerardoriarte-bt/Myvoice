@@ -89,6 +89,18 @@ export const assertPresetInWorkspace = async (tenant: TenantContext, presetId: s
   return preset;
 };
 
+/**
+ * La pieza guarda `workspaceId` denormalizado, así que la guarda no necesita
+ * join. Igual se compara contra el workspace activo y no contra la marca: una
+ * marca que se mueva de empresa no lleva consigo el trabajo ya hecho.
+ */
+export const assertPiezaInWorkspace = async (tenant: TenantContext, piezaId: string) => {
+  if (!piezaId) throw new TenantError('piezaId es obligatorio', 400);
+  const pieza = await prisma.pieza.findUnique({ where: { id: piezaId } });
+  if (!pieza || pieza.workspaceId !== tenant.workspaceId) throw notFound('Pieza');
+  return pieza;
+};
+
 /** Un usuario "pertenece" al workspace solo si tiene membresía en él. */
 export const assertMemberOfWorkspace = async (tenant: TenantContext, userId: string) => {
   const membership = await prisma.membership.findUnique({

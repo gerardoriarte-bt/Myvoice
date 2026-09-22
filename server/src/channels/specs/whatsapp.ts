@@ -10,5 +10,6 @@ export const whatsapp: ChannelSpec = {
     { id: "cta", label: "CTA / link", count: 3, unit: "char", max: 40,
       guidance: "Texto del botón o llamado a la acción al cierre del mensaje." }
   ],
-  guidance: "WhatsApp NO es email — es chat. Primera persona, lenguaje cercano, sin firmas formales."
+  guidance: "WhatsApp NO es email — es chat. Primera persona, lenguaje cercano, sin firmas formales.",
+  pieza: null,
 };

@@ -14,5 +14,6 @@ export const instagramPost: ChannelSpec = {
     { id: "visualBrief", label: "Idea visual", count: 1, unit: "char",
       guidance: "Descripción concreta del visual sugerido (no genérica)." }
   ],
-  guidance: "El hook debe poder leerse SIN expandir. Caption en español neutro/local según marca."
+  guidance: "El hook debe poder leerse SIN expandir. Caption en español neutro/local según marca.",
+  pieza: { tipo: "grafica", formatos: ["1080×1080", "1080×1350"] },
 };

@@ -10,5 +10,6 @@ export const pushNotification: ChannelSpec = {
     { id: "text", label: "Texto", count: 5, unit: "char", max: 40,
       guidance: "Cuerpo del push. MAX 40 CARACTERES exactos. Cierra con beneficio o urgencia." }
   ],
-  guidance: "Contar caracteres incluyendo espacios. Cada par título+texto debe rotar un ángulo distinto."
+  guidance: "Contar caracteres incluyendo espacios. Cada par título+texto debe rotar un ángulo distinto.",
+  pieza: null,
 };

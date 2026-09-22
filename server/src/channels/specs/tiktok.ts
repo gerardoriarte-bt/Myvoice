@@ -14,5 +14,6 @@ export const tiktok: ChannelSpec = {
     { id: "cta", label: "CTA", count: 1, unit: "char", max: 60,
       guidance: "Acción específica al final del video." }
   ],
-  guidance: "Tono nativo de TikTok: directo, casual, sin sonar a anuncio. Caption ≤ 100 char es duro."
+  guidance: "Tono nativo de TikTok: directo, casual, sin sonar a anuncio. Caption ≤ 100 char es duro.",
+  pieza: { tipo: "video", formatos: ["1080×1920"] },
 };
