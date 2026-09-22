@@ -90,8 +90,8 @@ decisión D1 define una entidad nueva en la base**, y equivocarla se paga con un
 
 # Fase 0 · Diseño
 
-**Entregable:** `design/MyVoice_Engine.pen`. **Criterio de cierre:** las seis pantallas
-dibujadas, las cinco decisiones resueltas con una nota que diga qué se eligió y por qué, y los
+**Entregable:** `design/MyVoice_Engine.pen`. **Criterio de cierre:** las cinco pantallas
+dibujadas, las seis decisiones resueltas con una nota que diga qué se eligió y por qué, y los
 cinco estados límite dibujados. Sin eso, la fase 1 arranca adivinando.
 
 ## Pantallas
@@ -119,13 +119,43 @@ un slot**: en el modelo por variación no hay dónde ponerlo, y es justamente lo
 tablero valga más que una lista de textos aprobados. Costo asumido: una entidad nueva y su
 migración.
 
-**D2 · ¿La auditoría bloquea o avisa?**
-*Recomendación:* avisa. El mismo criterio que la cuota, que se desplegó en observación por una
-razón: un chequeo automático que corta el trabajo de alguien tiene que ganarse esa autoridad con
-historial. Un bloqueo mal calibrado se desactiva en una semana y no vuelve.
+**D2 · ¿La auditoría bloquea o avisa? — DECIDIDA: avisa.**
+Es el mismo criterio que la cuota, que se desplegó en observación por una razón: un chequeo
+automático que corta el trabajo de alguien tiene que ganarse esa autoridad con historial. Un
+bloqueo mal calibrado se desactiva en una semana y no vuelve. En concreto:
 
-**D3 · ¿Quién ve el informe y con qué detalle?**
-*Recomendación:* el diseñador ve cada hallazgo; quien aprueba ve un semáforo y puede abrir.
+- **Ninguna pieza queda trabada por la auditoría.** «Aceptar con hallazgos» está siempre
+  disponible para quien aprueba, también cuando el texto difiere del copy aprobado: la auditoría
+  puede leer mal una tilde, y una persona mira la pieza y decide.
+- **Pasar por encima de un hallazgo pide una nota.** Queda quién aceptó, cuándo y por qué. Esa
+  nota es el historial que algún día puede darle autoridad a la auditoría; sin ella nunca se
+  sabría si acierta. Obliga a guardar la decisión por hallazgo en la fase 3, no solo el estado de
+  la pieza.
+- **El semáforo no tiene rojo.** El rojo promete un bloqueo que no existe.
+
+Cuándo se revisa: se mide desde el primer día cuántos hallazgos de cada tipo se corrigen y
+cuántos se aceptan con nota. Solo la **diferencia contra el copy aprobado** podría llegar a
+bloquear, porque es un hecho contra un texto conocido; el **juicio de marca no bloquea nunca**.
+Bloquear queda fuera de la fase 3: si se decide, es una fase propia con esos números en la mano.
+
+**D3 · ¿Quién ve el informe y con qué detalle? — DECIDIDA: el mismo informe, tres niveles.**
+
+| Quién | Qué ve | Dónde | Qué hace |
+|---|---|---|---|
+| El diseñador | Cada hallazgo, con el texto exacto de los dos lados, y lo que no se pudo leer dicho como tal | Mis piezas y la orden de trabajo, apenas termina la auditoría, **antes** de que la pieza llegue a quien aprueba | Corregir y volver a subir, o dejarla como está |
+| Quien aprueba | Un semáforo en la tarjeta de *Por revisar*; un clic abre el informe completo, el mismo que ve el diseñador | El tablero | Aceptar —con nota si hay hallazgos— o devolver a diseño |
+| El cliente | Nada del informe: la pieza y el texto que él aprobó (límite 1 de D4) | El portal, en la fase 4 | Aprobar o pedir cambios |
+
+No hay dos informes: hay uno, y las acciones del pie dependen del rol. El semáforo tiene **tres
+estados**:
+
+| Estado | Cuándo |
+|---|---|
+| **Verificada** | Todo el texto coincide y la marca no tiene observaciones |
+| **N hallazgos** | Al menos una diferencia contra el copy o un juicio de marca. Gana sobre los otros dos: si además hay partes ilegibles, se cuentan adentro del informe |
+| **Revisar a ojo** | Una parte no se pudo leer y el resto coincide. No es un hallazgo: es la auditoría diciendo hasta dónde llegó |
+
+Dibujadas en `§ H2 · D2 y D3 · la auditoría`.
 
 **La regla de la auditoría, que salió de dibujarla:** los dos chequeos **no son la misma clase
 de cosa y no pueden verse iguales**. «¿Dice lo que se aprobó?» compara contra una verdad conocida
