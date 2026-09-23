@@ -1,0 +1,23 @@
+{
+  "name": "myvoice-video",
+  "version": "1.0.0",
+  "private": true,
+  "description": "El reel de un minuto sobre My Voice. Guión: docs/guion-reel-1min.md",
+  "scripts": {
+    "start": "remotion studio",
+    "build": "remotion render Reel out/myvoice-reel.mp4",
+    "still": "remotion still Reel",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.240",
+    "@remotion/google-fonts": "4.0.240",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "remotion": "4.0.240"
+  },
+  "devDependencies": {
+    "@types/react": "19.2.0",
+    "typescript": "5.9.2"
+  }
+}

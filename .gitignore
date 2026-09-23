@@ -47,3 +47,9 @@ server/.backfills/
 # git no puede difear ni fusionar. Vive en local; lo que el repo versiona es la
 # documentación de diseño en docs/diseno-sistema.md.
 design/
+
+# El video: el proyecto de Remotion sí se versiona —es código y es el guión
+# ejecutable— pero no sus dependencias ni el mp4 renderizado, que pesa 24 MB y
+# se regenera con `npm run build` en dos minutos.
+video/node_modules/
+video/out/
