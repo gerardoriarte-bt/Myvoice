@@ -10,6 +10,7 @@ import * as analyticsController from '../controllers/analyticsController.js';
 import * as presetController from '../controllers/presetController.js';
 import * as refineController from '../controllers/refineController.js';
 import * as piezaController from '../controllers/piezaController.js';
+import * as notificacionController from '../controllers/notificacionController.js';
 import { authenticateToken, requireWorkspace, requireManager } from '../middleware/auth.js';
 
 const router = Router();
@@ -149,6 +150,15 @@ router.post('/piezas/:id/archivo', ...inWorkspace, piezaUpload.single('archivo')
 router.post('/piezas/hallazgos/:hallazgoId/decision', ...inWorkspace, piezaController.decidirHallazgo);
 router.post('/piezas/:id/reauditar', ...inWorkspace, piezaController.reauditar);
 router.post('/piezas/:id/:accion', ...inWorkspace, piezaController.ejecutarAccion);
+
+// ---------------------------------------------------------------- bandeja
+/**
+ * Los avisos de quien pregunta. Ninguna ruta lleva un `userId`: la bandeja
+ * siempre es la propia, y eso es lo que hace que no exista la de otro.
+ */
+router.get('/notificaciones', ...inWorkspace, notificacionController.listar);
+router.post('/notificaciones/leidas', ...inWorkspace, notificacionController.marcarTodasLeidas);
+router.post('/notificaciones/:id/leida', ...inWorkspace, notificacionController.marcarLeida);
 
 router.get('/review-sessions', ...inWorkspace, reviewController.listReviewSessions);
 router.post('/review-sessions', ...inWorkspace, reviewController.createReviewSession);

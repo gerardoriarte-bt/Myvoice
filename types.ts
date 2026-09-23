@@ -134,6 +134,30 @@ export interface WorkspaceMember {
   funciones?: FuncionAsignada[];
 }
 
+/**
+ * Un aviso de la bandeja. `cantidad > 1` es un lote —varias piezas repartidas
+ * de una sentada— y entonces `piezaId` viene en null: el destino es el tablero
+ * de esa marca, no una tarjeta.
+ */
+export interface Notificacion {
+  id: string;
+  tipo: 'ASIGNACION' | 'ENTREGA' | string;
+  titulo: string;
+  detalle: string | null;
+  cantidad: number;
+  piezaId: string | null;
+  clientId: string | null;
+  marca: string | null;
+  leida: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Bandeja {
+  notificaciones: Notificacion[];
+  sinLeer: number;
+}
+
 /** Invitación pendiente a un workspace. */
 export interface WorkspaceInvite {
   id: string;

@@ -1,4 +1,5 @@
 import type {
+  Bandeja,
   Pieza,
   PiezaDetalle as _PiezaDetalle,
   PiezaAConfirmar,
@@ -257,6 +258,13 @@ export const funcionesApi = {
     }),
   quitar: (userId: string, funcionId: string) =>
     apiRequest(`/workspace/members/${userId}/funciones/${funcionId}`, { method: 'DELETE' }),
+};
+
+export const notificacionesApi = {
+  /** Siempre la propia: no hay parámetro para pedir la de otro. */
+  listar: (): Promise<Bandeja> => apiRequest('/notificaciones'),
+  leida: (id: string): Promise<Bandeja> => apiRequest(`/notificaciones/${id}/leida`, { method: 'POST' }),
+  todasLeidas: (): Promise<Bandeja> => apiRequest('/notificaciones/leidas', { method: 'POST' }),
 };
 
 export const piezasApi = {

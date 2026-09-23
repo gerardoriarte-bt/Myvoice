@@ -191,6 +191,21 @@ del operador del producto.
    plegado cuando son muchas—: con tres marcas la fila entra entera, y plegarla antes de que
    moleste es adivinar dónde molesta.
 2. **Bandeja** — el modelo de notificación, la campana y la lista. Sin email todavía.
+   **Construida** el 2026-09-23: `Notificacion`, `services/notificacionService.ts` con
+   `destinatariosDe()`, las tres rutas bajo `/notificaciones` y `components/Bandeja.tsx`.
+   `verify:isolation` pasa a 66 casos con diez de bandeja.
+
+   Dos cosas que el nivel 2 no había previsto y el código obligó a decidir:
+
+   - **La agrupación del lote no es transaccional, es por ventana.** No hay endpoint que
+     asigne cinco piezas de una vez: el tablero asigna de a una. Así que el aviso no se arma
+     del lote, sino al revés — un aviso **sin leer** de la misma persona, tipo y marca sigue
+     abierto diez minutos y absorbe la pieza siguiente. En cuanto alguien lo leyó, ya cumplió
+     y el próximo empieza de cero.
+   - **`Notificacion` lleva `clientId`.** Es lo que hace que el lote agrupe por marca: sin esa
+     columna, dos campañas de marcas distintas repartidas la misma tarde caen en un mismo
+     «te asignaron 5 piezas» que ya no dice de qué. Y cuando el aviso agrupa más de una,
+     `piezaId` pasa a NULL: el destino de un lote es el tablero de la marca, no una tarjeta.
 3. **Email** — el envío por Resend con los destinatarios reales, y el arreglo del destinatario fijo.
 4. **Dominios permitidos** — la lista opcional por workspace, solo sobre invitaciones.
 

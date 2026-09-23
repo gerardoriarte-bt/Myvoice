@@ -12,6 +12,7 @@ import UserHeader from './components/UserHeader';
 import NotificationSystem, { Notification, NotificationType } from './components/NotificationSystem';
 import { CopyParameters, CopyVariation, Project, SavedVariation, BrandConfig, Client, User, WorkspaceMember, WorkspaceSummary, canManageWorkspace, ContentDNAProfile } from './types';
 import TableroProduccion from './components/produccion/TableroProduccion';
+import Bandeja, { DestinoAviso } from './components/Bandeja';
 import { NAV_STAGES, SCREENS, ScreenId } from './screens';
 import { VOICES, GOALS } from './constants';
 import HomePage from './components/HomePage';
@@ -78,6 +79,13 @@ const App: React.FC = () => {
   // La lista de pantallas vive en screens.ts y en ningún otro lado: repetirla
   // acá como unión literal ya dejó una pantalla fuera al agregarla.
   const [activeTab, setActiveTab] = React.useState<ScreenId>('clients');
+  /**
+   * A qué pieza saltar cuando se abre un aviso de la bandeja. Vive acá porque
+   * el que cambia de pestaña es este componente; el tablero lo consume una vez
+   * y lo devuelve en null, así que volver a Producción a mano no reabre la
+   * pieza de un aviso viejo.
+   */
+  const [destinoProduccion, setDestinoProduccion] = React.useState<DestinoAviso | null>(null);
   const [reviewToken, setReviewToken] = React.useState(() => new URLSearchParams(window.location.search).get('review'));
   const [completedSessionsCount, setCompletedSessionsCount] = React.useState(0);
   const [variations, setVariations] = React.useState<CopyVariation[]>([]);
@@ -673,10 +681,19 @@ const App: React.FC = () => {
       {/* MAIN CONTENT */}
       <div className="flex-1 ml-[216px] flex flex-col min-h-screen">
         {/* HEADER */}
-        <header className="apple-header h-[48px] sticky top-0 z-40 flex items-center px-7">
+        <header className="apple-header h-[48px] sticky top-0 z-40 flex items-center justify-between px-7">
           <div className="flex items-center gap-2">
             <span className="text-[13px] font-semibold text-[#1D1D1F]">{SCREENS[activeTab]?.name}</span>
           </div>
+          {/* La campana vive en el header y no en la nav: el aviso no es una
+              pantalla más, es algo que interrumpe estés donde estés. */}
+          <Bandeja
+            onIr={destino => {
+              setDestinoProduccion(destino);
+              setActiveTab('produccion');
+            }}
+            onIrAlTablero={() => setActiveTab('produccion')}
+          />
         </header>
 
         <main className="flex-1 p-7">
@@ -925,7 +942,12 @@ const App: React.FC = () => {
             />
           )}
           {activeTab === 'produccion' && (
-            <TableroProduccion clients={clients} addNotification={addNotification} />
+            <TableroProduccion
+              clients={clients}
+              addNotification={addNotification}
+              destino={destinoProduccion}
+              onDestinoAtendido={() => setDestinoProduccion(null)}
+            />
           )}
           {activeTab === 'history' && isAdmin && (
             <GenerationHistory

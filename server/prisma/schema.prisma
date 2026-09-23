@@ -35,6 +35,7 @@ model Workspace {
   usagePeriods   UsagePeriod[]
   Pieza          Pieza[]
   MiembroFuncion MiembroFuncion[]
+  notificaciones Notificacion[]
 }
 
 model User {
@@ -66,6 +67,7 @@ model User {
   eventosDePieza        PiezaEvento[]
   versionesSubidas      PiezaVersion[]
   hallazgosDecididos    Hallazgo[]
+  notificaciones        Notificacion[]
 }
 
 /// La única fuente de verdad de "quién puede entrar a qué workspace".
@@ -146,6 +148,7 @@ model Client {
   usagePeriods              UsagePeriod[]
   piezas                    Pieza[]
   funciones                 MiembroFuncion[]
+  notificaciones            Notificacion[]
 }
 
 /// Una fila por generación. Además del rastro de auditoría, es la tabla de
@@ -475,6 +478,8 @@ model Pieza {
   eventos   PiezaEvento[]
   versiones PiezaVersion[]
 
+  notificaciones Notificacion[]
+
   /// Los dos ejes del tablero: por marca (la pantalla) y por persona (Mis piezas).
   @@unique([workspaceId, huella])
   @@index([workspaceId, clientId, estado])
@@ -668,4 +673,50 @@ model MiembroFuncion {
   /// marcas» convive con las acotadas y sigue siendo única por función.
   @@unique([workspaceId, userId, funcion, clientId])
   @@index([workspaceId, funcion])
+}
+
+/// La bandeja: los avisos que le esperan a una persona dentro de la herramienta.
+///
+/// Append-only: una notificación leída no se borra, se marca. El historial de
+/// qué se avisó y cuándo es lo primero que hace falta el día que alguien dice
+/// «a mí nunca me avisaron».
+///
+/// Solo dos tipos (D4 del plan): ASIGNACION y ENTREGA. La lista corta es la
+/// decisión, no una etapa: en cuanto la herramienta avisa de todo, el equipo
+/// filtra sus correos y se pierden también los dos que importan.
+model Notificacion {
+  id          String    @id @default(uuid())
+  workspaceId String
+  /// A quién le toca. Siempre una persona: no hay notificaciones «al equipo».
+  userId      String
+  /// ASIGNACION · ENTREGA
+  tipo        String
+  /// De qué marca es el aviso. Es la columna por la que se agrupa un lote: sin
+  /// ella, dos campañas de marcas distintas repartidas la misma tarde caen en
+  /// un mismo «te asignaron 5 piezas» que ya no dice nada.
+  clientId    String?
+  /// La pieza que lo originó. Queda en NULL en cuanto el aviso agrupa más de
+  /// una: el destino de un lote es el tablero de esa marca, no una tarjeta.
+  piezaId     String?
+  /// Cuántas piezas agrupa. Asignar cinco de una campaña deja un aviso con
+  /// cantidad 5, no cinco avisos (D4, regla 2).
+  cantidad    Int       @default(1)
+  titulo      String
+  detalle     String?
+  /// NULL = sin leer. Es la columna que cuenta la campana.
+  leidaAt     DateTime?
+  createdAt   DateTime  @default(now())
+  /// Se mueve cuando el aviso agrupa una pieza más, y es por la que ordena la
+  /// bandeja: un lote que sigue creciendo tiene que quedar arriba. `createdAt`
+  /// no se toca — decir que el aviso nació después sería mentirle al historial.
+  updatedAt   DateTime  @default(now()) @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  client    Client?   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  pieza     Pieza?    @relation(fields: [piezaId], references: [id], onDelete: SetNull)
+
+  /// El índice de la campana: las no leídas de una persona, más recientes primero.
+  @@index([userId, leidaAt, updatedAt])
+  @@index([workspaceId, tipo, updatedAt])
 }

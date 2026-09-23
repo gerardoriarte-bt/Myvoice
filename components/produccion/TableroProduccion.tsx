@@ -2,6 +2,7 @@ import React from 'react';
 import { Download, Loader2 } from 'lucide-react';
 import { SCREENS } from '../../screens';
 import { Client, Pieza, PiezaEstado, WorkspaceMember } from '../../types';
+import { DestinoAviso } from '../Bandeja';
 import { ordenarParaAsignar } from './asignables';
 import { COLORES_ESTADO, COLUMNAS } from './columnas';
 import { exportPiezasToExcel } from '../../services/exportPiezasToExcel';
@@ -29,9 +30,18 @@ import OrdenDeTrabajo from './OrdenDeTrabajo';
 interface Props {
   clients: Client[];
   addNotification: (mensaje: string, tipo?: string) => void;
+  /** A qué pieza saltar al abrir un aviso de la bandeja. */
+  destino?: DestinoAviso | null;
+  /** Se avisa una vez atendido, para que el destino no se repita. */
+  onDestinoAtendido?: () => void;
 }
 
-export default function TableroProduccion({ clients, addNotification }: Props) {
+export default function TableroProduccion({
+  clients,
+  addNotification,
+  destino,
+  onDestinoAtendido,
+}: Props) {
   const [vista, setVista] = React.useState<'marca' | 'mias'>('marca');
   const [clientId, setClientId] = React.useState(clients[0]?.id ?? '');
   const [piezas, setPiezas] = React.useState<Pieza[]>([]);
@@ -42,6 +52,19 @@ export default function TableroProduccion({ clients, addNotification }: Props) {
   React.useEffect(() => {
     if (!clientId && clients[0]) setClientId(clients[0].id);
   }, [clients, clientId]);
+
+  /**
+   * El salto desde un aviso. Un lote no trae pieza —viene con `piezaId` en
+   * null— y entonces solo cambia la marca: lleva al tablero donde están las
+   * piezas del reparto, en vez de elegir una por la persona.
+   */
+  React.useEffect(() => {
+    if (!destino) return;
+    setVista('marca');
+    setClientId(destino.clientId);
+    setAbierta(destino.piezaId);
+    onDestinoAtendido?.();
+  }, [destino, onDestinoAtendido]);
 
   React.useEffect(() => {
     authApi
