@@ -11,29 +11,39 @@ datasource db {
 /// el acceso se otorga exclusivamente por Membership: no hay pertenencia
 /// implícita por dominio de email ni por columna en User.
 model Workspace {
-  id             String             @id @default(uuid())
-  name           String
-  slug           String             @unique
-  plan           String             @default("agency")
-  aiProvider     String?
+  id                 String             @id @default(uuid())
+  name               String
+  slug               String             @unique
+  plan               String             @default("agency")
+  aiProvider         String?
   /// Cifrada en reposo con AES-256-GCM (ver lib/crypto.ts). Formato
   /// `v1:iv:tag:ciphertext`; las filas anteriores a A0.6 pueden estar en texto
   /// plano y se recifran al leerlas. Descifrarla solo desde
   /// lib/workspaceSecret.ts.
-  aiApiKey       String?
-  aiModel        String?
-  createdAt      DateTime           @default(now())
-  updatedAt      DateTime           @default(now()) @updatedAt
-  clients        Client[]
-  projects       Project[]
-  users          User[]
-  memberships    Membership[]
-  invites        WorkspaceInvite[]
-  reviewSessions ReviewSession[]
-  presets        GenerationPreset[]
-  generationLogs GenerationLog[]
-  usagePeriods   UsagePeriod[]
-  Pieza          Pieza[]
+  aiApiKey           String?
+  aiModel            String?
+  /// Dominios de email a los que se puede invitar. **Vacío = apagado**, que es
+  /// el estado normal y no necesita una bandera aparte.
+  ///
+  /// NO es alta por dominio: tener un email `@empresa.com` no da acceso a
+  /// nada, y eso el H1 lo eliminó a propósito. Esto solo evita el dedazo de
+  /// invitar a un Gmail personal — que en una herramienta donde el invitado ve
+  /// todas las marcas del workspace no es un error menor.
+  dominiosPermitidos String[]           @default([])
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @default(now()) @updatedAt
+  clients            Client[]
+  projects           Project[]
+  users              User[]
+  memberships        Membership[]
+  invites            WorkspaceInvite[]
+  reviewSessions     ReviewSession[]
+  presets            GenerationPreset[]
+  generationLogs     GenerationLog[]
+  usagePeriods       UsagePeriod[]
+  Pieza              Pieza[]
+  MiembroFuncion     MiembroFuncion[]
+  notificaciones     Notificacion[]
 }
 
 model User {
@@ -59,11 +69,13 @@ model User {
   memberships           Membership[]
   invitesSent           WorkspaceInvite[] @relation("InviteAuthor")
   createdReviewSessions ReviewSession[]
+  funciones             MiembroFuncion[]
   piezasAsignadas       Pieza[]           @relation("PiezaAsignada")
   piezasCreadas         Pieza[]           @relation("PiezaAutor")
   eventosDePieza        PiezaEvento[]
   versionesSubidas      PiezaVersion[]
   hallazgosDecididos    Hallazgo[]
+  notificaciones        Notificacion[]
 }
 
 /// La única fuente de verdad de "quién puede entrar a qué workspace".
@@ -143,6 +155,8 @@ model Client {
   users                     User[]
   usagePeriods              UsagePeriod[]
   piezas                    Pieza[]
+  funciones                 MiembroFuncion[]
+  notificaciones            Notificacion[]
 }
 
 /// Una fila por generación. Además del rastro de auditoría, es la tabla de
@@ -472,6 +486,8 @@ model Pieza {
   eventos   PiezaEvento[]
   versiones PiezaVersion[]
 
+  notificaciones Notificacion[]
+
   /// Los dos ejes del tablero: por marca (la pantalla) y por persona (Mis piezas).
   @@unique([workspaceId, huella])
   @@index([workspaceId, clientId, estado])
@@ -626,4 +642,89 @@ model Hallazgo {
   decididoPor User?        @relation(fields: [decididoPorId], references: [id])
 
   @@index([piezaVersionId])
+}
+
+/// Qué hace una persona en el workspace, que es un eje DISTINTO de cuánto puede
+/// administrar (`Membership.role`). Mezclarlos en una sola lista de roles
+/// parece más simple hasta el primer «un ADMIN que además diseña».
+///
+/// **No restringe nada** (D2 del plan): sin la función de Aprobación igual se
+/// puede aceptar una pieza. Lo que cambia es a quién le llega el aviso y quién
+/// aparece primero al asignar. Si restringiera, el día que el aprobador está de
+/// vacaciones habría que cambiar roles para destrabar una pieza, y todos
+/// terminarían siendo aprobadores «por las dudas».
+///
+/// Ver docs/plan-h3d-funciones-notificaciones.md.
+enum FuncionEquipo {
+  COPY
+  DISENO
+  APROBACION
+}
+
+model MiembroFuncion {
+  id          String        @id @default(uuid())
+  workspaceId String
+  userId      String
+  funcion     FuncionEquipo
+  /// NULL = todas las marcas del workspace, que es el caso normal. La marca no
+  /// acota lo que la persona VE —eso sigue siendo todo el workspace— sino a
+  /// quién le llega el aviso: con tres marcas y seis aprobadores, avisarles a
+  /// todos por cada entrega es el ruido que esto viene a evitar.
+  clientId    String?
+  createdAt   DateTime      @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  client    Client?   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  /// Postgres admite varios NULL en un unique, así que la fila «todas las
+  /// marcas» convive con las acotadas y sigue siendo única por función.
+  @@unique([workspaceId, userId, funcion, clientId])
+  @@index([workspaceId, funcion])
+}
+
+/// La bandeja: los avisos que le esperan a una persona dentro de la herramienta.
+///
+/// Append-only: una notificación leída no se borra, se marca. El historial de
+/// qué se avisó y cuándo es lo primero que hace falta el día que alguien dice
+/// «a mí nunca me avisaron».
+///
+/// Solo dos tipos (D4 del plan): ASIGNACION y ENTREGA. La lista corta es la
+/// decisión, no una etapa: en cuanto la herramienta avisa de todo, el equipo
+/// filtra sus correos y se pierden también los dos que importan.
+model Notificacion {
+  id          String    @id @default(uuid())
+  workspaceId String
+  /// A quién le toca. Siempre una persona: no hay notificaciones «al equipo».
+  userId      String
+  /// ASIGNACION · ENTREGA
+  tipo        String
+  /// De qué marca es el aviso. Es la columna por la que se agrupa un lote: sin
+  /// ella, dos campañas de marcas distintas repartidas la misma tarde caen en
+  /// un mismo «te asignaron 5 piezas» que ya no dice nada.
+  clientId    String?
+  /// La pieza que lo originó. Queda en NULL en cuanto el aviso agrupa más de
+  /// una: el destino de un lote es el tablero de esa marca, no una tarjeta.
+  piezaId     String?
+  /// Cuántas piezas agrupa. Asignar cinco de una campaña deja un aviso con
+  /// cantidad 5, no cinco avisos (D4, regla 2).
+  cantidad    Int       @default(1)
+  titulo      String
+  detalle     String?
+  /// NULL = sin leer. Es la columna que cuenta la campana.
+  leidaAt     DateTime?
+  createdAt   DateTime  @default(now())
+  /// Se mueve cuando el aviso agrupa una pieza más, y es por la que ordena la
+  /// bandeja: un lote que sigue creciendo tiene que quedar arriba. `createdAt`
+  /// no se toca — decir que el aviso nació después sería mentirle al historial.
+  updatedAt   DateTime  @default(now()) @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  client    Client?   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  pieza     Pieza?    @relation(fields: [piezaId], references: [id], onDelete: SetNull)
+
+  /// El índice de la campana: las no leídas de una persona, más recientes primero.
+  @@index([userId, leidaAt, updatedAt])
+  @@index([workspaceId, tipo, updatedAt])
 }

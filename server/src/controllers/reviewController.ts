@@ -157,7 +157,12 @@ export const submitReview = async (req: Request, res: Response) => {
   }
 
   try {
-    const session = await prisma.reviewSession.findUnique({ where: { token } });
+    const session = await prisma.reviewSession.findUnique({
+      where: { token },
+      // Quien creó la sesión es quien tiene que enterarse de que el cliente
+      // respondió. Hasta H3.D esto iba a una casilla fija del entorno.
+      include: { createdBy: { select: { email: true } } },
+    });
 
     if (!session) return res.status(404).json({ error: 'Sesión de revisión no encontrada' });
     if (new Date() > session.expiresAt) return res.status(410).json({ error: 'Esta sesión de revisión ha expirado' });
@@ -220,6 +225,7 @@ export const submitReview = async (req: Request, res: Response) => {
       reviewerName,
       approvedCount: approvedIds.length,
       rejectedCount: rejectedFeedbacks.length,
+      para: [session.createdBy.email],
     }).catch(() => {});
 
     res.status(201).json({ message: 'Revisión enviada con éxito' });

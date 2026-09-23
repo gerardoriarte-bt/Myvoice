@@ -10,6 +10,7 @@ import * as analyticsController from '../controllers/analyticsController.js';
 import * as presetController from '../controllers/presetController.js';
 import * as refineController from '../controllers/refineController.js';
 import * as piezaController from '../controllers/piezaController.js';
+import * as notificacionController from '../controllers/notificacionController.js';
 import { authenticateToken, requireWorkspace, requireManager } from '../middleware/auth.js';
 
 const router = Router();
@@ -71,6 +72,19 @@ router.get('/users', ...inWorkspace, workspaceController.listMembers);
 router.get('/workspace/members', ...inWorkspace, workspaceController.listMembers);
 router.put('/workspace/members/:userId', ...asManager, workspaceController.updateMemberRole);
 router.delete('/workspace/members/:userId', ...asManager, workspaceController.removeMember);
+/**
+ * Las funciones las administra quien administra el workspace, igual que los
+ * roles. Pero a diferencia del rol, la función no da ni quita permisos: dice
+ * qué hace cada uno, y con eso se decide a quién avisarle (H3.D).
+ */
+router.post('/workspace/members/:userId/funciones', ...asManager, workspaceController.addMemberFuncion);
+router.delete('/workspace/members/:userId/funciones/:funcionId', ...asManager, workspaceController.removeMemberFuncion);
+/**
+ * La lista de dominios a los que este workspace invita. Va con `asManager`
+ * porque cambia quién puede entrar a ver todas las marcas.
+ */
+router.get('/workspace/dominios', ...asManager, workspaceController.getDominios);
+router.put('/workspace/dominios', ...asManager, workspaceController.updateDominios);
 router.get('/workspace/invites', ...asManager, workspaceController.listInvites);
 router.post('/workspace/invites', ...asManager, workspaceController.createInvite);
 router.delete('/workspace/invites/:id', ...asManager, workspaceController.revokeInvite);
@@ -142,6 +156,15 @@ router.post('/piezas/:id/archivo', ...inWorkspace, piezaUpload.single('archivo')
 router.post('/piezas/hallazgos/:hallazgoId/decision', ...inWorkspace, piezaController.decidirHallazgo);
 router.post('/piezas/:id/reauditar', ...inWorkspace, piezaController.reauditar);
 router.post('/piezas/:id/:accion', ...inWorkspace, piezaController.ejecutarAccion);
+
+// ---------------------------------------------------------------- bandeja
+/**
+ * Los avisos de quien pregunta. Ninguna ruta lleva un `userId`: la bandeja
+ * siempre es la propia, y eso es lo que hace que no exista la de otro.
+ */
+router.get('/notificaciones', ...inWorkspace, notificacionController.listar);
+router.post('/notificaciones/leidas', ...inWorkspace, notificacionController.marcarTodasLeidas);
+router.post('/notificaciones/:id/leida', ...inWorkspace, notificacionController.marcarLeida);
 
 router.get('/review-sessions', ...inWorkspace, reviewController.listReviewSessions);
 router.post('/review-sessions', ...inWorkspace, reviewController.createReviewSession);

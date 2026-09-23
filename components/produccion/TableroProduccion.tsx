@@ -1,7 +1,9 @@
 import React from 'react';
 import { Download, Loader2 } from 'lucide-react';
 import { SCREENS } from '../../screens';
-import { Client, Pieza, PiezaEstado } from '../../types';
+import { Client, Pieza, PiezaEstado, WorkspaceMember } from '../../types';
+import { DestinoAviso } from '../Bandeja';
+import { ordenarParaAsignar } from './asignables';
 import { COLORES_ESTADO, COLUMNAS } from './columnas';
 import { exportPiezasToExcel } from '../../services/exportPiezasToExcel';
 import { authApi, piezasApi } from '../../services/api';
@@ -28,13 +30,22 @@ import OrdenDeTrabajo from './OrdenDeTrabajo';
 interface Props {
   clients: Client[];
   addNotification: (mensaje: string, tipo?: string) => void;
+  /** A qué pieza saltar al abrir un aviso de la bandeja. */
+  destino?: DestinoAviso | null;
+  /** Se avisa una vez atendido, para que el destino no se repita. */
+  onDestinoAtendido?: () => void;
 }
 
-export default function TableroProduccion({ clients, addNotification }: Props) {
+export default function TableroProduccion({
+  clients,
+  addNotification,
+  destino,
+  onDestinoAtendido,
+}: Props) {
   const [vista, setVista] = React.useState<'marca' | 'mias'>('marca');
   const [clientId, setClientId] = React.useState(clients[0]?.id ?? '');
   const [piezas, setPiezas] = React.useState<Pieza[]>([]);
-  const [miembros, setMiembros] = React.useState<{ id: string; name: string }[]>([]);
+  const [miembros, setMiembros] = React.useState<WorkspaceMember[]>([]);
   const [cargando, setCargando] = React.useState(true);
   const [abierta, setAbierta] = React.useState<string | null>(null);
 
@@ -42,10 +53,23 @@ export default function TableroProduccion({ clients, addNotification }: Props) {
     if (!clientId && clients[0]) setClientId(clients[0].id);
   }, [clients, clientId]);
 
+  /**
+   * El salto desde un aviso. Un lote no trae pieza —viene con `piezaId` en
+   * null— y entonces solo cambia la marca: lleva al tablero donde están las
+   * piezas del reparto, en vez de elegir una por la persona.
+   */
+  React.useEffect(() => {
+    if (!destino) return;
+    setVista('marca');
+    setClientId(destino.clientId);
+    setAbierta(destino.piezaId);
+    onDestinoAtendido?.();
+  }, [destino, onDestinoAtendido]);
+
   React.useEffect(() => {
     authApi
       .list()
-      .then((data: { id: string; name: string }[]) => Array.isArray(data) && setMiembros(data))
+      .then((data: WorkspaceMember[]) => Array.isArray(data) && setMiembros(data))
       .catch(() => setMiembros([]));
   }, []);
 
@@ -206,7 +230,7 @@ export default function TableroProduccion({ clients, addNotification }: Props) {
                     <TarjetaPieza
                       key={p.id}
                       pieza={p}
-                      miembros={miembros}
+                      miembros={ordenarParaAsignar(miembros, p.clientId)}
                       onAbrir={setAbierta}
                       onCambio={trasCambio}
                       onError={error}
@@ -258,7 +282,7 @@ export default function TableroProduccion({ clients, addNotification }: Props) {
                     <TarjetaPieza
                       key={p.id}
                       pieza={p}
-                      miembros={miembros}
+                      miembros={ordenarParaAsignar(miembros, p.clientId)}
                       mostrarMarca
                       onAbrir={setAbierta}
                       onCambio={trasCambio}
@@ -275,7 +299,7 @@ export default function TableroProduccion({ clients, addNotification }: Props) {
       {abierta && (
         <OrdenDeTrabajo
           piezaId={abierta}
-          miembros={miembros}
+          miembros={ordenarParaAsignar(miembros, piezas.find(p => p.id === abierta)?.clientId ?? clientId)}
           onCerrar={() => setAbierta(null)}
           onCambio={trasCambio}
           onError={error}

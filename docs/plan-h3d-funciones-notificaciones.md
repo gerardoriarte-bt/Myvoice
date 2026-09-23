@@ -184,9 +184,74 @@ del operador del producto.
 
 1. **Funciones** — modelo, endpoints y la pantalla de Equipo. Entrega valor sola: aunque no
    notifique nada, el «Asignar a…» del tablero ya puede ordenar primero a los diseñadores.
+   **Construida** el 2026-09-23: `MiembroFuncion`, `services/funcionesService.ts`, los dos
+   endpoints bajo `/workspace/members/:userId/funciones`, `components/FuncionesDelMiembro.tsx`
+   y `components/produccion/asignables.ts`. `verify:isolation` pasa a 56 casos con seis de
+   funciones. Lo único de la fase que quedó fuera es el estado límite 2 —«Copy · 2 marcas»
+   plegado cuando son muchas—: con tres marcas la fila entra entera, y plegarla antes de que
+   moleste es adivinar dónde molesta.
 2. **Bandeja** — el modelo de notificación, la campana y la lista. Sin email todavía.
+   **Construida** el 2026-09-23: `Notificacion`, `services/notificacionService.ts` con
+   `destinatariosDe()`, las tres rutas bajo `/notificaciones` y `components/Bandeja.tsx`.
+   `verify:isolation` pasa a 66 casos con diez de bandeja.
+
+   Dos cosas que el nivel 2 no había previsto y el código obligó a decidir:
+
+   - **La agrupación del lote no es transaccional, es por ventana.** No hay endpoint que
+     asigne cinco piezas de una vez: el tablero asigna de a una. Así que el aviso no se arma
+     del lote, sino al revés — un aviso **sin leer** de la misma persona, tipo y marca sigue
+     abierto diez minutos y absorbe la pieza siguiente. En cuanto alguien lo leyó, ya cumplió
+     y el próximo empieza de cero.
+   - **`Notificacion` lleva `clientId`.** Es lo que hace que el lote agrupe por marca: sin esa
+     columna, dos campañas de marcas distintas repartidas la misma tarde caen en un mismo
+     «te asignaron 5 piezas» que ya no dice de qué. Y cuando el aviso agrupa más de una,
+     `piezaId` pasa a NULL: el destino de un lote es el tablero de la marca, no una tarjeta.
 3. **Email** — el envío por Resend con los destinatarios reales, y el arreglo del destinatario fijo.
+   **Construida** el 2026-09-23. `notificationService.ts` pasó a tener **un solo punto de
+   envío** (`enviar`), que recibe destinatarios y no los lee del entorno; los tres correos
+   —invitación, revisión completada y aviso de pieza— comparten un molde.
+
+   - **`RESEND_TO_EMAIL` ya no existe.** La revisión completada va a quien creó la sesión.
+     El compilador encontró el único punto que faltaba pasar: el tipo lo exige.
+   - **Solo sale correo del aviso nuevo.** El que absorbió una pieza más ya tiene el suyo en
+     camino. El precio: un correo puede decir «una pieza» cuando la bandeja ya muestra cinco.
+     Es a propósito — el correo es el empujón, la herramienta es el registro, y el enlace
+     lleva a las cinco.
+   - **El enlace aterriza en la pieza**, no en la portada: `/?pieza=<id>&marca=<clientId>`,
+     que `App.tsx` lee al montar y después limpia de la URL para que un F5 no reabra la pieza
+     de un correo viejo.
+   - El envío va **después** de la transacción y en segundo plano. Adentro, un 409 de la
+     guarda de concurrencia dejaría correos anunciando algo que nunca pasó.
+
+   **Lo que el despliegue tiene que hacer**, y no está en el código:
+
+   1. Verificar el dominio de `RESEND_FROM_EMAIL` en Resend con SPF, DKIM y un DMARC en
+      `quarantine`. Sin eso los correos van a spam y cualquiera puede mandar correos que
+      digan venir de My Voice. **Esto va antes de desplegar**, no después.
+   2. Quitar `RESEND_TO_EMAIL` del `.env` del servidor. Ya no se lee; dejarla solo confunde
+      al próximo que abra el archivo. (`server/.env.example` no está versionado —lo tapa
+      `.env.*` en `.gitignore`—, así que el cambio hay que hacerlo también en la máquina de
+      quien despliegue.)
+   3. Confirmar `APP_URL`: es la que arma los enlaces de los correos.
 4. **Dominios permitidos** — la lista opcional por workspace, solo sobre invitaciones.
+   **Construida** el 2026-09-23: `Workspace.dominiosPermitidos String[]`, `lib/dominios.ts`,
+   `GET/PUT /workspace/dominios` y `components/DominiosPermitidos.tsx`. `verify:isolation`
+   queda en **73 casos**.
+
+   - **Vacía = apagada, y no hay bandera aparte.** Una lista vacía ya dice exactamente eso;
+     dos formas de apagar lo mismo terminan discrepando.
+   - **La comparación es exacta, no por sufijo.** `empresa.com` no habilita
+     `mail.empresa.com`. Un sufijo parece más cómodo hasta que alguien registra
+     `no-empresa.com`, y sobre todo: una regla que se lee de un vistazo es la que se entiende
+     al ver el rechazo.
+   - **La guarda va antes de las dos ramas de `createInvite`.** La del usuario que ya existe
+     da membresía en el acto, sin invitación de por medio — es la que más había que cuidar, y
+     la que se habría pasado por alto poniendo el control junto al envío del correo.
+   - **El panel vive debajo del formulario de invitar**, no en Configuración: es una regla
+     sobre esa acción, y el momento en que a alguien se le ocurre acotarla es justo cuando
+     está invitando.
+   - Lo que no es un dominio se descarta en vez de rechazar la lista entera: quien escribe
+     cinco a mano no tiene por qué perder los cuatro buenos por una coma de más.
 
 ## Criterio de aceptación
 

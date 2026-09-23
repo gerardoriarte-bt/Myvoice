@@ -24,7 +24,7 @@ import { COLORES_ESTADO } from './columnas';
 
 interface Props {
   pieza: Pieza;
-  miembros: { id: string; name: string }[];
+  miembros: { id: string; name: string; etiqueta?: string }[];
   mostrarMarca?: boolean;
   onAbrir: (id: string) => void;
   onCambio: (pieza: Pieza) => void;

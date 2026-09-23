@@ -1,4 +1,5 @@
 import type {
+  Bandeja,
   Pieza,
   PiezaDetalle as _PiezaDetalle,
   PiezaAConfirmar,
@@ -82,6 +83,10 @@ export const workspaceApi = {
     body: JSON.stringify({ email, role }),
   }),
   revokeInvite: (id: string) => apiRequest(`/workspace/invites/${id}`, { method: 'DELETE' }),
+  /** Lista vacía = se puede invitar a cualquier dominio, que es el estado normal. */
+  dominios: (): Promise<{ dominios: string[] }> => apiRequest('/workspace/dominios'),
+  guardarDominios: (dominios: string[]): Promise<{ dominios: string[] }> =>
+    apiRequest('/workspace/dominios', { method: 'PUT', body: JSON.stringify({ dominios }) }),
   getAIConfig: () => apiRequest('/workspace/ai-config'),
   updateAIConfig: (data: { aiProvider?: string; aiApiKey?: string; aiModel?: string }) =>
     apiRequest('/workspace/ai-config', { method: 'PUT', body: JSON.stringify(data) }),
@@ -248,6 +253,24 @@ export const reviewApi = {
  * un PUT de `estado` — la máquina de estados vive en el servidor, y varias
  * acciones exigen un motivo escrito.
  */
+export const funcionesApi = {
+  /** `clientId` null = todas las marcas del workspace. */
+  asignar: (userId: string, funcion: string, clientId?: string | null) =>
+    apiRequest(`/workspace/members/${userId}/funciones`, {
+      method: 'POST',
+      body: JSON.stringify({ funcion, clientId: clientId ?? null }),
+    }),
+  quitar: (userId: string, funcionId: string) =>
+    apiRequest(`/workspace/members/${userId}/funciones/${funcionId}`, { method: 'DELETE' }),
+};
+
+export const notificacionesApi = {
+  /** Siempre la propia: no hay parámetro para pedir la de otro. */
+  listar: (): Promise<Bandeja> => apiRequest('/notificaciones'),
+  leida: (id: string): Promise<Bandeja> => apiRequest(`/notificaciones/${id}/leida`, { method: 'POST' }),
+  todasLeidas: (): Promise<Bandeja> => apiRequest('/notificaciones/leidas', { method: 'POST' }),
+};
+
 export const piezasApi = {
   /** El tablero, por marca. */
   listar: (clientId: string): Promise<Pieza[]> =>

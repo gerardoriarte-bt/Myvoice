@@ -12,6 +12,7 @@ import UserHeader from './components/UserHeader';
 import NotificationSystem, { Notification, NotificationType } from './components/NotificationSystem';
 import { CopyParameters, CopyVariation, Project, SavedVariation, BrandConfig, Client, User, WorkspaceMember, WorkspaceSummary, canManageWorkspace, ContentDNAProfile } from './types';
 import TableroProduccion from './components/produccion/TableroProduccion';
+import Bandeja, { DestinoAviso } from './components/Bandeja';
 import { NAV_STAGES, SCREENS, ScreenId } from './screens';
 import { VOICES, GOALS } from './constants';
 import HomePage from './components/HomePage';
@@ -78,6 +79,13 @@ const App: React.FC = () => {
   // La lista de pantallas vive en screens.ts y en ningún otro lado: repetirla
   // acá como unión literal ya dejó una pantalla fuera al agregarla.
   const [activeTab, setActiveTab] = React.useState<ScreenId>('clients');
+  /**
+   * A qué pieza saltar cuando se abre un aviso de la bandeja. Vive acá porque
+   * el que cambia de pestaña es este componente; el tablero lo consume una vez
+   * y lo devuelve en null, así que volver a Producción a mano no reabre la
+   * pieza de un aviso viejo.
+   */
+  const [destinoProduccion, setDestinoProduccion] = React.useState<DestinoAviso | null>(null);
   const [reviewToken, setReviewToken] = React.useState(() => new URLSearchParams(window.location.search).get('review'));
   const [completedSessionsCount, setCompletedSessionsCount] = React.useState(0);
   const [variations, setVariations] = React.useState<CopyVariation[]>([]);
@@ -188,6 +196,26 @@ const App: React.FC = () => {
         localStorage.removeItem('vt_token');
         localStorage.removeItem('vt_user');
       }
+    }
+
+    /**
+     * El enlace del correo: `?pieza=<id>&marca=<clientId>`. Aterriza en la
+     * pieza, no en la portada — un correo que te deja en la pantalla de inicio
+     * te obliga a buscar justo lo que vino a avisarte.
+     *
+     * Se limpia la URL después de leerla para que un F5 no reabra la misma
+     * pieza una semana más tarde.
+     */
+    const params = new URLSearchParams(window.location.search);
+    const pieza = params.get('pieza');
+    const marca = params.get('marca');
+    if (marca) {
+      setDestinoProduccion({ clientId: marca, piezaId: pieza });
+      setActiveTab('produccion');
+      params.delete('pieza');
+      params.delete('marca');
+      const limpia = params.toString();
+      window.history.replaceState({}, '', limpia ? `${window.location.pathname}?${limpia}` : window.location.pathname);
     }
 
     const onSessionExpired = () => {
@@ -673,10 +701,19 @@ const App: React.FC = () => {
       {/* MAIN CONTENT */}
       <div className="flex-1 ml-[216px] flex flex-col min-h-screen">
         {/* HEADER */}
-        <header className="apple-header h-[48px] sticky top-0 z-40 flex items-center px-7">
+        <header className="apple-header h-[48px] sticky top-0 z-40 flex items-center justify-between px-7">
           <div className="flex items-center gap-2">
             <span className="text-[13px] font-semibold text-[#1D1D1F]">{SCREENS[activeTab]?.name}</span>
           </div>
+          {/* La campana vive en el header y no en la nav: el aviso no es una
+              pantalla más, es algo que interrumpe estés donde estés. */}
+          <Bandeja
+            onIr={destino => {
+              setDestinoProduccion(destino);
+              setActiveTab('produccion');
+            }}
+            onIrAlTablero={() => setActiveTab('produccion')}
+          />
         </header>
 
         <main className="flex-1 p-7">
@@ -844,8 +881,11 @@ const App: React.FC = () => {
           {activeTab === 'users' && isAdmin && (
             <UserManager
               members={users}
+              clients={clients}
               workspaceName={currentUser?.workspaceName || 'este workspace'}
               currentUserId={currentUser?.id}
+              onRefresh={async () => setUsers(await workspaceApi.members())}
+              addNotification={addNotification}
               onInvite={async (email, role) => {
                 const result = await workspaceApi.invite(email, role);
                 setUsers(await workspaceApi.members());
@@ -922,7 +962,12 @@ const App: React.FC = () => {
             />
           )}
           {activeTab === 'produccion' && (
-            <TableroProduccion clients={clients} addNotification={addNotification} />
+            <TableroProduccion
+              clients={clients}
+              addNotification={addNotification}
+              destino={destinoProduccion}
+              onDestinoAtendido={() => setDestinoProduccion(null)}
+            />
           )}
           {activeTab === 'history' && isAdmin && (
             <GenerationHistory

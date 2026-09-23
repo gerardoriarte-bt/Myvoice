@@ -22,6 +22,13 @@ import { prisma } from '../lib/prisma.js';
 import { TenantContext, TenantError } from '../lib/tenancy.js';
 import { guardarVersion, medidasDelFormato, urlDeSnapshot, ArchivoSubido } from './piezaArchivo.js';
 import { auditarEnSegundoPlano } from './auditoriaService.js';
+import {
+  AvisoEscrito,
+  destinatariosDe,
+  enviarEnSegundoPlano,
+  EventoNotificable,
+  notificar,
+} from './notificacionService.js';
 import { AuditoriaEstado } from '@prisma/client';
 import {
   esFormatoValido,
@@ -495,6 +502,11 @@ export const entregarArchivo = async (tenant: TenantContext, piezaId: string, ar
   // versión en la base apuntando a un archivo que no existe.
   const guardada = await guardarVersion(piezaId, numero, archivo);
 
+  // Subir el archivo es la otra forma de entregar, así que avisa igual que el
+  // enlace: para quien aprueba, las dos dejan la pieza esperando una decisión.
+  const aviso = await prepararAviso(tenant, pieza, 'ENTREGA');
+
+  let escritos: AvisoEscrito[] = [];
   const esperadas = medidasDelFormato(pieza.formato);
   const midioDistinto =
     esperadas && guardada.anchoPx && guardada.altoPx
@@ -540,7 +552,11 @@ export const entregarArchivo = async (tenant: TenantContext, piezaId: string, ar
         nota: `Versión ${numero}`,
       },
     });
+
+    escritos = await notificar(tx, tenant, aviso.evento, aviso.destinatarios);
   });
+
+  enviarEnSegundoPlano(tenant, escritos);
 
   const version = await prisma.piezaVersion.findFirstOrThrow({
     where: { piezaId, numero },
@@ -551,6 +567,38 @@ export const entregarArchivo = async (tenant: TenantContext, piezaId: string, ar
   auditarEnSegundoPlano(version.id);
 
   return leerUna(piezaId);
+};
+
+// --------------------------------------------------------------- la bandeja
+
+/**
+ * Arma el aviso y resuelve a quién le toca, **antes** de abrir la transacción.
+ *
+ * Los destinatarios se calculan afuera porque son lecturas y no hay razón para
+ * tenerlas dentro de una transacción que bloquea la fila de la pieza. La
+ * escritura sí va adentro: un aviso de algo que no llegó a pasar es peor que
+ * ningún aviso.
+ */
+const prepararAviso = async (
+  tenant: TenantContext,
+  pieza: { id: string; clientId: string; platform: string; formato: string },
+  tipo: EventoNotificable['tipo'],
+  asignadaAId?: string | null
+) => {
+  const marca = await prisma.client.findUnique({
+    where: { id: pieza.clientId },
+    select: { name: true },
+  });
+  const evento: EventoNotificable = {
+    tipo,
+    piezaId: pieza.id,
+    clientId: pieza.clientId,
+    marca: marca?.name ?? 'la marca',
+    pieza: `${pieza.platform} ${pieza.formato}`,
+    autorId: tenant.userId,
+    asignadaAId,
+  };
+  return { evento, destinatarios: await destinatariosDe(tenant, evento) };
 };
 
 // ------------------------------------------------------------- transiciones
@@ -617,6 +665,18 @@ export const ejecutarAccion = async (
   // movió.
   if (Object.keys(cambios).length === 0) cambios.updatedAt = new Date();
 
+  // Solo dos de las nueve acciones avisan (D4). Las otras siete —aceptar,
+  // devolver, comentar…— quedan en el tablero y en el historial, que es donde
+  // se miran; convertirlas en avisos es lo que hace que el equipo filtre los
+  // correos de la herramienta y se pierdan también los dos que importan.
+  const aviso =
+    accion === 'asignar' || accion === 'reasignar'
+      ? await prepararAviso(tenant, actual, 'ASIGNACION', datos.asignadaAId)
+      : accion === 'entregar'
+        ? await prepararAviso(tenant, actual, 'ENTREGA')
+        : null;
+
+  let escritos: AvisoEscrito[] = [];
   await prisma.$transaction(async tx => {
     const { count } = await tx.pieza.updateMany({
       where: { id: piezaId, estado: actual.estado },
@@ -638,7 +698,13 @@ export const ejecutarAccion = async (
       },
     });
 
+    if (aviso) escritos = await notificar(tx, tenant, aviso.evento, aviso.destinatarios);
   });
+
+  // El correo sale con la transacción ya confirmada: si hubiera quedado
+  // adentro, un 409 de la guarda de concurrencia dejaría correos anunciando
+  // algo que nunca pasó.
+  enviarEnSegundoPlano(tenant, escritos);
 
   // Se relee fuera de la transacción y con la misma forma que el tablero: la
   // pantalla reemplaza la tarjeta con lo que devuelve esta llamada, así que

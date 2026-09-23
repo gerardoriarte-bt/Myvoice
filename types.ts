@@ -97,6 +97,33 @@ export interface User {
 }
 
 /** Miembro de un workspace, tal como lo devuelve GET /workspace/members. */
+/**
+ * Qué hace una persona, que es un eje distinto de cuánto administra
+ * (`WorkspaceRole`). No restringe nada: decide a quién se le avisa y quién
+ * aparece primero al asignar una pieza.
+ */
+export type FuncionEquipo = 'COPY' | 'DISENO' | 'APROBACION';
+
+export interface FuncionAsignada {
+  id: string;
+  funcion: FuncionEquipo;
+  /** null = todas las marcas del workspace, que es el caso normal. */
+  clientId: string | null;
+  marca: string | null;
+}
+
+export const FUNCION_LABELS: Record<FuncionEquipo, string> = {
+  COPY: 'Copy',
+  DISENO: 'Diseño',
+  APROBACION: 'Aprobación',
+};
+
+export const FUNCION_HINTS: Record<FuncionEquipo, string> = {
+  COPY: 'Escribe y manda a producción',
+  DISENO: 'Recibe piezas asignadas',
+  APROBACION: 'Acepta o devuelve piezas',
+};
+
 export interface WorkspaceMember {
   id: string;
   name: string;
@@ -104,6 +131,31 @@ export interface WorkspaceMember {
   role: WorkspaceRole;
   createdAt?: string;
   membershipId?: string;
+  funciones?: FuncionAsignada[];
+}
+
+/**
+ * Un aviso de la bandeja. `cantidad > 1` es un lote —varias piezas repartidas
+ * de una sentada— y entonces `piezaId` viene en null: el destino es el tablero
+ * de esa marca, no una tarjeta.
+ */
+export interface Notificacion {
+  id: string;
+  tipo: 'ASIGNACION' | 'ENTREGA' | string;
+  titulo: string;
+  detalle: string | null;
+  cantidad: number;
+  piezaId: string | null;
+  clientId: string | null;
+  marca: string | null;
+  leida: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Bandeja {
+  notificaciones: Notificacion[];
+  sinLeer: number;
 }
 
 /** Invitación pendiente a un workspace. */

@@ -127,6 +127,33 @@ async function seedTenant(tag: string) {
   return { workspace, user, client, dna, project, variation, preset, token: session.token as string };
 }
 
+/**
+ * Un miembro más del mismo workspace, con sesión propia. La bandeja no se
+ * puede verificar con un solo usuario: casi todas sus reglas hablan de la
+ * diferencia entre quien hace algo y quien se entera.
+ */
+async function nuevoMiembro(workspaceId: string, tag: string) {
+  const user = await prisma.user.create({
+    data: {
+      email: `verif-${tag}-${Date.now()}@example.com`,
+      name: `Verif ${tag}`,
+      passwordHash: await bcrypt.hash(PASSWORD, 10),
+      workspaceId,
+    },
+  });
+  await prisma.membership.create({
+    data: { userId: user.id, workspaceId, role: WorkspaceRole.MEMBER },
+  });
+  const res = await fetch(`${API_URL}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: user.email, password: PASSWORD }),
+  });
+  const session = await res.json();
+  if (!session.token) throw new Error(`No se pudo loguear a ${tag}: ${JSON.stringify(session)}`);
+  return { user, token: session.token as string };
+}
+
 async function main() {
   console.log(`\nVerificando aislamiento contra ${API_URL}\n`);
 
@@ -486,6 +513,260 @@ async function main() {
       );
     }
 
+    console.log('\nFUNCIONES DEL EQUIPO — un eje aparte del permiso');
+    await expectDenied('POST funciones sobre un usuario de A', `/workspace/members/${A.user.id}/funciones`, B.token, {
+      method: 'POST',
+      body: JSON.stringify({ funcion: 'DISENO' }),
+    });
+    await expectDenied('POST funciones con una marca de A', `/workspace/members/${B.user.id}/funciones`, B.token, {
+      method: 'POST',
+      body: JSON.stringify({ funcion: 'APROBACION', clientId: A.client.id }),
+    });
+
+    const funcionDeA = await prisma.miembroFuncion.create({
+      data: { workspaceId: A.workspace.id, userId: A.user.id, funcion: 'DISENO' },
+    });
+    await expectDenied(
+      'DELETE una función de A',
+      `/workspace/members/${A.user.id}/funciones/${funcionDeA.id}`,
+      B.token,
+      { method: 'DELETE' }
+    );
+
+    const propia = await api(`/workspace/members/${B.user.id}/funciones`, B.token, {
+      method: 'POST',
+      body: JSON.stringify({ funcion: 'DISENO', clientId: B.client.id }),
+    });
+    record(
+      'POST funciones sobre lo propio asigna y devuelve la lista',
+      propia.status === 200 &&
+        propia.body?.[0]?.funcion === 'DISENO' &&
+        propia.body?.[0]?.clientId === B.client.id &&
+        typeof propia.body?.[0]?.marca === 'string',
+      `respondió ${propia.status} ${JSON.stringify(propia.body)?.slice(0, 110)}`
+    );
+
+    // Idempotente: la pantalla puede reintentar sin duplicar ni romperse.
+    const funcionRepetida = await api(`/workspace/members/${B.user.id}/funciones`, B.token, {
+      method: 'POST',
+      body: JSON.stringify({ funcion: 'DISENO', clientId: B.client.id }),
+    });
+    record(
+      'Asignar dos veces la misma función no duplica',
+      funcionRepetida.status === 200 && funcionRepetida.body?.length === 1,
+      `devolvió ${funcionRepetida.body?.length} funciones`
+    );
+
+    const miembros = await api('/users', B.token);
+    record(
+      'GET /users trae las funciones de cada miembro',
+      Array.isArray(miembros.body) && miembros.body.find((m: any) => m.id === B.user.id)?.funciones?.length === 1,
+      `devolvió ${JSON.stringify(miembros.body?.[0]?.funciones)}`
+    );
+
+    console.log('\nBANDEJA — a quién le llega el aviso y a quién no');
+    /**
+     * Hace falta más de una persona en el workspace: la primera regla contra
+     * el ruido es que a nadie se le avisa de su propia acción, así que con un
+     * solo usuario todas estas pruebas darían "cero avisos" por el motivo
+     * equivocado.
+     */
+    const segundoDeB = await nuevoMiembro(B.workspace.id, 'disena');
+    const terceroDeB = await nuevoMiembro(B.workspace.id, 'aprueba');
+    const otraMarcaDeB = await prisma.client.create({
+      data: { name: 'Otra marca de B', industry: 'Test', workspaceId: B.workspace.id },
+    });
+
+    const paraAsignar = await api('/piezas', B.token, {
+      method: 'POST',
+      body: JSON.stringify({
+        piezas: [
+          { platform: 'Instagram Post', formato: '1080×1080', titulo: 'Lote 1', savedVariationIds: [(await aprobado(B.client.id, B.project.id)).id] },
+          { platform: 'Instagram Post', formato: '1080×1080', titulo: 'Lote 2', savedVariationIds: [(await aprobado(B.client.id, B.project.id)).id] },
+        ],
+      }),
+    });
+    const [lote1, lote2] = paraAsignar.body ?? [];
+
+    await api(`/piezas/${lote1?.id}/asignar`, B.token, {
+      method: 'POST',
+      body: JSON.stringify({ asignadaAId: segundoDeB.user.id }),
+    });
+    const trasPrimera = await api('/notificaciones', segundoDeB.token);
+    record(
+      'La asignación le avisa a quien recibe la pieza',
+      trasPrimera.body?.sinLeer === 1 &&
+        trasPrimera.body?.notificaciones?.[0]?.tipo === 'ASIGNACION' &&
+        trasPrimera.body?.notificaciones?.[0]?.cantidad === 1,
+      `bandeja ${JSON.stringify(trasPrimera.body)?.slice(0, 140)}`
+    );
+
+    const delAutor = await api('/notificaciones', B.token);
+    record(
+      'A nadie por su propia acción: quien asigna no se avisa a sí mismo',
+      delAutor.body?.sinLeer === 0,
+      `el autor quedó con ${delAutor.body?.sinLeer} sin leer`
+    );
+
+    await api(`/piezas/${lote2?.id}/asignar`, B.token, {
+      method: 'POST',
+      body: JSON.stringify({ asignadaAId: segundoDeB.user.id }),
+    });
+    const trasSegunda = await api('/notificaciones', segundoDeB.token);
+    record(
+      'Dos asignaciones seguidas son UN aviso con cantidad 2, no dos avisos',
+      trasSegunda.body?.notificaciones?.length === 1 &&
+        trasSegunda.body?.notificaciones?.[0]?.cantidad === 2 &&
+        trasSegunda.body?.notificaciones?.[0]?.piezaId === null,
+      `bandeja ${JSON.stringify(trasSegunda.body?.notificaciones)?.slice(0, 160)}`
+    );
+
+    // El tercero aprueba OTRA marca: la entrega de una pieza de la primera no
+    // es asunto suyo. Y como el workspace no tiene aprobadores para esta, el
+    // aviso sube a quien administra (estado límite 1).
+    await prisma.miembroFuncion.create({
+      data: {
+        workspaceId: B.workspace.id,
+        userId: terceroDeB.user.id,
+        funcion: 'APROBACION',
+        clientId: otraMarcaDeB.id,
+      },
+    });
+    await api(`/piezas/${lote1?.id}/entregar`, segundoDeB.token, {
+      method: 'POST',
+      body: JSON.stringify({ enlace: 'https://drive.google.com/file/lote1' }),
+    });
+    const delAprobadorAjeno = await api('/notificaciones', terceroDeB.token);
+    record(
+      'La entrega NO le llega al aprobador de otra marca',
+      delAprobadorAjeno.body?.sinLeer === 0,
+      `recibió ${JSON.stringify(delAprobadorAjeno.body?.notificaciones)?.slice(0, 120)}`
+    );
+    const delQueAdministra = await api('/notificaciones', B.token);
+    record(
+      'Sin aprobadores para esa marca, la entrega avisa a quien administra',
+      delQueAdministra.body?.sinLeer === 1 && delQueAdministra.body?.notificaciones?.[0]?.tipo === 'ENTREGA',
+      `bandeja ${JSON.stringify(delQueAdministra.body)?.slice(0, 140)}`
+    );
+
+    // Y con un aprobador declarado para la marca, el aviso deja de subir.
+    await prisma.miembroFuncion.create({
+      data: {
+        workspaceId: B.workspace.id,
+        userId: terceroDeB.user.id,
+        funcion: 'APROBACION',
+        clientId: B.client.id,
+      },
+    });
+    await api(`/piezas/${lote2?.id}/entregar`, segundoDeB.token, {
+      method: 'POST',
+      body: JSON.stringify({ enlace: 'https://drive.google.com/file/lote2' }),
+    });
+    const delAprobadorPropio = await api('/notificaciones', terceroDeB.token);
+    record(
+      'Declarado el aprobador de la marca, la entrega le llega a él',
+      delAprobadorPropio.body?.sinLeer === 1 &&
+        delAprobadorPropio.body?.notificaciones?.[0]?.tipo === 'ENTREGA',
+      `bandeja ${JSON.stringify(delAprobadorPropio.body)?.slice(0, 140)}`
+    );
+
+    const avisoDeB = trasSegunda.body?.notificaciones?.[0]?.id;
+    const bandejaDeA = await api('/notificaciones', A.token);
+    record(
+      'GET /notificaciones no trae la bandeja de otro workspace',
+      bandejaDeA.body?.sinLeer === 0 && bandejaDeA.body?.notificaciones?.length === 0,
+      `A recibió ${JSON.stringify(bandejaDeA.body)?.slice(0, 120)}`
+    );
+    await expectDenied(
+      'POST /notificaciones/:id/leida sobre un aviso ajeno',
+      `/notificaciones/${avisoDeB}/leida`,
+      A.token,
+      { method: 'POST' }
+    );
+    // Ni siquiera desde el mismo workspace: la bandeja es de una persona.
+    await expectDenied(
+      'POST /notificaciones/:id/leida sobre el aviso de un compañero',
+      `/notificaciones/${avisoDeB}/leida`,
+      terceroDeB.token,
+      { method: 'POST' }
+    );
+
+    const leida = await api(`/notificaciones/${avisoDeB}/leida`, segundoDeB.token, { method: 'POST' });
+    record(
+      'El dueño sí marca su aviso como leído',
+      leida.status === 200 && leida.body?.sinLeer === 0,
+      `respondió ${leida.status}, sinLeer ${leida.body?.sinLeer}`
+    );
+
+    console.log('\nDOMINIOS PERMITIDOS — acotan a quién se invita, no quién entra');
+    const sinAcotar = await api('/workspace/dominios', B.token);
+    record(
+      'Por defecto la lista está vacía: se puede invitar a cualquier dominio',
+      sinAcotar.status === 200 && Array.isArray(sinAcotar.body?.dominios) && sinAcotar.body.dominios.length === 0,
+      `respondió ${sinAcotar.status} ${JSON.stringify(sinAcotar.body)}`
+    );
+
+    const guardada = await api('/workspace/dominios', B.token, {
+      method: 'PUT',
+      // Con basura entre medio: lo que no es un dominio se descarta, y el resto
+      // se guarda igual. Y `@EMPRESA.com` es el mismo que `empresa.com`.
+      body: JSON.stringify({ dominios: ['@EMPRESA.com', 'empresa.com', 'no es un dominio', '', 'otra.co'] }),
+    });
+    record(
+      'PUT normaliza, deduplica y descarta lo que no es un dominio',
+      JSON.stringify(guardada.body?.dominios) === JSON.stringify(['empresa.com', 'otra.co']),
+      `quedó ${JSON.stringify(guardada.body?.dominios)}`
+    );
+
+    const fuera = await api('/workspace/invites', B.token, {
+      method: 'POST',
+      body: JSON.stringify({ email: 'alguien@gmail.com', role: 'MEMBER' }),
+    });
+    record(
+      'Invitar fuera de la lista se rechaza, y el mensaje dice qué dominios acepta',
+      fuera.status === 400 && typeof fuera.body?.error === 'string' && fuera.body.error.includes('empresa.com'),
+      `respondió ${fuera.status} ${JSON.stringify(fuera.body)?.slice(0, 120)}`
+    );
+
+    const dentro = await api('/workspace/invites', B.token, {
+      method: 'POST',
+      body: JSON.stringify({ email: `invitada-${Date.now()}@empresa.com`, role: 'MEMBER' }),
+    });
+    record(
+      'Invitar dentro de la lista sigue funcionando',
+      dentro.status === 201,
+      `respondió ${dentro.status} ${JSON.stringify(dentro.body)?.slice(0, 120)}`
+    );
+
+    // La lista es del workspace activo y no se puede leer ni escribir la ajena:
+    // no hay parámetro donde pedirla, así que B solo ve la suya.
+    const deA = await api('/workspace/dominios', A.token);
+    record(
+      'La lista de A sigue vacía: B no tocó la de nadie más',
+      deA.status === 200 && deA.body?.dominios?.length === 0,
+      `A quedó con ${JSON.stringify(deA.body?.dominios)}`
+    );
+    const invitaA = await api('/workspace/invites', A.token, {
+      method: 'POST',
+      body: JSON.stringify({ email: `libre-${Date.now()}@gmail.com`, role: 'MEMBER' }),
+    });
+    record(
+      'Y A sigue invitando a cualquier dominio: la regla no se filtró entre tenants',
+      invitaA.status === 201,
+      `respondió ${invitaA.status} ${JSON.stringify(invitaA.body)?.slice(0, 120)}`
+    );
+
+    // Se apaga vaciando la lista: una sola forma de apagarlo.
+    const apagada = await api('/workspace/dominios', B.token, {
+      method: 'PUT',
+      body: JSON.stringify({ dominios: [] }),
+    });
+    record(
+      'Vaciar la lista vuelve a permitir cualquier dominio',
+      apagada.body?.dominios?.length === 0,
+      `quedó ${JSON.stringify(apagada.body?.dominios)}`
+    );
+
     console.log('\nCONTROL POSITIVO — B sí puede con lo suyo');
     await expectAllowed('PUT /clients/:id propio', `/clients/${B.client.id}`, B.token, {
       method: 'PUT',
@@ -511,6 +792,11 @@ async function main() {
     // Limpieza: el orden respeta las FK.
     for (const t of [A, B]) {
       // Las piezas primero: referencian marca y workspace.
+      // Las notificaciones primero: su FK a Pieza es SetNull, así que borrar
+      // las piezas no se las lleva.
+      await prisma.workspaceInvite.deleteMany({ where: { workspaceId: t.workspace.id } });
+      await prisma.notificacion.deleteMany({ where: { workspaceId: t.workspace.id } });
+      await prisma.miembroFuncion.deleteMany({ where: { workspaceId: t.workspace.id } });
       await prisma.piezaVersion.deleteMany({ where: { pieza: { workspaceId: t.workspace.id } } });
       await prisma.pieza.deleteMany({ where: { workspaceId: t.workspace.id } });
       await prisma.savedVariation.deleteMany({ where: { clientId: t.client.id } });
@@ -521,8 +807,16 @@ async function main() {
       await prisma.project.deleteMany({ where: { workspaceId: t.workspace.id } });
       await prisma.reviewSession.deleteMany({ where: { workspaceId: t.workspace.id } });
       await prisma.client.deleteMany({ where: { workspaceId: t.workspace.id } });
+      // Los miembros extra de la bandeja se borran por email: se crean dentro
+      // de la corrida y no viven en el objeto del tenant.
+      const delWorkspace = await prisma.membership.findMany({
+        where: { workspaceId: t.workspace.id },
+        select: { userId: true },
+      });
       await prisma.membership.deleteMany({ where: { workspaceId: t.workspace.id } });
-      await prisma.user.deleteMany({ where: { id: t.user.id } });
+      await prisma.user.deleteMany({
+        where: { id: { in: [t.user.id, ...delWorkspace.map(m => m.userId)] } },
+      });
       await prisma.workspace.deleteMany({ where: { id: t.workspace.id } });
     }
   }

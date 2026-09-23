@@ -1,12 +1,19 @@
 import React from 'react';
 import { SCREENS } from '../screens';
-import { WorkspaceMember, WorkspaceInvite, WorkspaceRole, WORKSPACE_ROLE_LABELS } from '../types';
+import { Client, WorkspaceMember, WorkspaceInvite, WorkspaceRole, WORKSPACE_ROLE_LABELS } from '../types';
+import DominiosPermitidos from './DominiosPermitidos';
+import FuncionesDelMiembro from './FuncionesDelMiembro';
 import { workspaceApi } from '../services/api';
 
 interface UserManagerProps {
   members: WorkspaceMember[];
+  /** Para acotar una función a una marca (H3.D, D3). */
+  clients: Client[];
   workspaceName: string;
   currentUserId?: string;
+  /** Recarga la lista después de tocar una función. */
+  onRefresh?: () => void;
+  addNotification?: (mensaje: string, tipo?: string) => void;
   onInvite: (email: string, role: WorkspaceRole) => Promise<void>;
   onChangeRole: (userId: string, role: WorkspaceRole) => Promise<void>;
   onRemove: (userId: string) => Promise<void>;
@@ -20,11 +27,14 @@ const ROLE_HINTS: Record<WorkspaceRole, string> = {
 
 const UserManager: React.FC<UserManagerProps> = ({
   members,
+  clients,
   workspaceName,
   currentUserId,
   onInvite,
   onChangeRole,
   onRemove,
+  onRefresh,
+  addNotification,
 }) => {
   const [email, setEmail] = React.useState('');
   const [role, setRole] = React.useState<WorkspaceRole>('MEMBER');
@@ -117,6 +127,8 @@ const UserManager: React.FC<UserManagerProps> = ({
         </form>
         <p className="text-[12px] text-[#86868B] mt-3">{ROLE_HINTS[role]}</p>
         {error && <p className="text-[12px] text-[#C4351C] mt-2">{error}</p>}
+        {/* La regla va donde está la acción que regula. */}
+        <DominiosPermitidos onError={setError} />
       </section>
 
       {/* Invitaciones pendientes */}
@@ -170,6 +182,15 @@ const UserManager: React.FC<UserManagerProps> = ({
                 </div>
 
                 <div className="flex items-center gap-3 shrink-0">
+                  {/* El rol dice qué administra; las funciones, qué hace. Van
+                      juntos porque se leen juntos, separados por una línea. */}
+                  <FuncionesDelMiembro
+                    miembro={member}
+                    clients={clients}
+                    puedeEditar
+                    onCambio={() => onRefresh?.()}
+                    onError={mensaje => addNotification?.(mensaje, 'error')}
+                  />
                   <select
                     aria-label={`Rol de ${member.name}`}
                     className="px-3 py-1.5 bg-[#F5F5F7] border border-transparent rounded-[8px] text-[12px] text-[#1D1D1F] outline-none focus:border-[#1D1D1F] disabled:opacity-40 transition-colors"
