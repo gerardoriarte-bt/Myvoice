@@ -184,6 +184,12 @@ del operador del producto.
 
 1. **Funciones** — modelo, endpoints y la pantalla de Equipo. Entrega valor sola: aunque no
    notifique nada, el «Asignar a…» del tablero ya puede ordenar primero a los diseñadores.
+   **Construida** el 2026-09-23: `MiembroFuncion`, `services/funcionesService.ts`, los dos
+   endpoints bajo `/workspace/members/:userId/funciones`, `components/FuncionesDelMiembro.tsx`
+   y `components/produccion/asignables.ts`. `verify:isolation` pasa a 56 casos con seis de
+   funciones. Lo único de la fase que quedó fuera es el estado límite 2 —«Copy · 2 marcas»
+   plegado cuando son muchas—: con tres marcas la fila entra entera, y plegarla antes de que
+   moleste es adivinar dónde molesta.
 2. **Bandeja** — el modelo de notificación, la campana y la lista. Sin email todavía.
 3. **Email** — el envío por Resend con los destinatarios reales, y el arreglo del destinatario fijo.
 4. **Dominios permitidos** — la lista opcional por workspace, solo sobre invitaciones.

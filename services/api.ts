@@ -248,6 +248,17 @@ export const reviewApi = {
  * un PUT de `estado` — la máquina de estados vive en el servidor, y varias
  * acciones exigen un motivo escrito.
  */
+export const funcionesApi = {
+  /** `clientId` null = todas las marcas del workspace. */
+  asignar: (userId: string, funcion: string, clientId?: string | null) =>
+    apiRequest(`/workspace/members/${userId}/funciones`, {
+      method: 'POST',
+      body: JSON.stringify({ funcion, clientId: clientId ?? null }),
+    }),
+  quitar: (userId: string, funcionId: string) =>
+    apiRequest(`/workspace/members/${userId}/funciones/${funcionId}`, { method: 'DELETE' }),
+};
+
 export const piezasApi = {
   /** El tablero, por marca. */
   listar: (clientId: string): Promise<Pieza[]> =>

@@ -34,6 +34,7 @@ model Workspace {
   generationLogs GenerationLog[]
   usagePeriods   UsagePeriod[]
   Pieza          Pieza[]
+  MiembroFuncion MiembroFuncion[]
 }
 
 model User {
@@ -59,6 +60,7 @@ model User {
   memberships           Membership[]
   invitesSent           WorkspaceInvite[] @relation("InviteAuthor")
   createdReviewSessions ReviewSession[]
+  funciones             MiembroFuncion[]
   piezasAsignadas       Pieza[]           @relation("PiezaAsignada")
   piezasCreadas         Pieza[]           @relation("PiezaAutor")
   eventosDePieza        PiezaEvento[]
@@ -143,6 +145,7 @@ model Client {
   users                     User[]
   usagePeriods              UsagePeriod[]
   piezas                    Pieza[]
+  funciones                 MiembroFuncion[]
 }
 
 /// Una fila por generación. Además del rastro de auditoría, es la tabla de
@@ -626,4 +629,43 @@ model Hallazgo {
   decididoPor User?        @relation(fields: [decididoPorId], references: [id])
 
   @@index([piezaVersionId])
+}
+
+/// Qué hace una persona en el workspace, que es un eje DISTINTO de cuánto puede
+/// administrar (`Membership.role`). Mezclarlos en una sola lista de roles
+/// parece más simple hasta el primer «un ADMIN que además diseña».
+///
+/// **No restringe nada** (D2 del plan): sin la función de Aprobación igual se
+/// puede aceptar una pieza. Lo que cambia es a quién le llega el aviso y quién
+/// aparece primero al asignar. Si restringiera, el día que el aprobador está de
+/// vacaciones habría que cambiar roles para destrabar una pieza, y todos
+/// terminarían siendo aprobadores «por las dudas».
+///
+/// Ver docs/plan-h3d-funciones-notificaciones.md.
+enum FuncionEquipo {
+  COPY
+  DISENO
+  APROBACION
+}
+
+model MiembroFuncion {
+  id          String        @id @default(uuid())
+  workspaceId String
+  userId      String
+  funcion     FuncionEquipo
+  /// NULL = todas las marcas del workspace, que es el caso normal. La marca no
+  /// acota lo que la persona VE —eso sigue siendo todo el workspace— sino a
+  /// quién le llega el aviso: con tres marcas y seis aprobadores, avisarles a
+  /// todos por cada entrega es el ruido que esto viene a evitar.
+  clientId    String?
+  createdAt   DateTime      @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  client    Client?   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  /// Postgres admite varios NULL en un unique, así que la fila «todas las
+  /// marcas» convive con las acotadas y sigue siendo única por función.
+  @@unique([workspaceId, userId, funcion, clientId])
+  @@index([workspaceId, funcion])
 }

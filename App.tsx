@@ -844,8 +844,11 @@ const App: React.FC = () => {
           {activeTab === 'users' && isAdmin && (
             <UserManager
               members={users}
+              clients={clients}
               workspaceName={currentUser?.workspaceName || 'este workspace'}
               currentUserId={currentUser?.id}
+              onRefresh={async () => setUsers(await workspaceApi.members())}
+              addNotification={addNotification}
               onInvite={async (email, role) => {
                 const result = await workspaceApi.invite(email, role);
                 setUsers(await workspaceApi.members());

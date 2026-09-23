@@ -16,7 +16,7 @@ import Informe from './Informe';
 
 interface Props {
   piezaId: string;
-  miembros: { id: string; name: string }[];
+  miembros: { id: string; name: string; etiqueta?: string }[];
   onCerrar: () => void;
   onCambio: (pieza: Pieza) => void;
   onError: (mensaje: string) => void;

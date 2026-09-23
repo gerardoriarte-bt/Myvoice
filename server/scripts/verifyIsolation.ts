@@ -486,6 +486,57 @@ async function main() {
       );
     }
 
+    console.log('\nFUNCIONES DEL EQUIPO — un eje aparte del permiso');
+    await expectDenied('POST funciones sobre un usuario de A', `/workspace/members/${A.user.id}/funciones`, B.token, {
+      method: 'POST',
+      body: JSON.stringify({ funcion: 'DISENO' }),
+    });
+    await expectDenied('POST funciones con una marca de A', `/workspace/members/${B.user.id}/funciones`, B.token, {
+      method: 'POST',
+      body: JSON.stringify({ funcion: 'APROBACION', clientId: A.client.id }),
+    });
+
+    const funcionDeA = await prisma.miembroFuncion.create({
+      data: { workspaceId: A.workspace.id, userId: A.user.id, funcion: 'DISENO' },
+    });
+    await expectDenied(
+      'DELETE una función de A',
+      `/workspace/members/${A.user.id}/funciones/${funcionDeA.id}`,
+      B.token,
+      { method: 'DELETE' }
+    );
+
+    const propia = await api(`/workspace/members/${B.user.id}/funciones`, B.token, {
+      method: 'POST',
+      body: JSON.stringify({ funcion: 'DISENO', clientId: B.client.id }),
+    });
+    record(
+      'POST funciones sobre lo propio asigna y devuelve la lista',
+      propia.status === 200 &&
+        propia.body?.[0]?.funcion === 'DISENO' &&
+        propia.body?.[0]?.clientId === B.client.id &&
+        typeof propia.body?.[0]?.marca === 'string',
+      `respondió ${propia.status} ${JSON.stringify(propia.body)?.slice(0, 110)}`
+    );
+
+    // Idempotente: la pantalla puede reintentar sin duplicar ni romperse.
+    const funcionRepetida = await api(`/workspace/members/${B.user.id}/funciones`, B.token, {
+      method: 'POST',
+      body: JSON.stringify({ funcion: 'DISENO', clientId: B.client.id }),
+    });
+    record(
+      'Asignar dos veces la misma función no duplica',
+      funcionRepetida.status === 200 && funcionRepetida.body?.length === 1,
+      `devolvió ${funcionRepetida.body?.length} funciones`
+    );
+
+    const miembros = await api('/users', B.token);
+    record(
+      'GET /users trae las funciones de cada miembro',
+      Array.isArray(miembros.body) && miembros.body.find((m: any) => m.id === B.user.id)?.funciones?.length === 1,
+      `devolvió ${JSON.stringify(miembros.body?.[0]?.funciones)}`
+    );
+
     console.log('\nCONTROL POSITIVO — B sí puede con lo suyo');
     await expectAllowed('PUT /clients/:id propio', `/clients/${B.client.id}`, B.token, {
       method: 'PUT',
@@ -511,6 +562,7 @@ async function main() {
     // Limpieza: el orden respeta las FK.
     for (const t of [A, B]) {
       // Las piezas primero: referencian marca y workspace.
+      await prisma.miembroFuncion.deleteMany({ where: { workspaceId: t.workspace.id } });
       await prisma.piezaVersion.deleteMany({ where: { pieza: { workspaceId: t.workspace.id } } });
       await prisma.pieza.deleteMany({ where: { workspaceId: t.workspace.id } });
       await prisma.savedVariation.deleteMany({ where: { clientId: t.client.id } });

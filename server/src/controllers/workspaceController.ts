@@ -1,5 +1,6 @@
 import { Response } from 'express';
 import { WorkspaceRole } from '@prisma/client';
+import { asignarFuncion, esFuncion, funcionesDe, funcionesPorMiembro, quitarFuncion } from '../services/funcionesService.js';
 import { AuthRequest, handleTenantError } from '../middleware/auth.js';
 import { createAIClient, resolveModel, WorkspaceAIConfig, TIEMPOS, chatCompletionConRetry } from '../services/aiClient.js';
 import { assertMemberOfWorkspace, TenantError } from '../lib/tenancy.js';
@@ -89,6 +90,9 @@ export const listMembers = async (req: AuthRequest, res: Response) => {
       include: { user: { select: { id: true, name: true, email: true, createdAt: true } } },
       orderBy: { createdAt: 'asc' },
     });
+    // Las funciones viajan con el miembro: la pantalla de Equipo las muestra en
+    // la misma fila que el rol, y son dos ejes distintos (H3.D, D1).
+    const funciones = await funcionesPorMiembro(req.tenant!);
     res.json(
       members.map(m => ({
         id: m.user.id,
@@ -97,6 +101,7 @@ export const listMembers = async (req: AuthRequest, res: Response) => {
         role: m.role,
         createdAt: m.user.createdAt,
         membershipId: m.id,
+        funciones: funciones.get(m.user.id) ?? [],
       }))
     );
   } catch (error) {
@@ -328,5 +333,31 @@ export const updateWorkspaceAIConfig = async (req: AuthRequest, res: Response) =
     res.json({ ok: true });
   } catch (error) {
     handleTenantError(error, res, 'Error al guardar configuración');
+  }
+};
+
+/**
+ * Dar una función. El `clientId` es opcional: sin él, la función vale para
+ * todas las marcas del workspace, que es el caso normal.
+ */
+export const addMemberFuncion = async (req: AuthRequest, res: Response) => {
+  const { funcion, clientId } = req.body ?? {};
+  try {
+    if (!esFuncion(funcion)) {
+      res.status(400).json({ error: 'La función tiene que ser COPY, DISENO o APROBACION' });
+      return;
+    }
+    res.json(await asignarFuncion(req.tenant!, req.params.userId, funcion, clientId ?? null));
+  } catch (error) {
+    handleTenantError(error, res, 'Error al asignar la función');
+  }
+};
+
+export const removeMemberFuncion = async (req: AuthRequest, res: Response) => {
+  try {
+    await quitarFuncion(req.tenant!, req.params.funcionId);
+    res.json(await funcionesDe(req.tenant!, req.params.userId));
+  } catch (error) {
+    handleTenantError(error, res, 'Error al quitar la función');
   }
 };

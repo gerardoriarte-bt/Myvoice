@@ -19,7 +19,7 @@ import { piezasApi } from '../../services/api';
 
 interface Props {
   pieza: Pieza;
-  miembros: { id: string; name: string }[];
+  miembros: { id: string; name: string; etiqueta?: string }[];
   onCambio: (pieza: Pieza) => void;
   onError: (mensaje: string) => void;
   /** En la tarjeta solo va la acción principal; en la orden de trabajo, todas. */
@@ -158,6 +158,7 @@ export default function AccionesPieza({ pieza, miembros, onCambio, onError, comp
             {miembros.map(m => (
               <option key={m.id} value={m.id}>
                 {m.name}
+                {m.etiqueta ? ` · ${m.etiqueta}` : ''}
               </option>
             ))}
           </select>

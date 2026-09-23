@@ -71,6 +71,13 @@ router.get('/users', ...inWorkspace, workspaceController.listMembers);
 router.get('/workspace/members', ...inWorkspace, workspaceController.listMembers);
 router.put('/workspace/members/:userId', ...asManager, workspaceController.updateMemberRole);
 router.delete('/workspace/members/:userId', ...asManager, workspaceController.removeMember);
+/**
+ * Las funciones las administra quien administra el workspace, igual que los
+ * roles. Pero a diferencia del rol, la función no da ni quita permisos: dice
+ * qué hace cada uno, y con eso se decide a quién avisarle (H3.D).
+ */
+router.post('/workspace/members/:userId/funciones', ...asManager, workspaceController.addMemberFuncion);
+router.delete('/workspace/members/:userId/funciones/:funcionId', ...asManager, workspaceController.removeMemberFuncion);
 router.get('/workspace/invites', ...asManager, workspaceController.listInvites);
 router.post('/workspace/invites', ...asManager, workspaceController.createInvite);
 router.delete('/workspace/invites/:id', ...asManager, workspaceController.revokeInvite);
