@@ -1,7 +1,7 @@
 # My Voice — Roadmap de crecimiento
 
 > Documento vivo. Fuente de verdad de por dónde crece la herramienta y en qué orden.
-> Última actualización: 2026-09-22
+> Última actualización: 2026-09-23
 
 ## Contexto
 
@@ -61,7 +61,7 @@ proceso creativo.
 | H3.A | **API pública + webhooks** | Que el copy salga del Excel y entre al canal sin copiar-pegar. |
 | H3.B | **Integraciones** | Meta, Google Ads, Braze/Klaviyo, HubSpot. |
 | H3.C | **Multi-idioma / multi-mercado** | `services/localeRules.ts` ya es la base (voseo, registro, mercado). LATAM completo. |
-| H3.D | **Roles y colaboración** | Rol DESIGNER, revisión interna como etapa formal, comentarios e historial. Versión reducida estimada en 5–7 días. |
+| H3.D | **Funciones del equipo y notificaciones** · PLAN ESCRITO | Quién escribe, quién diseña y quién aprueba —un eje aparte del permiso, que sugiere y no restringe— y que a cada uno le llegue lo que le toca. Dos eventos y nada más: asignación y entrega. De paso arregla que hoy la única notificación que existe **va a una casilla fija del entorno**, no a la persona. [plan](./plan-h3d-funciones-notificaciones.md) |
 
 ---
 
