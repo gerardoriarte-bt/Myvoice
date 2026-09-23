@@ -66,28 +66,31 @@ captura, 30 px de apoyo. Un video de un minuto con cinco escalas parece hecho po
 
 ## Línea de tiempo
 
-21 planos, promedio de 2,9 s y ninguno de más de 5.
+24 planos, promedio de 2,5 s y ninguno de más de 4,5.
 
 | # | Frames | Dur | Plano | Texto |
 |---|---|---|---|---|
-| 1–4 | 0–240 | 8 s | Negro | «Una campaña.» · «14 canales.» · «40 piezas de copy.» · «Y el lunes a las 9.» |
-| 5 | 240–330 | 3 s | **Para quién es** | «Agencias y equipos de marca que manejan varias marcas y muchos canales a la vez.» |
-| 6 | 330–435 | 3,5 s | `02-marcas-adn` | EL ADN DE LA MARCA · «Su voz, y lo que nunca diría» |
-| 7 | 435–510 | 2,5 s | `03-generar` | EL BRIEF · «Un brief. Una vez.» |
-| 8 | 510–615 | 3,5 s | `04-progreso` | EL MOTOR · «Cuatro roles de IA, 14 canales a la vez» |
-| 9 | 615–690 | 2,5 s | `05-resultados` | EL COPY · «Con el largo exacto de cada canal» |
-| 10 | 690–765 | 2,5 s | `06-biblioteca` | LA BIBLIOTECA · «Todo aprobado, en un solo lugar» |
-| 11 | 765–840 | 2,5 s | `07-revisiones` | LA APROBACIÓN · «Un enlace para el cliente» |
-| 12 | 840–915 | 2,5 s | `08-portal-cliente` | EL PORTAL · «Aprueba sin crear una cuenta» |
-| 13 | 915–1020 | 3,5 s | `09-tablero` | LA PRODUCCIÓN · «Lo aprobado se vuelve trabajo asignado» |
-| 14 | 1020–1095 | 2,5 s | `10-orden-trabajo` | LA ORDEN DE TRABAJO · «El diseñador recibe el copy exacto» |
-| 15 | 1095–1170 | 2,5 s | `10-orden-trabajo` | EL BRIEF VISUAL · «Y la idea que el motor ya escribió» |
-| 16 | 1170–1320 | 5 s | **Pantalla partida** | «La IA revisa la pieza terminada» · aprobado vs. en la pieza |
-| 17 | 1320–1395 | 2,5 s | `11-auditoria` | LA REGLA · «Avisa. No bloquea. Decide una persona.» |
-| 18 | 1395–1515 | 4 s | **El dato** | LO QUE CAMBIA · **60 %** menos tiempo por campaña |
-| 19 | 1515–1590 | 2,5 s | `13-metricas` | EL COSTO · «Con el costo de cada campaña a la vista» |
-| 20 | 1590–1695 | 3,5 s | Mosaico | «Del brief a la pieza verificada» |
-| 21 | 1695–1800 | 3,5 s | Cierre | «My Voice» · `myvoice.lobueno.co` |
+| 1–4 | 0–240 | 8 s | Negro | «Una campaña.» · «14 canales.» · «40 piezas de copy.» · «Y todo, para el lunes.» |
+| 5 | 240–285 | 1,5 s | Negro | PARA QUIÉN ES · «¿Manejás varias marcas?» |
+| 6 | 285–330 | 1,5 s | Negro | «¿Y catorce canales por campaña?» |
+| 7 | 330–375 | 1,5 s | Negro | «Esto es para tu equipo.» |
+| 8 | 375–465 | 3 s | `02-marcas-adn` | EL ADN DE LA MARCA · «Su voz, y lo que nunca diría» |
+| 9 | 465–540 | 2,5 s | `03-generar` | EL BRIEF · «Un brief. Una vez.» |
+| 10 | 540–630 | 3 s | `04-progreso` | EL MOTOR · «Cuatro roles de IA, 14 canales a la vez» |
+| 11 | 630–705 | 2,5 s | `05-resultados` | EL COPY · «Con el largo exacto de cada canal» |
+| 12 | 705–765 | 2 s | `06-biblioteca` | LA BIBLIOTECA · «Todo aprobado, en un solo lugar» |
+| 13 | 765–825 | 2 s | `07-revisiones` | LA APROBACIÓN · «Un enlace para el cliente» |
+| 14 | 825–885 | 2 s | `08-portal-cliente` | EL PORTAL · «Aprueba sin crear una cuenta» |
+| 15 | 885–975 | 3 s | `09-tablero` | LA PRODUCCIÓN · «Lo aprobado se vuelve trabajo asignado» |
+| 16 | 975–1050 | 2,5 s | `10-orden-trabajo` | LA ORDEN DE TRABAJO · «El diseñador recibe el copy exacto» |
+| 17 | 1050–1125 | 2,5 s | `10-orden-trabajo` | EL BRIEF VISUAL · «Y la idea que el motor ya escribió» |
+| 18 | 1125–1260 | 4,5 s | **Pantalla partida** | «La IA revisa la pieza terminada» · aprobado vs. en la pieza |
+| 19 | 1260–1335 | 2,5 s | `11-auditoria` | Y CONTRA LA MARCA · «Y que respete el ADN de la marca» |
+| 20 | 1335–1410 | 2,5 s | `11-auditoria` | LA REGLA · «Avisa. No bloquea. Decide una persona.» |
+| 21 | 1410–1515 | 3,5 s | **El dato** | LO QUE CAMBIA · **60 %** menos tiempo por campaña |
+| 22 | 1515–1590 | 2,5 s | `13-metricas` | EL COSTO · «Con el costo de cada campaña a la vista» |
+| 23 | 1590–1680 | 3 s | Mosaico | «Del brief a la pieza verificada» |
+| 24 | 1680–1800 | 4 s | Cierre | «My Voice» · `myvoice.lobueno.co` |
 
 ---
 
@@ -152,13 +155,26 @@ El plano que justifica el video entero. Fondo `#1D1D1F`.
   hace posible**: a la izquierda el copy aprobado, a la derecha lo que la IA leyó en la pieza. Las
   dos palabras que difieren se marcan en ámbar y una línea las conecta. Cinco segundos, el plano
   más largo del video, porque es el único que hay que leer.
-- **16 · La regla** (`11-auditoria`) — Zoom out al informe completo. El texto entra en tres
+- **19 · Contra la marca** (`11-auditoria`) — La otra mitad de la auditoría, que el video no
+  mostraba: además de comparar el texto, **la IA mira la pieza y la juzga contra el ADN**. El plano
+  va al bloque «¿Respeta la marca?» del informe, donde se lee la prohibición detectada —«la pieza
+  usa una palabra que el ADN tiene vetada»— con la cita de la pieza abajo. Es lo que separa esto
+  de un corrector ortográfico.
+- **20 · La regla** (`11-auditoria`) — Zoom out al informe completo. El texto entra en tres
   tiempos: «Avisa.» / «No bloquea.» / «Decide una persona.»
 
-### Los dos planos que no muestran pantalla
+### Los planos que no muestran pantalla
 
-**Para quién es** (plano 5) va **antes del producto, no al final**: si alguien se va a los diez
-segundos, que al menos sepa si el video le hablaba a él.
+**El arranque tiene que enganchar con lo que sigue.** La cuarta línea decía «Y el lunes a las 9»,
+que cerraba el problema pero no abría nada: lo que venía después —a quién le pasa esto— quedaba
+colgado. Ahora dice **«Y todo, para el lunes.»**, que deja la frase esperando respuesta, y la
+respuesta es el que está mirando.
+
+**Para quién es** (planos 5 a 7) va **antes del producto, no al final**: si alguien se va a los
+diez segundos, que al menos sepa si el video le hablaba a él. Y va en **tres golpes de segundo y
+medio**, no en un párrafo: el párrafo no se llegaba a leer, y encima rompía el ritmo del bloque
+anterior, que venía de cuatro líneas de dos segundos. Las dos preguntas hacen que quien se
+reconoce se quede; la tercera le dice que el video le habla a él.
 
 **El dato** (plano 18) va **después** de mostrar el recorrido completo, por la razón contraria: un
 número sin el recorrido detrás es una promesa; con el recorrido detrás es una conclusión. El

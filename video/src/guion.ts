@@ -86,24 +86,26 @@ export const PLANOS: Plano[] = [
     tipo: 'titular',
     duracion: s(2),
     anteriores: ['Una campaña.', '14 canales.', '40 piezas de copy.'],
-    linea: 'Y el lunes a las 9.',
+    // Antes decía «Y el lunes a las 9», que cerraba el problema pero no abría
+    // nada: lo que seguía —a quién le pasa esto— quedaba colgado. «Todo, para
+    // el lunes» deja la frase esperando respuesta, y la respuesta es el que mira.
+    linea: 'Y todo, para el lunes.',
     flashFinal: true,
   },
 
   // ── Para quién es ─────────────────────────────────────────────────────────
-  // Va acá y no al final: si alguien se va a los diez segundos, que sepa si el
-  // video le hablaba a él.
-  {
-    tipo: 'declaracion',
-    duracion: s(3),
-    rotulo: 'para quién es',
-    lineas: ['Agencias y equipos de marca', 'que manejan varias marcas', 'y muchos canales a la vez.'],
-  },
+  // Tres golpes cortos y no un párrafo: el párrafo no se llegaba a leer en tres
+  // segundos, y encima rompía el ritmo del bloque anterior, que venía de cuatro
+  // líneas de dos segundos. Las dos preguntas hacen que quien se reconoce se
+  // quede; la tercera le dice que el video le habla a él.
+  { tipo: 'declaracion', duracion: s(1.5), rotulo: 'para quién es', lineas: ['¿Manejás', 'varias marcas?'] },
+  { tipo: 'declaracion', duracion: s(1.5), rotulo: 'para quién es', lineas: ['¿Y catorce canales', 'por campaña?'] },
+  { tipo: 'declaracion', duracion: s(1.5), rotulo: 'para quién es', lineas: ['Esto es para', 'tu equipo.'] },
 
   // ── Bloque 2 · El copy ────────────────────────────────────────────────────
   {
     tipo: 'pantalla',
-    duracion: s(3.5),
+    duracion: s(3),
     imagen: '02-marcas-adn.png',
     rotulo: 'el adn de la marca',
     texto: 'Su voz, y lo que nunca diría',
@@ -126,7 +128,7 @@ export const PLANOS: Plano[] = [
   },
   {
     tipo: 'pantalla',
-    duracion: s(3.5),
+    duracion: s(3),
     imagen: '04-progreso.png',
     rotulo: 'el motor',
     texto: 'Cuatro roles de IA, 14 canales a la vez',
@@ -150,7 +152,7 @@ export const PLANOS: Plano[] = [
   },
   {
     tipo: 'pantalla',
-    duracion: s(2.5),
+    duracion: s(2),
     imagen: '06-biblioteca.png',
     rotulo: 'la biblioteca',
     texto: 'Todo aprobado, en un solo lugar',
@@ -163,7 +165,7 @@ export const PLANOS: Plano[] = [
   // ── Bloque 3 · El cliente ─────────────────────────────────────────────────
   {
     tipo: 'pantalla',
-    duracion: s(2.5),
+    duracion: s(2),
     imagen: '07-revisiones.png',
     rotulo: 'la aprobación',
     texto: 'Un enlace para el cliente',
@@ -174,7 +176,7 @@ export const PLANOS: Plano[] = [
   },
   {
     tipo: 'pantalla',
-    duracion: s(2.5),
+    duracion: s(2),
     imagen: '08-portal-cliente.png',
     rotulo: 'el portal',
     texto: 'Aprueba sin crear una cuenta',
@@ -192,7 +194,7 @@ export const PLANOS: Plano[] = [
   // ── Bloque 4 · La producción ──────────────────────────────────────────────
   {
     tipo: 'pantalla',
-    duracion: s(3.5),
+    duracion: s(3),
     imagen: '09-tablero.png',
     rotulo: 'la producción',
     texto: 'Lo aprobado se vuelve trabajo asignado',
@@ -214,7 +216,7 @@ export const PLANOS: Plano[] = [
   },
   {
     tipo: 'pantalla',
-    duracion: s(3),
+    duracion: s(2.5),
     imagen: '10-orden-trabajo.png',
     rotulo: 'el brief visual',
     texto: 'Y la idea que el motor ya escribió',
@@ -227,15 +229,30 @@ export const PLANOS: Plano[] = [
   // ── Bloque 5 · La verificación ────────────────────────────────────────────
   {
     tipo: 'partida',
-    duracion: s(2.5),
+    duracion: s(4.5),
     imagen: '11-auditoria.png',
     aprobado: 'Rendí más por tanque con Terpel Máxima',
     enLaPieza: 'Rendi más por tanque con Terpel Máxima',
     diferencia: ['Rendí', 'Rendi'],
   },
   {
+    // La otra mitad de la auditoría, que el video no mostraba: además de
+    // comparar el texto, la IA MIRA LA PIEZA y la juzga contra el ADN de la
+    // marca. Es lo que la distingue de un corrector ortográfico.
     tipo: 'pantalla',
-    duracion: s(3),
+    duracion: s(2.5),
+    imagen: '11-auditoria.png',
+    rotulo: 'y contra la marca',
+    texto: 'Y que respete el ADN de la marca',
+    subtexto: 'Prohibiciones, tono y ortografía — sobre la imagen',
+    fondo: COLORES.tinta,
+    desde: { x: 0.62, y: 0.68, zoom: 1.5 },
+    hasta: { x: 0.62, y: 0.78, zoom: 1.5 },
+    transicion: 'whip',
+  },
+  {
+    tipo: 'pantalla',
+    duracion: s(2.5),
     imagen: '11-auditoria.png',
     rotulo: 'la regla',
     texto: 'Avisa. No bloquea. Decide una persona.',
@@ -250,7 +267,7 @@ export const PLANOS: Plano[] = [
   // recorrido detrás es una promesa; con el recorrido detrás es una conclusión.
   {
     tipo: 'dato',
-    duracion: s(4),
+    duracion: s(3.5),
     rotulo: 'lo que cambia',
     numero: 60,
     sufijo: '%',
@@ -272,7 +289,7 @@ export const PLANOS: Plano[] = [
   },
   {
     tipo: 'mosaico',
-    duracion: s(3.5),
+    duracion: s(3),
     texto: 'Del brief a la pieza verificada',
     imagenes: [
       '02-marcas-adn.png', '03-generar.png', '04-progreso.png', '05-resultados.png',
@@ -280,7 +297,7 @@ export const PLANOS: Plano[] = [
       '10-orden-trabajo.png', '11-auditoria.png', '12-mis-piezas.png', '13-metricas.png',
     ],
   },
-  { tipo: 'cierre', duracion: s(5) },
+  { tipo: 'cierre', duracion: s(4) },
 ];
 
 export const DURACION_TOTAL = PLANOS.reduce((total, p) => total + p.duracion, 0);
