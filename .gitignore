@@ -49,6 +49,7 @@ server/.backfills/
 design/
 
 # El video de comunicación queda FUERA del repo, completo: el proyecto de
-# Remotion, las capturas que usa y el mp4 renderizado. No es del producto, y
-# vive en la máquina de quien lo edita.
+# Remotion, las capturas que usa, su guión y el mp4 renderizado. No es del
+# producto, y vive en la máquina de quien lo edita — el guión pasó a
+# video/docs/guion.md, al lado del código que lo ejecuta.
 video/
