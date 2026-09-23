@@ -118,13 +118,13 @@ Tres reglas que los mantienen como fondo y no como protagonista:
 | 15 | 885–975 | 3 s | `09-tablero` | LA PRODUCCIÓN · «Lo aprobado se vuelve trabajo asignado» |
 | 16 | 975–1050 | 2,5 s | `10-orden-trabajo` | LA ORDEN DE TRABAJO · «El diseñador recibe el copy exacto» |
 | 17 | 1050–1125 | 2,5 s | `10-orden-trabajo` | EL BRIEF VISUAL · «Y la idea que el motor ya escribió» |
-| 18 | 1125–1260 | 4,5 s | **Pantalla partida** | «La IA revisa la pieza terminada» · aprobado vs. en la pieza |
-| 19 | 1260–1335 | 2,5 s | `11-auditoria` | Y CONTRA LA MARCA · «Y que respete el ADN de la marca» |
-| 20 | 1335–1410 | 2,5 s | `11-auditoria` | LA REGLA · «Avisa. No bloquea. Decide una persona.» |
-| 21 | 1410–1515 | 3,5 s | **El dato** | LO QUE CAMBIA · **60 %** menos tiempo por campaña |
-| 22 | 1515–1590 | 2,5 s | `13-metricas` | EL COSTO · «Con el costo de cada campaña a la vista» |
-| 23 | 1590–1680 | 3 s | Mosaico | «Del brief a la pieza verificada» |
-| 24 | 1680–1800 | 4 s | Cierre | «My Voice» · `myvoice.lobueno.co` |
+| 18 | 1125–1245 | 4 s | **Pantalla partida** | «La IA revisa la pieza terminada» · aprobado vs. en la pieza |
+| 19 | 1245–1320 | 2,5 s | `11-auditoria` | Y CONTRA LA MARCA · «Y que respete el ADN de la marca» |
+| 20 | 1320–1380 | 2 s | `11-auditoria` | LA REGLA · «Avisa. No bloquea. Decide una persona.» |
+| 21 | 1380–1470 | 3 s | **El dato** | LO QUE CAMBIA · **60 %** menos tiempo por campaña |
+| 22 | 1470–1530 | 2 s | `13-metricas` | EL COSTO · «Con el costo de cada campaña a la vista» |
+| 23 | 1530–1695 | 5,5 s | **El resumen** | «Del brief a la pieza verificada» + los 14 canales + las 6 verificaciones |
+| 24 | 1695–1800 | 3,5 s | Cierre | «My Voice» · `myvoice.lobueno.co` |
 
 ---
 
@@ -218,11 +218,14 @@ línea y es lo que separa un dato de una promesa.
 
 ### Bloque 6 · Cierre — frames 1440–1800
 
-- **17 · El costo** (`13-metricas`) — Paneo sobre el tablero de métricas. Un número de costo sube
+- **22 · El costo** (`13-metricas`) — Paneo sobre el tablero de métricas. Un número de costo sube
   y se detiene. Dice lo que un director quiere oír: esto se mide.
-- **18 · El mosaico** — Las once pantallas pasan en grilla a velocidad alta, 8 frames cada una,
-  encogiéndose hacia el centro.
-- **19 · El logo** — Negro. **My Voice** entra desde abajo, la bajada «Del brief a la pieza
+- **23 · El resumen** — Antes acá iba un mosaico de capturas, y estaba al revés: **la frase
+  importa más que las miniaturas**, y a esa altura el que mira ya vio las pantallas. Ahora «Del
+  brief a la pieza verificada» va en 104 px, y debajo entra lo que el video mostró de a uno: los
+  **14 canales** en fichas que aparecen en cascada, y las **6 verificaciones** con su tilde. Es el
+  plano más largo —5,5 s— porque es el único pensado para que alguien pause y lea.
+- **24 · El logo** — Negro. **My Voice** entra desde abajo, la bajada «Del brief a la pieza
   verificada» aparece debajo, y la URL queda 60 frames en pantalla: el tiempo mínimo para que
   alguien la anote.
 

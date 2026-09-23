@@ -110,7 +110,13 @@ export type Plano =
       diferencia: string[];
       acento: string;
     }
-  | { tipo: 'mosaico'; duracion: number; imagenes: string[]; texto: string; acento: string }
+  /**
+   * El resumen final. Antes era un mosaico de capturas, y estaba al revés: la
+   * frase importa más que las miniaturas, y a esa altura el que mira ya vio las
+   * pantallas. Ahora la frase va grande y debajo va lo que el video mostró de a
+   * uno — los canales y las verificaciones.
+   */
+  | { tipo: 'resumen'; duracion: number; texto: string; acento: string }
   | { tipo: 'cierre'; duracion: number; acento: string };
 
 const s = (segundos: number) => segundos * FPS;
@@ -284,7 +290,7 @@ export const PLANOS: Plano[] = [
   // ── Bloque 5 · La verificación ────────────────────────────────────────────
   {
     tipo: 'partida',
-    duracion: s(4.5),
+    duracion: s(4),
     imagen: '11-auditoria.png',
     aprobado: 'Rendí más por tanque con Terpel Máxima',
     enLaPieza: 'Rendi más por tanque con Terpel Máxima',
@@ -309,7 +315,7 @@ export const PLANOS: Plano[] = [
   },
   {
     tipo: 'pantalla',
-    duracion: s(2.5),
+    duracion: s(2),
     imagen: '11-auditoria.png',
     rotulo: 'la regla',
     acento: ACENTOS.verificacion,
@@ -325,7 +331,7 @@ export const PLANOS: Plano[] = [
   // recorrido detrás es una promesa; con el recorrido detrás es una conclusión.
   {
     tipo: 'dato',
-    duracion: s(3.5),
+    duracion: s(3),
     rotulo: 'lo que cambia',
     numero: 60,
     sufijo: '%',
@@ -337,7 +343,7 @@ export const PLANOS: Plano[] = [
   // ── Bloque 6 · Cierre ─────────────────────────────────────────────────────
   {
     tipo: 'pantalla',
-    duracion: s(2.5),
+    duracion: s(2),
     imagen: '13-metricas.png',
     rotulo: 'el costo',
     acento: ACENTOS.cierre,
@@ -348,17 +354,12 @@ export const PLANOS: Plano[] = [
     transicion: 'corte',
   },
   {
-    tipo: 'mosaico',
-    duracion: s(3),
+    tipo: 'resumen',
+    duracion: s(5.5),
     texto: 'Del brief a la pieza verificada',
     acento: ACENTOS.cierre,
-    imagenes: [
-      '02-marcas-adn.png', '03-generar.png', '04-progreso.png', '05-resultados.png',
-      '06-biblioteca.png', '07-revisiones.png', '08-portal-cliente.png', '09-tablero.png',
-      '10-orden-trabajo.png', '11-auditoria.png', '12-mis-piezas.png', '13-metricas.png',
-    ],
   },
-  { tipo: 'cierre', duracion: s(4), acento: ACENTOS.cierre },
+  { tipo: 'cierre', duracion: s(3.5), acento: ACENTOS.cierre },
 ];
 
 export const DURACION_TOTAL = PLANOS.reduce((total, p) => total + p.duracion, 0);
