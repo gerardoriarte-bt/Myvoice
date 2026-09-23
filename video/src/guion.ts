@@ -116,6 +116,8 @@ export type Plano =
    * pantallas. Ahora la frase va grande y debajo va lo que el video mostró de a
    * uno — los canales y las verificaciones.
    */
+  /** El mapa del proceso, antes del detalle: punto de partida, actores y dónde se multiplica. */
+  | { tipo: 'diagrama'; duracion: number; rotulo: string; texto: string; acento: string }
   | { tipo: 'resumen'; duracion: number; texto: string; acento: string }
   | { tipo: 'cierre'; duracion: number; acento: string };
 
@@ -123,18 +125,18 @@ const s = (segundos: number) => segundos * FPS;
 
 export const PLANOS: Plano[] = [
   // ── Bloque 1 · El problema ────────────────────────────────────────────────
-  { tipo: 'titular', duracion: s(2), anteriores: [], linea: 'Una campaña.', acento: ACENTOS.problema },
-  { tipo: 'titular', duracion: s(2), anteriores: ['Una campaña.'], linea: '14 canales.', acento: ACENTOS.problema },
+  { tipo: 'titular', duracion: s(1.75), anteriores: [], linea: 'Una campaña.', acento: ACENTOS.problema },
+  { tipo: 'titular', duracion: s(1.75), anteriores: ['Una campaña.'], linea: '14 canales.', acento: ACENTOS.problema },
   {
     tipo: 'titular',
-    duracion: s(2),
+    duracion: s(1.75),
     anteriores: ['Una campaña.', '14 canales.'],
     linea: '40 piezas de copy.',
     acento: ACENTOS.problema,
   },
   {
     tipo: 'titular',
-    duracion: s(2),
+    duracion: s(1.75),
     anteriores: ['Una campaña.', '14 canales.', '40 piezas de copy.'],
     // Antes decía «Y el lunes a las 9», que cerraba el problema pero no abría
     // nada: lo que seguía —a quién le pasa esto— quedaba colgado. «Todo, para
@@ -152,6 +154,18 @@ export const PLANOS: Plano[] = [
   { tipo: 'declaracion', duracion: s(1.5), rotulo: 'para quién es', lineas: ['¿Manejás', 'varias marcas?'], acento: ACENTOS.audiencia },
   { tipo: 'declaracion', duracion: s(1.5), rotulo: 'para quién es', lineas: ['¿Y catorce canales', 'por campaña?'], acento: ACENTOS.audiencia },
   { tipo: 'declaracion', duracion: s(1.5), rotulo: 'para quién es', lineas: ['Esto es para', 'tu equipo.'], acento: ACENTOS.audiencia },
+
+  // ── El mapa ───────────────────────────────────────────────────────────────
+  // Va antes del detalle: sin esto, los diez planos de pantallas que siguen son
+  // una lista de funcionalidades. Con esto, cada pantalla es un paso de algo que
+  // el que mira ya entendió — y sabe cuánto falta.
+  {
+    tipo: 'diagrama',
+    duracion: s(6.5),
+    rotulo: 'cómo funciona',
+    texto: 'Un proceso, seis pasos, cinco responsables',
+    acento: ACENTOS.audiencia,
+  },
 
   // ── Bloque 2 · El copy ────────────────────────────────────────────────────
   {
@@ -203,18 +217,6 @@ export const PLANOS: Plano[] = [
     desde: { x: 0.45, y: 0.55, zoom: 1.35 },
     hasta: { x: 0.55, y: 0.55, zoom: 1.45 },
     contador: { hasta: 118, limite: 124, sufijo: 'caracteres' },
-    transicion: 'whip',
-  },
-  {
-    tipo: 'pantalla',
-    duracion: s(2),
-    imagen: '06-biblioteca.png',
-    rotulo: 'la biblioteca',
-    acento: ACENTOS.copy,
-    texto: 'Todo aprobado, en un solo lugar',
-    fondo: COLORES.fondoClaro,
-    desde: { x: 0.25, y: 0.6, zoom: 1.25 },
-    hasta: { x: 0.75, y: 0.6, zoom: 1.25 },
     transicion: 'whip',
   },
 
@@ -274,23 +276,11 @@ export const PLANOS: Plano[] = [
     hasta: { x: 0.5, y: 0.4, zoom: 1.4 },
     transicion: 'whip',
   },
-  {
-    tipo: 'pantalla',
-    duracion: s(2.5),
-    imagen: '10-orden-trabajo.png',
-    rotulo: 'el brief visual',
-    acento: ACENTOS.produccion,
-    texto: 'Y la idea que el motor ya escribió',
-    fondo: COLORES.tinta,
-    desde: { x: 0.5, y: 0.62, zoom: 1.35 },
-    hasta: { x: 0.5, y: 0.72, zoom: 1.35 },
-    transicion: 'whip',
-  },
 
   // ── Bloque 5 · La verificación ────────────────────────────────────────────
   {
     tipo: 'partida',
-    duracion: s(4),
+    duracion: s(3.5),
     imagen: '11-auditoria.png',
     aprobado: 'Rendí más por tanque con Terpel Máxima',
     enLaPieza: 'Rendi más por tanque con Terpel Máxima',
@@ -359,7 +349,7 @@ export const PLANOS: Plano[] = [
     texto: 'Del brief a la pieza verificada',
     acento: ACENTOS.cierre,
   },
-  { tipo: 'cierre', duracion: s(3.5), acento: ACENTOS.cierre },
+  { tipo: 'cierre', duracion: s(3), acento: ACENTOS.cierre },
 ];
 
 export const DURACION_TOTAL = PLANOS.reduce((total, p) => total + p.duracion, 0);

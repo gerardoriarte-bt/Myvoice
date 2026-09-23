@@ -100,31 +100,29 @@ Tres reglas que los mantienen como fondo y no como protagonista:
 
 ## Línea de tiempo
 
-24 planos, promedio de 2,5 s y ninguno de más de 4,5.
+23 planos, promedio de 2,6 s. Los dos más largos son los dos que hay que leer: el diagrama y el
+resumen.
 
 | # | Frames | Dur | Plano | Texto |
 |---|---|---|---|---|
-| 1–4 | 0–240 | 8 s | Negro | «Una campaña.» · «14 canales.» · «40 piezas de copy.» · «Y todo, para el lunes.» |
-| 5 | 240–285 | 1,5 s | Negro | PARA QUIÉN ES · «¿Manejás varias marcas?» |
-| 6 | 285–330 | 1,5 s | Negro | «¿Y catorce canales por campaña?» |
-| 7 | 330–375 | 1,5 s | Negro | «Esto es para tu equipo.» |
-| 8 | 375–465 | 3 s | `02-marcas-adn` | EL ADN DE LA MARCA · «Su voz, y lo que nunca diría» |
-| 9 | 465–540 | 2,5 s | `03-generar` | EL BRIEF · «Un brief. Una vez.» |
-| 10 | 540–630 | 3 s | `04-progreso` | EL MOTOR · «Cuatro roles de IA, 14 canales a la vez» |
-| 11 | 630–705 | 2,5 s | `05-resultados` | EL COPY · «Con el largo exacto de cada canal» |
-| 12 | 705–765 | 2 s | `06-biblioteca` | LA BIBLIOTECA · «Todo aprobado, en un solo lugar» |
-| 13 | 765–825 | 2 s | `07-revisiones` | LA APROBACIÓN · «Un enlace para el cliente» |
-| 14 | 825–885 | 2 s | `08-portal-cliente` | EL PORTAL · «Aprueba sin crear una cuenta» |
-| 15 | 885–975 | 3 s | `09-tablero` | LA PRODUCCIÓN · «Lo aprobado se vuelve trabajo asignado» |
-| 16 | 975–1050 | 2,5 s | `10-orden-trabajo` | LA ORDEN DE TRABAJO · «El diseñador recibe el copy exacto» |
-| 17 | 1050–1125 | 2,5 s | `10-orden-trabajo` | EL BRIEF VISUAL · «Y la idea que el motor ya escribió» |
-| 18 | 1125–1245 | 4 s | **Pantalla partida** | «La IA revisa la pieza terminada» · aprobado vs. en la pieza |
-| 19 | 1245–1320 | 2,5 s | `11-auditoria` | Y CONTRA LA MARCA · «Y que respete el ADN de la marca» |
-| 20 | 1320–1380 | 2 s | `11-auditoria` | LA REGLA · «Avisa. No bloquea. Decide una persona.» |
-| 21 | 1380–1470 | 3 s | **El dato** | LO QUE CAMBIA · **60 %** menos tiempo por campaña |
-| 22 | 1470–1530 | 2 s | `13-metricas` | EL COSTO · «Con el costo de cada campaña a la vista» |
-| 23 | 1530–1695 | 5,5 s | **El resumen** | «Del brief a la pieza verificada» + los 14 canales + las 6 verificaciones |
-| 24 | 1695–1800 | 3,5 s | Cierre | «My Voice» · `myvoice.lobueno.co` |
+| 1–4 | 0–208 | 7 s | Negro, naranja | «Una campaña.» · «14 canales.» · «40 piezas de copy.» · «Y todo, para el lunes.» |
+| 5–7 | 208–343 | 4,5 s | Negro, azul | «¿Manejás varias marcas?» · «¿Y catorce canales por campaña?» · «Esto es para tu equipo.» |
+| 8 | 343–538 | 6,5 s | **El diagrama** | CÓMO FUNCIONA · «Un proceso, seis pasos, cinco responsables» |
+| 9 | 538–628 | 3 s | `02-marcas-adn` | EL ADN DE LA MARCA · «Su voz, y lo que nunca diría» |
+| 10 | 628–703 | 2,5 s | `03-generar` | EL BRIEF · «Un brief. Una vez.» |
+| 11 | 703–793 | 3 s | `04-progreso` | EL MOTOR · «Cuatro roles de IA, 14 canales a la vez» |
+| 12 | 793–868 | 2,5 s | `05-resultados` | EL COPY · «Con el largo exacto de cada canal» |
+| 13 | 868–928 | 2 s | `07-revisiones` | LA APROBACIÓN · «Un enlace para el cliente» |
+| 14 | 928–988 | 2 s | `08-portal-cliente` | EL PORTAL · «Aprueba sin crear una cuenta» |
+| 15 | 988–1078 | 3 s | `09-tablero` | LA PRODUCCIÓN · «Lo aprobado se vuelve trabajo asignado» |
+| 16 | 1078–1153 | 2,5 s | `10-orden-trabajo` | LA ORDEN DE TRABAJO · «El diseñador recibe el copy exacto» |
+| 17 | 1153–1258 | 3,5 s | **Pantalla partida** | «La IA revisa la pieza terminada» · aprobado vs. en la pieza |
+| 18 | 1258–1333 | 2,5 s | `11-auditoria` | Y CONTRA LA MARCA · «Y que respete el ADN de la marca» |
+| 19 | 1333–1393 | 2 s | `11-auditoria` | LA REGLA · «Avisa. No bloquea. Decide una persona.» |
+| 20 | 1393–1483 | 3 s | **El dato** | LO QUE CAMBIA · **60 %** menos tiempo por campaña |
+| 21 | 1483–1543 | 2 s | `13-metricas` | EL COSTO · «Con el costo de cada campaña a la vista» |
+| 22 | 1543–1708 | 5,5 s | **El resumen** | «Del brief a la pieza verificada» + los 14 canales + las 6 verificaciones |
+| 23 | 1708–1800 | 3 s | Cierre | «My Voice» · `myvoice.lobueno.co` |
 
 ---
 
@@ -196,6 +194,29 @@ El plano que justifica el video entero. Fondo `#1D1D1F`.
   de un corrector ortográfico.
 - **20 · La regla** (`11-auditoria`) — Zoom out al informe completo. El texto entra en tres
   tiempos: «Avisa.» / «No bloquea.» / «Decide una persona.»
+
+### El diagrama, y por qué va temprano
+
+**Sin el mapa, los diez planos de pantallas que siguen son una lista de funcionalidades.** Con el
+mapa, cada pantalla es un paso de algo que el que mira ya entendió, y sabe cuánto falta. Por eso
+va antes del detalle y no al final.
+
+Cuenta tres cosas que el resto del video muestra pero no dice:
+
+- **Dónde empieza:** en el ADN de la marca, no en un prompt.
+- **Quién hace cada cosa.** Cada paso tiene su actor: quien prepara, quien produce, el motor, el
+  cliente, el diseñador, la IA y quien aprueba. **Son cinco responsables distintos**, y por eso
+  esto no es «una IA que escribe».
+- **Dónde se multiplica:** un brief se abre en catorce canales, un workspace lleva todas las
+  marcas que la agencia maneje, y una campaña, las piezas que hagan falta. Es la diferencia entre
+  una herramienta y una operación.
+
+Cada paso usa el color de su bloque en el video, así que cuando después aparece la pantalla
+violeta ya sabés que estás en «la pieza».
+
+**Qué se sacó para hacerle lugar** —6,5 s—: los planos de la Biblioteca y del brief visual, que el
+resumen final ya nombra, medio segundo de la pantalla partida y del cierre, y un cuarto de
+segundo a cada titular del arranque.
 
 ### Los planos que no muestran pantalla
 

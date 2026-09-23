@@ -4,6 +4,7 @@ import { PLANOS } from './guion';
 import { Titular } from './planos/Titular';
 import { Pantalla } from './planos/Pantalla';
 import { Partida } from './planos/Partida';
+import { Diagrama } from './planos/Diagrama';
 import { Resumen } from './planos/Resumen';
 import { Cierre } from './planos/Cierre';
 import { Declaracion } from './planos/Declaracion';
@@ -27,6 +28,7 @@ export const Reel: React.FC = () => (
           {plano.tipo === 'declaracion' && <Declaracion {...plano} />}
           {plano.tipo === 'dato' && <Dato {...plano} />}
           {plano.tipo === 'partida' && <Partida {...plano} />}
+          {plano.tipo === 'diagrama' && <Diagrama {...plano} />}
           {plano.tipo === 'resumen' && <Resumen {...plano} />}
           {plano.tipo === 'cierre' && <Cierre {...plano} />}
         </Series.Sequence>
