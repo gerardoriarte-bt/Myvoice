@@ -1,0 +1,20 @@
+# Sin este archivo, el `COPY . .` del Dockerfile mete en la imagen lo que haya
+# en el directorio del servidor. Dos consecuencias, y las dos ya pasaron:
+#
+#   1. **Un node_modules del host pisa el de la imagen.** El Dockerfile instala
+#      dependencias y genera el cliente de Prisma ANTES de copiar el código; si
+#      el host tiene su propio node_modules, el COPY lo reemplaza por uno viejo
+#      y el build falla con "Property 'pieza' does not exist on type
+#      PrismaClient" — un error que habla del código nuevo cuando el problema es
+#      el cliente viejo. Pasó el 2026-09-23, desplegando el H2.
+#   2. **Los .env terminan dentro de la imagen**, en una capa que sobrevive a
+#      cualquier `docker run` y que cualquiera con la imagen puede leer.
+node_modules
+dist
+.env
+.env.*
+uploads
+.git
+.gitignore
+*.log
+.DS_Store
