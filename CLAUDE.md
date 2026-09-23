@@ -202,8 +202,19 @@ tsconfigs differ.
 
 EC2 + Docker Compose behind a two-layer nginx (host terminates SSL, container serves the SPA).
 `docker-compose.prod.yaml` at the root; `deploy/deploy.sh` runs on the server from
-`/opt/myvoice` and does pull → rebuild → workspace seed → image prune. Production is
-myvoice.lobueno.co. `aws_deployment_plan.md` has the server setup and incident history.
+`/opt/myvoice` and does pull → rebuild → **wait for the backend to report healthy** → image
+prune. That wait is the whole safety of the script: the container runs `prisma migrate deploy`
+before `node dist/index.js` (see `server/Dockerfile`), so "started" is not "ready", and without
+it the script declared success over a backend that was crash-looping. It exits non-zero with
+the last 40 log lines if the backend never turns healthy.
+
+**The script creates no business data.** It used to upsert four fixed workspaces on every
+deploy; that was removed on 2026-09-23 because it invented companies nobody asked for and made
+them impossible to clean up — the next deploy resurrected them. A workspace is created from the
+app (`POST /workspaces`); the first one on a new server comes from `npm run seed`.
+
+Production is myvoice.lobueno.co. `aws_deployment_plan.md` has the server setup and incident
+history.
 
 ## Planning docs
 
