@@ -25,6 +25,7 @@
 import { FuncionEquipo, Prisma, WorkspaceRole } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import { TenantContext, TenantError } from '../lib/tenancy.js';
+import { notifyAviso } from './notificationService.js';
 
 export type TipoNotificacion = 'ASIGNACION' | 'ENTREGA';
 
@@ -125,7 +126,8 @@ export const notificar = async (
   tenant: TenantContext,
   evento: EventoNotificable,
   destinatarios: string[]
-): Promise<void> => {
+): Promise<AvisoEscrito[]> => {
+  const escritos: AvisoEscrito[] = [];
   const desde = new Date(Date.now() - VENTANA_LOTE_MIN * 60_000);
 
   for (const userId of destinatarios) {
@@ -157,6 +159,7 @@ export const notificar = async (
           ...textoDe(evento, cantidad),
         },
       });
+      escritos.push({ userId, esNuevo: false, ...evento, ...textoDe(evento, cantidad) });
       continue;
     }
 
@@ -171,7 +174,72 @@ export const notificar = async (
         ...textoDe(evento, 1),
       },
     });
+    escritos.push({ userId, esNuevo: true, ...evento, ...textoDe(evento, 1) });
   }
+
+  return escritos;
+};
+
+// --------------------------------------------------------------- el correo
+
+/**
+ * Lo que quedó escrito, para poder mandarlo por correo después.
+ *
+ * `esNuevo` distingue el aviso recién creado del que absorbió una pieza más.
+ * Es lo que decide si además sale un correo: ver `enviarEnSegundoPlano`.
+ */
+export interface AvisoEscrito extends EventoNotificable {
+  userId: string;
+  esNuevo: boolean;
+  titulo: string;
+  detalle: string | null;
+}
+
+/**
+ * El correo de los avisos, **después** de la transacción y sin bloquear la
+ * respuesta. Mismo criterio que la auditoría: quien asignó una pieza no tiene
+ * por qué esperar a que Resend conteste.
+ *
+ * **Solo sale correo del aviso nuevo.** El que absorbió una pieza más ya tiene
+ * el suyo en camino, y mandar otro por cada pieza de un reparto es exactamente
+ * el lote que D4 viene a evitar — con el agravante de que el correo es el canal
+ * que interrumpe. El precio es que un correo puede decir «una pieza» cuando en
+ * la bandeja ya hay cinco: el correo es el empujón, la herramienta es el
+ * registro, y el enlace lleva a las cinco.
+ */
+export const enviarEnSegundoPlano = (tenant: TenantContext, avisos: AvisoEscrito[]): void => {
+  const nuevos = avisos.filter(a => a.esNuevo);
+  if (nuevos.length === 0) return;
+
+  void (async () => {
+    try {
+      const gente = await prisma.user.findMany({
+        where: { id: { in: [...new Set(nuevos.map(a => a.userId))] } },
+        select: { id: true, email: true },
+      });
+      const correoDe = new Map(gente.map(g => [g.id, g.email]));
+      const app = process.env.APP_URL || 'https://myvoice.lobueno.co';
+
+      for (const aviso of nuevos) {
+        const email = correoDe.get(aviso.userId);
+        if (!email) continue;
+        await notifyAviso({
+          para: [email],
+          tipo: aviso.tipo,
+          titulo: aviso.titulo,
+          detalle: aviso.detalle,
+          marca: aviso.marca,
+          // El enlace aterriza en la pieza, no en la portada: un correo que te
+          // deja en la pantalla de inicio te hace buscar lo que te avisó.
+          url: `${app}/?pieza=${aviso.piezaId}&marca=${aviso.clientId}`,
+        });
+      }
+    } catch (error) {
+      // Nunca tumba nada: el aviso ya está en la bandeja y el correo es un
+      // canal adicional. Queda en el log, sin reintento silencioso.
+      console.error('[Notificacion] No se pudo enviar el correo del aviso:', error);
+    }
+  })();
 };
 
 // ------------------------------------------------------------------ lecturas

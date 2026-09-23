@@ -198,6 +198,26 @@ const App: React.FC = () => {
       }
     }
 
+    /**
+     * El enlace del correo: `?pieza=<id>&marca=<clientId>`. Aterriza en la
+     * pieza, no en la portada — un correo que te deja en la pantalla de inicio
+     * te obliga a buscar justo lo que vino a avisarte.
+     *
+     * Se limpia la URL después de leerla para que un F5 no reabra la misma
+     * pieza una semana más tarde.
+     */
+    const params = new URLSearchParams(window.location.search);
+    const pieza = params.get('pieza');
+    const marca = params.get('marca');
+    if (marca) {
+      setDestinoProduccion({ clientId: marca, piezaId: pieza });
+      setActiveTab('produccion');
+      params.delete('pieza');
+      params.delete('marca');
+      const limpia = params.toString();
+      window.history.replaceState({}, '', limpia ? `${window.location.pathname}?${limpia}` : window.location.pathname);
+    }
+
     const onSessionExpired = () => {
       setIsAuthenticated(false);
       setCurrentUser(null);

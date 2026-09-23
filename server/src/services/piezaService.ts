@@ -22,7 +22,13 @@ import { prisma } from '../lib/prisma.js';
 import { TenantContext, TenantError } from '../lib/tenancy.js';
 import { guardarVersion, medidasDelFormato, urlDeSnapshot, ArchivoSubido } from './piezaArchivo.js';
 import { auditarEnSegundoPlano } from './auditoriaService.js';
-import { destinatariosDe, EventoNotificable, notificar } from './notificacionService.js';
+import {
+  AvisoEscrito,
+  destinatariosDe,
+  enviarEnSegundoPlano,
+  EventoNotificable,
+  notificar,
+} from './notificacionService.js';
 import { AuditoriaEstado } from '@prisma/client';
 import {
   esFormatoValido,
@@ -500,6 +506,7 @@ export const entregarArchivo = async (tenant: TenantContext, piezaId: string, ar
   // enlace: para quien aprueba, las dos dejan la pieza esperando una decisión.
   const aviso = await prepararAviso(tenant, pieza, 'ENTREGA');
 
+  let escritos: AvisoEscrito[] = [];
   const esperadas = medidasDelFormato(pieza.formato);
   const midioDistinto =
     esperadas && guardada.anchoPx && guardada.altoPx
@@ -546,8 +553,10 @@ export const entregarArchivo = async (tenant: TenantContext, piezaId: string, ar
       },
     });
 
-    await notificar(tx, tenant, aviso.evento, aviso.destinatarios);
+    escritos = await notificar(tx, tenant, aviso.evento, aviso.destinatarios);
   });
+
+  enviarEnSegundoPlano(tenant, escritos);
 
   const version = await prisma.piezaVersion.findFirstOrThrow({
     where: { piezaId, numero },
@@ -667,6 +676,7 @@ export const ejecutarAccion = async (
         ? await prepararAviso(tenant, actual, 'ENTREGA')
         : null;
 
+  let escritos: AvisoEscrito[] = [];
   await prisma.$transaction(async tx => {
     const { count } = await tx.pieza.updateMany({
       where: { id: piezaId, estado: actual.estado },
@@ -688,8 +698,13 @@ export const ejecutarAccion = async (
       },
     });
 
-    if (aviso) await notificar(tx, tenant, aviso.evento, aviso.destinatarios);
+    if (aviso) escritos = await notificar(tx, tenant, aviso.evento, aviso.destinatarios);
   });
+
+  // El correo sale con la transacción ya confirmada: si hubiera quedado
+  // adentro, un 409 de la guarda de concurrencia dejaría correos anunciando
+  // algo que nunca pasó.
+  enviarEnSegundoPlano(tenant, escritos);
 
   // Se relee fuera de la transacción y con la misma forma que el tablero: la
   // pantalla reemplaza la tarjeta con lo que devuelve esta llamada, así que

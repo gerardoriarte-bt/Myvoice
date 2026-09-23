@@ -437,7 +437,7 @@ export default function HelpGuide() {
           El administrador del servidor debe configurar dos variables de entorno:
           <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 4 }}>
             <div><code style={{ fontSize: 12, fontFamily: 'ui-monospace, monospace', background: '#E5E5EA', padding: '2px 6px', borderRadius: 4 }}>RESEND_API_KEY</code> — API key de Resend (resend.com)</div>
-            <div><code style={{ fontSize: 12, fontFamily: 'ui-monospace, monospace', background: '#E5E5EA', padding: '2px 6px', borderRadius: 4 }}>RESEND_TO_EMAIL</code> — Direccion de email donde se reciben las notificaciones</div>
+            <div><code style={{ fontSize: 12, fontFamily: 'ui-monospace, monospace', background: '#E5E5EA', padding: '2px 6px', borderRadius: 4 }}>APP_URL</code> — Direccion publica de la herramienta, para los enlaces de los correos</div>
           </div>
         </div>
 
