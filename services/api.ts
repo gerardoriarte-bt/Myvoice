@@ -83,6 +83,10 @@ export const workspaceApi = {
     body: JSON.stringify({ email, role }),
   }),
   revokeInvite: (id: string) => apiRequest(`/workspace/invites/${id}`, { method: 'DELETE' }),
+  /** Lista vacía = se puede invitar a cualquier dominio, que es el estado normal. */
+  dominios: (): Promise<{ dominios: string[] }> => apiRequest('/workspace/dominios'),
+  guardarDominios: (dominios: string[]): Promise<{ dominios: string[] }> =>
+    apiRequest('/workspace/dominios', { method: 'PUT', body: JSON.stringify({ dominios }) }),
   getAIConfig: () => apiRequest('/workspace/ai-config'),
   updateAIConfig: (data: { aiProvider?: string; aiApiKey?: string; aiModel?: string }) =>
     apiRequest('/workspace/ai-config', { method: 'PUT', body: JSON.stringify(data) }),

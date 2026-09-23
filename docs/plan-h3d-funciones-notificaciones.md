@@ -234,6 +234,24 @@ del operador del producto.
       quien despliegue.)
    3. Confirmar `APP_URL`: es la que arma los enlaces de los correos.
 4. **Dominios permitidos** — la lista opcional por workspace, solo sobre invitaciones.
+   **Construida** el 2026-09-23: `Workspace.dominiosPermitidos String[]`, `lib/dominios.ts`,
+   `GET/PUT /workspace/dominios` y `components/DominiosPermitidos.tsx`. `verify:isolation`
+   queda en **73 casos**.
+
+   - **Vacía = apagada, y no hay bandera aparte.** Una lista vacía ya dice exactamente eso;
+     dos formas de apagar lo mismo terminan discrepando.
+   - **La comparación es exacta, no por sufijo.** `empresa.com` no habilita
+     `mail.empresa.com`. Un sufijo parece más cómodo hasta que alguien registra
+     `no-empresa.com`, y sobre todo: una regla que se lee de un vistazo es la que se entiende
+     al ver el rechazo.
+   - **La guarda va antes de las dos ramas de `createInvite`.** La del usuario que ya existe
+     da membresía en el acto, sin invitación de por medio — es la que más había que cuidar, y
+     la que se habría pasado por alto poniendo el control junto al envío del correo.
+   - **El panel vive debajo del formulario de invitar**, no en Configuración: es una regla
+     sobre esa acción, y el momento en que a alguien se le ocurre acotarla es justo cuando
+     está invitando.
+   - Lo que no es un dominio se descarta en vez de rechazar la lista entera: quien escribe
+     cinco a mano no tiene por qué perder los cuatro buenos por una coma de más.
 
 ## Criterio de aceptación
 

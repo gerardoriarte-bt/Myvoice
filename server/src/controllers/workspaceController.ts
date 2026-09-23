@@ -7,6 +7,7 @@ import { assertMemberOfWorkspace, TenantError } from '../lib/tenancy.js';
 import { encryptSecret } from '../lib/crypto.js';
 import { PLANES_VALIDOS } from '../lib/planLimits.js';
 import { notifyWorkspaceInvite } from '../services/notificationService.js';
+import { emailPermitido, mensajeDeRechazo, normalizarLista } from '../lib/dominios.js';
 import { prisma } from '../lib/prisma.js';
 
 const INVITE_TTL_DAYS = 7;
@@ -199,6 +200,18 @@ export const createInvite = async (req: AuthRequest, res: Response) => {
     const tenant = req.tenant!;
     const normalizedEmail = email.toLowerCase().trim();
 
+    /**
+     * La lista de dominios se revisa ANTES de las dos ramas, no solo antes de
+     * mandar el correo: la rama del usuario existente le da membresía en el
+     * acto, sin invitación de por medio, así que es la que más hay que cuidar.
+     */
+    const ws = await prisma.workspace.findUniqueOrThrow({
+      where: { id: tenant.workspaceId },
+      select: { dominiosPermitidos: true },
+    });
+    if (!emailPermitido(normalizedEmail, ws.dominiosPermitidos))
+      return res.status(400).json({ error: mensajeDeRechazo(ws.dominiosPermitidos) });
+
     const existing = await prisma.user.findUnique({ where: { email: normalizedEmail } });
     if (existing) {
       const already = await prisma.membership.findUnique({
@@ -359,5 +372,41 @@ export const removeMemberFuncion = async (req: AuthRequest, res: Response) => {
     res.json(await funcionesDe(req.tenant!, req.params.userId));
   } catch (error) {
     handleTenantError(error, res, 'Error al quitar la función');
+  }
+};
+
+// ------------------------------------------------------- dominios permitidos
+
+/**
+ * La lista vive en el workspace activo y solo se lee y se escribe desde ahí:
+ * no hay parámetro donde pedir la de otro, igual que con la bandeja.
+ */
+export const getDominios = async (req: AuthRequest, res: Response) => {
+  try {
+    const ws = await prisma.workspace.findUniqueOrThrow({
+      where: { id: req.tenant!.workspaceId },
+      select: { dominiosPermitidos: true },
+    });
+    res.json({ dominios: ws.dominiosPermitidos });
+  } catch (error) {
+    handleTenantError(error, res, 'Error al leer los dominios permitidos');
+  }
+};
+
+export const updateDominios = async (req: AuthRequest, res: Response) => {
+  try {
+    // Lo que no parezca un dominio se descarta en vez de rechazar la lista
+    // entera: quien escribe cinco dominios a mano no tiene por qué perder los
+    // cuatro buenos por una coma de más. Devolvemos la lista ya normalizada,
+    // así la pantalla muestra exactamente lo que quedó guardado.
+    const dominios = normalizarLista((req.body as { dominios?: unknown }).dominios);
+    const ws = await prisma.workspace.update({
+      where: { id: req.tenant!.workspaceId },
+      data: { dominiosPermitidos: dominios },
+      select: { dominiosPermitidos: true },
+    });
+    res.json({ dominios: ws.dominiosPermitidos });
+  } catch (error) {
+    handleTenantError(error, res, 'Error al guardar los dominios permitidos');
   }
 };

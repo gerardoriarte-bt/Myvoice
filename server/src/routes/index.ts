@@ -79,6 +79,12 @@ router.delete('/workspace/members/:userId', ...asManager, workspaceController.re
  */
 router.post('/workspace/members/:userId/funciones', ...asManager, workspaceController.addMemberFuncion);
 router.delete('/workspace/members/:userId/funciones/:funcionId', ...asManager, workspaceController.removeMemberFuncion);
+/**
+ * La lista de dominios a los que este workspace invita. Va con `asManager`
+ * porque cambia quién puede entrar a ver todas las marcas.
+ */
+router.get('/workspace/dominios', ...asManager, workspaceController.getDominios);
+router.put('/workspace/dominios', ...asManager, workspaceController.updateDominios);
 router.get('/workspace/invites', ...asManager, workspaceController.listInvites);
 router.post('/workspace/invites', ...asManager, workspaceController.createInvite);
 router.delete('/workspace/invites/:id', ...asManager, workspaceController.revokeInvite);

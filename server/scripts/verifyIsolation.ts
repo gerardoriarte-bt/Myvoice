@@ -698,6 +698,75 @@ async function main() {
       `respondió ${leida.status}, sinLeer ${leida.body?.sinLeer}`
     );
 
+    console.log('\nDOMINIOS PERMITIDOS — acotan a quién se invita, no quién entra');
+    const sinAcotar = await api('/workspace/dominios', B.token);
+    record(
+      'Por defecto la lista está vacía: se puede invitar a cualquier dominio',
+      sinAcotar.status === 200 && Array.isArray(sinAcotar.body?.dominios) && sinAcotar.body.dominios.length === 0,
+      `respondió ${sinAcotar.status} ${JSON.stringify(sinAcotar.body)}`
+    );
+
+    const guardada = await api('/workspace/dominios', B.token, {
+      method: 'PUT',
+      // Con basura entre medio: lo que no es un dominio se descarta, y el resto
+      // se guarda igual. Y `@EMPRESA.com` es el mismo que `empresa.com`.
+      body: JSON.stringify({ dominios: ['@EMPRESA.com', 'empresa.com', 'no es un dominio', '', 'otra.co'] }),
+    });
+    record(
+      'PUT normaliza, deduplica y descarta lo que no es un dominio',
+      JSON.stringify(guardada.body?.dominios) === JSON.stringify(['empresa.com', 'otra.co']),
+      `quedó ${JSON.stringify(guardada.body?.dominios)}`
+    );
+
+    const fuera = await api('/workspace/invites', B.token, {
+      method: 'POST',
+      body: JSON.stringify({ email: 'alguien@gmail.com', role: 'MEMBER' }),
+    });
+    record(
+      'Invitar fuera de la lista se rechaza, y el mensaje dice qué dominios acepta',
+      fuera.status === 400 && typeof fuera.body?.error === 'string' && fuera.body.error.includes('empresa.com'),
+      `respondió ${fuera.status} ${JSON.stringify(fuera.body)?.slice(0, 120)}`
+    );
+
+    const dentro = await api('/workspace/invites', B.token, {
+      method: 'POST',
+      body: JSON.stringify({ email: `invitada-${Date.now()}@empresa.com`, role: 'MEMBER' }),
+    });
+    record(
+      'Invitar dentro de la lista sigue funcionando',
+      dentro.status === 201,
+      `respondió ${dentro.status} ${JSON.stringify(dentro.body)?.slice(0, 120)}`
+    );
+
+    // La lista es del workspace activo y no se puede leer ni escribir la ajena:
+    // no hay parámetro donde pedirla, así que B solo ve la suya.
+    const deA = await api('/workspace/dominios', A.token);
+    record(
+      'La lista de A sigue vacía: B no tocó la de nadie más',
+      deA.status === 200 && deA.body?.dominios?.length === 0,
+      `A quedó con ${JSON.stringify(deA.body?.dominios)}`
+    );
+    const invitaA = await api('/workspace/invites', A.token, {
+      method: 'POST',
+      body: JSON.stringify({ email: `libre-${Date.now()}@gmail.com`, role: 'MEMBER' }),
+    });
+    record(
+      'Y A sigue invitando a cualquier dominio: la regla no se filtró entre tenants',
+      invitaA.status === 201,
+      `respondió ${invitaA.status} ${JSON.stringify(invitaA.body)?.slice(0, 120)}`
+    );
+
+    // Se apaga vaciando la lista: una sola forma de apagarlo.
+    const apagada = await api('/workspace/dominios', B.token, {
+      method: 'PUT',
+      body: JSON.stringify({ dominios: [] }),
+    });
+    record(
+      'Vaciar la lista vuelve a permitir cualquier dominio',
+      apagada.body?.dominios?.length === 0,
+      `quedó ${JSON.stringify(apagada.body?.dominios)}`
+    );
+
     console.log('\nCONTROL POSITIVO — B sí puede con lo suyo');
     await expectAllowed('PUT /clients/:id propio', `/clients/${B.client.id}`, B.token, {
       method: 'PUT',
@@ -725,6 +794,7 @@ async function main() {
       // Las piezas primero: referencian marca y workspace.
       // Las notificaciones primero: su FK a Pieza es SetNull, así que borrar
       // las piezas no se las lleva.
+      await prisma.workspaceInvite.deleteMany({ where: { workspaceId: t.workspace.id } });
       await prisma.notificacion.deleteMany({ where: { workspaceId: t.workspace.id } });
       await prisma.miembroFuncion.deleteMany({ where: { workspaceId: t.workspace.id } });
       await prisma.piezaVersion.deleteMany({ where: { pieza: { workspaceId: t.workspace.id } } });

@@ -11,31 +11,39 @@ datasource db {
 /// el acceso se otorga exclusivamente por Membership: no hay pertenencia
 /// implícita por dominio de email ni por columna en User.
 model Workspace {
-  id             String             @id @default(uuid())
-  name           String
-  slug           String             @unique
-  plan           String             @default("agency")
-  aiProvider     String?
+  id                 String             @id @default(uuid())
+  name               String
+  slug               String             @unique
+  plan               String             @default("agency")
+  aiProvider         String?
   /// Cifrada en reposo con AES-256-GCM (ver lib/crypto.ts). Formato
   /// `v1:iv:tag:ciphertext`; las filas anteriores a A0.6 pueden estar en texto
   /// plano y se recifran al leerlas. Descifrarla solo desde
   /// lib/workspaceSecret.ts.
-  aiApiKey       String?
-  aiModel        String?
-  createdAt      DateTime           @default(now())
-  updatedAt      DateTime           @default(now()) @updatedAt
-  clients        Client[]
-  projects       Project[]
-  users          User[]
-  memberships    Membership[]
-  invites        WorkspaceInvite[]
-  reviewSessions ReviewSession[]
-  presets        GenerationPreset[]
-  generationLogs GenerationLog[]
-  usagePeriods   UsagePeriod[]
-  Pieza          Pieza[]
-  MiembroFuncion MiembroFuncion[]
-  notificaciones Notificacion[]
+  aiApiKey           String?
+  aiModel            String?
+  /// Dominios de email a los que se puede invitar. **Vacío = apagado**, que es
+  /// el estado normal y no necesita una bandera aparte.
+  ///
+  /// NO es alta por dominio: tener un email `@empresa.com` no da acceso a
+  /// nada, y eso el H1 lo eliminó a propósito. Esto solo evita el dedazo de
+  /// invitar a un Gmail personal — que en una herramienta donde el invitado ve
+  /// todas las marcas del workspace no es un error menor.
+  dominiosPermitidos String[]           @default([])
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @default(now()) @updatedAt
+  clients            Client[]
+  projects           Project[]
+  users              User[]
+  memberships        Membership[]
+  invites            WorkspaceInvite[]
+  reviewSessions     ReviewSession[]
+  presets            GenerationPreset[]
+  generationLogs     GenerationLog[]
+  usagePeriods       UsagePeriod[]
+  Pieza              Pieza[]
+  MiembroFuncion     MiembroFuncion[]
+  notificaciones     Notificacion[]
 }
 
 model User {

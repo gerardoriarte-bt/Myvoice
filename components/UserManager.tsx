@@ -1,6 +1,7 @@
 import React from 'react';
 import { SCREENS } from '../screens';
 import { Client, WorkspaceMember, WorkspaceInvite, WorkspaceRole, WORKSPACE_ROLE_LABELS } from '../types';
+import DominiosPermitidos from './DominiosPermitidos';
 import FuncionesDelMiembro from './FuncionesDelMiembro';
 import { workspaceApi } from '../services/api';
 
@@ -126,6 +127,8 @@ const UserManager: React.FC<UserManagerProps> = ({
         </form>
         <p className="text-[12px] text-[#86868B] mt-3">{ROLE_HINTS[role]}</p>
         {error && <p className="text-[12px] text-[#C4351C] mt-2">{error}</p>}
+        {/* La regla va donde está la acción que regula. */}
+        <DominiosPermitidos onError={setError} />
       </section>
 
       {/* Invitaciones pendientes */}
