@@ -224,6 +224,86 @@ sudo certbot --nginx -d myvoice.lobueno.co
 
 ---
 
+## 9. Permisos del rol de la instancia sobre el bucket
+
+El rol de la EC2 es **`myvoice-rol`** y hoy puede leer y escribir objetos, que es lo que el
+producto necesita. **No puede administrar la configuración del bucket**, y eso se descubrió el
+2026-09-23 intentando crear la regla de ciclo de vida del H2:
+
+```
+AccessDenied: User: arn:aws:sts::151241089385:assumed-role/myvoice-rol/i-0e4a5fd98faf61afd
+is not authorized to perform: s3:GetLifecycleConfiguration
+```
+
+Mientras siga así, esa regla se crea a mano desde la consola, y no queda verificada por comando.
+La política de abajo lo arregla para el único bucket del producto.
+
+### La política
+
+Nombre sugerido: **`myvoice-ciclo-de-vida-bucket`**.
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AdministrarCicloDeVidaDelBucketDeMyVoice",
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetLifecycleConfiguration",
+        "s3:PutLifecycleConfiguration",
+        "s3:GetBucketVersioning"
+      ],
+      "Resource": "arn:aws:s3:::myvoice-bucket-151241089385-us-east-1-an"
+    }
+  ]
+}
+```
+
+Tres decisiones, para que nadie la amplíe sin darse cuenta:
+
+- **El recurso es el bucket, no `/*`.** La configuración del ciclo de vida es del bucket; los
+  objetos no entran acá y no hace falta que entren.
+- **Un solo bucket, escrito completo.** Nada de `arn:aws:s3:::myvoice-*`: un comodín acá sería un
+  permiso sobre buckets que todavía no existen.
+- **`GetBucketVersioning` es de lectura y está por una razón concreta:** si el bucket tiene
+  versionado activo, la regla necesita además expirar las versiones no vigentes, o los originales
+  viejos quedan ocupando espacio igual. Sin este permiso no se puede saber.
+
+### Cómo se adjunta
+
+1. Consola de AWS → **IAM** → **Policies** → **Create policy** → pestaña **JSON**.
+2. Pegar el JSON de arriba, **Next**, nombre `myvoice-ciclo-de-vida-bucket`, **Create policy**.
+3. **IAM** → **Roles** → `myvoice-rol` → **Add permissions** → **Attach policies** → buscar la
+   política recién creada → **Add permissions**.
+
+El rol de una instancia toma los permisos nuevos en menos de un minuto: no hace falta reiniciar
+la EC2 ni los contenedores.
+
+### Cómo verificar, desde el servidor
+
+```bash
+BUCKET=myvoice-bucket-151241089385-us-east-1-an
+
+sudo docker run --rm -e AWS_REGION=us-east-1 amazon/aws-cli \
+  s3api get-bucket-lifecycle-configuration --bucket "$BUCKET"
+```
+
+Con la política puesta, esto deja de responder `AccessDenied` y pasa a devolver las reglas —o
+`NoSuchLifecycleConfiguration` si todavía no hay ninguna, que también es una respuesta válida.
+
+### La regla que hay que crear
+
+```bash
+sudo docker run --rm -e AWS_REGION=us-east-1 amazon/aws-cli \
+  s3api put-bucket-lifecycle-configuration --bucket "$BUCKET" \
+  --lifecycle-configuration '{"Rules":[{"ID":"piezas-originales-90-dias","Status":"Enabled","Filter":{"Prefix":"piezas/originales/"},"Expiration":{"Days":90}}]}'
+```
+
+**El prefijo tiene que ser `piezas/originales/`.** Con `piezas/` a secas la regla también borraría
+`piezas/snapshots/`, que son permanentes y son la única evidencia de qué pieza se aprobó una vez
+que el original se va (ver D6 en `docs/plan-h2-produccion-auditoria.md`).
+
 ## Referencia: PM2 (legado)
 
 El backend en producción usa **Docker**, no PM2. Si existe un proceso `my-voice-api` detenido en PM2, se puede ignorar o eliminar:
