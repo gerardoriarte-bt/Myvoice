@@ -2,6 +2,7 @@ import React from 'react';
 import { AbsoluteFill, Img, interpolate, spring, staticFile, useCurrentFrame, useVideoConfig } from 'remotion';
 import { COLORES } from '../guion';
 import { TextoQueEmpuja } from '../componentes/TextoQueEmpuja';
+import { FRASE, ROTULO, TITULAR } from '../tipografia';
 
 /**
  * El plano que justifica el video entero.
@@ -46,8 +47,8 @@ export const Partida: React.FC<{
         boxShadow: '0 30px 80px rgba(0,0,0,0.35)',
       }}
     >
-      <div style={{ fontSize: 26, fontWeight: 800, letterSpacing: 1.4, color: COLORES.grisTexto }}>{titulo}</div>
-      <div style={{ fontSize: 52, fontWeight: 600, color: COLORES.tinta, marginTop: 20, lineHeight: 1.25 }}>
+      <div style={{ ...ROTULO, color: COLORES.grisTexto }}>{titulo}</div>
+      <div style={{ ...FRASE, fontSize: 50, color: COLORES.tinta, marginTop: 20, lineHeight: 1.22 }}>
         {conMarca(texto, palabra)}
       </div>
     </div>
@@ -63,14 +64,7 @@ export const Partida: React.FC<{
       <AbsoluteFill style={{ padding: '110px 90px', justifyContent: 'center' }}>
         <TextoQueEmpuja>
           <div
-            style={{
-              fontSize: 64,
-              fontWeight: 700,
-              color: COLORES.blanco,
-              letterSpacing: -2,
-              marginBottom: 40,
-              textAlign: 'center',
-            }}
+            style={{ ...TITULAR, fontSize: 64, letterSpacing: -2, marginBottom: 40, textAlign: 'center' }}
           >
             La IA revisa la pieza terminada
           </div>

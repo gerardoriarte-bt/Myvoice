@@ -44,29 +44,50 @@ quieto**. Estas cinco reglas valen más que cualquier tiempo de la tabla.
 5. **Los cortes caen en el beat.** Por eso la velocidad se ajusta al final, con la pista puesta:
    mover un corte tres frames es la diferencia entre prolijo y vivo.
 
+## El texto, que era el problema
+
+En la primera versión las frases iban en una barra con degradado al pie y **el ojo se iba**:
+flotaban sobre una pantalla llena de información, sin un borde que dijera dónde empezaba el
+texto. Cuatro cambios lo arreglan, y los cuatro son tipográficos antes que de movimiento.
+
+1. **Inter se carga de verdad.** Declararla en un `fontFamily` no alcanzaba: el navegador que
+   renderiza no la tiene instalada y caía en Helvetica, que es más ancha y desarma todos los
+   espaciados. Se notaba sin saber por qué.
+2. **El texto vive en un panel sólido**, anclado abajo a la izquierda, con una barra de color al
+   costado. Deja de flotar: tiene un lugar, y es el mismo en los quince planos, así que el ojo
+   aprende dónde mirar y deja de buscar.
+3. **Un velo sobre toda la captura**, no un degradado al pie: baja el contraste de la pantalla
+   entera para que el texto gane siempre, sin depender de qué haya detrás en ese plano.
+4. **Un rótulo en versalitas** arriba de cada frase —EL ADN, EL MOTOR, LA REGLA— que funciona
+   como entrada de lectura y, de paso, dice en qué parte del recorrido estamos.
+
+Y **tres tamaños, ninguno más**: 118 px cuando el texto está solo en pantalla, 58 px sobre una
+captura, 30 px de apoyo. Un video de un minuto con cinco escalas parece hecho por cinco personas.
+
 ## Línea de tiempo
 
-| # | Frames | Dur | Plano | Texto en pantalla |
+21 planos, promedio de 2,9 s y ninguno de más de 5.
+
+| # | Frames | Dur | Plano | Texto |
 |---|---|---|---|---|
-| 1 | 0–60 | 2 s | Negro | «Una campaña.» |
-| 2 | 60–120 | 2 s | Negro | «14 canales.» |
-| 3 | 120–180 | 2 s | Negro | «40 piezas de copy.» |
-| 4 | 180–240 | 2 s | Negro → blanco | «Y el lunes a las 9.» |
-| 5 | 240–330 | 3 s | `02-marcas-adn` | «Primero, quién es la marca» |
-| 6 | 330–420 | 3 s | `03-generar` | «Un brief. Una vez.» |
-| 7 | 420–540 | 4 s | `04-progreso` | «Cuatro roles de IA, 14 canales a la vez» |
-| 8 | 540–630 | 3 s | `05-resultados` | «Con el largo exacto de cada canal» |
-| 9 | 630–720 | 3 s | `06-biblioteca` | «Todo aprobado, en un solo lugar» |
-| 10 | 720–810 | 3 s | `07-revisiones` | «Un enlace para el cliente» |
-| 11 | 810–900 | 3 s | `08-portal-cliente` | «Aprueba sin crear una cuenta» |
-| 12 | 900–1020 | 4 s | `09-tablero` | «Y lo aprobado se vuelve trabajo asignado» |
-| 13 | 1020–1110 | 3 s | `10-orden-trabajo` | «El diseñador recibe el copy exacto» |
-| 14 | 1110–1200 | 3 s | `10-orden-trabajo` | «Y la idea visual que el motor ya escribió» |
-| 15 | 1200–1350 | 5 s | `11-auditoria` | «La IA revisa la pieza terminada» |
-| 16 | 1350–1440 | 3 s | `11-auditoria` | «Avisa. No bloquea. Decide una persona» |
-| 17 | 1440–1530 | 3 s | `13-metricas` | «Con el costo de cada campaña a la vista» |
-| 18 | 1530–1650 | 4 s | Mosaico | «Del brief a la pieza verificada» |
-| 19 | 1650–1800 | 5 s | Cierre | «My Voice» · `myvoice.lobueno.co` |
+| 1–4 | 0–240 | 8 s | Negro | «Una campaña.» · «14 canales.» · «40 piezas de copy.» · «Y el lunes a las 9.» |
+| 5 | 240–330 | 3 s | **Para quién es** | «Agencias y equipos de marca que manejan varias marcas y muchos canales a la vez.» |
+| 6 | 330–435 | 3,5 s | `02-marcas-adn` | EL ADN DE LA MARCA · «Su voz, y lo que nunca diría» |
+| 7 | 435–510 | 2,5 s | `03-generar` | EL BRIEF · «Un brief. Una vez.» |
+| 8 | 510–615 | 3,5 s | `04-progreso` | EL MOTOR · «Cuatro roles de IA, 14 canales a la vez» |
+| 9 | 615–690 | 2,5 s | `05-resultados` | EL COPY · «Con el largo exacto de cada canal» |
+| 10 | 690–765 | 2,5 s | `06-biblioteca` | LA BIBLIOTECA · «Todo aprobado, en un solo lugar» |
+| 11 | 765–840 | 2,5 s | `07-revisiones` | LA APROBACIÓN · «Un enlace para el cliente» |
+| 12 | 840–915 | 2,5 s | `08-portal-cliente` | EL PORTAL · «Aprueba sin crear una cuenta» |
+| 13 | 915–1020 | 3,5 s | `09-tablero` | LA PRODUCCIÓN · «Lo aprobado se vuelve trabajo asignado» |
+| 14 | 1020–1095 | 2,5 s | `10-orden-trabajo` | LA ORDEN DE TRABAJO · «El diseñador recibe el copy exacto» |
+| 15 | 1095–1170 | 2,5 s | `10-orden-trabajo` | EL BRIEF VISUAL · «Y la idea que el motor ya escribió» |
+| 16 | 1170–1320 | 5 s | **Pantalla partida** | «La IA revisa la pieza terminada» · aprobado vs. en la pieza |
+| 17 | 1320–1395 | 2,5 s | `11-auditoria` | LA REGLA · «Avisa. No bloquea. Decide una persona.» |
+| 18 | 1395–1515 | 4 s | **El dato** | LO QUE CAMBIA · **60 %** menos tiempo por campaña |
+| 19 | 1515–1590 | 2,5 s | `13-metricas` | EL COSTO · «Con el costo de cada campaña a la vista» |
+| 20 | 1590–1695 | 3,5 s | Mosaico | «Del brief a la pieza verificada» |
+| 21 | 1695–1800 | 3,5 s | Cierre | «My Voice» · `myvoice.lobueno.co` |
 
 ---
 
@@ -133,6 +154,17 @@ El plano que justifica el video entero. Fondo `#1D1D1F`.
   más largo del video, porque es el único que hay que leer.
 - **16 · La regla** (`11-auditoria`) — Zoom out al informe completo. El texto entra en tres
   tiempos: «Avisa.» / «No bloquea.» / «Decide una persona.»
+
+### Los dos planos que no muestran pantalla
+
+**Para quién es** (plano 5) va **antes del producto, no al final**: si alguien se va a los diez
+segundos, que al menos sepa si el video le hablaba a él.
+
+**El dato** (plano 18) va **después** de mostrar el recorrido completo, por la razón contraria: un
+número sin el recorrido detrás es una promesa; con el recorrido detrás es una conclusión. El
+número sube desde cero y frena —uno que ya está puesto se lee, uno que llega se mira— y lleva su
+letra chica: **«Estimación del equipo sobre su propio flujo de trabajo»**. Decirlo cuesta una
+línea y es lo que separa un dato de una promesa.
 
 ### Bloque 6 · Cierre — frames 1440–1800
 

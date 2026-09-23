@@ -1,6 +1,7 @@
 import React from 'react';
 import { AbsoluteFill, Img, interpolate, staticFile, useCurrentFrame, useVideoConfig } from 'remotion';
 import { COLORES } from '../guion';
+import { TITULAR } from '../tipografia';
 
 /**
  * Las doce pantallas pasando en grilla, encogiéndose hacia el centro.
@@ -19,8 +20,8 @@ export const Mosaico: React.FC<{ imagenes: string[]; texto: string }> = ({ image
         style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(4, 1fr)',
-          gap: 18,
-          width: '82%',
+          gap: 16,
+          width: 1740,
           transform: `scale(${cierre})`,
         }}
       >
@@ -28,13 +29,16 @@ export const Mosaico: React.FC<{ imagenes: string[]; texto: string }> = ({ image
           <div
             key={img}
             style={{
-              borderRadius: 12,
+              borderRadius: 14,
+              border: '1px solid rgba(255,255,255,0.12)',
               overflow: 'hidden',
               opacity: interpolate(frame, [i * 8, i * 8 + 10], [0, 1], {
                 extrapolateLeft: 'clamp',
                 extrapolateRight: 'clamp',
               }),
-              aspectRatio: '16 / 10',
+              // Altura explícita: con `aspectRatio` las celdas colapsaban y las
+              // capturas salían del tamaño de una estampilla.
+              height: 264,
             }}
           >
             <Img src={staticFile(`pantallas/${img}`)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -45,11 +49,10 @@ export const Mosaico: React.FC<{ imagenes: string[]; texto: string }> = ({ image
       <div
         style={{
           position: 'absolute',
-          bottom: 90,
-          fontSize: 58,
-          fontWeight: 700,
-          color: COLORES.blanco,
-          letterSpacing: -1.5,
+          bottom: 64,
+          ...TITULAR,
+          fontSize: 62,
+          letterSpacing: -2,
           opacity: interpolate(frame, [60, 80], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' }),
         }}
       >

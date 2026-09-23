@@ -46,6 +46,8 @@ export type Plano =
       tipo: 'pantalla';
       duracion: number;
       imagen: string;
+      /** Dos palabras en versalitas: la entrada de lectura del bloque. */
+      rotulo: string;
       texto: string;
       subtexto?: string;
       fondo: string;
@@ -67,6 +69,8 @@ export type Plano =
       /** Entra con whip pan (mismo bloque) o con corte seco (bloque nuevo). */
       transicion: 'whip' | 'corte';
     }
+  | { tipo: 'declaracion'; duracion: number; rotulo: string; lineas: string[]; apoyo?: string }
+  | { tipo: 'dato'; duracion: number; rotulo: string; numero: number; sufijo: string; frase: string; pie: string }
   | { tipo: 'partida'; duracion: number; imagen: string; aprobado: string; enLaPieza: string; diferencia: string[] }
   | { tipo: 'mosaico'; duracion: number; imagenes: string[]; texto: string }
   | { tipo: 'cierre'; duracion: number };
@@ -86,12 +90,23 @@ export const PLANOS: Plano[] = [
     flashFinal: true,
   },
 
+  // ── Para quién es ─────────────────────────────────────────────────────────
+  // Va acá y no al final: si alguien se va a los diez segundos, que sepa si el
+  // video le hablaba a él.
+  {
+    tipo: 'declaracion',
+    duracion: s(3),
+    rotulo: 'para quién es',
+    lineas: ['Agencias y equipos de marca', 'que manejan varias marcas', 'y muchos canales a la vez.'],
+  },
+
   // ── Bloque 2 · El copy ────────────────────────────────────────────────────
   {
     tipo: 'pantalla',
-    duracion: s(3),
+    duracion: s(3.5),
     imagen: '02-marcas-adn.png',
-    texto: 'Primero, quién es la marca',
+    rotulo: 'el adn de la marca',
+    texto: 'Su voz, y lo que nunca diría',
     fondo: COLORES.fondoClaro,
     desde: { x: 0.5, y: 0.34, zoom: 1.12 },
     hasta: { x: 0.5, y: 0.34, zoom: 1.12 },
@@ -100,8 +115,9 @@ export const PLANOS: Plano[] = [
   },
   {
     tipo: 'pantalla',
-    duracion: s(3),
+    duracion: s(2.5),
     imagen: '03-generar.png',
+    rotulo: 'el brief',
     texto: 'Un brief. Una vez.',
     fondo: COLORES.fondoClaro,
     desde: { x: 0.5, y: 0.3, zoom: 1.1 },
@@ -110,8 +126,9 @@ export const PLANOS: Plano[] = [
   },
   {
     tipo: 'pantalla',
-    duracion: s(4),
+    duracion: s(3.5),
     imagen: '04-progreso.png',
+    rotulo: 'el motor',
     texto: 'Cuatro roles de IA, 14 canales a la vez',
     fondo: COLORES.fondoClaro,
     desde: { x: 0.5, y: 0.5, zoom: 1.0 },
@@ -121,8 +138,9 @@ export const PLANOS: Plano[] = [
   },
   {
     tipo: 'pantalla',
-    duracion: s(3),
+    duracion: s(2.5),
     imagen: '05-resultados.png',
+    rotulo: 'el copy',
     texto: 'Con el largo exacto de cada canal',
     fondo: COLORES.fondoClaro,
     desde: { x: 0.45, y: 0.55, zoom: 1.35 },
@@ -132,8 +150,9 @@ export const PLANOS: Plano[] = [
   },
   {
     tipo: 'pantalla',
-    duracion: s(3),
+    duracion: s(2.5),
     imagen: '06-biblioteca.png',
+    rotulo: 'la biblioteca',
     texto: 'Todo aprobado, en un solo lugar',
     fondo: COLORES.fondoClaro,
     desde: { x: 0.25, y: 0.6, zoom: 1.25 },
@@ -144,8 +163,9 @@ export const PLANOS: Plano[] = [
   // ── Bloque 3 · El cliente ─────────────────────────────────────────────────
   {
     tipo: 'pantalla',
-    duracion: s(3),
+    duracion: s(2.5),
     imagen: '07-revisiones.png',
+    rotulo: 'la aprobación',
     texto: 'Un enlace para el cliente',
     fondo: COLORES.blanco,
     desde: { x: 0.5, y: 0.5, zoom: 1.0 },
@@ -154,8 +174,9 @@ export const PLANOS: Plano[] = [
   },
   {
     tipo: 'pantalla',
-    duracion: s(3),
+    duracion: s(2.5),
     imagen: '08-portal-cliente.png',
+    rotulo: 'el portal',
     texto: 'Aprueba sin crear una cuenta',
     subtexto: 'Sin cuenta, sin contraseña',
     fondo: COLORES.blanco,
@@ -171,9 +192,10 @@ export const PLANOS: Plano[] = [
   // ── Bloque 4 · La producción ──────────────────────────────────────────────
   {
     tipo: 'pantalla',
-    duracion: s(4),
+    duracion: s(3.5),
     imagen: '09-tablero.png',
-    texto: 'Y lo aprobado se vuelve trabajo asignado',
+    rotulo: 'la producción',
+    texto: 'Lo aprobado se vuelve trabajo asignado',
     fondo: COLORES.tinta,
     desde: { x: 0.5, y: 0.5, zoom: 1.0 },
     hasta: { x: 0.45, y: 0.52, zoom: 1.15 },
@@ -181,8 +203,9 @@ export const PLANOS: Plano[] = [
   },
   {
     tipo: 'pantalla',
-    duracion: s(3),
+    duracion: s(2.5),
     imagen: '10-orden-trabajo.png',
+    rotulo: 'la orden de trabajo',
     texto: 'El diseñador recibe el copy exacto',
     fondo: COLORES.tinta,
     desde: { x: 0.5, y: 0.35, zoom: 1.3 },
@@ -193,7 +216,8 @@ export const PLANOS: Plano[] = [
     tipo: 'pantalla',
     duracion: s(3),
     imagen: '10-orden-trabajo.png',
-    texto: 'Y la idea visual que el motor ya escribió',
+    rotulo: 'el brief visual',
+    texto: 'Y la idea que el motor ya escribió',
     fondo: COLORES.tinta,
     desde: { x: 0.5, y: 0.62, zoom: 1.35 },
     hasta: { x: 0.5, y: 0.72, zoom: 1.35 },
@@ -203,7 +227,7 @@ export const PLANOS: Plano[] = [
   // ── Bloque 5 · La verificación ────────────────────────────────────────────
   {
     tipo: 'partida',
-    duracion: s(5),
+    duracion: s(2.5),
     imagen: '11-auditoria.png',
     aprobado: 'Rendí más por tanque con Terpel Máxima',
     enLaPieza: 'Rendi más por tanque con Terpel Máxima',
@@ -213,6 +237,7 @@ export const PLANOS: Plano[] = [
     tipo: 'pantalla',
     duracion: s(3),
     imagen: '11-auditoria.png',
+    rotulo: 'la regla',
     texto: 'Avisa. No bloquea. Decide una persona.',
     fondo: COLORES.tinta,
     desde: { x: 0.5, y: 0.5, zoom: 1.2 },
@@ -220,11 +245,25 @@ export const PLANOS: Plano[] = [
     transicion: 'whip',
   },
 
+  // ── El dato ───────────────────────────────────────────────────────────────
+  // Después de mostrar el recorrido completo, no antes: un número sin el
+  // recorrido detrás es una promesa; con el recorrido detrás es una conclusión.
+  {
+    tipo: 'dato',
+    duracion: s(4),
+    rotulo: 'lo que cambia',
+    numero: 60,
+    sufijo: '%',
+    frase: 'menos tiempo por campaña',
+    pie: 'Estimación del equipo sobre su propio flujo de trabajo',
+  },
+
   // ── Bloque 6 · Cierre ─────────────────────────────────────────────────────
   {
     tipo: 'pantalla',
-    duracion: s(3),
+    duracion: s(2.5),
     imagen: '13-metricas.png',
+    rotulo: 'el costo',
     texto: 'Con el costo de cada campaña a la vista',
     fondo: COLORES.fondoClaro,
     desde: { x: 0.3, y: 0.35, zoom: 1.2 },
@@ -233,7 +272,7 @@ export const PLANOS: Plano[] = [
   },
   {
     tipo: 'mosaico',
-    duracion: s(4),
+    duracion: s(3.5),
     texto: 'Del brief a la pieza verificada',
     imagenes: [
       '02-marcas-adn.png', '03-generar.png', '04-progreso.png', '05-resultados.png',

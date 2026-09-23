@@ -6,6 +6,9 @@ import { Pantalla } from './planos/Pantalla';
 import { Partida } from './planos/Partida';
 import { Mosaico } from './planos/Mosaico';
 import { Cierre } from './planos/Cierre';
+import { Declaracion } from './planos/Declaracion';
+import { Dato } from './planos/Dato';
+import { FUENTE } from './tipografia';
 
 /**
  * El montaje: recorre el guión y pone cada plano en su lugar.
@@ -15,12 +18,14 @@ import { Cierre } from './planos/Cierre';
  * `guion.ts`, que es exactamente lo que va a pasar cuando haya pista.
  */
 export const Reel: React.FC = () => (
-  <AbsoluteFill style={{ fontFamily: 'Inter, -apple-system, Helvetica, Arial, sans-serif' }}>
+  <AbsoluteFill style={{ fontFamily: FUENTE }}>
     <Series>
       {PLANOS.map((plano, i) => (
         <Series.Sequence key={i} durationInFrames={plano.duracion}>
           {plano.tipo === 'titular' && <Titular {...plano} />}
           {plano.tipo === 'pantalla' && <Pantalla {...plano} />}
+          {plano.tipo === 'declaracion' && <Declaracion {...plano} />}
+          {plano.tipo === 'dato' && <Dato {...plano} />}
           {plano.tipo === 'partida' && <Partida {...plano} />}
           {plano.tipo === 'mosaico' && <Mosaico {...plano} />}
           {plano.tipo === 'cierre' && <Cierre />}

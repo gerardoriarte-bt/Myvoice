@@ -2,6 +2,7 @@ import React from 'react';
 import { AbsoluteFill, interpolate, useCurrentFrame, useVideoConfig } from 'remotion';
 import { COLORES } from '../guion';
 import { TextoQueEmpuja } from '../componentes/TextoQueEmpuja';
+import { TITULAR } from '../tipografia';
 
 /**
  * Los cuatro planos de texto sobre negro: el problema.
@@ -24,12 +25,12 @@ export const Titular: React.FC<{ anteriores: string[]; linea: string; flashFinal
     <AbsoluteFill style={{ background: COLORES.tinta, justifyContent: 'center', alignItems: 'center', padding: 120 }}>
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
         {anteriores.map(texto => (
-          <div key={texto} style={{ fontSize: 56, fontWeight: 600, color: COLORES.grisTexto, letterSpacing: -1 }}>
+          <div key={texto} style={{ ...TITULAR, fontSize: 52, letterSpacing: -1.4, color: COLORES.grisTexto }}>
             {texto}
           </div>
         ))}
         <TextoQueEmpuja estilo={{ marginTop: anteriores.length ? 24 : 0 }}>
-          <div style={{ fontSize: 120, fontWeight: 700, color: COLORES.blanco, letterSpacing: -3, textAlign: 'center' }}>
+          <div style={{ ...TITULAR, textAlign: 'center' }}>
             {linea}
           </div>
         </TextoQueEmpuja>
