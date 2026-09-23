@@ -47,3 +47,8 @@ server/.backfills/
 # git no puede difear ni fusionar. Vive en local; lo que el repo versiona es la
 # documentación de diseño en docs/diseno-sistema.md.
 design/
+
+# El video de comunicación queda FUERA del repo, completo: el proyecto de
+# Remotion, las capturas que usa y el mp4 renderizado. No es del producto, y
+# vive en la máquina de quien lo edita.
+video/
