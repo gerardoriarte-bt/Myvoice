@@ -1,7 +1,7 @@
 # Plan H3.D — funciones del equipo y notificaciones
 
 > Quién escribe, quién diseña y quién aprueba, y que a cada uno le llegue lo que le toca.
-> Estado: **plan escrito, sin dibujar.** El nivel 1 espera al `.pen`.
+> Estado: **nivel 1 dibujado** el 2026-09-23, en `§ H3.D · …` del `.pen`. Listo para construir.
 
 ## El hueco
 
@@ -83,30 +83,40 @@ plan agrega.
 
 ---
 
-# Nivel 1 · Diseño
+# Nivel 1 · Diseño — dibujado
 
-**Entregable:** `design/MyVoice_Engine.pen`. Cuatro pantallas y dos estados límite.
+Cuatro pantallas y cuatro estados límite, en `§ H3.D · Equipo con funciones`,
+`§ H3.D · Asignar funciones`, `§ H3.D · La bandeja`, `§ H3.D · El email` y
+`§ H3.D · Estados límite`.
 
-## Pantallas a dibujar
+## Lo que resolvió el dibujo
 
-1. **Equipo, con funciones.** La lista de miembros hoy muestra rol y poco más. Tiene que mostrar
-   **rol y funciones en la misma fila**, sin que se lean como lo mismo — es el punto donde se
-   entiende, o no, que son dos ejes.
-2. **Asignar funciones a una persona**, incluyendo el caso de acotar por marca. El estado más
-   común es «todas las marcas», y tiene que ser el más fácil de dejar así.
-3. **La bandeja.** Qué se ve cuando hay avisos sin leer y qué cuando no hay ninguno. El estado
-   vacío importa: va a ser el habitual.
-4. **El email**, en sus dos formas: te asignaron una pieza, y hay una pieza esperando tu revisión.
+**El rol y la función tienen que verse distinto en la misma fila.** Si se leyeran igual, el
+primero que vea «ADMIN» y «Aprobación» juntos va a pensar que uno reemplaza al otro. En la fila
+del equipo el rol va en negro a la izquierda, después una línea fina, y después las funciones en
+el color de su etapa del producto: azul el copy, violeta el diseño, ámbar la aprobación. **La
+línea fina hace más por explicar los dos ejes que cualquier texto de ayuda.**
 
-## Estados límite
+**«Todas las marcas» es el estado por defecto.** Acotar por marca es la excepción, y dejarlo fácil
+de no tocar evita que alguien se quede sin avisos por haber elegido de más.
 
-- Un workspace **sin ninguna función asignada** — el estado de todos el día del despliegue. Nadie
-  puede quedarse sin avisos por eso: si no hay aprobadores declarados para la marca, la entrega
-  avisa a todos los que administran.
-- Una persona con **tres funciones en cinco marcas**: la fila del equipo tiene que seguir
-  leyéndose.
-- La misma persona **asigna y recibe**: no le llega nada, y la bandeja no muestra su propia acción.
-- **Resend sin configurar**: el aviso interno igual se guarda; solo no sale el correo.
+**La bandeja vacía es la pantalla habitual**, no un caso raro: un equipo al día no tiene avisos.
+Por eso no dice «no hay nada» — dice dónde mirar, con un botón a Producción.
+
+**Cada correo dice al pie por qué llegó y dónde se cambia.** Sin esa línea, el primer impulso de
+quien no quiere el aviso es marcarlo como spam, y ahí se pierden también los que sí importan.
+
+## Los cuatro estados límite
+
+1. **Un workspace sin ninguna función asignada.** Es el estado de todos el día del despliegue. La
+   regla: sin aprobadores declarados para esa marca, la entrega avisa a quienes administran el
+   workspace. **Nunca se cae en «no avisar a nadie»: se avisa más arriba.**
+2. **Tres funciones en cinco marcas.** La fila muestra funciones, no marcas —«Copy · 2 marcas»—, y
+   el detalle vive en la ficha de la persona, que es donde se edita.
+3. **La misma persona asigna y recibe.** Del destinatario siempre se quita al autor; si queda
+   vacío, no se manda nada, ni correo ni aviso.
+4. **Resend sin configurar.** El aviso se guarda igual en la bandeja; el correo es un canal
+   adicional. Y el envío fallido queda en el log, no se reintenta en silencio.
 
 ---
 
