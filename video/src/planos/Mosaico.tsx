@@ -1,6 +1,7 @@
 import React from 'react';
 import { AbsoluteFill, Img, interpolate, staticFile, useCurrentFrame, useVideoConfig } from 'remotion';
 import { COLORES } from '../guion';
+import { Fondo } from '../componentes/Fondo';
 import { TITULAR } from '../tipografia';
 
 /**
@@ -9,15 +10,17 @@ import { TITULAR } from '../tipografia';
  * Después de un minuto mostrando una campaña avanzando, el mosaico dice lo que
  * el recorrido no dijo: que todo eso era una sola herramienta.
  */
-export const Mosaico: React.FC<{ imagenes: string[]; texto: string }> = ({ imagenes, texto }) => {
+export const Mosaico: React.FC<{ imagenes: string[]; texto: string; acento: string }> = ({ imagenes, texto, acento }) => {
   const frame = useCurrentFrame();
   const { durationInFrames } = useVideoConfig();
   const cierre = interpolate(frame, [durationInFrames - 30, durationInFrames], [1, 0.82], { extrapolateLeft: 'clamp' });
 
   return (
-    <AbsoluteFill style={{ background: COLORES.tinta, justifyContent: 'center', alignItems: 'center' }}>
+    <AbsoluteFill style={{ justifyContent: 'center', alignItems: 'center' }}>
+      <Fondo variante="grilla" acento={acento} />
       <div
         style={{
+          position: 'relative',
           display: 'grid',
           gridTemplateColumns: 'repeat(4, 1fr)',
           gap: 16,

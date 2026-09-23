@@ -24,6 +24,24 @@ export const COLORES = {
   verde: '#047857',
 } as const;
 
+/**
+ * Un color por etapa del recorrido.
+ *
+ * No es decoración: el mismo color aparece en el fondo del bloque, en la barra
+ * del panel de texto y en el rótulo, así que **dice en qué parte del proceso
+ * estamos** sin que nadie lo explique. Cuando el video vuelve al ámbar, ya
+ * sabés que volvimos a la verificación.
+ */
+export const ACENTOS = {
+  problema: '#F97316',     // naranja: la tensión del lunes
+  audiencia: '#0071E3',    // azul: el producto entra en escena
+  copy: '#0071E3',
+  cliente: '#10B981',      // verde: la aprobación
+  produccion: '#7C5CFF',   // violeta: la pieza, que es territorio de diseño
+  verificacion: '#F59E0B', // ámbar: el color de los hallazgos en el producto
+  cierre: '#0071E3',
+} as const;
+
 /** Un punto de la captura, en coordenadas relativas (0-1), al que mirar. */
 export interface Foco {
   x: number;
@@ -41,6 +59,7 @@ export type Plano =
       linea: string;
       /** El flash a blanco del final del bloque 1. */
       flashFinal?: boolean;
+      acento: string;
     }
   | {
       tipo: 'pantalla';
@@ -68,20 +87,45 @@ export type Plano =
       sellos?: { texto: string; color: string; x: number; y: number; desdeFrame: number }[];
       /** Entra con whip pan (mismo bloque) o con corte seco (bloque nuevo). */
       transicion: 'whip' | 'corte';
+      /** El color del bloque: tiñe el velo, la barra del panel y el rótulo. */
+      acento: string;
     }
-  | { tipo: 'declaracion'; duracion: number; rotulo: string; lineas: string[]; apoyo?: string }
-  | { tipo: 'dato'; duracion: number; rotulo: string; numero: number; sufijo: string; frase: string; pie: string }
-  | { tipo: 'partida'; duracion: number; imagen: string; aprobado: string; enLaPieza: string; diferencia: string[] }
-  | { tipo: 'mosaico'; duracion: number; imagenes: string[]; texto: string }
-  | { tipo: 'cierre'; duracion: number };
+  | { tipo: 'declaracion'; duracion: number; rotulo: string; lineas: string[]; apoyo?: string; acento: string }
+  | {
+      tipo: 'dato';
+      duracion: number;
+      rotulo: string;
+      numero: number;
+      sufijo: string;
+      frase: string;
+      pie: string;
+      acento: string;
+    }
+  | {
+      tipo: 'partida';
+      duracion: number;
+      imagen: string;
+      aprobado: string;
+      enLaPieza: string;
+      diferencia: string[];
+      acento: string;
+    }
+  | { tipo: 'mosaico'; duracion: number; imagenes: string[]; texto: string; acento: string }
+  | { tipo: 'cierre'; duracion: number; acento: string };
 
 const s = (segundos: number) => segundos * FPS;
 
 export const PLANOS: Plano[] = [
   // ── Bloque 1 · El problema ────────────────────────────────────────────────
-  { tipo: 'titular', duracion: s(2), anteriores: [], linea: 'Una campaña.' },
-  { tipo: 'titular', duracion: s(2), anteriores: ['Una campaña.'], linea: '14 canales.' },
-  { tipo: 'titular', duracion: s(2), anteriores: ['Una campaña.', '14 canales.'], linea: '40 piezas de copy.' },
+  { tipo: 'titular', duracion: s(2), anteriores: [], linea: 'Una campaña.', acento: ACENTOS.problema },
+  { tipo: 'titular', duracion: s(2), anteriores: ['Una campaña.'], linea: '14 canales.', acento: ACENTOS.problema },
+  {
+    tipo: 'titular',
+    duracion: s(2),
+    anteriores: ['Una campaña.', '14 canales.'],
+    linea: '40 piezas de copy.',
+    acento: ACENTOS.problema,
+  },
   {
     tipo: 'titular',
     duracion: s(2),
@@ -91,6 +135,7 @@ export const PLANOS: Plano[] = [
     // el lunes» deja la frase esperando respuesta, y la respuesta es el que mira.
     linea: 'Y todo, para el lunes.',
     flashFinal: true,
+    acento: ACENTOS.problema,
   },
 
   // ── Para quién es ─────────────────────────────────────────────────────────
@@ -98,9 +143,9 @@ export const PLANOS: Plano[] = [
   // segundos, y encima rompía el ritmo del bloque anterior, que venía de cuatro
   // líneas de dos segundos. Las dos preguntas hacen que quien se reconoce se
   // quede; la tercera le dice que el video le habla a él.
-  { tipo: 'declaracion', duracion: s(1.5), rotulo: 'para quién es', lineas: ['¿Manejás', 'varias marcas?'] },
-  { tipo: 'declaracion', duracion: s(1.5), rotulo: 'para quién es', lineas: ['¿Y catorce canales', 'por campaña?'] },
-  { tipo: 'declaracion', duracion: s(1.5), rotulo: 'para quién es', lineas: ['Esto es para', 'tu equipo.'] },
+  { tipo: 'declaracion', duracion: s(1.5), rotulo: 'para quién es', lineas: ['¿Manejás', 'varias marcas?'], acento: ACENTOS.audiencia },
+  { tipo: 'declaracion', duracion: s(1.5), rotulo: 'para quién es', lineas: ['¿Y catorce canales', 'por campaña?'], acento: ACENTOS.audiencia },
+  { tipo: 'declaracion', duracion: s(1.5), rotulo: 'para quién es', lineas: ['Esto es para', 'tu equipo.'], acento: ACENTOS.audiencia },
 
   // ── Bloque 2 · El copy ────────────────────────────────────────────────────
   {
@@ -108,6 +153,7 @@ export const PLANOS: Plano[] = [
     duracion: s(3),
     imagen: '02-marcas-adn.png',
     rotulo: 'el adn de la marca',
+    acento: ACENTOS.copy,
     texto: 'Su voz, y lo que nunca diría',
     fondo: COLORES.fondoClaro,
     desde: { x: 0.5, y: 0.34, zoom: 1.12 },
@@ -120,6 +166,7 @@ export const PLANOS: Plano[] = [
     duracion: s(2.5),
     imagen: '03-generar.png',
     rotulo: 'el brief',
+    acento: ACENTOS.copy,
     texto: 'Un brief. Una vez.',
     fondo: COLORES.fondoClaro,
     desde: { x: 0.5, y: 0.3, zoom: 1.1 },
@@ -131,6 +178,7 @@ export const PLANOS: Plano[] = [
     duracion: s(3),
     imagen: '04-progreso.png',
     rotulo: 'el motor',
+    acento: ACENTOS.copy,
     texto: 'Cuatro roles de IA, 14 canales a la vez',
     fondo: COLORES.fondoClaro,
     desde: { x: 0.5, y: 0.5, zoom: 1.0 },
@@ -143,6 +191,7 @@ export const PLANOS: Plano[] = [
     duracion: s(2.5),
     imagen: '05-resultados.png',
     rotulo: 'el copy',
+    acento: ACENTOS.copy,
     texto: 'Con el largo exacto de cada canal',
     fondo: COLORES.fondoClaro,
     desde: { x: 0.45, y: 0.55, zoom: 1.35 },
@@ -155,6 +204,7 @@ export const PLANOS: Plano[] = [
     duracion: s(2),
     imagen: '06-biblioteca.png',
     rotulo: 'la biblioteca',
+    acento: ACENTOS.copy,
     texto: 'Todo aprobado, en un solo lugar',
     fondo: COLORES.fondoClaro,
     desde: { x: 0.25, y: 0.6, zoom: 1.25 },
@@ -168,6 +218,7 @@ export const PLANOS: Plano[] = [
     duracion: s(2),
     imagen: '07-revisiones.png',
     rotulo: 'la aprobación',
+    acento: ACENTOS.cliente,
     texto: 'Un enlace para el cliente',
     fondo: COLORES.blanco,
     desde: { x: 0.5, y: 0.5, zoom: 1.0 },
@@ -179,6 +230,7 @@ export const PLANOS: Plano[] = [
     duracion: s(2),
     imagen: '08-portal-cliente.png',
     rotulo: 'el portal',
+    acento: ACENTOS.cliente,
     texto: 'Aprueba sin crear una cuenta',
     subtexto: 'Sin cuenta, sin contraseña',
     fondo: COLORES.blanco,
@@ -197,6 +249,7 @@ export const PLANOS: Plano[] = [
     duracion: s(3),
     imagen: '09-tablero.png',
     rotulo: 'la producción',
+    acento: ACENTOS.produccion,
     texto: 'Lo aprobado se vuelve trabajo asignado',
     fondo: COLORES.tinta,
     desde: { x: 0.5, y: 0.5, zoom: 1.0 },
@@ -208,6 +261,7 @@ export const PLANOS: Plano[] = [
     duracion: s(2.5),
     imagen: '10-orden-trabajo.png',
     rotulo: 'la orden de trabajo',
+    acento: ACENTOS.produccion,
     texto: 'El diseñador recibe el copy exacto',
     fondo: COLORES.tinta,
     desde: { x: 0.5, y: 0.35, zoom: 1.3 },
@@ -219,6 +273,7 @@ export const PLANOS: Plano[] = [
     duracion: s(2.5),
     imagen: '10-orden-trabajo.png',
     rotulo: 'el brief visual',
+    acento: ACENTOS.produccion,
     texto: 'Y la idea que el motor ya escribió',
     fondo: COLORES.tinta,
     desde: { x: 0.5, y: 0.62, zoom: 1.35 },
@@ -234,6 +289,7 @@ export const PLANOS: Plano[] = [
     aprobado: 'Rendí más por tanque con Terpel Máxima',
     enLaPieza: 'Rendi más por tanque con Terpel Máxima',
     diferencia: ['Rendí', 'Rendi'],
+    acento: ACENTOS.verificacion,
   },
   {
     // La otra mitad de la auditoría, que el video no mostraba: además de
@@ -243,6 +299,7 @@ export const PLANOS: Plano[] = [
     duracion: s(2.5),
     imagen: '11-auditoria.png',
     rotulo: 'y contra la marca',
+    acento: ACENTOS.verificacion,
     texto: 'Y que respete el ADN de la marca',
     subtexto: 'Prohibiciones, tono y ortografía — sobre la imagen',
     fondo: COLORES.tinta,
@@ -255,6 +312,7 @@ export const PLANOS: Plano[] = [
     duracion: s(2.5),
     imagen: '11-auditoria.png',
     rotulo: 'la regla',
+    acento: ACENTOS.verificacion,
     texto: 'Avisa. No bloquea. Decide una persona.',
     fondo: COLORES.tinta,
     desde: { x: 0.5, y: 0.5, zoom: 1.2 },
@@ -273,6 +331,7 @@ export const PLANOS: Plano[] = [
     sufijo: '%',
     frase: 'menos tiempo por campaña',
     pie: 'Estimación del equipo sobre su propio flujo de trabajo',
+    acento: ACENTOS.cierre,
   },
 
   // ── Bloque 6 · Cierre ─────────────────────────────────────────────────────
@@ -281,6 +340,7 @@ export const PLANOS: Plano[] = [
     duracion: s(2.5),
     imagen: '13-metricas.png',
     rotulo: 'el costo',
+    acento: ACENTOS.cierre,
     texto: 'Con el costo de cada campaña a la vista',
     fondo: COLORES.fondoClaro,
     desde: { x: 0.3, y: 0.35, zoom: 1.2 },
@@ -291,13 +351,14 @@ export const PLANOS: Plano[] = [
     tipo: 'mosaico',
     duracion: s(3),
     texto: 'Del brief a la pieza verificada',
+    acento: ACENTOS.cierre,
     imagenes: [
       '02-marcas-adn.png', '03-generar.png', '04-progreso.png', '05-resultados.png',
       '06-biblioteca.png', '07-revisiones.png', '08-portal-cliente.png', '09-tablero.png',
       '10-orden-trabajo.png', '11-auditoria.png', '12-mis-piezas.png', '13-metricas.png',
     ],
   },
-  { tipo: 'cierre', duracion: s(4) },
+  { tipo: 'cierre', duracion: s(4), acento: ACENTOS.cierre },
 ];
 
 export const DURACION_TOTAL = PLANOS.reduce((total, p) => total + p.duracion, 0);

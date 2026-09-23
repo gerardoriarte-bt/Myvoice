@@ -1,6 +1,7 @@
 import React from 'react';
 import { AbsoluteFill } from 'remotion';
 import { COLORES } from '../guion';
+import { Fondo } from '../componentes/Fondo';
 import { TextoQueEmpuja } from '../componentes/TextoQueEmpuja';
 import { APOYO, TITULAR } from '../tipografia';
 
@@ -8,8 +9,9 @@ import { APOYO, TITULAR } from '../tipografia';
  * El cierre. La URL queda 60 frames en pantalla: es el tiempo mínimo para que
  * alguien la anote, y el error más común de un video de producto es no dárselo.
  */
-export const Cierre: React.FC = () => (
-  <AbsoluteFill style={{ background: COLORES.tinta, justifyContent: 'center', alignItems: 'center' }}>
+export const Cierre: React.FC<{ acento: string }> = ({ acento }) => (
+  <AbsoluteFill style={{ justifyContent: 'center', alignItems: 'center' }}>
+    <Fondo variante="destello" acento={acento} />
     <TextoQueEmpuja>
       <div style={{ ...TITULAR, fontSize: 150, letterSpacing: -6 }}>My Voice</div>
     </TextoQueEmpuja>

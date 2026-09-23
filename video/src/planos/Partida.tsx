@@ -1,6 +1,7 @@
 import React from 'react';
 import { AbsoluteFill, Img, interpolate, spring, staticFile, useCurrentFrame, useVideoConfig } from 'remotion';
 import { COLORES } from '../guion';
+import { Fondo } from '../componentes/Fondo';
 import { TextoQueEmpuja } from '../componentes/TextoQueEmpuja';
 import { FRASE, ROTULO, TITULAR } from '../tipografia';
 
@@ -16,7 +17,8 @@ import { FRASE, ROTULO, TITULAR } from '../tipografia';
  */
 export const Partida: React.FC<{
   imagen: string; aprobado: string; enLaPieza: string; diferencia: string[];
-}> = ({ imagen, aprobado, enLaPieza, diferencia }) => {
+  acento: string;
+}> = ({ imagen, aprobado, enLaPieza, diferencia, acento }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const columna = spring({ frame: frame - 10, fps, config: { damping: 200 } });
@@ -55,9 +57,10 @@ export const Partida: React.FC<{
   );
 
   return (
-    <AbsoluteFill style={{ background: COLORES.tinta }}>
+    <AbsoluteFill>
+      <Fondo variante="malla" acento={acento} />
       {/* El fondo es contexto, no contenido: si compite, no se lee la comparación. */}
-      <AbsoluteFill style={{ opacity: 0.1 }}>
+      <AbsoluteFill style={{ opacity: 0.08 }}>
         <Img src={staticFile(`pantallas/${imagen}`)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
       </AbsoluteFill>
 

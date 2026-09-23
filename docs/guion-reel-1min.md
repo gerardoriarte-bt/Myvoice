@@ -64,6 +64,40 @@ texto. Cuatro cambios lo arreglan, y los cuatro son tipográficos antes que de m
 Y **tres tamaños, ninguno más**: 118 px cuando el texto está solo en pantalla, 58 px sobre una
 captura, 30 px de apoyo. Un video de un minuto con cinco escalas parece hecho por cinco personas.
 
+## El color, que además ordena
+
+Los fondos negros no estaban mal: estaban **mudos**. No acompañaban el mensaje ni separaban una
+parte del video de otra. Ahora cada etapa tiene su color, y **ese mismo color aparece en tres
+lugares**: el fondo del bloque, la barra del panel de texto y el rótulo en versalitas. Así el
+color deja de ser decoración y dice en qué parte del proceso estamos — cuando el video vuelve al
+ámbar, ya sabés que volvimos a la verificación.
+
+| Bloque | Color | Por qué |
+|---|---|---|
+| El problema | Naranja `#F97316` | La tensión del lunes. Es el único momento del video que no usa azul |
+| Para quién es · el copy | Azul `#0071E3` | El azul del producto: acá entra en escena |
+| El cliente | Verde `#10B981` | La aprobación |
+| La producción | Violeta `#7C5CFF` | La pieza, que es territorio de diseño |
+| La verificación | Ámbar `#F59E0B` | El mismo ámbar con el que el producto marca sus hallazgos |
+| El dato y el cierre | Azul | Vuelve al principio |
+
+**Cuatro fondos, todos generados por código** —ni una imagen, así que pesan cero y se recolorean
+cambiando un parámetro:
+
+- **Malla:** manchas de color que respiran. Para los planos de texto solo.
+- **Grilla:** una retícula técnica que dice medidas y especificaciones. Para el mosaico.
+- **Canales:** catorce barras insinuadas, que es de lo que habla ese bloque.
+- **Destello:** un haz diagonal que barre. Para el dato y el cierre.
+
+Tres reglas que los mantienen como fondo y no como protagonista:
+
+1. **Grano encima de todo.** Es lo que separa un fondo hecho de un fondo puesto: sin él, un
+   gradiente grande se ve como una mancha de Photoshop de 2008.
+2. **Se mueven muy despacio** —veinte o treinta píxeles en tres segundos—. Un fondo que se nota
+   deja de ser fondo.
+3. **Sobre las capturas no hay fondo, hay tinte:** el velo lleva un 7 % del color del bloque. No
+   se lee como color; se lee como que esta parte del video *es* de este color.
+
 ## Línea de tiempo
 
 24 planos, promedio de 2,5 s y ninguno de más de 4,5.

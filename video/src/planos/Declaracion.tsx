@@ -1,6 +1,7 @@
 import React from 'react';
 import { AbsoluteFill } from 'remotion';
 import { COLORES } from '../guion';
+import { Fondo } from '../componentes/Fondo';
 import { APOYO, ROTULO, TITULAR } from '../tipografia';
 import { TextoQueEmpuja } from '../componentes/TextoQueEmpuja';
 
@@ -21,9 +22,8 @@ export const Declaracion: React.FC<{
   apoyo?: string;
   acento?: string;
 }> = ({ rotulo, lineas, apoyo, acento = COLORES.azul }) => (
-  <AbsoluteFill
-    style={{ background: COLORES.tinta, justifyContent: 'center', alignItems: 'flex-start', padding: '0 140px' }}
-  >
+  <AbsoluteFill style={{ justifyContent: 'center', alignItems: 'flex-start', padding: '0 140px' }}>
+    <Fondo variante="malla" acento={acento} />
     <TextoQueEmpuja recorrido={40}>
       <div style={{ ...ROTULO, color: acento, marginBottom: 28 }}>{rotulo}</div>
     </TextoQueEmpuja>

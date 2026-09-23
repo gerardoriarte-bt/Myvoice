@@ -26,10 +26,17 @@ import { TextoQueEmpuja } from './TextoQueEmpuja';
  * parte del bloque quedaría encima del resalte y del contador, y los apagaría
  * a ellos también. Baja la captura, no lo que la señala.
  */
-export const Velo: React.FC<{ oscuro: boolean }> = ({ oscuro }) => {
+export const Velo: React.FC<{ oscuro: boolean; acento?: string }> = ({ oscuro, acento }) => {
   const frame = useCurrentFrame();
-  const opacidad = interpolate(frame, [0, 12], [0, oscuro ? 0.42 : 0.3], { extrapolateRight: 'clamp' });
-  return <AbsoluteFill style={{ background: oscuro ? '#000' : '#1D1D1F', opacity: opacidad }} />;
+  const opacidad = interpolate(frame, [0, 12], [0, oscuro ? 0.44 : 0.32], { extrapolateRight: 'clamp' });
+  return (
+    <>
+      <AbsoluteFill style={{ background: oscuro ? '#000' : '#1D1D1F', opacity: opacidad }} />
+      {/* Una pizca del color del bloque sobre la captura: no se nota como color,
+          se nota como que esta parte del video "es" de este color. */}
+      {acento && <AbsoluteFill style={{ background: acento, opacity: 0.07, mixBlendMode: 'color' }} />}
+    </>
+  );
 };
 
 export const BloqueDeTexto: React.FC<{

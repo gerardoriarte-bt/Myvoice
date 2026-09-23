@@ -28,7 +28,7 @@ export const Reel: React.FC = () => (
           {plano.tipo === 'dato' && <Dato {...plano} />}
           {plano.tipo === 'partida' && <Partida {...plano} />}
           {plano.tipo === 'mosaico' && <Mosaico {...plano} />}
-          {plano.tipo === 'cierre' && <Cierre />}
+          {plano.tipo === 'cierre' && <Cierre {...plano} />}
         </Series.Sequence>
       ))}
     </Series>

@@ -1,6 +1,7 @@
 import React from 'react';
 import { AbsoluteFill, interpolate, useCurrentFrame, useVideoConfig } from 'remotion';
 import { COLORES } from '../guion';
+import { Fondo } from '../componentes/Fondo';
 import { APOYO, PIE, ROTULO, TITULAR } from '../tipografia';
 import { TextoQueEmpuja } from '../componentes/TextoQueEmpuja';
 
@@ -18,7 +19,8 @@ export const Dato: React.FC<{
   sufijo: string;
   frase: string;
   pie: string;
-}> = ({ rotulo, numero, sufijo, frase, pie }) => {
+  acento: string;
+}> = ({ rotulo, numero, sufijo, frase, pie, acento }) => {
   const frame = useCurrentFrame();
   const { durationInFrames } = useVideoConfig();
   const valor = Math.round(
@@ -29,16 +31,24 @@ export const Dato: React.FC<{
   );
 
   return (
-    <AbsoluteFill
-      style={{ background: COLORES.tinta, justifyContent: 'center', alignItems: 'center', textAlign: 'center' }}
-    >
+    <AbsoluteFill style={{ justifyContent: 'center', alignItems: 'center', textAlign: 'center' }}>
+      {/* El destello barre justo cuando el número frena. */}
+      <Fondo variante="destello" acento={acento} />
       <TextoQueEmpuja recorrido={40}>
-        <div style={{ ...ROTULO, color: COLORES.azul, marginBottom: 24 }}>{rotulo}</div>
+        <div style={{ ...ROTULO, color: acento, marginBottom: 24 }}>{rotulo}</div>
       </TextoQueEmpuja>
 
-      <div style={{ ...TITULAR, fontSize: 300, letterSpacing: -14, fontVariantNumeric: 'tabular-nums' }}>
+      <div
+        style={{
+          ...TITULAR,
+          position: 'relative',
+          fontSize: 300,
+          letterSpacing: -14,
+          fontVariantNumeric: 'tabular-nums',
+        }}
+      >
         {valor}
-        <span style={{ fontSize: 150, color: COLORES.azul }}>{sufijo}</span>
+        <span style={{ fontSize: 150, color: acento }}>{sufijo}</span>
       </div>
 
       <TextoQueEmpuja desdeFrame={26} recorrido={50}>

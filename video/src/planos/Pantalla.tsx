@@ -17,7 +17,7 @@ type Props = Extract<Plano, { tipo: 'pantalla' }>;
  * fondo, que es la otra señal de que el video cambió de tema.
  */
 export const Pantalla: React.FC<Props> = ({
-  imagen, rotulo, texto, subtexto, fondo, desde, hasta, resalte, etiquetas, contador, sellos, transicion,
+  imagen, rotulo, texto, subtexto, fondo, desde, hasta, resalte, etiquetas, contador, sellos, transicion, acento,
 }) => {
   const frame = useCurrentFrame();
   const { durationInFrames } = useVideoConfig();
@@ -31,7 +31,7 @@ export const Pantalla: React.FC<Props> = ({
     <AbsoluteFill style={{ background: fondo }}>
       <AbsoluteFill style={{ transform: `translateX(${whip * 100}%)` }}>
         <Captura imagen={imagen} desde={desde} hasta={hasta} />
-        <Velo oscuro={oscuro} />
+        <Velo oscuro={oscuro} acento={acento} />
 
         {resalte && <Resalte {...resalte} />}
         {contador && <Contador {...contador} />}
@@ -75,7 +75,7 @@ export const Pantalla: React.FC<Props> = ({
           </div>
         )}
 
-        <BloqueDeTexto rotulo={rotulo} frase={texto} apoyo={subtexto} oscuro={oscuro} />
+        <BloqueDeTexto rotulo={rotulo} frase={texto} apoyo={subtexto} oscuro={oscuro} acento={acento} />
       </AbsoluteFill>
 
       {/* La salida del plano, para que el corte no se sienta abrupto de más. */}
