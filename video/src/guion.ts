@@ -10,6 +10,12 @@
  */
 
 export const FPS = 30;
+/**
+ * Noventa segundos y no sesenta. El corte de un minuto obligaba a planos de dos
+ * segundos, y dos segundos alcanzan para ver una pantalla pero no para leerla:
+ * el ojo tiene que encontrar el texto, leerlo y volver a la captura. El tiempo
+ * extra no se repartió en partes iguales — fue a lo que hay que leer.
+ */
 export const ANCHO = 1920;
 export const ALTO = 1080;
 
@@ -125,18 +131,18 @@ const s = (segundos: number) => segundos * FPS;
 
 export const PLANOS: Plano[] = [
   // ── Bloque 1 · El problema ────────────────────────────────────────────────
-  { tipo: 'titular', duracion: s(1.75), anteriores: [], linea: 'Una campaña.', acento: ACENTOS.problema },
-  { tipo: 'titular', duracion: s(1.75), anteriores: ['Una campaña.'], linea: '14 canales.', acento: ACENTOS.problema },
+  { tipo: 'titular', duracion: s(2.2), anteriores: [], linea: 'Una campaña.', acento: ACENTOS.problema },
+  { tipo: 'titular', duracion: s(2.2), anteriores: ['Una campaña.'], linea: '14 canales.', acento: ACENTOS.problema },
   {
     tipo: 'titular',
-    duracion: s(1.75),
+    duracion: s(2.2),
     anteriores: ['Una campaña.', '14 canales.'],
     linea: '40 piezas de copy.',
     acento: ACENTOS.problema,
   },
   {
     tipo: 'titular',
-    duracion: s(1.75),
+    duracion: s(2.2),
     anteriores: ['Una campaña.', '14 canales.', '40 piezas de copy.'],
     // Antes decía «Y el lunes a las 9», que cerraba el problema pero no abría
     // nada: lo que seguía —a quién le pasa esto— quedaba colgado. «Todo, para
@@ -151,9 +157,9 @@ export const PLANOS: Plano[] = [
   // segundos, y encima rompía el ritmo del bloque anterior, que venía de cuatro
   // líneas de dos segundos. Las dos preguntas hacen que quien se reconoce se
   // quede; la tercera le dice que el video le habla a él.
-  { tipo: 'declaracion', duracion: s(1.5), rotulo: 'para quién es', lineas: ['¿Manejás', 'varias marcas?'], acento: ACENTOS.audiencia },
-  { tipo: 'declaracion', duracion: s(1.5), rotulo: 'para quién es', lineas: ['¿Y catorce canales', 'por campaña?'], acento: ACENTOS.audiencia },
-  { tipo: 'declaracion', duracion: s(1.5), rotulo: 'para quién es', lineas: ['Esto es para', 'tu equipo.'], acento: ACENTOS.audiencia },
+  { tipo: 'declaracion', duracion: s(2), rotulo: 'para quién es', lineas: ['¿Manejás', 'varias marcas?'], acento: ACENTOS.audiencia },
+  { tipo: 'declaracion', duracion: s(2), rotulo: 'para quién es', lineas: ['¿Y catorce canales', 'por campaña?'], acento: ACENTOS.audiencia },
+  { tipo: 'declaracion', duracion: s(2), rotulo: 'para quién es', lineas: ['Esto es para', 'tu equipo.'], acento: ACENTOS.audiencia },
 
   // ── El mapa ───────────────────────────────────────────────────────────────
   // Va antes del detalle: sin esto, los diez planos de pantallas que siguen son
@@ -161,7 +167,7 @@ export const PLANOS: Plano[] = [
   // el que mira ya entendió — y sabe cuánto falta.
   {
     tipo: 'diagrama',
-    duracion: s(6.5),
+    duracion: s(10),
     rotulo: 'cómo funciona',
     texto: 'Un proceso, seis pasos, cinco responsables',
     acento: ACENTOS.audiencia,
@@ -170,7 +176,7 @@ export const PLANOS: Plano[] = [
   // ── Bloque 2 · El copy ────────────────────────────────────────────────────
   {
     tipo: 'pantalla',
-    duracion: s(3),
+    duracion: s(4.5),
     imagen: '02-marcas-adn.png',
     rotulo: 'el adn de la marca',
     acento: ACENTOS.copy,
@@ -183,7 +189,7 @@ export const PLANOS: Plano[] = [
   },
   {
     tipo: 'pantalla',
-    duracion: s(2.5),
+    duracion: s(3.5),
     imagen: '03-generar.png',
     rotulo: 'el brief',
     acento: ACENTOS.copy,
@@ -195,7 +201,7 @@ export const PLANOS: Plano[] = [
   },
   {
     tipo: 'pantalla',
-    duracion: s(3),
+    duracion: s(5),
     imagen: '04-progreso.png',
     rotulo: 'el motor',
     acento: ACENTOS.copy,
@@ -208,7 +214,7 @@ export const PLANOS: Plano[] = [
   },
   {
     tipo: 'pantalla',
-    duracion: s(2.5),
+    duracion: s(3.5),
     imagen: '05-resultados.png',
     rotulo: 'el copy',
     acento: ACENTOS.copy,
@@ -223,7 +229,7 @@ export const PLANOS: Plano[] = [
   // ── Bloque 3 · El cliente ─────────────────────────────────────────────────
   {
     tipo: 'pantalla',
-    duracion: s(2),
+    duracion: s(3),
     imagen: '07-revisiones.png',
     rotulo: 'la aprobación',
     acento: ACENTOS.cliente,
@@ -235,7 +241,7 @@ export const PLANOS: Plano[] = [
   },
   {
     tipo: 'pantalla',
-    duracion: s(2),
+    duracion: s(3),
     imagen: '08-portal-cliente.png',
     rotulo: 'el portal',
     acento: ACENTOS.cliente,
@@ -254,7 +260,7 @@ export const PLANOS: Plano[] = [
   // ── Bloque 4 · La producción ──────────────────────────────────────────────
   {
     tipo: 'pantalla',
-    duracion: s(3),
+    duracion: s(4.5),
     imagen: '09-tablero.png',
     rotulo: 'la producción',
     acento: ACENTOS.produccion,
@@ -266,7 +272,7 @@ export const PLANOS: Plano[] = [
   },
   {
     tipo: 'pantalla',
-    duracion: s(2.5),
+    duracion: s(3.5),
     imagen: '10-orden-trabajo.png',
     rotulo: 'la orden de trabajo',
     acento: ACENTOS.produccion,
@@ -280,7 +286,7 @@ export const PLANOS: Plano[] = [
   // ── Bloque 5 · La verificación ────────────────────────────────────────────
   {
     tipo: 'partida',
-    duracion: s(3.5),
+    duracion: s(6),
     imagen: '11-auditoria.png',
     aprobado: 'Rendí más por tanque con Terpel Máxima',
     enLaPieza: 'Rendi más por tanque con Terpel Máxima',
@@ -292,7 +298,7 @@ export const PLANOS: Plano[] = [
     // comparar el texto, la IA MIRA LA PIEZA y la juzga contra el ADN de la
     // marca. Es lo que la distingue de un corrector ortográfico.
     tipo: 'pantalla',
-    duracion: s(2.5),
+    duracion: s(3.5),
     imagen: '11-auditoria.png',
     rotulo: 'y contra la marca',
     acento: ACENTOS.verificacion,
@@ -305,7 +311,7 @@ export const PLANOS: Plano[] = [
   },
   {
     tipo: 'pantalla',
-    duracion: s(2),
+    duracion: s(3),
     imagen: '11-auditoria.png',
     rotulo: 'la regla',
     acento: ACENTOS.verificacion,
@@ -321,7 +327,7 @@ export const PLANOS: Plano[] = [
   // recorrido detrás es una promesa; con el recorrido detrás es una conclusión.
   {
     tipo: 'dato',
-    duracion: s(3),
+    duracion: s(4),
     rotulo: 'lo que cambia',
     numero: 60,
     sufijo: '%',
@@ -333,7 +339,7 @@ export const PLANOS: Plano[] = [
   // ── Bloque 6 · Cierre ─────────────────────────────────────────────────────
   {
     tipo: 'pantalla',
-    duracion: s(2),
+    duracion: s(3),
     imagen: '13-metricas.png',
     rotulo: 'el costo',
     acento: ACENTOS.cierre,
@@ -345,11 +351,11 @@ export const PLANOS: Plano[] = [
   },
   {
     tipo: 'resumen',
-    duracion: s(5.5),
+    duracion: s(10.5),
     texto: 'Del brief a la pieza verificada',
     acento: ACENTOS.cierre,
   },
-  { tipo: 'cierre', duracion: s(3), acento: ACENTOS.cierre },
+  { tipo: 'cierre', duracion: s(4.7), acento: ACENTOS.cierre },
 ];
 
 export const DURACION_TOTAL = PLANOS.reduce((total, p) => total + p.duracion, 0);

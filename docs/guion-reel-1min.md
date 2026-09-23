@@ -1,9 +1,9 @@
-# Guión — video de 1 minuto sobre My Voice
+# Guión — el video de My Voice
 
-> Para producir en **Remotion**. **Horizontal 1920×1080**, 30 fps, **1800 frames**.
+> Para producir en **Remotion**. **Horizontal 1920×1080**, 30 fps, **2700 frames (1:30)**.
 > Las capturas ya están exportadas del `.pen` en `design/exports/` (PNG 2x, horizontales).
 >
-> Estado: **guión cerrado, sin producir.**
+> Estado: **producido.** El proyecto está en `video/`; `npm run build` regenera el mp4.
 >
 > **Sin locución: solo texto y música.** El texto en pantalla carga toda la historia, así que es
 > grande, corto y entra con el ritmo de la pista.
@@ -33,7 +33,10 @@ contra lo que se aprobó.*
 Lo que hace que un video se sienta dinámico no es la velocidad: es que **nunca haya un plano
 quieto**. Estas cinco reglas valen más que cualquier tiempo de la tabla.
 
-1. **Ningún plano pasa de 5 segundos.** El promedio es 3. Son 19 planos en 60 segundos.
+1. **El tiempo se reparte según lo que hay que leer, no en partes iguales.** Pasó de 60 a 90
+   segundos porque con planos de dos segundos se veía la pantalla pero no se leía: el ojo tiene
+   que encontrar el texto, leerlo y volver a la captura. Los dos planos que se leen de verdad —el
+   diagrama y el resumen— son los más largos, con 10 y 10,5 s; los de pantalla van entre 3 y 5.
 2. **Siempre hay algo en movimiento, y solo una cosa.** O se mueve la captura o se mueve el
    texto. Los dos a la vez marean y no se lee ninguno.
 3. **El texto no aparece: entra.** Desde el borde, empujando al anterior fuera de cuadro. Nada de
@@ -100,29 +103,33 @@ Tres reglas que los mantienen como fondo y no como protagonista:
 
 ## Línea de tiempo
 
-23 planos, promedio de 2,6 s. Los dos más largos son los dos que hay que leer: el diagrama y el
-resumen.
+**90 segundos, 2700 frames.** 23 planos, promedio de 3,9 s.
 
 | # | Frames | Dur | Plano | Texto |
 |---|---|---|---|---|
-| 1–4 | 0–208 | 7 s | Negro, naranja | «Una campaña.» · «14 canales.» · «40 piezas de copy.» · «Y todo, para el lunes.» |
-| 5–7 | 208–343 | 4,5 s | Negro, azul | «¿Manejás varias marcas?» · «¿Y catorce canales por campaña?» · «Esto es para tu equipo.» |
-| 8 | 343–538 | 6,5 s | **El diagrama** | CÓMO FUNCIONA · «Un proceso, seis pasos, cinco responsables» |
-| 9 | 538–628 | 3 s | `02-marcas-adn` | EL ADN DE LA MARCA · «Su voz, y lo que nunca diría» |
-| 10 | 628–703 | 2,5 s | `03-generar` | EL BRIEF · «Un brief. Una vez.» |
-| 11 | 703–793 | 3 s | `04-progreso` | EL MOTOR · «Cuatro roles de IA, 14 canales a la vez» |
-| 12 | 793–868 | 2,5 s | `05-resultados` | EL COPY · «Con el largo exacto de cada canal» |
-| 13 | 868–928 | 2 s | `07-revisiones` | LA APROBACIÓN · «Un enlace para el cliente» |
-| 14 | 928–988 | 2 s | `08-portal-cliente` | EL PORTAL · «Aprueba sin crear una cuenta» |
-| 15 | 988–1078 | 3 s | `09-tablero` | LA PRODUCCIÓN · «Lo aprobado se vuelve trabajo asignado» |
-| 16 | 1078–1153 | 2,5 s | `10-orden-trabajo` | LA ORDEN DE TRABAJO · «El diseñador recibe el copy exacto» |
-| 17 | 1153–1258 | 3,5 s | **Pantalla partida** | «La IA revisa la pieza terminada» · aprobado vs. en la pieza |
-| 18 | 1258–1333 | 2,5 s | `11-auditoria` | Y CONTRA LA MARCA · «Y que respete el ADN de la marca» |
-| 19 | 1333–1393 | 2 s | `11-auditoria` | LA REGLA · «Avisa. No bloquea. Decide una persona.» |
-| 20 | 1393–1483 | 3 s | **El dato** | LO QUE CAMBIA · **60 %** menos tiempo por campaña |
-| 21 | 1483–1543 | 2 s | `13-metricas` | EL COSTO · «Con el costo de cada campaña a la vista» |
-| 22 | 1543–1708 | 5,5 s | **El resumen** | «Del brief a la pieza verificada» + los 14 canales + las 6 verificaciones |
-| 23 | 1708–1800 | 3 s | Cierre | «My Voice» · `myvoice.lobueno.co` |
+| 1 | 0–66 | 2,2 s | Negro, naranja | «Una campaña.» |
+| 2 | 66–132 | 2,2 s | Negro, naranja | «14 canales.» |
+| 3 | 132–198 | 2,2 s | Negro, naranja | «40 piezas de copy.» |
+| 4 | 198–264 | 2,2 s | Negro, naranja | «Y todo, para el lunes.» |
+| 5 | 264–324 | 2,0 s | Negro, azul | «¿Manejás varias marcas?» |
+| 6 | 324–384 | 2,0 s | Negro, azul | «¿Y catorce canales por campaña?» |
+| 7 | 384–444 | 2,0 s | Negro, azul | «Esto es para tu equipo.» |
+| 8 | 444–744 | 10,0 s | **El diagrama** | CÓMO FUNCIONA · «Un proceso, seis pasos, cinco responsables» |
+| 9 | 744–879 | 4,5 s | `02-marcas-adn` | EL ADN DE LA MARCA · «Su voz, y lo que nunca diría» |
+| 10 | 879–984 | 3,5 s | `03-generar` | EL BRIEF · «Un brief. Una vez.» |
+| 11 | 984–1134 | 5,0 s | `04-progreso` | EL MOTOR · «Cuatro roles de IA, 14 canales a la vez» |
+| 12 | 1134–1239 | 3,5 s | `05-resultados` | EL COPY · «Con el largo exacto de cada canal» |
+| 13 | 1239–1329 | 3,0 s | `07-revisiones` | LA APROBACIÓN · «Un enlace para el cliente» |
+| 14 | 1329–1419 | 3,0 s | `08-portal-cliente` | EL PORTAL · «Aprueba sin crear una cuenta» |
+| 15 | 1419–1554 | 4,5 s | `09-tablero` | LA PRODUCCIÓN · «Lo aprobado se vuelve trabajo asignado» |
+| 16 | 1554–1659 | 3,5 s | `10-orden-trabajo` | LA ORDEN DE TRABAJO · «El diseñador recibe el copy exacto» |
+| 17 | 1659–1839 | 6,0 s | **Pantalla partida** | «La IA revisa la pieza terminada» · aprobado vs. en la pieza |
+| 18 | 1839–1944 | 3,5 s | `11-auditoria` | Y CONTRA LA MARCA · «Y que respete el ADN de la marca» |
+| 19 | 1944–2034 | 3,0 s | `11-auditoria` | LA REGLA · «Avisa. No bloquea. Decide una persona.» |
+| 20 | 2034–2154 | 4,0 s | **El dato** | LO QUE CAMBIA · **60 %** menos tiempo por campaña |
+| 21 | 2154–2244 | 3,0 s | `13-metricas` | EL COSTO · «Con el costo de cada campaña a la vista» |
+| 22 | 2244–2559 | 10,5 s | **El resumen** | «Del brief a la pieza verificada» + los 14 canales + las 6 verificaciones |
+| 23 | 2559–2700 | 4,7 s | Cierre | «My Voice» · `myvoice.lobueno.co` |
 
 ---
 

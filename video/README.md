@@ -1,6 +1,6 @@
 # El video de My Voice
 
-El reel de un minuto, en Remotion. **Horizontal 1920×1080, 30 fps, 1800 frames.**
+El video de My Voice, en Remotion. **Horizontal 1920×1080, 30 fps, 2700 frames (1:30).**
 
 El guión completo —con el porqué de cada plano— está en
 [`docs/guion-reel-1min.md`](../docs/guion-reel-1min.md). Este proyecto es ese guión ejecutable.
@@ -8,7 +8,7 @@ El guión completo —con el porqué de cada plano— está en
 ```bash
 npm install
 npm start     # el estudio, para mirar y ajustar
-npm run build # renderiza out/myvoice-reel.mp4 (~40 s, 24 MB)
+npm run build # renderiza out/myvoice-reel.mp4 (~1 min, 37 MB)
 ```
 
 ## Dónde se toca cada cosa
@@ -22,8 +22,11 @@ npm run build # renderiza out/myvoice-reel.mp4 (~40 s, 24 MB)
 | Las piezas de movimiento | `src/componentes/` |
 
 **Las duraciones viven en `PLANOS` a propósito.** Cuando haya música, ajustar el montaje tiene
-que ser mover números en una lista hasta que los cortes caigan en el beat — no editar diecinueve
+que ser mover números en una lista hasta que los cortes caigan en el beat — no editar veintitrés
 componentes.
+
+Ojo con una cosa: **30 fps significa que una duración tiene que caer en frames enteros.** 2,25 s
+son 67,5 frames y eso no existe; 2,2 s son 66 y sí.
 
 ## Las capturas
 
