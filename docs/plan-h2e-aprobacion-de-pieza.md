@@ -2,7 +2,8 @@
 
 > Hoy el cliente aprueba un texto y nunca ve el arte final. Esto agrega una segunda ronda sobre
 > la pieza terminada, con el feedback desglosado en copy y diseño.
-> Estado: **nivel 1 dibujado** el 2026-09-24, en `§ H2.E · …` del `.pen`. Falta el nivel 2.
+> Estado: **nivel 2 escrito** el 2026-09-24. Nivel 1 dibujado en `§ H2.E · …` del `.pen`.
+> Listo para construir.
 
 ## El hueco
 
@@ -147,27 +148,131 @@ es por campaña.
 
 ---
 
-# Fases
+---
 
-1. **El modelo y el desglose interno** — las dos categorías en `devolver` (D7). Entrega valor
-   sola y no toca el portal público.
-2. **La ronda 2** — `ReviewSessionItem` apuntando a una pieza, el portal con la pieza y el
-   formulario, y la vuelta al tablero.
-3. **El enrutamiento** — la propuesta de feedback de copy y su confirmación (D5).
+# Nivel 2 · Cómo se construye
+
+## Lo que NO cambia, que es la decisión más importante de este nivel
+
+**No hay quinta columna.** Una pieza que está con el cliente sigue en `LISTA`. El «esperando» es
+una propiedad de la sesión de revisión, no de la pieza.
+
+Si fuera un estado habría que darle lo que D5 del H2 le exige a cada columna —un dueño y una
+acción que la vacía— y el dueño sería alguien que no entra a la herramienta. Una columna que solo
+se vacía cuando alguien de afuera contesta no es una columna: es una sala de espera, y el tablero
+dejaría de responder «cuánto lleva esto acá» para empezar a mentir.
+
+**Y cuando el cliente pide cambios de arte no hace falta una transición nueva:** `reabrir` ya va
+de `LISTA` a `EN_DISENO` y ya exige motivo.
+
+## Modelo
+
+```prisma
+enum RondaRevision { COPY  PIEZA }
+
+model ReviewSession {
+  /// Una sesión es homogénea: o lleva copy o lleva piezas, nunca las dos.
+  /// Con un solo campo acá, los items no necesitan validarse de a uno.
+  ronda RondaRevision @default(COPY)
+}
+
+model ReviewSessionItem {
+  /// Uno de los dos, según la ronda de la sesión. Prisma no expresa el XOR;
+  /// lo sostienen el servicio y un CHECK en la migración.
+  savedVariationId String?
+  piezaId          String?
+}
+
+model ReviewItemFeedback {
+  savedVariationId String?
+  piezaId          String?
+  decision         ReviewDecision
+  /// `comment` se RENOMBRA a `feedbackCopy`: en la ronda 1 todo comentario es
+  /// sobre copy, así que la columna ya era eso sin decirlo. Renombrar en vez de
+  /// agregar evita tener dos campos que significan lo mismo.
+  feedbackCopy   String?
+  feedbackDiseno String?
+}
+
+model NegativeFeedback {
+  /// NULL = propuesta sin confirmar. El motor solo lee las confirmadas (D5).
+  /// La migración pone `createdAt` en las filas que ya existen: vienen de la
+  /// ronda 1 y ya estaban surtiendo efecto.
+  confirmadoAt DateTime?
+}
+
+model PiezaEvento {
+  /// COPY · DISENO. Una devolución con las dos categorías deja DOS eventos,
+  /// no uno con dos campos: el historial es append-only y cada entrada tiene
+  /// un destinatario distinto.
+  categoria String?
+}
+
+model Project {
+  /// D3. Apagado = la campaña se comporta como hoy.
+  pideAprobacionDeCliente Boolean @default(false)
+}
+```
+
+## Qué pasa al recibir la ronda 2
+
+Por cada pieza de la entrega, y en este orden:
+
+| Lo que mandó el cliente | Qué pasa con la pieza | Qué pasa con el feedback |
+|---|---|---|
+| Aprobada, sin comentarios | Sigue `LISTA` | — |
+| Aprobada, con comentarios | Sigue `LISTA` | Un `PiezaEvento` por categoría |
+| Cambios, con feedback de diseño | `reabrir` → `EN_DISENO` | Evento `DEVUELTA` categoría `DISENO`; le avisa al diseñador |
+| Cambios, solo feedback de copy | **Sigue `LISTA`** | `NegativeFeedback` sin confirmar + evento categoría `COPY` |
+
+La última fila es la que hay que mirar dos veces. **Una pieza cuyo problema es el mensaje no
+vuelve sola a diseño**, porque el diseñador no puede hacer nada hasta que el copy cambie:
+mandársela sería ponerle en el tablero trabajo que no existe todavía.
+
+Lo que pasa en cambio es que la propuesta queda esperando. Cuando alguien la confirma y edita el
+copy en la Biblioteca, **el mecanismo de desfase que ya existe** hace saltar el aviso «el copy
+cambió después de mandarla a producir» en esa pieza y en sus hermanas — y ahí quien produce decide
+si la reabre. Cero estado nuevo, y la decisión queda donde D6 la puso: en una persona.
+
+## Endpoints
+
+| | |
+|---|---|
+| `POST /review-sessions` | gana `ronda` y `piezaIds`. Rechaza mezclar copys y piezas. |
+| `GET /review/public/:token` | cuando `ronda = PIEZA` devuelve, por pieza: la URL firmada del snapshot, el formato, y **el copy congelado** de sus slots |
+| `POST /review/public/:token/submit` | acepta `{ piezaId, decision, feedbackCopy?, feedbackDiseno? }`. Al menos uno de los dos textos si `decision = REJECTED` |
+| `POST /piezas/:id/devolver` | gana `notaCopy` / `notaDiseno` (D7). `nota` sigue aceptándose y se guarda como `COPY` |
+| `GET /feedback/propuestas` | las propuestas sin confirmar del workspace |
+| `POST /feedback/propuestas/:id/confirmar` · `/descartar` | `requireManager`: decide qué aprende el motor |
+| `PATCH /projects/:id` | el interruptor de D3. Hoy `projects` no tiene update: hay que agregarlo con `pickFields()` |
 
 ## Criterio de aceptación
 
-- Una campaña sin ronda 2 se comporta exactamente como hoy: la pieza llega a Lista y termina.
-- Una pieza en Lista se puede mandar al cliente, y el cliente la ve **con el copy aprobado al
-  lado**, sin cuenta.
-- El cliente puede aprobar dejando un comentario, y la pieza sigue Lista.
-- Un rechazo con feedback de diseño devuelve la pieza a En diseño con el motivo, y le avisa al
-  diseñador (H3.D ya sabe hacer eso).
-- Un rechazo con feedback de copy **no** desaprueba el copy en la Biblioteca (D6): deja una
-  propuesta.
-- Ninguna propuesta de copy llega al motor sin que alguien de adentro la confirme.
-- `verify:isolation` suma: una pieza de otro workspace no se puede meter en una sesión de
-  revisión, y el token de una sesión no da acceso a ninguna otra pieza.
+- Una campaña con el interruptor apagado se comporta **exactamente** como hoy: la columna Lista
+  no muestra el botón y la pieza termina ahí.
+- Una sesión de ronda 2 muestra la pieza **con el copy aprobado al lado**, sin cuenta.
+- El cliente puede aprobar dejando comentario: la pieza sigue `LISTA` y el comentario queda en el
+  historial con su categoría.
+- Un rechazo con feedback de diseño devuelve la pieza a `EN_DISENO` y le avisa al diseñador
+  asignado.
+- Un rechazo con **solo** feedback de copy **no** mueve la pieza y **no** desaprueba el copy.
+- Una generación no ve ninguna propuesta sin confirmar: `generateController` sigue leyendo solo
+  las diez últimas **confirmadas**.
+- Una sesión no puede mezclar copys y piezas.
+- `verify:isolation` suma tres casos: una pieza de otro workspace no entra en una sesión; el token
+  de una sesión no devuelve ninguna pieza que no sea suya; y confirmar una propuesta de otro
+  workspace responde 404.
+
+## Fases
+
+1. **El desglose interno** — `PiezaEvento.categoria`, las dos notas en `devolver`, y el renombre
+   de `comment` a `feedbackCopy` con su backfill. No toca el portal público y entrega valor sola:
+   el diseñador ya recibe el feedback separado, venga de quien venga.
+2. **La ronda 2** — `ronda` en la sesión, la pieza en el item, el portal con la pieza y el
+   formulario, el interruptor de la campaña, y la vuelta al tablero.
+3. **El enrutamiento** — `confirmadoAt`, el filtro del motor, y la bandeja de propuestas (D5).
+   Va tercera a propósito: hasta que exista, la ronda 2 simplemente no crea `NegativeFeedback`, y
+   eso es más seguro que crearlos sin poder confirmarlos.
 
 ## Riesgos
 
