@@ -87,6 +87,10 @@ export const ejecutarAccion = async (req: AuthRequest, res: Response) => {
       asignadaAId: req.body?.asignadaAId,
       enlace: req.body?.enlace,
       nota: req.body?.nota,
+      // El motivo desglosado (H2.E · D7). La lista blanca es explícita a
+      // propósito: un campo nuevo no viaja hasta que alguien lo agregue acá.
+      notaCopy: req.body?.notaCopy,
+      notaDiseno: req.body?.notaDiseno,
     });
     res.json(actualizada);
   } catch (error) {

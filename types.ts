@@ -343,7 +343,10 @@ export interface ReviewSessionItem {
 export interface ReviewItemFeedbackDetail {
   savedVariationId: string;
   decision: ReviewDecision;
-  comment?: string | null;
+  /** Era `comment`. En la ronda de copy todo comentario es sobre copy. */
+  feedbackCopy?: string | null;
+  /** Solo en la ronda de piezas (H2.E). */
+  feedbackDiseno?: string | null;
 }
 
 export interface ReviewSession {
@@ -483,6 +486,8 @@ export interface PiezaEvento {
   deEstado: PiezaEstado | null;
   aEstado: PiezaEstado | null;
   nota: string | null;
+  /** COPY · DISENO. null = nadie lo clasificó, y es un valor válido. */
+  categoria?: string | null;
   createdAt: string;
   autor?: { id: string; name: string };
 }

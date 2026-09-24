@@ -606,8 +606,38 @@ const prepararAviso = async (
 export interface DatosTransicion {
   asignadaAId?: string;
   enlace?: string;
+  /** Sin clasificar. Se sigue aceptando: no toda nota tiene categoría. */
   nota?: string;
+  /** H2.E · D7: el mismo desglose que usa el cliente, puertas adentro. */
+  notaCopy?: string;
+  notaDiseno?: string;
 }
+
+/**
+ * El motivo, desglosado.
+ *
+ * Devuelve una entrada por categoría escrita, y **el historial guarda una por
+ * cada una**: son dos cosas distintas con destinatarios distintos, y meterlas
+ * en un solo evento con dos campos obligaría a cada lector a desarmarlo.
+ *
+ * Una nota suelta se guarda **sin categoría**. Es tentador asignarle una —la
+ * devolución va al diseñador, así que «debe ser de diseño»— y es exactamente
+ * el error que D5 del plan previene: una clasificación equivocada es peor que
+ * ninguna. NULL significa «nadie lo clasificó», que es cierto y no ensucia.
+ */
+const motivosDe = (datos: DatosTransicion): { categoria: string | null; texto: string }[] => {
+  const limpia = (v?: string) => (typeof v === 'string' ? v.trim() : '');
+  const motivos: { categoria: string | null; texto: string }[] = [];
+  const copy = limpia(datos.notaCopy);
+  const diseno = limpia(datos.notaDiseno);
+  if (copy) motivos.push({ categoria: 'COPY', texto: copy });
+  if (diseno) motivos.push({ categoria: 'DISENO', texto: diseno });
+  if (motivos.length === 0) {
+    const suelta = limpia(datos.nota);
+    if (suelta) motivos.push({ categoria: null, texto: suelta });
+  }
+  return motivos;
+};
 
 /**
  * Ejecuta una acción de la tabla. El cambio de estado va con
@@ -624,8 +654,8 @@ export const ejecutarAccion = async (
   const transicion = TRANSICIONES[accion];
   if (!transicion) throw new TenantError('Acción desconocida', 400);
 
-  const nota = typeof datos.nota === 'string' ? datos.nota.trim() : '';
-  if (transicion.exigeNota && !nota)
+  const motivos = motivosDe(datos);
+  if (transicion.exigeNota && motivos.length === 0)
     throw new TenantError('Esta acción necesita un motivo escrito', 400);
 
   const actual = await prisma.pieza.findUnique({ where: { id: piezaId } });
@@ -687,16 +717,21 @@ export const ejecutarAccion = async (
 
     if (accion === 'actualizar-copy') await recongelarCopy(tx, piezaId);
 
-    await tx.piezaEvento.create({
-      data: {
-        piezaId,
-        tipo: transicion.evento,
-        deEstado: actual.estado,
-        aEstado: transicion.hacia ?? actual.estado,
-        autorId: tenant.userId,
-        nota: nota || null,
-      },
-    });
+    // Una entrada por motivo. Sin motivos —aceptar, asignar— queda la entrada
+    // sola que registra el movimiento.
+    for (const motivo of motivos.length ? motivos : [{ categoria: null, texto: null }]) {
+      await tx.piezaEvento.create({
+        data: {
+          piezaId,
+          tipo: transicion.evento,
+          deEstado: actual.estado,
+          aEstado: transicion.hacia ?? actual.estado,
+          autorId: tenant.userId,
+          nota: motivo.texto,
+          categoria: motivo.categoria,
+        },
+      });
+    }
 
     if (aviso) escritos = await notificar(tx, tenant, aviso.evento, aviso.destinatarios);
   });

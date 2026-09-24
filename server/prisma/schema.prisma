@@ -399,7 +399,14 @@ model ReviewItemFeedback {
   reviewSubmissionId String
   savedVariationId   String
   decision           ReviewDecision
-  comment            String?
+  /// Era `comment`. En la ronda de copy TODO comentario es sobre copy, así que
+  /// la columna ya significaba esto sin decirlo; se renombra en vez de agregar
+  /// una al lado, porque dos campos que significan lo mismo terminan
+  /// discrepando. La migración usa RENAME, no DROP: hay historial en producción.
+  feedbackCopy       String?
+  /// Se llena solo en la ronda de piezas (H2.E). En la ronda de copy no hay
+  /// arte que comentar, así que queda NULL y eso también es información.
+  feedbackDiseno     String?
   reviewSubmission   ReviewSubmission @relation(fields: [reviewSubmissionId], references: [id], onDelete: Cascade)
 }
 
@@ -542,6 +549,12 @@ model PiezaEvento {
   autorId   String
   /// Obligatoria en DEVUELTA y REABIERTA; el servicio lo exige.
   nota      String?
+  /// COPY · DISENO. NULL = nadie lo clasificó, y eso es un valor válido: una
+  /// nota vieja o escrita sin elegir categoría se queda sin clasificar en vez
+  /// de recibir una etiqueta inventada. Una devolución con las dos categorías
+  /// deja DOS eventos —el historial es append-only y cada entrada tiene un
+  /// destinatario distinto— y no uno con dos campos.
+  categoria String?
   createdAt DateTime     @default(now())
 
   pieza Pieza @relation(fields: [piezaId], references: [id], onDelete: Cascade)

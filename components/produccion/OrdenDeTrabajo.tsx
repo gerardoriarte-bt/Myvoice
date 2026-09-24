@@ -28,6 +28,17 @@ const MOTIVO: Record<string, string> = {
   borrado: 'se borró de la Biblioteca',
 };
 
+/**
+ * El punto de color del historial. Es el mismo código que el formulario de
+ * devolución, así que quien escribió «del arte» lo vuelve a encontrar en
+ * violeta. Sin categoría no se pinta nada: una nota vieja o sin clasificar no
+ * recibe un color inventado.
+ */
+const CATEGORIA: Record<string, { nombre: string; color: string }> = {
+  COPY: { nombre: 'Del mensaje', color: '#0071E3' },
+  DISENO: { nombre: 'Del arte', color: '#7C5CFF' },
+};
+
 export default function OrdenDeTrabajo({ piezaId, miembros, onCerrar, onCambio, onError }: Props) {
   const [pieza, setPieza] = React.useState<PiezaDetalle | null>(null);
   const [copiado, setCopiado] = React.useState<string | null>(null);
@@ -296,7 +307,21 @@ export default function OrdenDeTrabajo({ piezaId, miembros, onCerrar, onCambio, 
                     </span>
                     {e.autor ? ` · ${e.autor.name}` : ''} ·{' '}
                     {new Date(e.createdAt).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })}
-                    {e.nota && <span className="block text-apple-text">«{e.nota}»</span>}
+                    {/* La categoría va PEGADA a la nota, no al lado del tipo: lo
+                        que se clasifica es el motivo, y quien lee el historial
+                        busca «qué me toca a mí», no «qué pasó». */}
+                    {e.nota && (
+                      <span className="mt-0.5 flex items-start gap-1.5">
+                        {CATEGORIA[e.categoria ?? ''] && (
+                          <span
+                            className="mt-[3px] h-1.5 w-1.5 shrink-0 rounded-full"
+                            style={{ background: CATEGORIA[e.categoria ?? ''].color }}
+                            title={CATEGORIA[e.categoria ?? ''].nombre}
+                          />
+                        )}
+                        <span className="text-apple-text">«{e.nota}»</span>
+                      </span>
+                    )}
                   </li>
                 ))}
               </ul>
