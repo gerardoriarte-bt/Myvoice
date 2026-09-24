@@ -294,8 +294,14 @@ export const piezasApi = {
     accion(id, 'reasignar', { asignadaAId }),
   entregar: (id: string, enlace: string): Promise<Pieza> => accion(id, 'entregar', { enlace }),
   aceptar: (id: string, nota?: string): Promise<Pieza> => accion(id, 'aceptar', { nota }),
-  devolver: (id: string, nota: string): Promise<Pieza> => accion(id, 'devolver', { nota }),
-  reabrir: (id: string, nota: string): Promise<Pieza> => accion(id, 'reabrir', { nota }),
+  /**
+   * El motivo va desglosado (H2.E · D7): lo de copy y lo de diseño tienen
+   * destinatarios distintos. Al menos uno de los dos, y el servidor lo exige.
+   */
+  devolver: (id: string, motivos: { notaCopy?: string; notaDiseno?: string }): Promise<Pieza> =>
+    accion(id, 'devolver', motivos),
+  reabrir: (id: string, motivos: { notaCopy?: string; notaDiseno?: string }): Promise<Pieza> =>
+    accion(id, 'reabrir', motivos),
   actualizarCopy: (id: string): Promise<Pieza> => accion(id, 'actualizar-copy', {}),
   /** Un comentario no mueve la pieza: queda en su historial. */
   comentar: (id: string, nota: string): Promise<Pieza> => accion(id, 'comentar', { nota }),

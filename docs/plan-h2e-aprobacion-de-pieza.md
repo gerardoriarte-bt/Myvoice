@@ -241,7 +241,7 @@ si la reabre. Cero estado nuevo, y la decisión queda donde D6 la puso: en una p
 | `POST /review-sessions` | gana `ronda` y `piezaIds`. Rechaza mezclar copys y piezas. |
 | `GET /review/public/:token` | cuando `ronda = PIEZA` devuelve, por pieza: la URL firmada del snapshot, el formato, y **el copy congelado** de sus slots |
 | `POST /review/public/:token/submit` | acepta `{ piezaId, decision, feedbackCopy?, feedbackDiseno? }`. Al menos uno de los dos textos si `decision = REJECTED` |
-| `POST /piezas/:id/devolver` | gana `notaCopy` / `notaDiseno` (D7). `nota` sigue aceptándose y se guarda como `COPY` |
+| `POST /piezas/:id/devolver` · `/reabrir` | ganan `notaCopy` / `notaDiseno` (D7). `nota` sigue aceptándose y se guarda **sin categoría** |
 | `GET /feedback/propuestas` | las propuestas sin confirmar del workspace |
 | `POST /feedback/propuestas/:id/confirmar` · `/descartar` | `requireManager`: decide qué aprende el motor |
 | `PATCH /projects/:id` | el interruptor de D3. Hoy `projects` no tiene update: hay que agregarlo con `pickFields()` |
@@ -263,10 +263,16 @@ si la reabre. Cero estado nuevo, y la decisión queda donde D6 la puso: en una p
   de una sesión no devuelve ninguna pieza que no sea suya; y confirmar una propuesta de otro
   workspace responde 404.
 
+> **Corrección sobre la primera versión de este plan.** Decía que una `nota` suelta se guardaría
+> como `COPY`. Está mal por la misma razón que D5: inventarle una categoría a algo que nadie
+> clasificó es una clasificación equivocada, y una equivocada es peor que ninguna. Además el
+> destinatario de una devolución es el diseñador, así que si hubiera que adivinar, `COPY` sería
+> justo la peor apuesta. `NULL` significa «nadie lo clasificó», que es cierto.
+
 ## Fases
 
-1. **El desglose interno** — `PiezaEvento.categoria`, las dos notas en `devolver`, y el renombre
-   de `comment` a `feedbackCopy` con su backfill. No toca el portal público y entrega valor sola:
+1. **El desglose interno** · ✅ **construida** el 2026-09-24 — `PiezaEvento.categoria`, las dos
+   notas en `devolver` y `reabrir`, y el renombre de `comment` a `feedbackCopy`. No toca el portal público y entrega valor sola:
    el diseñador ya recibe el feedback separado, venga de quien venga.
 2. **La ronda 2** — `ronda` en la sesión, la pieza en el item, el portal con la pieza y el
    formulario, el interruptor de la campaña, y la vuelta al tablero.

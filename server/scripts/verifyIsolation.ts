@@ -485,6 +485,64 @@ async function main() {
       const sinNota = await api(`/piezas/${piezaB.id}/devolver`, B.token, { method: 'POST', body: JSON.stringify({}) });
       record('Devolver sin motivo responde 400', sinNota.status === 400, `respondió ${sinNota.status}`);
 
+      // H2.E · D7: el motivo va desglosado, y cada categoría deja su propia
+      // entrada en el historial. Con un solo evento de dos campos, quien
+      // recibe la pieza tendría que desarmar un párrafo para saber qué le toca.
+      const soloBlancos = await api(`/piezas/${piezaB.id}/devolver`, B.token, {
+        method: 'POST',
+        body: JSON.stringify({ notaCopy: '   ', notaDiseno: '' }),
+      });
+      record(
+        'Devolver con los dos campos en blanco responde 400',
+        soloBlancos.status === 400,
+        `respondió ${soloBlancos.status}`
+      );
+
+      const desglosada = await api(`/piezas/${piezaB.id}/devolver`, B.token, {
+        method: 'POST',
+        body: JSON.stringify({ notaCopy: 'El hook no es el aprobado', notaDiseno: 'El logo no se lee' }),
+      });
+      const eventos = await prisma.piezaEvento.findMany({
+        where: { piezaId: piezaB.id, tipo: 'DEVUELTA' },
+        select: { categoria: true, nota: true },
+        orderBy: { categoria: 'asc' },
+      });
+      record(
+        'Una devolución con las dos categorías deja DOS eventos, uno por categoría',
+        desglosada.status === 200 &&
+          eventos.length === 2 &&
+          eventos[0].categoria === 'COPY' &&
+          eventos[1].categoria === 'DISENO',
+        `respondió ${desglosada.status}, eventos ${JSON.stringify(eventos)?.slice(0, 140)}`
+      );
+
+      // Y una nota suelta NO recibe una categoría inventada: null significa
+      // «nadie lo clasificó», que es cierto y no ensucia el enrutamiento.
+      await api(`/piezas/${piezaB.id}/entregar`, B.token, {
+        method: 'POST',
+        body: JSON.stringify({ enlace: 'https://drive.google.com/file/d/desglose' }),
+      });
+      await api(`/piezas/${piezaB.id}/devolver`, B.token, {
+        method: 'POST',
+        body: JSON.stringify({ nota: 'Sin clasificar, como antes' }),
+      });
+      const suelta = await prisma.piezaEvento.findFirst({
+        where: { piezaId: piezaB.id, nota: 'Sin clasificar, como antes' },
+        select: { categoria: true },
+      });
+      record(
+        'Una nota suelta se guarda sin categoría, no con una inventada',
+        suelta !== null && suelta.categoria === null,
+        `quedó categoría ${JSON.stringify(suelta)}`
+      );
+
+      // Se devuelve la pieza a Por revisar: los chequeos que siguen —comentar,
+      // aceptar— esperan encontrarla ahí, y este bloque la movió dos veces.
+      await api(`/piezas/${piezaB.id}/entregar`, B.token, {
+        method: 'POST',
+        body: JSON.stringify({ enlace: 'https://drive.google.com/file/d/desglose-2' }),
+      });
+
       // Comentar no cambia ninguna columna de Pieza. La primera versión daba
       // 409 por eso: el updateMany con data vacío no tocaba ninguna fila.
       const sinTexto = await api(`/piezas/${piezaB.id}/comentar`, B.token, { method: 'POST', body: JSON.stringify({}) });

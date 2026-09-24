@@ -399,7 +399,7 @@ export default function CollaborationHub({ savedVariations, clients, addNotifica
                                                 {platformLabel}
                                               </span>
                                               <span className="text-[11px] text-gray-600 italic">
-                                                {fb.comment ? `"${fb.comment}"` : 'Sin comentario'}
+                                                {fb.feedbackCopy ? `"${fb.feedbackCopy}"` : 'Sin comentario'}
                                               </span>
                                             </div>
                                           );
@@ -443,8 +443,8 @@ export default function CollaborationHub({ savedVariations, clients, addNotifica
                                     <span className="text-[10px] text-gray-400">{item.savedVariation.type}</span>
                                   </div>
                                   <p className="text-[12px] text-gray-700 truncate">{item.savedVariation.content?.slice(0, 100)}</p>
-                                  {fb?.comment && (
-                                    <p className="text-[11px] text-red-600 mt-1 italic">"{fb.comment}"</p>
+                                  {fb?.feedbackCopy && (
+                                    <p className="text-[11px] text-red-600 mt-1 italic">"{fb.feedbackCopy}"</p>
                                   )}
                                 </div>
                               </div>

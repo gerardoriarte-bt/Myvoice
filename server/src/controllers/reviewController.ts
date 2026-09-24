@@ -82,7 +82,7 @@ export const getReviewSessionDetail = async (req: AuthRequest, res: Response) =>
         },
         submission: {
           include: {
-            feedbacks: { select: { savedVariationId: true, decision: true, comment: true } },
+            feedbacks: { select: { savedVariationId: true, decision: true, feedbackCopy: true, feedbackDiseno: true } },
           },
         },
       },
@@ -184,7 +184,7 @@ export const submitReview = async (req: Request, res: Response) => {
       .filter((f: any) => f.decision === 'REJECTED')
       .map((f: any) => {
         const v = varMap.get(f.savedVariationId);
-        return v ? { clientId: v.clientId, platform: v.platform, content: v.content, reason: f.comment || 'Rechazado por el cliente' } : null;
+        return v ? { clientId: v.clientId, platform: v.platform, content: v.content, reason: f.feedbackCopy || 'Rechazado por el cliente' } : null;
       })
       .filter(Boolean) as { clientId: string; platform: string; content: string; reason: string }[];
 
@@ -198,7 +198,10 @@ export const submitReview = async (req: Request, res: Response) => {
               data: feedbacks.map((f: any) => ({
                 savedVariationId: f.savedVariationId,
                 decision: f.decision,
-                comment: f.comment || null,
+                // La ronda de copy solo puede producir feedback de copy: no hay
+                // arte que comentar todavía. `feedbackDiseno` queda NULL hasta
+                // la ronda 2 (H2.E).
+                feedbackCopy: f.comment || null,
               })),
             },
           },
