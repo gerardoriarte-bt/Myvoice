@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Mismo trazo que components/ui/Isotipo.tsx (ISOTIPO_TRAZO): si cambia uno, cambia el otro. -->
+  <rect width="32" height="32" rx="8.5" fill="#1D1D1F"/>
+  <g transform="translate(6.5 6.5) scale(0.79)" fill="none" stroke="#FFFFFF" stroke-width="2.4" stroke-linecap="round">
+    <path d="M2 10v3M6 6v11M10 3v18M14 8v7M18 5v13M22 10v3"/>
+  </g>
+</svg>

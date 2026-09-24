@@ -1,105 +1,86 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { GoogleLogin } from '@react-oauth/google';
+import {
+  ArrowRight, ArrowUp, Building2, Camera, Check, ClipboardCheck, LayoutGrid, Lock, Mail,
+  Megaphone, MessageCircle, PenTool, Radio, Receipt, ScanEye, Send, Sparkles, Type, Users,
+} from 'lucide-react';
 import { authApi } from '../services/api';
+import Isotipo from './ui/Isotipo';
+
+/*
+ * La portada pública. Diseño validado en `design/MyVoice_Engine.pen`,
+ * sección «§ Portada · propuesta».
+ *
+ * Habla como PRODUCTO, no como LoBueno: la ve el equipo de cualquier empresa
+ * que tenga un espacio, así que nada de «3 agencias» ni de primera persona de
+ * la agencia. LoBueno firma al pie. Los nombres de etapa son los de
+ * `screens.ts`; si cambian allá, cambian acá.
+ *
+ * Cada afirmación está contrastada con el código: el puntaje 1–10 es el del
+ * crítico (`criticService.ts`), los cuatro canales con instrucción de
+ * producción son los que tienen esos slots en `server/src/channels/specs`.
+ * Lo que no está construido —la pieza que vuelve al cliente— no se promete.
+ */
 
 interface HomePageProps {
   onLoginSuccess: (user: any, token: string) => void;
 }
 
-const CHANNELS = [
-  'Instagram Post', 'Instagram Historia', 'Instagram Carrusel', 'Instagram Reel',
-  'TikTok', 'YouTube', 'Google Ads', 'Google Display',
-  'Rich Media', 'Email', 'WhatsApp', 'Push Notification', 'Pop-up', 'Cuña de Radio',
+const ETAPAS = [
+  { n: '01', etapa: 'Preparar', titulo: 'Cargá el ADN de la marca', desc: 'Voz, propuesta de valor, prohibiciones y ejemplos aprobados. Se extrae del manual en PDF.', Icon: Building2 },
+  { n: '02', etapa: 'Escribir', titulo: 'Una campaña, catorce canales', desc: 'El motor define el concepto y escribe cada canal con sus formatos y límites.', Icon: Sparkles },
+  { n: '03', etapa: 'Aprobar', titulo: 'El cliente revisa con un enlace', desc: 'Sin cuenta ni contraseña. Aprueba o comenta variación por variación.', Icon: ClipboardCheck },
+  { n: '04', etapa: 'Producir', titulo: 'Diseño recibe una orden clara', desc: 'El copy aprobado pasa al tablero como pieza, con su orden de trabajo.', Icon: LayoutGrid },
+  { n: '05', etapa: 'Auditar', titulo: 'La IA revisa la pieza final', desc: 'Contrasta el arte con el copy aprobado y con el ADN antes de publicar.', Icon: ScanEye },
 ];
 
-const STEPS = [
-  {
-    n: '01',
-    title: 'Campaign Director',
-    desc: 'Analiza el ADN de la marca y construye el concepto paraguas, tono y ángulos creativos.',
-    icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-      </svg>
-    ),
-  },
-  {
-    n: '02',
-    title: 'Especialistas por Canal',
-    desc: 'Cada plataforma tiene su agente propio con conocimiento de formatos, límites y convenciones.',
-    icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
-      </svg>
-    ),
-  },
-  {
-    n: '03',
-    title: 'Critic',
-    desc: 'Evalúa cada pieza contra los pilares de marca, mide prohibiciones y asigna un score 0–10.',
-    icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-      </svg>
-    ),
-  },
-  {
-    n: '04',
-    title: 'AutoFixer',
-    desc: 'Si una pieza no pasa el umbral, la reescribe automáticamente antes de presentarla.',
-    icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-      </svg>
-    ),
-  },
-  {
-    n: '05',
-    title: 'SuperCritic',
-    desc: 'Audita todas las piezas juntas: detecta contradicciones de tono y oportunidades perdidas.',
-    icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-      </svg>
-    ),
-  },
+/** Los seis pasos de `runGeneration`, contados sin la jerga interna de los agentes. */
+const PASOS = [
+  { t: 'Dirección', d: 'Define el concepto, el mensaje clave y los ángulos de toda la campaña.' },
+  { t: 'Redacción por canal', d: 'Escribe cada canal con su formato, sus espacios y sus límites.' },
+  { t: 'Validación', d: 'Mide caracteres, busca prohibiciones y cuida el registro. Sin IA: reglas.' },
+  { t: 'Crítica', d: 'Puntúa cada variación de 1 a 10 y marca lo que falla.' },
+  { t: 'Corrección', d: 'Reescribe solo lo marcado y lo vuelve a validar.' },
+  { t: 'Coherencia', d: 'Lee la campaña entera: que ningún canal contradiga a otro.' },
 ];
 
-const FEATURES = [
-  {
-    title: 'Brand Voice',
-    desc: 'Registrá el ADN estratégico de cada marca: voz, propuesta de valor, keywords, prohibiciones y ejemplos aprobados. El motor aprende con cada generación.',
-    icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16M3 21h18M9 21v-6h6v6" />
-      </svg>
-    ),
-  },
-  {
-    title: 'Generate',
-    desc: 'Seleccioná marca, campaña y canales. La IA orquesta 5 capas especializadas y entrega piezas puntuadas, corregidas y auditadas — en segundos.',
-    icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
-      </svg>
-    ),
-  },
-  {
-    title: 'Content Selection',
-    desc: 'Biblioteca de contenidos aprobados por proyecto y marca. Aprobá, etiquetá y descargá. El feedback negativo se inyecta automáticamente en futuras generaciones.',
-    icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-      </svg>
-    ),
-  },
+const EJEMPLO = [
+  { canal: 'Instagram Post', score: '9,4', copy: 'Una vez al año bajamos el precio. Hoy. Mañana sigue igual de justo.', Icon: Camera },
+  { canal: 'Google Ads', score: '8,8', copy: 'Black Friday · 30% off · Solo hoy', Icon: Type },
+  { canal: 'WhatsApp', score: '9,1', copy: 'Hola 👋 La única oferta del año es hoy. Ver el pack →', Icon: MessageCircle },
+  { canal: 'Email', score: '9,2', copy: 'Asunto: La única oferta del año (no la repetimos)', Icon: Mail },
 ];
+
+const GRUPOS_CANALES = [
+  { grupo: 'Redes', Icon: Camera, canales: ['Instagram Post', 'Instagram Historia', 'Instagram Carrusel', 'Instagram Reel', 'TikTok'] },
+  { grupo: 'Pauta digital', Icon: Megaphone, canales: ['Google Ads', 'Google Display', 'Rich Media', 'Pop-up'] },
+  { grupo: 'Directo', Icon: Send, canales: ['Email', 'WhatsApp', 'Push Notification'] },
+  { grupo: 'Video y audio', Icon: Radio, canales: ['YouTube', 'Cuña de Radio'] },
+];
+
+const EQUIPOS = [
+  { titulo: 'Cada empresa, su espacio', desc: 'Marcas, piezas y aprobaciones de una empresa son invisibles para las demás. Cada una puede usar su propia clave de IA.', Icon: Lock },
+  { titulo: 'Cada persona, su función', desc: 'Quién escribe, quién diseña y quién aprueba. A cada uno le llega lo que le toca, cuando le toca.', Icon: Users },
+  { titulo: 'Cada generación, su costo', desc: 'Se registra el costo real de cada campaña, etapa por etapa. Sin sorpresas a fin de mes.', Icon: Receipt },
+];
+
+/** Gutter y ancho máximo compartidos por todas las secciones. */
+const CONTENEDOR = 'max-w-[1248px] mx-auto px-4 sm:px-8 lg:px-12';
 
 /** Token de invitación que viaja en el enlace del email: /?invite=<token>. */
 const readInviteToken = () =>
   new URLSearchParams(window.location.search).get('invite') || undefined;
 
-const LoginForm: React.FC<{ onLoginSuccess: (user: any, token: string) => void }> = ({ onLoginSuccess }) => {
+const Eyebrow: React.FC<{ children: React.ReactNode; oscuro?: boolean }> = ({ children, oscuro }) => (
+  <div className={`text-[12px] font-semibold uppercase tracking-[0.12em] ${oscuro ? 'text-white/45' : 'text-[#86868B]'}`}>
+    {children}
+  </div>
+);
+
+const LoginForm: React.FC<{
+  onLoginSuccess: (user: any, token: string) => void;
+  emailRef: React.RefObject<HTMLInputElement | null>;
+}> = ({ onLoginSuccess, emailRef }) => {
   const inviteToken = readInviteToken();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -121,13 +102,16 @@ const LoginForm: React.FC<{ onLoginSuccess: (user: any, token: string) => void }
   };
 
   return (
-    <div className="apple-card p-7 w-full max-w-[340px]">
-      <div className="mb-6">
-        <h2 className="text-[17px] font-semibold text-[#1D1D1F] tracking-[-0.01em]">Accedé al motor</h2>
-        <p className="text-[13px] text-[#6E6E73] mt-1">Con tu cuenta corporativa</p>
+    <div id="acceso" className="scroll-mt-24 w-full max-w-[400px] bg-white rounded-[20px] p-7 sm:p-9 shadow-[0_30px_80px_rgba(0,0,0,0.45)]">
+      <div className="mb-5">
+        <h2 className="text-[22px] font-semibold text-ink tracking-[-0.02em]">Entrá a tu espacio</h2>
+        <p className="text-[14px] text-[#6E6E73] mt-1.5 leading-snug">
+          {inviteToken
+            ? 'Usá el mismo correo al que te llegó la invitación.'
+            : 'Con la cuenta de tu empresa o el correo de tu invitación.'}
+        </p>
       </div>
 
-      {/* Google */}
       <div className="flex justify-center mb-5">
         <GoogleLogin
           onSuccess={async (cr) => {
@@ -141,221 +125,328 @@ const LoginForm: React.FC<{ onLoginSuccess: (user: any, token: string) => void }
             } finally { setIsLoading(false); }
           }}
           onError={() => setError('Error al iniciar sesión con Google')}
-          useOneTap theme="outline" shape="pill" text="signin_with" width="288"
+          useOneTap theme="outline" shape="pill" text="continue_with" width="288"
         />
       </div>
 
       <div className="flex items-center gap-3 mb-5">
-        <div className="flex-1 h-px bg-[rgba(0,0,0,0.07)]" />
-        <span className="text-[11px] text-[#86868B]">o</span>
-        <div className="flex-1 h-px bg-[rgba(0,0,0,0.07)]" />
+        <div className="flex-1 h-px bg-black/10" />
+        <span className="text-[12px] text-[#86868B]">o con tu correo</span>
+        <div className="flex-1 h-px bg-black/10" />
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-3">
-        <input type="email" required autoComplete="email" placeholder="Email corporativo"
+        <input ref={emailRef} type="email" required autoComplete="email" placeholder="nombre@empresa.com"
+          aria-label="Correo"
           value={email} onChange={e => setEmail(e.target.value)}
-          className="apple-input w-full px-4 py-2.5" />
+          className="apple-input w-full px-4 py-3" />
         <input type="password" required autoComplete="current-password" placeholder="Contraseña"
+          aria-label="Contraseña"
           value={password} onChange={e => setPassword(e.target.value)}
-          className="apple-input w-full px-4 py-2.5" />
+          className="apple-input w-full px-4 py-3" />
         {error && (
-          <div className="text-[12px] text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2.5">{error}</div>
+          <div role="alert" className="text-[13px] text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2.5">{error}</div>
         )}
-        <button type="submit" disabled={isLoading} className="apple-btn-primary w-full py-2.5 flex items-center justify-center gap-2">
+        <button type="submit" disabled={isLoading}
+          className="w-full h-12 rounded-full bg-ink hover:bg-ink-hover text-white text-[15px] font-semibold flex items-center justify-center gap-2 transition-colors disabled:opacity-60">
           {isLoading ? (
-            <><svg className="w-3.5 h-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
+            <><svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3"/>
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-            </svg>Ingresando...</>
-          ) : 'Ingresar'}
+            </svg>Ingresando…</>
+          ) : (<>Ingresar <ArrowRight className="w-4 h-4" /></>)}
         </button>
       </form>
+
+      <p className="text-[12px] text-[#86868B] text-center mt-5 leading-snug">
+        ¿No tenés cuenta? Pedí una invitación a quien administra tu espacio.
+      </p>
     </div>
   );
 };
 
 const HomePage: React.FC<HomePageProps> = ({ onLoginSuccess }) => {
+  const emailRef = useRef<HTMLInputElement>(null);
+
+  /** Todos los «Ingresar» llevan a la tarjeta y dejan el cursor en el correo. */
+  const irAlAcceso = (e: React.MouseEvent) => {
+    e.preventDefault();
+    document.getElementById('acceso')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    // Enfocar en el mismo tick corta el scroll suave en Chrome: se enfoca al llegar.
+    window.setTimeout(() => emailRef.current?.focus({ preventScroll: true }), 700);
+  };
+
   return (
-    <div className="min-h-screen" style={{ background: '#F5F5F7' }}>
+    <div className="min-h-screen bg-[#F5F5F7] text-ink antialiased">
 
-      {/* NAV */}
-      <nav style={{ background: 'rgba(246,246,248,0.92)', backdropFilter: 'saturate(180%) blur(20px)', borderBottom: '1px solid rgba(0,0,0,0.07)' }}
-        className="sticky top-0 z-50 h-[52px] flex items-center px-8">
-        <div className="max-w-6xl mx-auto w-full flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-[7px] bg-ink flex items-center justify-center">
-              <svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-              </svg>
+      {/* HERO — oscuro, con el acceso a la derecha */}
+      <header
+        className="relative overflow-hidden text-white"
+        style={{
+          background:
+            'radial-gradient(ellipse 70% 80% at 85% 15%, rgba(59,58,92,0.45), transparent 70%),' +
+            'radial-gradient(ellipse 55% 60% at 5% 100%, rgba(16,185,129,0.14), transparent 70%),' +
+            '#0E0E10',
+        }}
+      >
+        <nav className={`${CONTENEDOR} h-[72px] flex items-center justify-between border-b border-white/[0.08]`}>
+          <a href="#" className="flex items-center gap-2.5" aria-label="My Voice, inicio">
+            <Isotipo size={30} tono="claro" />
+            <span className="text-[16px] font-semibold tracking-[-0.01em]">My Voice</span>
+          </a>
+          <div className="flex items-center gap-8">
+            <div className="hidden md:flex items-center gap-8 text-[14px] text-white/65">
+              <a href="#como-funciona" className="hover:text-white transition-colors">Cómo funciona</a>
+              <a href="#canales" className="hover:text-white transition-colors">Canales</a>
+              <a href="#equipos" className="hover:text-white transition-colors">Para equipos</a>
             </div>
-            <span className="text-[15px] font-semibold text-[#1D1D1F] tracking-[-0.01em]">My Voice</span>
+            <a href="#acceso" onClick={irAlAcceso}
+              className="px-4 py-2 rounded-full border border-white/20 text-[14px] font-medium hover:bg-white/10 transition-colors">
+              Ingresar
+            </a>
           </div>
-          <span className="text-[12px] text-[#86868B]">Motor de Contenido IA · Grupo LoBueno</span>
-        </div>
-      </nav>
+        </nav>
 
-      {/* HERO */}
-      <section className="max-w-6xl mx-auto px-8 pt-20 pb-24 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-        {/* Left: copy */}
-        <div className="space-y-7">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white border border-[rgba(0,0,0,0.08)] shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-[11px] font-medium text-[#1D1D1F] tracking-tight">Motor activo · 14 canales</span>
-          </div>
+        <div className={`${CONTENEDOR} pt-10 sm:pt-14 lg:pt-24 pb-16 sm:pb-20 lg:pb-28 grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-10 sm:gap-14 lg:gap-20 items-center`}>
+          <div className="space-y-8">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.06] border border-white/[0.12]">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+              <span className="text-[13px] font-medium text-white/80">Motor de copy multimarca · 14 canales</span>
+            </div>
 
-          <div className="space-y-4">
-            <h1 className="text-[44px] font-bold text-[#1D1D1F] tracking-[-0.03em] leading-[1.05]">
-              Copy estratégico.<br />
-              <span style={{ color: '#6E6E73' }}>End-to-end.</span>
+            <h1 className="text-[40px] sm:text-[56px] lg:text-[68px] font-bold tracking-[-0.038em] leading-[1.02]">
+              La voz de cada marca,<br />
+              <span className="text-white/40">en cada canal que toca.</span>
             </h1>
-            <p className="text-[17px] text-[#6E6E73] leading-relaxed max-w-[460px]">
-              My Voice orquesta un equipo IA completo — director estratégico, especialistas por canal, editor y auditor — para generar campañas coherentes en segundos.
+
+            <p className="text-[17px] sm:text-[19px] text-white/65 leading-[1.55] max-w-[600px]">
+              My Voice aprende el ADN de cada marca, escribe la campaña completa para catorce canales y
+              la acompaña hasta la pieza final: revisión con el cliente, producción con diseño y
+              auditoría antes de publicar.
             </p>
+
+            {/* En celular se ocultan: la tarjeta de acceso es lo que se viene a buscar y no puede quedar a dos pantallas. */}
+            <dl className="hidden sm:flex flex-wrap gap-x-12 gap-y-6 pt-2">
+              {[
+                { v: '14', l: 'canales con reglas propias' },
+                { v: '6', l: 'pasos por generación' },
+                { v: '1', l: 'enlace para que el cliente apruebe' },
+              ].map(s => (
+                <div key={s.l} className="w-[140px]">
+                  <dt className="sr-only">{s.l}</dt>
+                  <dd className="text-[36px] font-semibold tracking-[-0.03em] leading-none">{s.v}</dd>
+                  <dd className="text-[13px] text-white/50 mt-2 leading-snug">{s.l}</dd>
+                </div>
+              ))}
+            </dl>
           </div>
 
-          {/* Stats */}
-          <div className="flex items-center gap-8 pt-2">
-            {[
-              { v: '14', l: 'canales' },
-              { v: '5', l: 'capas IA' },
-              { v: '3', l: 'agencias' },
-            ].map(s => (
-              <div key={s.l}>
-                <div className="text-[28px] font-bold text-[#1D1D1F] tracking-[-0.03em] leading-none">{s.v}</div>
-                <div className="text-[12px] text-[#86868B] mt-1">{s.l}</div>
+          <div className="flex justify-center lg:justify-end">
+            <LoginForm onLoginSuccess={onLoginSuccess} emailRef={emailRef} />
+          </div>
+        </div>
+      </header>
+
+      <main>
+        {/* CÓMO FUNCIONA — las cinco etapas */}
+        <section id="como-funciona" className="scroll-mt-4 py-20 lg:py-28">
+          <div className={CONTENEDOR}>
+            <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6 mb-14 lg:mb-16">
+              <div className="max-w-[720px] space-y-4">
+                <Eyebrow>Cómo funciona</Eyebrow>
+                <h2 className="text-[34px] sm:text-[48px] font-bold tracking-[-0.035em] leading-[1.08]">
+                  Del ADN de la marca a la pieza publicada.
+                </h2>
               </div>
-            ))}
-          </div>
-
-          {/* Channel chips */}
-          <div className="flex flex-wrap gap-1.5 max-w-[480px]">
-            {CHANNELS.map(c => (
-              <span key={c} className="text-[11px] text-[#6E6E73] bg-white border border-[rgba(0,0,0,0.08)] px-2.5 py-1 rounded-full font-medium">
-                {c}
-              </span>
-            ))}
-          </div>
-        </div>
-
-        {/* Right: login card */}
-        <div className="flex justify-center lg:justify-end">
-          <LoginForm onLoginSuccess={onLoginSuccess} />
-        </div>
-      </section>
-
-      {/* HOW IT WORKS */}
-      <section style={{ background: 'white', borderTop: '1px solid rgba(0,0,0,0.07)', borderBottom: '1px solid rgba(0,0,0,0.07)' }}
-        className="py-20">
-        <div className="max-w-6xl mx-auto px-8">
-          <div className="mb-12">
-            <div className="section-label mb-3">Cómo funciona</div>
-            <h2 className="text-[28px] font-semibold text-[#1D1D1F] tracking-[-0.02em]">El motor en 5 capas</h2>
-            <p className="text-[15px] text-[#6E6E73] mt-2 max-w-xl">Cada generación pasa por un pipeline orquestado de agentes especializados. No es un chatbot — es un equipo creativo IA.</p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-            {STEPS.map((step, i) => (
-              <div key={step.n} className="relative">
-                {/* Connector */}
-                {i < STEPS.length - 1 && (
-                  <div className="hidden md:block absolute top-[22px] left-[calc(100%+0px)] w-4 h-px bg-[rgba(0,0,0,0.1)] z-10" />
-                )}
-                <div className="apple-card p-5 h-full space-y-3 hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)] transition-shadow">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-[8px] bg-[#F5F5F7] flex items-center justify-center text-[#1D1D1F]">
-                      {step.icon}
-                    </div>
-                    <span className="text-[11px] font-semibold text-[#86868B] tabular-nums">{step.n}</span>
-                  </div>
-                  <div>
-                    <div className="text-[13px] font-semibold text-[#1D1D1F] leading-snug">{step.title}</div>
-                    <p className="text-[12px] text-[#6E6E73] mt-1.5 leading-relaxed">{step.desc}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* FEATURES */}
-      <section className="py-20">
-        <div className="max-w-6xl mx-auto px-8">
-          <div className="mb-12">
-            <div className="section-label mb-3">Módulos</div>
-            <h2 className="text-[28px] font-semibold text-[#1D1D1F] tracking-[-0.02em]">Todo en un mismo lugar</h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {FEATURES.map((f, i) => (
-              <div key={f.title} className="apple-card p-7 space-y-4 relative overflow-hidden">
-                {/* Subtle number watermark */}
-                <div className="absolute -top-3 -right-1 text-[80px] font-bold text-[rgba(0,0,0,0.03)] select-none leading-none">
-                  {i + 1}
-                </div>
-                <div className="w-10 h-10 rounded-[10px] bg-[#F5F5F7] flex items-center justify-center text-[#1D1D1F]">
-                  {f.icon}
-                </div>
-                <div>
-                  <div className="text-[15px] font-semibold text-[#1D1D1F] tracking-[-0.01em]">{f.title}</div>
-                  <p className="text-[13px] text-[#6E6E73] mt-2 leading-relaxed">{f.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* DEMO CARD */}
-      <section style={{ background: 'white', borderTop: '1px solid rgba(0,0,0,0.07)' }} className="py-20">
-        <div className="max-w-6xl mx-auto px-8">
-          <div className="rounded-2xl bg-ink p-10 grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
-            <div className="space-y-4">
-              <div className="text-[11px] font-semibold uppercase tracking-[0.1em] text-white/40">Output real del motor</div>
-              <h3 className="text-[24px] font-semibold text-white tracking-[-0.02em] leading-snug">
-                "Una vez al año bajamos el precio. Hoy."
-              </h3>
-              <p className="text-[14px] text-white/60 leading-relaxed">
-                Concepto paraguas generado por el Director Estratégico para una campaña de Black Friday. A partir de este concepto, el motor escribe todas las piezas manteniendo coherencia.
+              <p className="text-[16px] text-[#6E6E73] leading-[1.55] max-w-[380px]">
+                Cinco etapas en una sola herramienta. Lo que antes se repartía entre chats, planillas,
+                correos y carpetas compartidas.
               </p>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              {[
-                { platform: 'Instagram Post', score: 9.4, type: 'Urgencia', preview: 'Una vez al año bajamos el precio. Hoy. Mañana sigue igual de justo.' },
-                { platform: 'Google Ads', score: 8.8, type: 'Beneficio', preview: 'Black Friday · 30% off · Solo hoy · Avena+ Original' },
-                { platform: 'WhatsApp', score: 9.1, type: 'Urgencia', preview: 'Hola 👋 La única oferta del año es hoy. *Ver pack* →' },
-                { platform: 'Email', score: 9.2, type: 'Curiosidad', preview: 'Asunto: La única oferta del año (no la repetimos)' },
-              ].map(card => (
-                <div key={card.platform} className="bg-white/[0.06] rounded-xl p-4 space-y-2 border border-white/[0.08]">
+
+            <ol className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-y-10 lg:gap-y-0">
+              {ETAPAS.map(({ n, etapa, titulo, desc, Icon }, i) => (
+                <li key={n} className={`lg:px-7 ${i === 0 ? 'lg:pl-0' : 'lg:border-l lg:border-black/10'} ${i === ETAPAS.length - 1 ? 'lg:pr-0' : ''} sm:pr-6`}>
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-medium text-white/40 truncate">{card.platform}</span>
-                    <span className="text-[11px] font-semibold text-emerald-400 shrink-0 ml-1">{card.score}</span>
+                    <div className={`w-11 h-11 rounded-xl flex items-center justify-center border border-black/[0.06] ${
+                      i === ETAPAS.length - 1 ? 'bg-ink text-white' : 'bg-white text-ink'
+                    }`}>
+                      <Icon className="w-5 h-5" strokeWidth={1.75} />
+                    </div>
+                    <span className="text-[13px] font-medium text-[#86868B] tabular-nums">{n}</span>
                   </div>
-                  <p className="text-[11px] text-white/80 leading-relaxed">{card.preview}</p>
-                  <span className="inline-block text-[9px] font-medium text-white/30 uppercase tracking-wide">{card.type}</span>
+                  <div className="pt-8 space-y-2">
+                    <div className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#6E6E73]">{etapa}</div>
+                    <h3 className="text-[19px] font-semibold tracking-[-0.02em] leading-[1.25]">{titulo}</h3>
+                    <p className="text-[14px] text-[#6E6E73] leading-[1.55]">{desc}</p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </div>
+        </section>
+
+        {/* EL MOTOR — los seis pasos y un ejemplo */}
+        <section className="bg-[#0E0E10] text-white py-20 lg:py-28">
+          <div className={`${CONTENEDOR} grid grid-cols-1 lg:grid-cols-[520px_1fr] gap-10 sm:gap-14 lg:gap-20 items-center`}>
+            <div className="space-y-10">
+              <div className="space-y-4">
+                <Eyebrow oscuro>El motor</Eyebrow>
+                <h2 className="text-[34px] sm:text-[44px] font-bold tracking-[-0.035em] leading-[1.08]">
+                  No es un chat. Es un equipo editorial.
+                </h2>
+                <p className="text-[16px] text-white/60 leading-[1.55]">
+                  Cada generación pasa por seis pasos. Lo que no cumple las reglas de la marca se
+                  corrige antes de que lo veas.
+                </p>
+              </div>
+              <ol>
+                {PASOS.map((p, i) => (
+                  <li key={p.t} className="flex gap-5 py-4 border-t border-white/[0.08]">
+                    <span className="w-6 shrink-0 text-[13px] font-medium text-white/35 tabular-nums pt-px">
+                      {String(i + 1).padStart(2, '0')}
+                    </span>
+                    <div className="space-y-1">
+                      <div className="text-[15px] font-semibold">{p.t}</div>
+                      <p className="text-[14px] text-white/55 leading-[1.5]">{p.d}</p>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            </div>
+
+            <figure className="rounded-3xl bg-white/[0.03] border border-white/10 p-5 sm:p-8 space-y-4">
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-[11px] font-semibold uppercase tracking-[0.1em] text-white/40">
+                  Ejemplo · Black Friday · Marca de alimentos
+                </span>
+                <span className="shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-400/[0.12] text-emerald-400 text-[12px] font-medium">
+                  <Check className="w-3 h-3" /> Coherente
+                </span>
+              </div>
+              <div className="rounded-2xl bg-white text-ink px-6 py-5 space-y-2.5">
+                <div className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#86868B]">Concepto de campaña</div>
+                <blockquote className="text-[20px] sm:text-[24px] font-semibold tracking-[-0.02em] leading-[1.25]">
+                  «Una vez al año bajamos el precio. Hoy.»
+                </blockquote>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {EJEMPLO.map(({ canal, score, copy, Icon }) => (
+                  <div key={canal} className="rounded-2xl bg-white/[0.05] border border-white/[0.08] p-5 space-y-3.5">
+                    <div className="flex items-center justify-between">
+                      <span className="inline-flex items-center gap-2 text-[12px] font-medium text-white/60">
+                        <Icon className="w-3.5 h-3.5" /> {canal}
+                      </span>
+                      <span className="text-[13px] font-semibold text-emerald-400 tabular-nums">{score}</span>
+                    </div>
+                    <p className="text-[15px] text-white/90 leading-[1.45]">{copy}</p>
+                  </div>
+                ))}
+              </div>
+              <figcaption className="text-[12px] text-white/35">
+                Puntaje de la crítica, de 1 a 10. Ejemplo ilustrativo.
+              </figcaption>
+            </figure>
+          </div>
+        </section>
+
+        {/* CANALES */}
+        <section id="canales" className="scroll-mt-4 bg-white py-20 lg:py-28">
+          <div className={CONTENEDOR}>
+            <div className="max-w-[760px] space-y-4 mb-12 lg:mb-14">
+              <Eyebrow>Canales</Eyebrow>
+              <h2 className="text-[34px] sm:text-[48px] font-bold tracking-[-0.035em] leading-[1.08]">
+                Catorce canales. Cada uno con sus reglas.
+              </h2>
+              <p className="text-[17px] text-[#6E6E73] leading-[1.55]">
+                Un titular de buscador no se escribe como una historia de Instagram. Cada canal tiene
+                sus espacios, sus límites de caracteres y sus convenciones, y el motor los respeta sin
+                que se los recuerdes.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {GRUPOS_CANALES.map(({ grupo, Icon, canales }) => (
+                <div key={grupo} className="rounded-[20px] bg-[#F5F5F7] p-7">
+                  <div className="flex items-center justify-between mb-5">
+                    <span className="inline-flex items-center gap-2.5 text-[15px] font-semibold">
+                      <Icon className="w-[18px] h-[18px]" strokeWidth={1.75} /> {grupo}
+                    </span>
+                    <span className="text-[13px] font-medium text-[#86868B] tabular-nums">{canales.length}</span>
+                  </div>
+                  <ul>
+                    {canales.map((c, i) => (
+                      <li key={c} className={`py-2.5 text-[14px] text-[#3A3A3C] ${i ? 'border-t border-black/[0.06]' : ''}`}>{c}</li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+
+            <p className="mt-10 flex items-start gap-2.5 text-[14px] text-[#6E6E73] leading-[1.5]">
+              <PenTool className="w-4 h-4 shrink-0 mt-0.5" strokeWidth={1.75} />
+              Instagram Post, Instagram Reel, Rich Media y Cuña de Radio entregan, además del copy, la
+              instrucción de producción para diseño o audio.
+            </p>
+          </div>
+        </section>
+
+        {/* PARA EQUIPOS */}
+        <section id="equipos" className="scroll-mt-4 py-20 lg:py-28">
+          <div className={CONTENEDOR}>
+            <div className="max-w-[720px] space-y-4 mb-12 lg:mb-14">
+              <Eyebrow>Para equipos</Eyebrow>
+              <h2 className="text-[34px] sm:text-[48px] font-bold tracking-[-0.035em] leading-[1.08]">
+                Pensado para quien maneja varias marcas a la vez.
+              </h2>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {EQUIPOS.map(({ titulo, desc, Icon }, i) => (
+                <div key={titulo}
+                  className={`rounded-[20px] p-8 min-h-[260px] flex flex-col gap-16 border border-black/5 ${
+                    i === 0 ? 'bg-ink text-white' : 'bg-white'
+                  }`}>
+                  <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${i === 0 ? 'bg-white/10' : 'bg-[#F5F5F7]'}`}>
+                    <Icon className="w-5 h-5" strokeWidth={1.75} />
+                  </div>
+                  <div className="space-y-2.5">
+                    <h3 className="text-[21px] font-semibold tracking-[-0.02em]">{titulo}</h3>
+                    <p className={`text-[15px] leading-[1.55] ${i === 0 ? 'text-white/65' : 'text-[#6E6E73]'}`}>{desc}</p>
+                  </div>
                 </div>
               ))}
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* FOOTER */}
-      <footer style={{ borderTop: '1px solid rgba(0,0,0,0.07)' }} className="py-10">
-        <div className="max-w-6xl mx-auto px-8 flex flex-col md:flex-row items-center justify-between gap-4">
+        {/* CIERRE */}
+        <section
+          className="text-white text-center py-24 lg:py-28"
+          style={{ background: 'radial-gradient(ellipse 60% 100% at 50% 0%, rgba(59,58,92,0.5), transparent 75%), #0E0E10' }}
+        >
+          <div className={`${CONTENEDOR} flex flex-col items-center gap-8`}>
+            <h2 className="text-[34px] sm:text-[52px] font-bold tracking-[-0.038em] leading-[1.08]">
+              ¿Te invitaron a un espacio?
+            </h2>
+            <p className="text-[17px] sm:text-[18px] text-white/65 leading-[1.55] max-w-[560px]">
+              Entrá con el mismo correo de la invitación y llegás directo a tu equipo y a tus marcas.
+            </p>
+            <a href="#acceso" onClick={irAlAcceso}
+              className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-white text-ink text-[15px] font-semibold hover:bg-white/90 transition-colors">
+              Ingresar a My Voice <ArrowUp className="w-4 h-4" />
+            </a>
+          </div>
+        </section>
+      </main>
+
+      <footer className="bg-[#0E0E10] border-t border-white/[0.08]">
+        <div className={`${CONTENEDOR} py-7 flex flex-col sm:flex-row items-center justify-between gap-3`}>
           <div className="flex items-center gap-2.5">
-            <div className="w-5 h-5 rounded-[5px] bg-ink flex items-center justify-center">
-              <svg className="w-3 h-3 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-              </svg>
-            </div>
-            <span className="text-[13px] font-medium text-[#1D1D1F]">My Voice</span>
-            <span className="text-[13px] text-[#86868B]">— Motor de Contenido IA</span>
+            <Isotipo size={22} tono="claro" />
+            <span className="text-[14px] font-semibold text-white">My Voice</span>
+            <span className="text-[14px] text-white/40">Motor de copy multimarca</span>
           </div>
-          <div className="flex flex-col items-center gap-1.5">
-            <span className="text-[10px] uppercase tracking-[0.12em] text-[#86868B]">Powered by</span>
-            <img src="/LobuenoLogo.png" alt="LoBueno" className="h-[13px] w-auto opacity-40" />
-          </div>
+          <span className="text-[13px] text-white/40">Un producto de LoBueno</span>
         </div>
       </footer>
     </div>

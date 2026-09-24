@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { SavedVariation, User, Client } from '../types';
+import Isotipo from './ui/Isotipo';
 
 interface ClientPortalProps {
   currentUser: User;
@@ -63,11 +64,7 @@ export default function ClientPortal({ currentUser, savedVariations, clients, on
       <header className="bg-white border-b border-gray-200 shadow-sm">
         <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-7 h-7 rounded-[6px] bg-ink flex items-center justify-center shrink-0">
-              <svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-              </svg>
-            </div>
+            <Isotipo size={28} />
             <div>
               <span className="text-[14px] font-semibold text-gray-900">My Voice</span>
               {myClient?.name && (
