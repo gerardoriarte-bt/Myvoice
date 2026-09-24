@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ReviewSession, ReviewFeedback, ReviewDecision } from '../types';
 import { reviewApi } from '../services/api';
+import RevisionDePiezas from './RevisionDePiezas';
 
 interface ReviewPortalProps {
   token: string;
@@ -74,6 +75,23 @@ export default function ReviewPortal({ token, onBack }: ReviewPortalProps) {
       setIsSubmitting(false);
     }
   };
+
+  /**
+   * La ronda 2 tiene su propia pantalla (H2.E). Se delega en vez de ramificar
+   * acá adentro: la ronda de copy funciona y está en producción, y lo que se
+   * muestra es tan distinto que compartir el armado dejaría un componente
+   * lleno de condicionales.
+   */
+  if (phase === 'reviewing' && session?.ronda === 'PIEZA') {
+    return (
+      <RevisionDePiezas
+        token={token}
+        sesion={session}
+        onEnviada={() => setPhase('submitted')}
+        onError={() => setPhase('error')}
+      />
+    );
+  }
 
   const itemCount = session?.items?.length ?? 0;
   const decidedCount = Object.keys(decisions).length;

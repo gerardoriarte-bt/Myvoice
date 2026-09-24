@@ -316,13 +316,18 @@ model SavedVariation {
 }
 
 model Project {
-  id          String           @id @default(uuid())
-  name        String
-  createdAt   DateTime         @default(now())
-  workspaceId String
-  workspace   Workspace        @relation(fields: [workspaceId], references: [id])
-  variations  SavedVariation[]
-  piezas      Pieza[]
+  id                      String           @id @default(uuid())
+  name                    String
+  createdAt               DateTime         @default(now())
+  workspaceId             String
+  /// D3 de H2.E. Apagado —el valor por defecto— la campaña se comporta como
+  /// siempre: la pieza llega a Lista y ahí termina. Vive en la campaña y no en
+  /// el workspace porque una agencia tiene clientes que quieren ver el arte y
+  /// clientes que no, y esa diferencia es por campaña.
+  pideAprobacionDeCliente Boolean          @default(false)
+  workspace               Workspace        @relation(fields: [workspaceId], references: [id])
+  variations              SavedVariation[]
+  piezas                  Pieza[]
 }
 
 model NegativeFeedback {
@@ -370,6 +375,9 @@ model ReviewSession {
   updatedAt   DateTime            @updatedAt
   workspaceId String
   createdById String
+  /// COPY = la ronda que ya existía: el cliente aprueba el mensaje antes de
+  /// producir. PIEZA = la ronda 2 (H2.E): el arte terminado.
+  ronda       RondaRevision       @default(COPY)
   workspace   Workspace           @relation(fields: [workspaceId], references: [id])
   createdBy   User                @relation(fields: [createdById], references: [id])
   items       ReviewSessionItem[]
@@ -377,12 +385,16 @@ model ReviewSession {
 }
 
 model ReviewSessionItem {
-  id               String         @id @default(uuid())
+  id               String          @id @default(uuid())
   reviewSessionId  String
-  savedVariationId String
-  sortOrder        Int            @default(0)
-  reviewSession    ReviewSession  @relation(fields: [reviewSessionId], references: [id], onDelete: Cascade)
-  savedVariation   SavedVariation @relation(fields: [savedVariationId], references: [id], onDelete: Cascade)
+  /// Uno de los dos, según la `ronda` de la sesión. Prisma no expresa el XOR;
+  /// lo sostienen el servicio y un CHECK escrito a mano en la migración.
+  savedVariationId String?
+  piezaId          String?
+  sortOrder        Int             @default(0)
+  reviewSession    ReviewSession   @relation(fields: [reviewSessionId], references: [id], onDelete: Cascade)
+  savedVariation   SavedVariation? @relation(fields: [savedVariationId], references: [id], onDelete: Cascade)
+  pieza            Pieza?          @relation(fields: [piezaId], references: [id], onDelete: Cascade)
 }
 
 model ReviewSubmission {
@@ -397,7 +409,9 @@ model ReviewSubmission {
 model ReviewItemFeedback {
   id                 String           @id @default(uuid())
   reviewSubmissionId String
-  savedVariationId   String
+  /// Igual que en el item: uno de los dos, según la ronda.
+  savedVariationId   String?
+  piezaId            String?
   decision           ReviewDecision
   /// Era `comment`. En la ronda de copy TODO comentario es sobre copy, así que
   /// la columna ya significaba esto sin decirlo; se renombra en vez de agregar
@@ -414,6 +428,14 @@ enum ReviewSessionStatus {
   PENDING
   IN_REVIEW
   COMPLETED
+}
+
+/// Qué se revisa en una sesión. Una sesión es HOMOGÉNEA: o lleva copy o lleva
+/// piezas, nunca las dos. Con el tipo acá arriba, los items no tienen que
+/// validarse de a uno y el portal sabe qué pantalla dibujar antes de leerlos.
+enum RondaRevision {
+  COPY
+  PIEZA
 }
 
 enum ReviewDecision {
@@ -493,7 +515,8 @@ model Pieza {
   eventos   PiezaEvento[]
   versiones PiezaVersion[]
 
-  notificaciones Notificacion[]
+  notificaciones  Notificacion[]
+  itemsDeRevision ReviewSessionItem[]
 
   /// Los dos ejes del tablero: por marca (la pantalla) y por persona (Mis piezas).
   @@unique([workspaceId, huella])
@@ -540,25 +563,30 @@ model PiezaSlot {
 /// nota de quien aceptó con hallazgos (D2)— y lo que permite medir cuánto
 /// tiempo pasa una pieza en cada columna.
 model PiezaEvento {
-  id        String       @id @default(uuid())
-  piezaId   String
+  id           String       @id @default(uuid())
+  piezaId      String
   /// CREADA · ASIGNADA · ENTREGADA · ACEPTADA · DEVUELTA · REABIERTA · COPY_ACTUALIZADO
-  tipo      String
-  deEstado  PiezaEstado?
-  aEstado   PiezaEstado?
-  autorId   String
+  tipo         String
+  deEstado     PiezaEstado?
+  aEstado      PiezaEstado?
+  /// NULL cuando lo escribió alguien que no tiene cuenta: el cliente, desde el
+  /// portal de revisión. Atribuirle sus palabras a quien mandó el enlace sería
+  /// mentir en el único registro que responde «quién decidió esto».
+  autorId      String?
   /// Obligatoria en DEVUELTA y REABIERTA; el servicio lo exige.
-  nota      String?
+  nota         String?
   /// COPY · DISENO. NULL = nadie lo clasificó, y eso es un valor válido: una
   /// nota vieja o escrita sin elegir categoría se queda sin clasificar en vez
   /// de recibir una etiqueta inventada. Una devolución con las dos categorías
   /// deja DOS eventos —el historial es append-only y cada entrada tiene un
   /// destinatario distinto— y no uno con dos campos.
-  categoria String?
-  createdAt DateTime     @default(now())
+  categoria    String?
+  /// El nombre que dejó quien revisó desde afuera. Va junto con `autorId` NULL.
+  autorExterno String?
+  createdAt    DateTime     @default(now())
 
   pieza Pieza @relation(fields: [piezaId], references: [id], onDelete: Cascade)
-  autor User  @relation(fields: [autorId], references: [id])
+  autor User? @relation(fields: [autorId], references: [id])
 
   @@index([piezaId, createdAt])
 }
