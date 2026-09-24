@@ -98,6 +98,22 @@ a mano en `App.tsx` y además arrastraba nueve emoji declarados que nunca se ren
 iconos de cada pantalla viven en `SCREENS[id].icon`, junto al nombre: son parte de cómo se llama
 una pantalla, no una decoración aparte.
 
+## La marca del producto
+
+**El isotipo es una onda de voz**: seis barras sobre una plaquita, en `components/ui/Isotipo.tsx`.
+Reemplaza a las tres capas apiladas que se dibujaban a mano en la portada, el menú lateral y el
+portal del cliente, cada una con su tamaño y su grosor de trazo. `components/Login.tsx` todavía
+las tiene, pero ya nada lo importa: es código muerto.
+Nació en la propuesta de portada del `.pen` y se adoptó como marca.
+
+- **Un componente, dos tonos.** `oscuro` (plaquita `ink`, barras blancas) sobre fondos claros;
+  `claro` (al revés) sobre fondos oscuros. El radio y el icono escalan con el tamaño.
+- **El trazo es nuestro, no de la librería.** La forma viene de `audio-lines` de lucide pero está
+  escrita en `ISOTIPO_TRAZO`: una marca no puede cambiar porque se actualizó un paquete.
+- **El favicon (`public/favicon.svg`) repite la misma geometría.** Si cambia uno, cambia el otro.
+- **Es la marca de My Voice, no la de un workspace.** Cuando llegue A2, la identidad de cada
+  empresa va a la cabecera de la app, pero la portada y el pie siguen siendo de My Voice.
+
 ## Identidad por workspace (A2)
 
 Las reglas que salieron de dibujar los estados límite. Todavía no están implementadas —A2 va
