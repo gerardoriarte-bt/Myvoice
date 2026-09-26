@@ -225,7 +225,10 @@ export default function CollaborationHub({ savedVariations, clients, addNotifica
                     <div className="flex items-center gap-2 mb-0.5">
                       {platformBadge(v.platform)}
                       <span className="text-[10px] text-gray-400">{v.type}</span>
-                      <span className="text-[10px] text-gray-400">· {clientName(v.clientId)}</span>
+                      {/* Era gris de 10 px después de un punto: se perdía. */}
+                      <span className="inline-flex items-center rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-semibold text-gray-700">
+                        {clientName(v.clientId)}
+                      </span>
                     </div>
                     <p className="text-[12px] text-gray-700 truncate">{v.content?.slice(0, 90)}</p>
                   </div>
@@ -291,6 +294,16 @@ export default function CollaborationHub({ savedVariations, clients, addNotifica
 
                     {/* Título */}
                     <div className="flex-1 min-w-0">
+                      {/*
+                        La marca antes del título. Una lista de revisiones sin
+                        marca obliga a abrir cada una para saber de quién es, y
+                        es el dato que más se busca al mirar la lista.
+                      */}
+                      {s.marca && (
+                        <span className="mr-2 inline-flex items-center rounded bg-gray-900 px-1.5 py-0.5 text-[10px] font-semibold text-white align-middle">
+                          {s.marca}
+                        </span>
+                      )}
                       <span className="text-[13px] font-medium text-gray-800">{s.title}</span>
                       {s.submission?.reviewerName && (
                         <span className="ml-2 text-[10px] text-gray-400">· {s.submission.reviewerName}</span>
