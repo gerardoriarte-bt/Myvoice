@@ -86,11 +86,18 @@ export default function RevisionDePiezas({ token, sesion, onEnviada, onError }: 
         <div className="mx-auto flex max-w-[1080px] items-center justify-between px-6 py-4">
           <div className="flex items-center gap-2.5">
             <Isotipo className="h-6 w-6" />
-            <div>
+            <div className="min-w-0">
               <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#86868B]">
                 Revisión de piezas
               </p>
-              <h1 className="text-[15px] font-semibold text-[#1D1D1F]">{sesion.title}</h1>
+              <h1 className="flex items-center gap-2 text-[15px] font-semibold text-[#1D1D1F]">
+                {sesion.marca && (
+                  <span className="rounded-md bg-[#1D1D1F] px-2 py-0.5 text-[12px] font-semibold text-white">
+                    {sesion.marca}
+                  </span>
+                )}
+                <span className="truncate">{sesion.title}</span>
+              </h1>
             </div>
           </div>
           <p className="text-[12px] text-[#86868B]">

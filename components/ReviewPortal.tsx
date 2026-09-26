@@ -172,9 +172,23 @@ export default function ReviewPortal({ token, onBack }: ReviewPortalProps) {
       {/* Header */}
       <header className="sticky top-0 z-10 bg-white border-b border-gray-200 shadow-sm">
         <div className="max-w-3xl mx-auto px-5 py-3.5 flex items-center justify-between">
-          <div>
-            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Revisión de contenido</p>
-            <h1 className="text-[14px] font-semibold text-gray-900 leading-tight">{session?.title}</h1>
+          <div className="min-w-0">
+            {/*
+              La marca primero y en grande. El cliente abre un enlace que le
+              llegó por correo: antes de leer un solo copy necesita reconocer
+              que esto es lo suyo. Hasta acá no aparecía en ninguna parte.
+            */}
+            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">
+              Revisión de contenido
+            </p>
+            <h1 className="flex items-center gap-2 text-[15px] font-semibold leading-tight text-gray-900">
+              {session?.marca && (
+                <span className="rounded-md bg-gray-900 px-2 py-0.5 text-[12px] font-semibold text-white">
+                  {session.marca}
+                </span>
+              )}
+              <span className="truncate">{session?.title}</span>
+            </h1>
           </div>
           {/* Progreso */}
           <div className="flex items-center gap-2.5">

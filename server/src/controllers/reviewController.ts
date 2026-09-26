@@ -101,9 +101,25 @@ export const listReviewSessions = async (req: AuthRequest, res: Response) => {
       include: {
         _count: { select: { items: true } },
         submission: { select: { submittedAt: true, reviewerName: true } },
+        // Un item alcanza: una sesión es de una sola marca, y la lista sin
+        // marca obliga a abrir cada sesión para saber de quién es.
+        items: {
+          take: 1,
+          select: {
+            savedVariation: { select: { client: { select: { name: true } } } },
+            pieza: { select: { client: { select: { name: true } } } },
+          },
+        },
       },
     });
-    res.json(sessions);
+    // La marca sube al nivel de la sesión y el item auxiliar se descarta: la
+    // pantalla no tiene por qué saber que vino de ahí.
+    res.json(
+      sessions.map(({ items, ...s }) => ({
+        ...s,
+        marca: items[0]?.savedVariation?.client.name ?? items[0]?.pieza?.client.name ?? null,
+      }))
+    );
   } catch (error) {
     console.error('listReviewSessions error:', error);
     res.status(500).json({ error: 'Error al listar sesiones de revisión' });
@@ -164,7 +180,15 @@ export const getReviewByToken = async (req: Request, res: Response) => {
           orderBy: { sortOrder: 'asc' },
           include: {
             savedVariation: {
-              select: { id: true, platform: true, type: true, content: true, charCount: true, clientId: true },
+              select: {
+                id: true,
+                platform: true,
+                type: true,
+                content: true,
+                charCount: true,
+                clientId: true,
+                client: { select: { name: true } },
+              },
             },
           },
         },
@@ -189,10 +213,16 @@ export const getReviewByToken = async (req: Request, res: Response) => {
     if (session.ronda === 'PIEZA') {
       const ids = session.items.map(i => i.piezaId).filter((id): id is string => !!id);
       const { items: _descartados, ...cabecera } = session;
-      return res.json({ ...cabecera, piezas: await piezasRevision.presentarPiezas(ids) });
+      const piezas = await piezasRevision.presentarPiezas(ids);
+      return res.json({ ...cabecera, marca: piezas[0]?.marca ?? null, piezas });
     }
 
-    res.json(session);
+    /**
+     * La marca, al nivel de la sesión. Desde que una revisión es de una sola
+     * marca se puede afirmar sin recorrer los items — y el cliente necesita
+     * reconocer de entrada que lo que está mirando es lo suyo.
+     */
+    res.json({ ...session, marca: session.items[0]?.savedVariation?.client?.name ?? null });
   } catch (error) {
     console.error('getReviewByToken error:', error);
     res.status(500).json({ error: 'Error al cargar la sesión de revisión' });

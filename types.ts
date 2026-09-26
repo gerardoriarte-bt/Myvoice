@@ -381,6 +381,8 @@ export interface ReviewSession {
   expiresAt: string;
   createdAt: string;
   ronda?: RondaRevision;
+  /** La marca de la sesión. Una sesión es de una sola, así que se afirma. */
+  marca?: string | null;
   _count?: { items: number };
   items?: ReviewSessionItem[];
   /** Solo en la ronda 2: el portal recibe piezas en vez de items. */
