@@ -157,11 +157,31 @@ nothing. `User.workspaceId` is the *active* workspace pointer, not a membership.
 data reachable from a review session is effectively public, so anything that adds items to a
 session must be workspace-filtered.
 
+**And filtered by brand.** A session is one `Client` and the server rejects a mixed one
+(`createReviewSession`). Workspace filtering is not enough here: inside one workspace an agency
+has several clients, and a link mixing two brands shows one client the other's content — with no
+password in between. `verify:isolation` covers it.
+
+A session is also **homogeneous in `ronda`**: `COPY` carries `savedVariationId` items, `PIEZA`
+carries `piezaId` ones, never both. A `CHECK` in the migration holds the XOR that Prisma cannot
+express, because this is content published behind an unauthenticated token and an application
+validation is the wrong last line of defence. `services/revisionDePiezas.ts` owns the second
+round — including the rule that a rejection with **only** copy feedback does not move the piece.
+
 ### Frontend
 
 No router. `App.tsx` (~1000 lines, the god component holding nearly all state) switches on
-query params: `?review=<token>` renders `ReviewPortal`, `?invite=<token>` is picked up by the
-login components. `isAdmin` derives from `canManageWorkspace(currentUser.role)` — the role in
+query params: `?review=<token>` renders `ReviewPortal` — which delegates to `RevisionDePiezas`
+when the session's `ronda` is `PIEZA` — `?invite=<token>` is picked up by the login components,
+and `?pieza=<id>&marca=<clientId>` is where the notification emails land (the URL is cleaned
+after reading, so a refresh does not reopen an old piece).
+
+**`screens.ts` is the single source of screen names and of the stage order**, and the stages are
+the process: Preparar · Escribir · Aprobar · Producir · Medir · Administrar. They were reordered
+on 2026-09-26 because they weren't: «Revisiones» sat in stage 4 and happens *before* Producción,
+which was stage 3. Numbering the stages is a good decision only while the numbers match what
+happens. Screen names are read with `screenName(id)` rather than written by hand — the rename of
+«Biblioteca» to «Copy aprobado» had to chase eleven hardcoded copies through the UI. `isAdmin` derives from `canManageWorkspace(currentUser.role)` — the role in
 the *active* workspace, refreshed via `authApi.me()` on mount and swapped by
 `POST /auth/switch-workspace`.
 
@@ -221,6 +241,9 @@ history.
 `docs/ROADMAP.md` is the living roadmap (three horizons plus cross-cutting enablers) and the
 place to update status. `docs/plan-h1-multitenant-motor.md` is the detailed plan for the
 current horizon, with file:line references for known open issues.
+`docs/bitacora-2026-09-26.md` records the first day the product was actually used: five findings,
+four of them from a person walking through the tool rather than from reading code — including a
+review link that could mix two brands and show one client the other's copy.
 `docs/bitacora-2026-09-24.md` records the two days that deployed H3.D and started H2.E: the two
 `deploy.sh` bugs that only showed up by using it, what production looked like from the inside
 (15 ADMINs, two brands both named «Terpel», email never switched on), and the three things the

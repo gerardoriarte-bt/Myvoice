@@ -271,10 +271,10 @@ si la reabre. Cero estado nuevo, y la decisión queda donde D6 la puso: en una p
 
 ## Fases
 
-1. **El desglose interno** · ✅ **construida** el 2026-09-24 — `PiezaEvento.categoria`, las dos
+1. **El desglose interno** · ✅ **construida y desplegada** el 2026-09-24 y 26 — `PiezaEvento.categoria`, las dos
    notas en `devolver` y `reabrir`, y el renombre de `comment` a `feedbackCopy`. No toca el portal público y entrega valor sola:
    el diseñador ya recibe el feedback separado, venga de quien venga.
-2. **La ronda 2** · ✅ **construida** el 2026-09-24 — `ronda` en la sesión, la pieza en el item
+2. **La ronda 2** · ✅ **construida y desplegada** el 2026-09-24 y 26 — `ronda` en la sesión, la pieza en el item
    con un CHECK que sostiene el XOR, `services/revisionDePiezas.ts` con la tabla de decisiones,
    `components/RevisionDePiezas.tsx` como pantalla aparte, el interruptor por campaña y el botón
    en la columna Lista. `verify:isolation` pasa a 84 casos.
