@@ -622,6 +622,46 @@ async function main() {
       `devolvió ${JSON.stringify(miembros.body?.[0]?.funciones)}`
     );
 
+    console.log('\nUNA REVISIÓN, UNA MARCA — fuga entre clientes del mismo workspace');
+    // No es aislamiento entre empresas —eso ya está cubierto— sino entre las
+    // marcas de una misma agencia. El enlace de revisión no pide cuenta, así
+    // que un copy de otra marca adentro se lo lleva puesto el cliente.
+    const otraMarcaB = await prisma.client.create({
+      data: { name: 'Segunda marca de B', industry: 'Test', workspaceId: B.workspace.id },
+    });
+    const deOtraMarca = await prisma.savedVariation.create({
+      data: {
+        clientId: otraMarcaB.id,
+        platform: 'Instagram Post',
+        type: 'Beneficio',
+        content: 'Copy de la otra marca de B',
+        charCount: 26,
+        tags: [],
+        isApproved: true,
+      },
+    });
+    const mezclaDeMarcas = await api('/review-sessions', B.token, {
+      method: 'POST',
+      body: JSON.stringify({ title: 'Mezcla', variationIds: [aprobadoB.id, deOtraMarca.id] }),
+    });
+    record(
+      'Una revisión con copy de dos marcas se rechaza, y el mensaje las nombra',
+      mezclaDeMarcas.status === 400 &&
+        typeof mezclaDeMarcas.body?.error === 'string' &&
+        mezclaDeMarcas.body.error.includes('Segunda marca de B'),
+      `respondió ${mezclaDeMarcas.status} ${JSON.stringify(mezclaDeMarcas.body)?.slice(0, 130)}`
+    );
+
+    const unaSola = await api('/review-sessions', B.token, {
+      method: 'POST',
+      body: JSON.stringify({ title: 'Una marca', variationIds: [deOtraMarca.id] }),
+    });
+    record(
+      'Con una sola marca la revisión se crea igual que siempre',
+      unaSola.status === 201,
+      `respondió ${unaSola.status}`
+    );
+
     console.log('\nRONDA 2 — el cliente aprueba la pieza (H2.E)');
     // La pieza de B está LISTA en este punto del guión. Su campaña todavía no
     // pide aprobación del cliente, que es el estado por defecto (D3).
@@ -953,10 +993,14 @@ async function main() {
       await prisma.miembroFuncion.deleteMany({ where: { workspaceId: t.workspace.id } });
       await prisma.piezaVersion.deleteMany({ where: { pieza: { workspaceId: t.workspace.id } } });
       await prisma.pieza.deleteMany({ where: { workspaceId: t.workspace.id } });
-      await prisma.savedVariation.deleteMany({ where: { clientId: t.client.id } });
-      await prisma.negativeFeedback.deleteMany({ where: { clientId: t.client.id } });
-      await prisma.contentDNAProfile.deleteMany({ where: { clientId: t.client.id } });
-      await prisma.generationLog.deleteMany({ where: { clientId: t.client.id } });
+      // Por WORKSPACE y no por la marca principal: la suite crea marcas extra
+      // —la de otro cliente, la de los dominios— y borrar solo las del tenant
+      // dejaba huérfanas que después rompían el DELETE de Client por FK.
+      const deLaEmpresa = { client: { workspaceId: t.workspace.id } };
+      await prisma.savedVariation.deleteMany({ where: deLaEmpresa });
+      await prisma.negativeFeedback.deleteMany({ where: deLaEmpresa });
+      await prisma.contentDNAProfile.deleteMany({ where: deLaEmpresa });
+      await prisma.generationLog.deleteMany({ where: deLaEmpresa });
       await prisma.generationPreset.deleteMany({ where: { workspaceId: t.workspace.id } });
       await prisma.project.deleteMany({ where: { workspaceId: t.workspace.id } });
       await prisma.reviewSession.deleteMany({ where: { workspaceId: t.workspace.id } });

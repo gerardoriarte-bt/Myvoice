@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { SCREENS } from '../screens';
-import { Plus, Search, Copy, Pencil, CheckCircle2, Trash2, Check, BookmarkCheck, LayoutGrid, Tag, X, Square, CheckSquare } from 'lucide-react';
+import { Plus, Search, Copy, Pencil, CheckCircle2, Trash2, Check, BookmarkCheck, LayoutGrid, Tag, X, Square, CheckSquare, AlertTriangle } from 'lucide-react';
 import { SavedVariation, Project, Client, Platform } from '../types';
 import { PlatformIcon } from './ui/platformIcons';
 import CrearPiezasModal from './produccion/CrearPiezasModal';
@@ -42,8 +42,6 @@ const SavedManager: React.FC<SavedManagerProps> = ({
   const [activePlatformFilter, setActivePlatformFilter] = React.useState<string | 'all'>('all');
   const [activeTagFilter, setActiveTagFilter] = React.useState<string | 'all'>('all');
   const [searchQuery, setSearchQuery] = React.useState('');
-  const [isCreatingProject, setIsCreatingProject] = React.useState(false);
-  const [newProjectName, setNewProjectName] = React.useState('');
   const [copyStatus, setCopyStatus] = React.useState<string | null>(null);
   const [editingId, setEditingId] = React.useState<string | null>(null);
   const [editBuffer, setEditBuffer] = React.useState('');
@@ -161,17 +159,35 @@ const SavedManager: React.FC<SavedManagerProps> = ({
     }
   };
 
+  /**
+   * Las marcas de lo seleccionado.
+   *
+   * Esta pantalla muestra el copy de todas las marcas juntas, y las acciones
+   * de abajo no son todas inocentes si se mezclan: un enlace de revisión con
+   * dos marcas le muestra a un cliente el contenido del otro, y ese enlace no
+   * pide cuenta. Mejor decirlo antes de que apriete, y no después con un error.
+   */
+  const marcasSeleccionadas = React.useMemo(() => {
+    const nombres = new Map<string, string>();
+    for (const v of localVariations) {
+      if (!selectedIds.has(v.id)) continue;
+      nombres.set(v.clientId, clients.find(c => c.id === v.clientId)?.name ?? 'Sin marca');
+    }
+    return [...nombres.values()];
+  }, [selectedIds, localVariations, clients]);
+  const variasMarcas = marcasSeleccionadas.length > 1;
+
   const handleCreateReviewSession = async () => {
-    if (selectedIds.size === 0) return;
+    if (selectedIds.size === 0 || variasMarcas) return;
     try {
       await reviewApi.create({
-        title: 'Revision ' + new Date().toLocaleDateString('es-CO'),
+        title: `${marcasSeleccionadas[0]} · Revisión ${new Date().toLocaleDateString('es-CO')}`,
         variationIds: Array.from(selectedIds),
       });
-      addNotification?.('Sesion de revision creada', 'success');
+      addNotification?.('Revisión creada', 'success');
       selectNone();
     } catch {
-      addNotification?.('Error al crear la sesion de revision', 'error');
+      addNotification?.('No se pudo crear la revisión', 'error');
     }
   };
 
@@ -327,12 +343,13 @@ const SavedManager: React.FC<SavedManagerProps> = ({
                 {selectionMode ? 'Cancelar' : 'Seleccionar'}
               </button>
             )}
-            {!readOnly && (
-              <button onClick={() => setIsCreatingProject(!isCreatingProject)} className="bg-ink text-white px-4 py-2 rounded-lg text-[13px] font-medium hover:bg-ink transition-colors shadow-sm flex items-center gap-2">
-                <Plus className="w-3.5 h-3.5" />
-                {isCreatingProject ? 'Cancelar' : 'Nuevo Proyecto'}
-              </button>
-            )}
+            {/*
+              Acá había un botón «Nuevo Proyecto» que no hacía nada: alternaba
+              su propia etiqueta y listo, el formulario nunca se escribió. Una
+              campaña se crea al guardar el copy, que es cuando hay algo que
+              meterle adentro; una creada desde esta pantalla quedaría vacía y
+              sin forma de llenarla.
+            */}
           </div>
         </div>
         <div className="grid grid-cols-3 border-t border-gray-100 bg-gray-50/40">
@@ -641,8 +658,36 @@ const SavedManager: React.FC<SavedManagerProps> = ({
       {/* 2A: Sticky batch action bar */}
       {selectionMode && selectedIds.size > 0 && (
         <div className="fixed bottom-0 left-0 right-0 z-50 flex justify-center pointer-events-none">
-          <div className="pointer-events-auto mb-4 flex items-center gap-3 bg-ink text-white px-5 py-3 rounded-xl shadow-2xl border border-gray-700">
+          <div className="pointer-events-auto mb-4 flex flex-col gap-2">
+          {/*
+            El botón apagado dice que no se puede, no por qué. La línea lo
+            explica una sola vez y arriba de la barra, donde se está mirando.
+          */}
+          {variasMarcas && (
+            <p className="rounded-lg bg-amber-50 px-3 py-2 text-[11px] leading-snug text-amber-900 shadow-lg">
+              Seleccionaste copy de <strong>{marcasSeleccionadas.join(' y ')}</strong>. Se puede
+              mandar a producción —salen piezas separadas, una por marca— pero no armar una
+              revisión: el enlace no pide cuenta, y cada cliente vería el copy del otro.
+            </p>
+          )}
+          <div className="flex items-center gap-3 bg-ink text-white px-5 py-3 rounded-xl shadow-2xl border border-gray-700">
             <span className="text-[13px] font-medium text-gray-300">{selectedIds.size} seleccionadas</span>
+            {/*
+              La marca, siempre a la vista mientras se actúa. Esta pantalla
+              junta el copy de todas, así que el único momento en que se puede
+              equivocar uno es justo acá.
+            */}
+            {marcasSeleccionadas.length === 1 && (
+              <span className="rounded-md bg-white/10 px-2 py-0.5 text-[12px] font-medium text-white">
+                {marcasSeleccionadas[0]}
+              </span>
+            )}
+            {variasMarcas && (
+              <span className="flex items-center gap-1.5 rounded-md bg-amber-500/20 px-2 py-0.5 text-[12px] font-medium text-amber-200">
+                <AlertTriangle className="h-3 w-3" />
+                {marcasSeleccionadas.length} marcas
+              </span>
+            )}
             <div className="w-px h-4 bg-gray-600" />
             <button
               onClick={handleBulkDelete}
@@ -660,11 +705,18 @@ const SavedManager: React.FC<SavedManagerProps> = ({
             </button>
             <button
               onClick={handleCreateReviewSession}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 rounded-lg text-[12px] font-medium transition-colors"
+              disabled={variasMarcas}
+              title={
+                variasMarcas
+                  ? 'Una revisión es de una sola marca: el enlace no pide cuenta, y cada cliente vería el copy del otro.'
+                  : undefined
+              }
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 rounded-lg text-[12px] font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-blue-600"
             >
               Revisión para el cliente
             </button>
           </div>
+        </div>
         </div>
       )}
       {/*

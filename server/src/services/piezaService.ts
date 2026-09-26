@@ -310,7 +310,12 @@ export const proponerPiezas = async (
       excluidos.push({ savedVariationId: v.id, platform: v.platform, motivo: 'ya-en-pieza', detalle: 'Ya está en una pieza.' });
       continue;
     }
-    const clave = `${v.projectId ?? ''}|${v.platform}`;
+    // La MARCA entra en la clave. Sin ella, dos aprobados de marcas distintas
+    // en el mismo canal caían en el mismo grupo, la propuesta los mostraba
+    // juntos y recién al confirmar saltaba «Una pieza es de una sola marca».
+    // El freno existía pero llegaba tarde: ahora son dos piezas, que es lo que
+    // siempre debieron ser.
+    const clave = `${v.clientId}|${v.projectId ?? ''}|${v.platform}`;
     grupos.set(clave, [...(grupos.get(clave) ?? []), v]);
   }
 
