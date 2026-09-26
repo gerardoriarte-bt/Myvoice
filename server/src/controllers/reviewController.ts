@@ -46,6 +46,27 @@ export const createReviewSession = async (req: AuthRequest, res: Response) => {
       throw new TenantError('Ninguna de las variaciones pertenece a este workspace', 404);
     }
 
+    /**
+     * Una sesión es de UNA marca.
+     *
+     * El aislamiento entre empresas ya estaba cubierto, pero esto es otra cosa:
+     * dentro de un mismo workspace, una agencia tiene varios clientes. Un
+     * enlace con copy de dos marcas le muestra a un cliente el contenido del
+     * otro — y el enlace no pide cuenta ni contraseña, así que no hay una
+     * segunda barrera que lo atrape.
+     */
+    const marcas = await prisma.savedVariation.findMany({
+      where: { id: { in: items } },
+      select: { clientId: true, client: { select: { name: true } } },
+      distinct: ['clientId'],
+    });
+    if (marcas.length > 1) {
+      throw new TenantError(
+        `Una revisión es de una sola marca, y esta mezcla ${marcas.length}: ${marcas.map(m => m.client.name).join(', ')}. El enlace no pide cuenta, así que cada cliente vería el copy del otro.`,
+        400
+      );
+    }
+
     const session = await prisma.reviewSession.create({
       data: {
         title,
