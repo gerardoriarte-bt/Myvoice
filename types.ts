@@ -349,6 +349,30 @@ export interface ReviewItemFeedbackDetail {
   feedbackDiseno?: string | null;
 }
 
+/** Qué se revisa. Una sesión es homogénea: o copy o piezas, nunca las dos. */
+export type RondaRevision = 'COPY' | 'PIEZA';
+
+/** Lo que el cliente ve de una pieza en la ronda 2. */
+export interface PiezaEnRevision {
+  id: string;
+  platform: string;
+  formato: string;
+  titulo: string;
+  tipo: PiezaTipo;
+  marca: string;
+  /** Firmada y con vencimiento. null en video y audio: no hay imagen. */
+  previaUrl: string | null;
+  slots: { slot: string; slotLabel: string; textoCongelado: string }[];
+}
+
+/** El desglose de D4: los dos campos opcionales, y con uno alcanza. */
+export interface ReviewPiezaFeedback {
+  piezaId: string;
+  decision: ReviewDecision;
+  feedbackCopy?: string;
+  feedbackDiseno?: string;
+}
+
 export interface ReviewSession {
   id: string;
   token: string;
@@ -356,8 +380,11 @@ export interface ReviewSession {
   status: ReviewSessionStatus;
   expiresAt: string;
   createdAt: string;
+  ronda?: RondaRevision;
   _count?: { items: number };
   items?: ReviewSessionItem[];
+  /** Solo en la ronda 2: el portal recibe piezas en vez de items. */
+  piezas?: PiezaEnRevision[];
   submission?: {
     submittedAt: string;
     reviewerName?: string | null;
@@ -477,7 +504,7 @@ export interface Pieza {
   /** URL firmada del snapshot: nuestra, no depende de permisos ajenos. */
   previaUrl: string | null;
   client?: { id: string; name: string };
-  project?: { id: string; name: string } | null;
+  project?: { id: string; name: string; pideAprobacionDeCliente?: boolean } | null;
 }
 
 export interface PiezaEvento {

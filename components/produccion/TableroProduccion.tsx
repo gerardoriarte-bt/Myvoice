@@ -8,6 +8,7 @@ import { COLORES_ESTADO, COLUMNAS } from './columnas';
 import { exportPiezasToExcel } from '../../services/exportPiezasToExcel';
 import { authApi, piezasApi } from '../../services/api';
 import TarjetaPieza from './TarjetaPieza';
+import MandarAlCliente from './MandarAlCliente';
 import OrdenDeTrabajo from './OrdenDeTrabajo';
 
 /**
@@ -209,6 +210,14 @@ export default function TableroProduccion({
                       <Download className="h-3 w-3" />
                       Exportar a Excel
                     </button>
+                  )}
+                  {col.estado === 'LISTA' && suyas.length > 0 && (
+                    <MandarAlCliente
+                      piezas={suyas}
+                      marca={clients.find(c => c.id === clientId)?.name ?? 'la marca'}
+                      onCambio={cargar}
+                      onError={m => addNotification(m, 'error')}
+                    />
                   )}
                   <dl className="mt-1.5 space-y-0.5">
                     <div className="flex gap-1.5 text-[9px]">

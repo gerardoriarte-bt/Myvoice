@@ -122,7 +122,10 @@ const INCLUDE_PIEZA = {
     include: { autor: { select: { id: true, name: true } } },
   },
   client: { select: { id: true, name: true } },
-  project: { select: { id: true, name: true } },
+  // `pideAprobacionDeCliente` viaja con la pieza porque la columna Lista tiene
+  // que poder decir, sin otra consulta, si esta pieza se le puede mandar al
+  // cliente (H2.E · D3).
+  project: { select: { id: true, name: true, pideAprobacionDeCliente: true } },
   /** La última entrega: de ahí salen la previa y el semáforo de la tarjeta. */
   versiones: {
     orderBy: { numero: 'desc' as const },

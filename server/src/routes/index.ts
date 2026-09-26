@@ -124,6 +124,7 @@ router.put('/saved/:id', ...inWorkspace, savedController.updateVariation);
 router.delete('/saved/:id', ...inWorkspace, savedController.deleteVariation);
 router.get('/projects', ...inWorkspace, savedController.getProjects);
 router.post('/projects', ...inWorkspace, savedController.createProject);
+router.patch('/projects/:id', ...inWorkspace, savedController.updateProject);
 router.delete('/projects/:id', ...inWorkspace, savedController.deleteProject);
 router.post('/feedback/negative', ...inWorkspace, savedController.saveNegativeFeedback);
 

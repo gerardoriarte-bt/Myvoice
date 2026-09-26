@@ -161,6 +161,29 @@ export const createProject = async (req: AuthRequest, res: Response) => {
   }
 };
 
+/**
+ * El interruptor de la ronda 2 (H2.E · D3). Es lo único editable de una
+ * campaña por ahora, y va con lista blanca explícita: el body no puede
+ * reasignar `workspaceId` ni renombrar nada de paso.
+ */
+export const updateProject = async (req: AuthRequest, res: Response) => {
+  const { id } = req.params;
+  const pide = req.body?.pideAprobacionDeCliente;
+  if (typeof pide !== 'boolean')
+    return res.status(400).json({ error: 'pideAprobacionDeCliente tiene que ser true o false' });
+  try {
+    await assertProjectInWorkspace(req.tenant!, id);
+    const project = await prisma.project.update({
+      where: { id },
+      data: { pideAprobacionDeCliente: pide },
+      select: { id: true, name: true, pideAprobacionDeCliente: true },
+    });
+    res.json(project);
+  } catch (error) {
+    handleTenantError(error, res, 'Error al actualizar la campaña');
+  }
+};
+
 export const deleteProject = async (req: AuthRequest, res: Response) => {
   const { id } = req.params;
   try {

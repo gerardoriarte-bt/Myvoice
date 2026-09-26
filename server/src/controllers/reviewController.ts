@@ -3,13 +3,34 @@ import { AuthRequest, handleTenantError } from '../middleware/auth.js';
 import { filterVariationsInWorkspace, TenantError } from '../lib/tenancy.js';
 import { prisma } from '../lib/prisma.js';
 import { notifyReviewCompleted } from '../services/notificationService.js';
+import * as piezasRevision from '../services/revisionDePiezas.js';
 
 export const createReviewSession = async (req: AuthRequest, res: Response) => {
   const tenant = req.tenant!;
-  const { title, variationIds, expiresInDays } = req.body;
+  const { title, variationIds, piezaIds, expiresInDays } = req.body;
 
-  if (!title || !Array.isArray(variationIds) || variationIds.length === 0) {
-    return res.status(400).json({ error: 'title y al menos una variación son obligatorios' });
+  if (!title) return res.status(400).json({ error: 'title es obligatorio' });
+
+  /**
+   * Una sesión es homogénea: o lleva copy o lleva piezas. Mezclarlas obligaría
+   * al portal a dibujar dos pantallas distintas en la misma lista, y al cliente
+   * a entender que está decidiendo dos cosas que ocurren en momentos diferentes
+   * del proceso.
+   */
+  const conPiezas = Array.isArray(piezaIds) && piezaIds.length > 0;
+  const conCopy = Array.isArray(variationIds) && variationIds.length > 0;
+  if (conPiezas && conCopy)
+    return res.status(400).json({ error: 'Una revisión lleva copys o piezas, no las dos cosas' });
+  if (conPiezas) {
+    try {
+      const sesion = await piezasRevision.crearSesionDePiezas(tenant, { title, piezaIds, expiresInDays });
+      return res.status(201).json(sesion);
+    } catch (error) {
+      return handleTenantError(error, res, 'Error al crear la revisión de piezas');
+    }
+  }
+  if (!conCopy) {
+    return res.status(400).json({ error: 'Hace falta al menos una variación o una pieza' });
   }
 
   const days = typeof expiresInDays === 'number' && expiresInDays > 0 ? expiresInDays : 7;
@@ -141,6 +162,15 @@ export const getReviewByToken = async (req: Request, res: Response) => {
       session.status = 'IN_REVIEW';
     }
 
+    // La ronda 2 devuelve la pieza con su previa firmada y el copy que el
+    // cliente ya aprobó. Nada más: ni el enlace de entrega, ni los hallazgos,
+    // ni quién la diseñó — todo esto vive detrás de un token sin autenticación.
+    if (session.ronda === 'PIEZA') {
+      const ids = session.items.map(i => i.piezaId).filter((id): id is string => !!id);
+      const { items: _descartados, ...cabecera } = session;
+      return res.json({ ...cabecera, piezas: await piezasRevision.presentarPiezas(ids) });
+    }
+
     res.json(session);
   } catch (error) {
     console.error('getReviewByToken error:', error);
@@ -161,12 +191,47 @@ export const submitReview = async (req: Request, res: Response) => {
       where: { token },
       // Quien creó la sesión es quien tiene que enterarse de que el cliente
       // respondió. Hasta H3.D esto iba a una casilla fija del entorno.
-      include: { createdBy: { select: { email: true } } },
+      include: {
+        createdBy: { select: { email: true } },
+        items: { select: { piezaId: true } },
+      },
     });
 
     if (!session) return res.status(404).json({ error: 'Sesión de revisión no encontrada' });
     if (new Date() > session.expiresAt) return res.status(410).json({ error: 'Esta sesión de revisión ha expirado' });
     if (session.status === 'COMPLETED') return res.status(409).json({ error: 'Esta sesión ya fue enviada' });
+
+    if (session.ronda === 'PIEZA') {
+      const deLaSesion = new Set(session.items.map(i => i.piezaId).filter((id): id is string => !!id));
+      const decisiones = feedbacks.filter((f: any) => typeof f?.piezaId === 'string');
+
+      await prisma.$transaction(async tx => {
+        const entrega = await tx.reviewSubmission.create({
+          data: { reviewSessionId: session.id, reviewerName: reviewerName || null },
+          select: { id: true },
+        });
+        // Todo junto o nada: una entrega a medias dejaría piezas movidas sin el
+        // motivo que las movió.
+        await piezasRevision.aplicarDecisiones(
+          tx,
+          entrega.id,
+          typeof reviewerName === 'string' && reviewerName.trim() ? reviewerName.trim() : 'El cliente',
+          deLaSesion,
+          decisiones
+        );
+        await tx.reviewSession.update({ where: { id: session.id }, data: { status: 'COMPLETED' } });
+      });
+
+      notifyReviewCompleted({
+        sessionTitle: session.title,
+        reviewerName,
+        approvedCount: decisiones.filter((f: any) => f.decision === 'APPROVED').length,
+        rejectedCount: decisiones.filter((f: any) => f.decision === 'REJECTED').length,
+        para: [session.createdBy.email],
+      }).catch(() => {});
+
+      return res.status(201).json({ message: 'Revisión enviada con éxito' });
+    }
 
     // Pre-fetch all variations to avoid queries inside the transaction
     const variationIds: string[] = feedbacks.map((f: any) => f.savedVariationId);

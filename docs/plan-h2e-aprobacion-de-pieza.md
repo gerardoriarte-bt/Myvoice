@@ -274,8 +274,14 @@ si la reabre. Cero estado nuevo, y la decisión queda donde D6 la puso: en una p
 1. **El desglose interno** · ✅ **construida** el 2026-09-24 — `PiezaEvento.categoria`, las dos
    notas en `devolver` y `reabrir`, y el renombre de `comment` a `feedbackCopy`. No toca el portal público y entrega valor sola:
    el diseñador ya recibe el feedback separado, venga de quien venga.
-2. **La ronda 2** — `ronda` en la sesión, la pieza en el item, el portal con la pieza y el
-   formulario, el interruptor de la campaña, y la vuelta al tablero.
+2. **La ronda 2** · ✅ **construida** el 2026-09-24 — `ronda` en la sesión, la pieza en el item
+   con un CHECK que sostiene el XOR, `services/revisionDePiezas.ts` con la tabla de decisiones,
+   `components/RevisionDePiezas.tsx` como pantalla aparte, el interruptor por campaña y el botón
+   en la columna Lista. `verify:isolation` pasa a 84 casos.
+
+   Lo que el código obligó a decidir y no estaba en el nivel 2: **`PiezaEvento.autorId` pasa a ser
+   nullable**, con un `autorExterno` al lado. El cliente no tiene cuenta, y atribuirle sus palabras
+   a quien mandó el enlace sería mentir en el único registro que responde «quién decidió esto».
 3. **El enrutamiento** — `confirmadoAt`, el filtro del motor, y la bandeja de propuestas (D5).
    Va tercera a propósito: hasta que exista, la ronda 2 simplemente no crea `NegativeFeedback`, y
    eso es más seguro que crearlos sin poder confirmarlos.

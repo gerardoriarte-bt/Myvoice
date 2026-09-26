@@ -221,6 +221,10 @@ history.
 `docs/ROADMAP.md` is the living roadmap (three horizons plus cross-cutting enablers) and the
 place to update status. `docs/plan-h1-multitenant-motor.md` is the detailed plan for the
 current horizon, with file:line references for known open issues.
+`docs/bitacora-2026-09-24.md` records the two days that deployed H3.D and started H2.E: the two
+`deploy.sh` bugs that only showed up by using it, what production looked like from the inside
+(15 ADMINs, two brands both named «Terpel», email never switched on), and the three things the
+code decided that the plan had not.
 `docs/bitacora-2026-09-22.md` records the day the H2 went from plan to screen: the four PRs left
 open, the decisions (E6, D2, D3, D7), what the uniqueness rule got wrong about the A/B, and the
 six corrections that came from looking at the screen working.

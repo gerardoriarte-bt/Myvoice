@@ -233,11 +233,34 @@ export const reviewApi = {
   getDetail: (id: string) => apiRequest(`/review-sessions/${id}`),
   create: (data: { title: string; variationIds: string[]; expiresInDays?: number }) =>
     apiRequest('/review-sessions', { method: 'POST', body: JSON.stringify(data) }),
+  /** La ronda 2 (H2.E): el cliente aprueba la pieza terminada, no el texto. */
+  crearDePiezas: (data: { title: string; piezaIds: string[]; expiresInDays?: number }) =>
+    apiRequest('/review-sessions', { method: 'POST', body: JSON.stringify(data) }),
   delete: (id: string) => apiRequest(`/review-sessions/${id}`, { method: 'DELETE' }),
+  /** El interruptor de la ronda 2, por campaña (D3). */
+  pedirAprobacionDePiezas: (projectId: string, pide: boolean) =>
+    apiRequest(`/projects/${projectId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ pideAprobacionDeCliente: pide }),
+    }),
   // Rutas públicas: fetch directo sin Bearer token
   getByToken: (token: string) =>
     fetch(`${API_URL}/review/public/${token}`).then(r => r.json()),
-  submit: (token: string, data: { reviewerName?: string; feedbacks: Array<{ savedVariationId: string; decision: string; comment?: string }> }) =>
+  /**
+   * Las dos rondas entregan por acá. El feedback es de una variación o de una
+   * pieza según la ronda de la sesión, y el servidor decide cuál mirar por la
+   * `ronda` que tiene guardada — no por lo que diga este body.
+   */
+  submit: (
+    token: string,
+    data: {
+      reviewerName?: string;
+      feedbacks: Array<
+        | { savedVariationId: string; decision: string; comment?: string }
+        | { piezaId: string; decision: string; feedbackCopy?: string; feedbackDiseno?: string }
+      >;
+    }
+  ) =>
     fetch(`${API_URL}/review/public/${token}/submit`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

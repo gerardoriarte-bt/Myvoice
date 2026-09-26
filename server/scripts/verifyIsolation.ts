@@ -622,6 +622,102 @@ async function main() {
       `devolvió ${JSON.stringify(miembros.body?.[0]?.funciones)}`
     );
 
+    console.log('\nRONDA 2 — el cliente aprueba la pieza (H2.E)');
+    // La pieza de B está LISTA en este punto del guión. Su campaña todavía no
+    // pide aprobación del cliente, que es el estado por defecto (D3).
+    const sinPedir = await api('/review-sessions', B.token, {
+      method: 'POST',
+      body: JSON.stringify({ title: 'Piezas', piezaIds: [piezaB.id] }),
+    });
+    record(
+      'Una campaña que no pide aprobación no puede mandar piezas al cliente',
+      sinPedir.status === 404,
+      `respondió ${sinPedir.status} ${JSON.stringify(sinPedir.body)?.slice(0, 110)}`
+    );
+
+    await api(`/projects/${B.project.id}`, B.token, {
+      method: 'PATCH',
+      body: JSON.stringify({ pideAprobacionDeCliente: true }),
+    });
+    await expectDenied('PATCH /projects/:id de otro workspace', `/projects/${A.project.id}`, B.token, {
+      method: 'PATCH',
+      body: JSON.stringify({ pideAprobacionDeCliente: true }),
+    });
+
+    const conPieza = await api('/review-sessions', B.token, {
+      method: 'POST',
+      body: JSON.stringify({ title: 'Piezas de B', piezaIds: [piezaB.id] }),
+    });
+    record(
+      'Con la campaña activada, la pieza lista sí se manda',
+      conPieza.status === 201 && conPieza.body?.ronda === 'PIEZA' && !!conPieza.body?.token,
+      `respondió ${conPieza.status} ${JSON.stringify(conPieza.body)?.slice(0, 110)}`
+    );
+
+    const mezclada = await api('/review-sessions', B.token, {
+      method: 'POST',
+      body: JSON.stringify({ title: 'Mezcla', piezaIds: [piezaB.id], variationIds: [aprobadoB.id] }),
+    });
+    record(
+      'Una sesión no puede mezclar copys y piezas',
+      mezclada.status === 400,
+      `respondió ${mezclada.status}`
+    );
+
+    // Lo que importa del portal público: que el token de B no alcance una
+    // pieza de A, y que no filtre lo que no es asunto del cliente.
+    const ajena = await api('/review-sessions', B.token, {
+      method: 'POST',
+      body: JSON.stringify({ title: 'Pieza de A', piezaIds: [piezaA.id] }),
+    });
+    record(
+      'Una pieza de otro workspace no entra en una sesión',
+      ajena.status === 404,
+      `respondió ${ajena.status}`
+    );
+
+    const publico = await (await fetch(`${API_URL}/review/public/${conPieza.body?.token}`)).json();
+    record(
+      'El portal devuelve la pieza con su copy aprobado y sin datos internos',
+      Array.isArray(publico?.piezas) &&
+        publico.piezas.length === 1 &&
+        publico.piezas[0].id === piezaB.id &&
+        Array.isArray(publico.piezas[0].slots) &&
+        publico.piezas[0].enlace === undefined &&
+        publico.piezas[0].asignadaA === undefined,
+      `devolvió ${JSON.stringify(publico)?.slice(0, 160)}`
+    );
+
+    // El desglose decide qué se mueve: solo el feedback de arte devuelve la
+    // pieza a diseño. Un reparo sobre el mensaje la deja donde está, porque el
+    // diseñador no puede hacer nada hasta que el copy cambie.
+    const entrega = await fetch(`${API_URL}/review/public/${conPieza.body?.token}/submit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        reviewerName: 'La clienta',
+        feedbacks: [{ piezaId: piezaB.id, decision: 'REJECTED', feedbackCopy: 'El hook no me cierra' }],
+      }),
+    });
+    const trasCopy = await prisma.pieza.findUnique({ where: { id: piezaB.id }, select: { estado: true } });
+    record(
+      'Un reparo SOLO sobre el mensaje no mueve la pieza de Lista',
+      entrega.status === 201 && trasCopy?.estado === 'LISTA',
+      `respondió ${entrega.status}, quedó en ${trasCopy?.estado}`
+    );
+
+    const eventoExterno = await prisma.piezaEvento.findFirst({
+      where: { piezaId: piezaB.id, nota: 'El hook no me cierra' },
+      select: { autorId: true, autorExterno: true, categoria: true },
+    });
+    record(
+      'El comentario del cliente NO se le atribuye a nadie del equipo',
+      eventoExterno?.autorId === null &&
+        eventoExterno?.autorExterno === 'La clienta' &&
+        eventoExterno?.categoria === 'COPY',
+      `quedó ${JSON.stringify(eventoExterno)}`
+    );
+
     console.log('\nBANDEJA — a quién le llega el aviso y a quién no');
     /**
      * Hace falta más de una persona en el workspace: la primera regla contra
