@@ -964,7 +964,7 @@ const App: React.FC = () => {
               addNotification={addNotification}
               destino={destinoProduccion}
               onDestinoAtendido={() => setDestinoProduccion(null)}
-              onIrABiblioteca={() => setActiveTab('saved')}
+              onIrACopyAprobado={() => setActiveTab('saved')}
             />
           )}
           {activeTab === 'history' && isAdmin && (

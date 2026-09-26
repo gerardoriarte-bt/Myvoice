@@ -99,7 +99,7 @@ export default function ClientPortal({ currentUser, savedVariations, clients, on
         ) : (<>
         {/* Summary */}
         <div>
-          <h1 className="text-[22px] font-semibold text-gray-900 mb-1">Biblioteca de contenido</h1>
+          <h1 className="text-[22px] font-semibold text-gray-900 mb-1">Contenido aprobado</h1>
           <p className="text-[13px] text-gray-500">Variaciones de copy generadas para tu marca.</p>
         </div>
 

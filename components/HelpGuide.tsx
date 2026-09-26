@@ -181,7 +181,7 @@ export default function HelpGuide() {
         <div style={{ display: 'flex', gap: 8, marginTop: 14, flexWrap: 'wrap' }}>
           {[
             { label: 'Generador', color: '#6366F1' },
-            { label: 'Biblioteca', color: '#10B981' },
+            { label: 'Copy aprobado', color: '#10B981' },
             { label: 'Colaboracion', color: '#EC4899' },
             { label: 'Métricas', color: '#0071E3' },
           ].map(b => <span key={b.label}><Badge color={b.color}>{b.label}</Badge></span>)}
@@ -252,11 +252,11 @@ export default function HelpGuide() {
         </Tip>
       </Section>
 
-      {/* ── 4. Biblioteca de copy ── */}
-      <Section id="biblioteca" title="4. Biblioteca" badge="Biblioteca" badgeColor="#10B981" open={open === 'biblioteca'} onToggle={() => toggle('biblioteca')}>
+      {/* ── 4. Copy aprobado ── */}
+      <Section id="biblioteca" title="4. Copy aprobado" badge="Copy aprobado" badgeColor="#10B981" open={open === 'biblioteca'} onToggle={() => toggle('biblioteca')}>
         <SectionHeader
           icon={<IconBookmark />}
-          title="Biblioteca"
+          title="Copy aprobado"
           what="El repositorio central de todo el copy guardado. Organiza, filtra, etiqueta y gestiona las variaciones aprobadas de todos los clientes."
         />
 
@@ -306,8 +306,8 @@ export default function HelpGuide() {
 
         <SubHead>Como usarlo</SubHead>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <Step n={1} title="Manda el copy aprobado a producción" desc="Desde la Biblioteca, seleccioná las variaciones aprobadas y presioná Mandar a producción. El sistema propone las piezas —una por canal, un aprobado por slot, el formato por defecto del canal— y vos confirmás o corregís. Nada entra al tablero solo." />
-          <Step n={2} title="Resolvé las preguntas de la propuesta" desc="Si hay dos aprobados para el mismo slot, la propuesta pregunta si va uno solo o si son dos piezas (un A/B). El que no entra no se borra ni se desaprueba: queda en la Biblioteca para otra pieza. Si el mismo visual va a dos canales, marcá 'mismo visual' y las dos piezas se asignan juntas." />
+          <Step n={1} title="Manda el copy aprobado a producción" desc="Desde Copy aprobado, seleccioná las variaciones aprobadas y presioná Mandar a producción. El sistema propone las piezas —una por canal, un aprobado por slot, el formato por defecto del canal— y vos confirmás o corregís. Nada entra al tablero solo." />
+          <Step n={2} title="Resolvé las preguntas de la propuesta" desc="Si hay dos aprobados para el mismo slot, la propuesta pregunta si va uno solo o si son dos piezas (un A/B). El que no entra no se borra ni se desaprueba: queda ahí para otra pieza. Si el mismo visual va a dos canales, marcá 'mismo visual' y las dos piezas se asignan juntas." />
           <Step n={3} title="Asigná" desc="Las piezas nacen en Por asignar y sin dueño. Elegí a quién se la das y pasa a En diseño. Crear y asignar son dos decisiones distintas." />
           <Step n={4} title="El diseñador trabaja con la orden de trabajo" desc="Abrí la tarjeta: ahí está el copy exacto para copiar y pegar —no retipear—, el brief de producción que el motor emite (idea visual, estructura, indicaciones), las piezas hermanas y el historial de quién hizo qué." />
           <Step n={5} title="Entregá la pieza" desc="En los canales gráficos el diseñador SUBE el archivo (PNG, JPG o WEBP, hasta 10 MB) y la pieza pasa a Por revisar. En los de video y audio se entrega con un enlace, porque un reel no entra en 10 MB. Del archivo salen la previa y la verificación automática." />
@@ -328,7 +328,7 @@ export default function HelpGuide() {
         </p>
 
         <Tip>
-          Si alguien edita en la Biblioteca un copy que ya está en una pieza, la tarjeta avisa «El copy cambió»
+          Si alguien edita un copy aprobado que ya está en una pieza, la tarjeta avisa «El copy cambió»
           y la pieza conserva el texto con el que se mandó a producir. Actualizarla es una decisión que tomás
           vos desde la orden de trabajo, no algo que pase solo mientras el diseñador trabaja.
         </Tip>

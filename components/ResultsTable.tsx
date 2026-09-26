@@ -1055,7 +1055,7 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ variations, projects, activ
            <div className="relative z-10 w-full max-w-md bg-white p-6 rounded-xl shadow-xl border border-gray-200 animate-in zoom-in-95 duration-300">
               <div className="flex justify-between items-center mb-6">
                 <div>
-                   <h3 className="text-[16px] font-medium text-gray-900">Guardar en Biblioteca</h3>
+                   <h3 className="text-[16px] font-medium text-gray-900">Guardar como copy aprobado</h3>
                    <p className="text-gray-500 text-[12px] mt-0.5">Selecciona el proyecto de destino</p>
                 </div>
                 <button onClick={() => setSavingId(null)} className="p-1 text-gray-400 hover:text-gray-900 rounded-md transition-colors">

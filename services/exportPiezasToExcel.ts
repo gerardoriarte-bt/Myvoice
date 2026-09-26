@@ -13,7 +13,7 @@ import { Pieza } from '../types';
  *     texto exacto y aprobado, sin tener que abrir la herramienta.
  *
  * El texto que se exporta es el **congelado en la pieza**, no el de la
- * Biblioteca: es el que se aprobó y el que está en el arte. Si alguien editó el
+ * aprobados: es el que se aprobó y el que está en el arte. Si alguien editó el
  * original después, la columna «Aviso» lo dice en vez de exportar en silencio
  * un texto que no coincide con la pieza.
  */
@@ -25,7 +25,7 @@ const fecha = (iso: string): string => new Date(iso).toISOString().slice(0, 10);
 const avisoDe = (pieza: Pieza): string =>
   pieza.desfases.length === 0
     ? ''
-    : `El copy cambió en la Biblioteca después de aprobarse (${pieza.desfases
+    : `El copy cambió después de aprobarse (${pieza.desfases
         .map(d => d.slotLabel)
         .join(', ')})`;
 
