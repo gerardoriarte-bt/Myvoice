@@ -32,7 +32,7 @@ interface Props {
 }
 
 const MOTIVO: Record<string, string> = {
-  editado: 'El copy cambió en la Biblioteca',
+  editado: 'El copy cambió después de aprobarse',
   desaprobado: 'El copy ya no está aprobado',
   borrado: 'El copy original se borró',
 };

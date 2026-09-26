@@ -46,7 +46,7 @@ export type ScreenId =
  * mismo nombre. El copy se ESCRIBE; la pieza se PRODUCE. Auditar es una etapa
  * del proceso pero no un destino del menú: su informe se abre desde la tarjeta.
  */
-export type StageId = 'preparar' | 'escribir' | 'producir' | 'aprobar' | 'administrar';
+export type StageId = 'preparar' | 'escribir' | 'aprobar' | 'producir' | 'medir' | 'administrar';
 
 export interface ScreenDef {
   id: ScreenId;
@@ -79,10 +79,16 @@ export const SCREENS: Record<ScreenId, ScreenDef> = {
   },
   saved: {
     id: 'saved',
-    name: 'Biblioteca',
-    description: 'Contenido guardado por proyecto y marca.',
+    /**
+     * Se llamaba «Biblioteca» y el nombre trabajaba en contra: sonaba a archivo
+     * donde se guardan cosas, cuando es el paso donde el copy avanza — se
+     * elige, se aprueba, y de acá sale hacia el cliente o hacia producción.
+     * El nombre nuevo dice exactamente qué sale de acá.
+     */
+    name: 'Copy aprobado',
+    description: 'Lo que pasó el filtro, listo para el cliente o para producir.',
     icon: Library,
-    stage: 'escribir',
+    stage: 'aprobar',
     adminOnly: false,
   },
   history: {
@@ -106,7 +112,7 @@ export const SCREENS: Record<ScreenId, ScreenDef> = {
     name: 'Métricas',
     description: 'Consumo, costo y tasa de aprobación del workspace.',
     icon: BarChart3,
-    stage: 'aprobar',
+    stage: 'medir',
     adminOnly: true,
   },
   produccion: {
@@ -116,7 +122,7 @@ export const SCREENS: Record<ScreenId, ScreenDef> = {
     icon: LayoutGrid,
     stage: 'producir',
     // La primera pantalla de trabajo que ve alguien que no administra: un
-    // diseñador es MEMBER y hasta acá solo tenía la Biblioteca.
+    // diseñador es MEMBER y hasta acá solo tenía el copy aprobado.
     adminOnly: false,
   },
   users: {
@@ -150,11 +156,23 @@ export const SCREENS: Record<ScreenId, ScreenDef> = {
  * la secuencia del trabajo, no el orden en que se fueron construyendo las
  * pantallas.
  */
+/**
+ * Las etapas, en el orden en que ocurren.
+ *
+ * Hasta el 2026-09-26 no era así: «Revisiones» vivía en la etapa 4 y ocurre
+ * ANTES que Producción, que era la 3. El menú numeraba las etapas —eso estaba
+ * bien— pero los números no seguían el proceso, y eso hace que la numeración
+ * trabaje en contra: promete un orden y enseña otro.
+ *
+ * Aprobar quedó como una etapa propia con las dos aprobaciones adentro: la
+ * interna, donde se elige el copy que sirve, y la del cliente.
+ */
 export const NAV_STAGES: { id: StageId; label: string; screens: ScreenId[] }[] = [
   { id: 'preparar', label: 'Preparar', screens: ['clients'] },
-  { id: 'escribir', label: 'Escribir', screens: ['generator', 'saved', 'history'] },
+  { id: 'escribir', label: 'Escribir', screens: ['generator', 'history'] },
+  { id: 'aprobar', label: 'Aprobar', screens: ['saved', 'collaboration'] },
   { id: 'producir', label: 'Producir', screens: ['produccion'] },
-  { id: 'aprobar', label: 'Aprobar y medir', screens: ['collaboration', 'analytics'] },
+  { id: 'medir', label: 'Medir', screens: ['analytics'] },
   { id: 'administrar', label: 'Administrar', screens: ['users', 'settings', 'help'] },
 ];
 

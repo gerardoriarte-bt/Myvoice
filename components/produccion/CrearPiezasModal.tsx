@@ -269,7 +269,7 @@ export default function CrearPiezasModal({ savedVariationIds, onClose, onCreadas
                             Una pieza por cada uno — un A/B
                           </label>
                           <p className="mt-2 text-[10px] text-apple-tertiary">
-                            El que no entra no se borra ni se desaprueba: queda en la Biblioteca, libre para otra pieza.
+                            El que no entra no se borra ni se desaprueba: queda entre los aprobados, libre para otra pieza.
                           </p>
                         </div>
                       )}

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Download, Loader2 } from 'lucide-react';
-import { SCREENS } from '../../screens';
+import { SCREENS, screenName } from '../../screens';
 import { Client, Pieza, PiezaEstado, WorkspaceMember } from '../../types';
 import { DestinoAviso } from '../Bandeja';
 import { ordenarParaAsignar } from './asignables';
@@ -35,6 +35,8 @@ interface Props {
   destino?: DestinoAviso | null;
   /** Se avisa una vez atendido, para que el destino no se repita. */
   onDestinoAtendido?: () => void;
+  /** El vacío tiene que poder llevar a donde se resuelve, no solo nombrarlo. */
+  onIrACopyAprobado?: () => void;
 }
 
 export default function TableroProduccion({
@@ -42,6 +44,7 @@ export default function TableroProduccion({
   addNotification,
   destino,
   onDestinoAtendido,
+  onIrACopyAprobado,
 }: Props) {
   const [vista, setVista] = React.useState<'marca' | 'mias'>('marca');
   const [clientId, setClientId] = React.useState(clients[0]?.id ?? '');
@@ -156,9 +159,25 @@ export default function TableroProduccion({
           <p className="text-[13px] font-medium text-apple-text">
             {vista === 'marca' ? 'Todavía no hay piezas en producción' : 'No tenés piezas asignadas'}
           </p>
-          <p className="mt-1 text-[12px] text-apple-secondary">
-            Las piezas nacen en la Biblioteca: seleccioná copy aprobado y mandalo a producción.
+          {/*
+            El vacío decía dónde se resuelve pero no cómo, y el camino real son
+            tres pasos en otra pantalla. Nombrar un lugar sin llevar hasta él es
+            la forma más común de que una pantalla vacía no sirva para nada.
+          */}
+          <p className="mt-1 text-[12px] leading-relaxed text-apple-secondary">
+            Las piezas nacen del copy aprobado. En{' '}
+            <span className="font-medium text-apple-text">{screenName('saved')}</span>, tocá{' '}
+            <span className="font-medium text-apple-text">Seleccionar</span>, marcá los copys y usá{' '}
+            <span className="font-medium text-apple-text">Mandar a producción</span>.
           </p>
+          {onIrACopyAprobado && vista === 'marca' && (
+            <button
+              onClick={onIrACopyAprobado}
+              className="mt-3 rounded-lg bg-ink px-3.5 py-2 text-[12px] font-medium text-white hover:bg-ink-hover"
+            >
+              Ir a {screenName('saved')}
+            </button>
+          )}
         </div>
       )}
 

@@ -413,10 +413,26 @@ const SavedManager: React.FC<SavedManagerProps> = ({
 
       {/* Select-all bar (visible in selection mode) */}
       {selectionMode && (
-        <div className="flex items-center gap-4 px-1">
-          <span className="text-[12px] text-gray-500">{selectedIds.size} seleccionadas</span>
-          <button onClick={selectAll} className="text-[12px] text-blue-600 hover:underline">Seleccionar todo</button>
-          <button onClick={selectNone} className="text-[12px] text-gray-500 hover:underline">Ninguno</button>
+        <div className="space-y-2">
+          <div className="flex items-center gap-4 px-1">
+            <span className="text-[12px] text-gray-500">{selectedIds.size} seleccionadas</span>
+            <button onClick={selectAll} className="text-[12px] text-blue-600 hover:underline">Seleccionar todo</button>
+            <button onClick={selectNone} className="text-[12px] text-gray-500 hover:underline">Ninguno</button>
+          </div>
+          {/*
+            «Seleccionar» a secas no dice qué se puede hacer con lo
+            seleccionado, y las tres acciones —producir, mandar al cliente,
+            borrar— viven en una barra que recién aparece cuando ya elegiste
+            algo. El que no sabe que existe, no elige. Va acá arriba y no junto
+            a esa barra: abajo se lee cuando ya no hace falta.
+          */}
+          {selectedIds.size === 0 && (
+            <div className="rounded-lg border border-dashed border-apple-border px-4 py-2.5 text-[12px] text-apple-secondary">
+              Marcá los copys y abajo vas a poder{' '}
+              <span className="font-medium text-apple-text">mandarlos a producción</span>, armar una{' '}
+              <span className="font-medium text-apple-text">revisión para el cliente</span> o borrarlos.
+            </div>
+          )}
         </div>
       )}
 
@@ -640,13 +656,13 @@ const SavedManager: React.FC<SavedManagerProps> = ({
               className="flex items-center gap-1.5 px-3 py-1.5 bg-white text-ink hover:bg-gray-100 rounded-lg text-[12px] font-medium transition-colors"
             >
               <LayoutGrid className="w-3.5 h-3.5" />
-              Mandar a produccion
+              Mandar a producción
             </button>
             <button
               onClick={handleCreateReviewSession}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 rounded-lg text-[12px] font-medium transition-colors"
             >
-              Crear sesion de revision
+              Revisión para el cliente
             </button>
           </div>
         </div>
