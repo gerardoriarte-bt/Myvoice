@@ -10,6 +10,7 @@
     "prisma:migrate": "prisma migrate dev",
     "seed": "tsx prisma/seed.ts",
     "seed:lobueno": "tsx prisma/seedLobueno.ts",
+    "seed:capacitacion": "tsx prisma/seedCapacitacion.ts",
     "smoke": "tsx prisma/smokeTest.ts",
     "backfill:tenancy": "tsx scripts/backfillTenancy.ts",
     "backfill:slots": "tsx scripts/backfillSlots.ts",
