@@ -25,10 +25,9 @@
  * artes que el diseñador sube EN VIVO durante la capacitación.
  *
  * Las fuentes las pone el sistema operativo (librsvg vía fontconfig). En macOS
- * no hace falta nada; en la imagen `node:20-slim` del servidor no hay fuentes,
- * así que este script se corre desde una máquina de trabajo, igual que
- * `seed:lobueno`, que además importa `shared/` y ese directorio no viaja en la
- * imagen.
+ * no hace falta nada; la imagen del backend no trae fuentes ni `shared/`, así
+ * que en producción no se corre dentro de ella: `deploy/seed-capacitacion.sh`
+ * levanta un Node desechable al lado del backend, con fuentes instaladas.
  */
 import dotenv from 'dotenv';
 dotenv.config();
@@ -198,11 +197,13 @@ const dibujarArte = async (ancho: number, alto: number, bloques: Bloque[]): Prom
   ];
 
   for (const b of bloques) {
-    const maxCar = Math.max(8, Math.floor(util / (b.tam * 0.53)));
+    // 0,6 y no 0,5: en el servidor la fuente es DejaVu, bastante más ancha que
+    // la Helvetica de una Mac, y con 0,5 el titular se salía del lienzo.
+    const maxCar = Math.max(8, Math.floor(util / (b.tam * 0.6)));
     const lineas = partirEnLineas(b.texto, maxCar);
     const interlinea = Math.round(b.tam * 1.25);
     if (b.boton) {
-      const anchoBoton = Math.min(util, Math.round(Math.max(...lineas.map(l => l.length)) * b.tam * 0.56 + b.tam * 1.6));
+      const anchoBoton = Math.min(util, Math.round(Math.max(...lineas.map(l => l.length)) * b.tam * 0.62 + b.tam * 1.6));
       const altoBoton = interlinea * lineas.length + Math.round(b.tam * 0.9);
       partes.push(`<rect x="${margen}" y="${y}" width="${anchoBoton}" height="${altoBoton}" rx="${Math.round(b.tam * 0.4)}" fill="${b.boton}"/>`);
       y += Math.round(b.tam * 0.45);

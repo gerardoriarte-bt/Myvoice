@@ -20,10 +20,17 @@ CAPACITACION_PASSWORD='…' npm run seed:capacitacion
   corre antes de cada sesión, y al terminar la sesión no hay nada que limpiar. No toca ningún otro
   workspace.
 - La salida imprime los **dos enlaces del cliente** (sin login). Cambian en cada corrida.
-- Contra producción: correrlo desde una máquina de trabajo con el `DATABASE_URL`, el `S3_BUCKET` y
-  las credenciales de AWS de producción, igual que `seed:lobueno`. No se corre dentro del contenedor:
-  la imagen no tiene fuentes para dibujar las artes y tampoco trae `shared/`.
-- Deja en `server/capacitacion-artes/` las dos imágenes que el diseñador sube en vivo.
+- **En producción** se corre desde la raíz del repo, con la llave del servidor:
+  `bash deploy/seed-capacitacion.sh` (usa `./Myvoice.pem`, o la de `MYVOICE_PEM`; la rama, la de
+  `RAMA`, por defecto `main`). Levanta un Node desechable al lado del backend —sus mismas variables,
+  su misma red, el rol de la instancia para S3—, le instala fuentes y lo borra al terminar. No se
+  corre dentro del contenedor del backend: no tiene fuentes ni `shared/`. La primera corrida
+  (2026-10-02) tardó un minuto y medio y ocupó 0,3 GB de disco (la imagen `node:20-slim`).
+- La contraseña de los cuatro usuarios la genera el script la primera vez y la guarda en
+  `~/.myvoice-capacitacion-password` de quien lo corre; las corridas siguientes la reutilizan.
+- Deja en `server/capacitacion-artes/` las dos imágenes que el diseñador sube en vivo. En
+  producción quedan dentro del contenedor desechable: correr el seed una vez en local
+  (`npm run seed:capacitacion` contra la base de desarrollo) es la forma de tenerlas a mano.
 - Los cuatro usuarios están en `@capacitacion.lobueno.co`, un dominio sin buzones. Si el correo
   saliente está prendido, los avisos rebotan; no le llegan a nadie real.
 
