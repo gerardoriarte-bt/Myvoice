@@ -29,6 +29,7 @@ npm run prisma:generate
 npm run prisma:migrate
 npm run seed           # base workspace + admin; requires SEED_ADMIN_PASSWORD
 npm run seed:lobueno   # full LoBueno mock brand (fixture in shared/lobuenoBrand.ts)
+npm run seed:capacitacion  # resets the «LoBueno · Capacitación» workspace; needs CAPACITACION_PASSWORD
 npm run smoke          # one real generation against the live provider — costs money
 npm run backfill:tenancy      # dry-run; `-- --apply` to write
 npm run backfill:telemetria   # fills cost/tokens on historical rows from outputJson
@@ -253,6 +254,8 @@ open, the decisions (E6, D2, D3, D7), what the uniqueness rule got wrong about t
 six corrections that came from looking at the screen working.
 `docs/bitacora-2026-08-28.md` records the H1 + E1 deploy day: what shipped, what the rehearsal
 against the real dump caught before it hit production, and the pending items with owners.
+`docs/capacitacion-lobueno.md` is the training script: what `seed:capacitacion` leaves in each
+stage, and the order to walk it live — it resets its own workspace on every run.
 `docs/despliegue-h2.md` is the single sheet for the H2 deploy (production board + piece audit):
 the bucket lifecycle rule goes **before** the deploy, the migrations are additive so `deploy.sh`
 can go first, and the audit spend does not count toward the quota yet.
