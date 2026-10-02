@@ -24,7 +24,6 @@ import CollaborationHub from './components/CollaborationHub';
 import ReviewPortal from './components/ReviewPortal';
 import Analytics from './components/Analytics';
 import GenerationHistory from './components/GenerationHistory';
-import ClientPortal from './components/ClientPortal';
 import WorkflowHelpSidebar from './components/WorkflowHelpSidebar';
 import { LOBUENO_DNA_PROFILES, LOBUENO_APPROVED_EXAMPLES } from './shared/lobuenoBrand';
 import Isotipo from './components/ui/Isotipo';
@@ -117,6 +116,15 @@ const App: React.FC = () => {
   // El rol ya no es global: es el rol del usuario EN EL WORKSPACE ACTIVO, y
   // cambia al cambiar de workspace.
   const isAdmin = canManageWorkspace(currentUser?.role);
+
+  // Quien no administra entra a la misma herramienta, con el menú recortado por
+  // `adminOnly`. Antes se lo desviaba entero a ClientPortal —una vista de solo
+  // lectura de cuando MEMBER quería decir «cliente»—, y desde el H2 eso dejaba
+  // al diseñador sin el tablero donde está su pieza. La pestaña de arranque
+  // (Marcas) es de administración, así que se lo lleva a la primera suya.
+  React.useEffect(() => {
+    if (currentUser && !isAdmin && SCREENS[activeTab].adminOnly) setActiveTab('produccion');
+  }, [currentUser, isAdmin, activeTab]);
   const workspaces: WorkspaceSummary[] = currentUser?.workspaces || [];
   const activeClient = clients.find(c => c.id === activeClientId);
 
@@ -563,21 +571,6 @@ const App: React.FC = () => {
           window.history.replaceState({}, '', window.location.pathname);
         }}
       />
-    );
-  }
-
-  if (isAuthenticated && currentUser && !isAdmin) {
-    return (
-      <>
-        <NotificationSystem notifications={notifications} onDismiss={dismissNotification} />
-        <ClientPortal
-          currentUser={currentUser}
-          savedVariations={savedVariations}
-          clients={clients}
-          onLogout={handleLogout}
-          isLoading={!isDataReady}
-        />
-      </>
     );
   }
 
