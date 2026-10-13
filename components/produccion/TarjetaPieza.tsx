@@ -1,5 +1,5 @@
 import React from 'react';
-import { AlertTriangle, ExternalLink, EyeOff, ImageIcon, Maximize2, MessageSquare, User } from 'lucide-react';
+import { AlertTriangle, BadgeCheck, ExternalLink, EyeOff, Hourglass, ImageIcon, Maximize2, MessageSquare, Send, Undo2, User } from 'lucide-react';
 import { Pieza, PiezaEstado } from '../../types';
 import AccionesPieza from './AccionesPieza';
 import PreviaGrande from './PreviaGrande';
@@ -38,7 +38,16 @@ const MOTIVO: Record<string, string> = {
 };
 
 /** La previa se muestra desde que la pieza se entrega: antes no hay qué ver. */
-const CON_PREVIA: PiezaEstado[] = ['POR_REVISAR', 'LISTA'];
+const CON_PREVIA: PiezaEstado[] = ['POR_REVISAR', 'CON_EL_CLIENTE', 'LISTA'];
+
+const fechaCorta = (iso: string) =>
+  new Date(iso).toLocaleDateString('es', { day: 'numeric', month: 'short' }).replace('.', '');
+
+/** Las categorías de un motivo, con el mismo color que en el formulario de devolver. */
+const CATEGORIA: Record<string, { etiqueta: string; fondo: string; texto: string }> = {
+  DISENO: { etiqueta: 'Arte', fondo: '#EDE9FE', texto: '#5B21B6' },
+  COPY: { etiqueta: 'Mensaje', fondo: '#E0F2FE', texto: '#075985' },
+};
 
 const desde = (fecha: string): string => {
   const dias = Math.floor((Date.now() - new Date(fecha).getTime()) / 86_400_000);
@@ -94,9 +103,57 @@ export default function TarjetaPieza({ pieza, miembros, mostrarMarca, onAbrir, o
         </div>
 
         <div className="space-y-2.5 p-3">
+          {/*
+            Lo que pasó, dicho en la tarjeta: antes una devolución solo se leía
+            en el historial de la orden de trabajo, y nadie la veía.
+          */}
+          {pieza.devolucion && (
+            <div className="space-y-1.5 rounded-lg border border-red-100 bg-red-50/60 px-2.5 py-2">
+              <p className="flex items-center gap-1.5 text-[10px] font-semibold text-red-700">
+                <Undo2 className="h-3 w-3 shrink-0" />
+                Devuelta por {pieza.devolucion.por} · {desde(pieza.devolucion.createdAt)}
+              </p>
+              {pieza.devolucion.motivos.map((m, i) => {
+                const c = m.categoria ? CATEGORIA[m.categoria] : null;
+                return (
+                  <p key={i} className="flex items-start gap-1.5 text-[10.5px] leading-snug text-apple-text">
+                    {c && (
+                      <span
+                        className="shrink-0 rounded px-1 text-[8.5px] font-bold uppercase"
+                        style={{ backgroundColor: c.fondo, color: c.texto }}
+                      >
+                        {c.etiqueta}
+                      </span>
+                    )}
+                    <span className="line-clamp-2">{m.nota}</span>
+                  </p>
+                );
+              })}
+              {pieza.devolucion.esperaCopy && (
+                <p className="text-[10px] font-medium text-sky-800">Espera el copy corregido.</p>
+              )}
+            </div>
+          )}
+          {pieza.estado === 'CON_EL_CLIENTE' && (
+            <p className="flex items-center gap-1.5 text-[10px] font-semibold text-violet-700">
+              {pieza.enviadaAlCliente ? <Send className="h-3 w-3" /> : <Hourglass className="h-3 w-3" />}
+              {pieza.enviadaAlCliente
+                ? `Enviada el ${fechaCorta(pieza.enviadaAlCliente.createdAt)} · esperando`
+                : 'Sin enviar'}
+            </p>
+          )}
+          {pieza.cierre && (
+            <p className="flex items-center gap-1.5 text-[10px] font-semibold text-emerald-700">
+              <BadgeCheck className="h-3 w-3" />
+              {pieza.cierre.via === 'CLIENTE'
+                ? `Aprobada por el cliente · ${pieza.cierre.por}`
+                : `Aceptada por ${pieza.cierre.por} · interna`}
+            </p>
+          )}
+
           {pieza.semaforo && (
             <div className="flex items-center justify-between gap-2">
-              <ChipSemaforo estado={pieza.semaforo} hallazgos={pieza.version?.hallazgos ?? 0} />
+              <ChipSemaforo estado={pieza.semaforo} hallazgos={pieza.version?.pendientes ?? 0} />
               {pieza.version && pieza.version.numero > 1 && (
                 <span className="text-[9px] text-apple-tertiary">v{pieza.version.numero}</span>
               )}

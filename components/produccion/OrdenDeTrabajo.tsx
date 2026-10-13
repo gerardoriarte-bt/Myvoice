@@ -14,6 +14,21 @@ import Informe from './Informe';
  * separado del texto publicable: uno se transcribe, el otro se interpreta.
  */
 
+/** Los tipos de evento, como se leen. Antes el historial mostraba «devuelta» o «copy_actualizado». */
+const EVENTO: Record<string, string> = {
+  CREADA: 'Creada',
+  ASIGNADA: 'Asignada',
+  SUBIDA: 'Subió una versión',
+  ENTREGADA: 'Entregada',
+  ACEPTADA: 'Aceptada',
+  DEVUELTA: 'Devuelta',
+  REABIERTA: 'Reabierta',
+  COMENTARIO: 'Comentario',
+  COPY_ACTUALIZADO: 'Orden actualizada',
+  COPY_CORREGIDO: 'Copy corregido',
+  APROBADA_CLIENTE: 'Aprobada por el cliente',
+};
+
 interface Props {
   piezaId: string;
   miembros: { id: string; name: string; etiqueta?: string }[];
@@ -45,6 +60,9 @@ export default function OrdenDeTrabajo({ piezaId, miembros, onCerrar, onCambio, 
   /** El título es lo único editable a mano: el estado se mueve con acciones. */
   const [titulo, setTitulo] = React.useState<string | null>(null);
   const [comentario, setComentario] = React.useState('');
+  /** El copy en edición por el responsable, por slot. null = no se está corrigiendo. */
+  const [corrigiendo, setCorrigiendo] = React.useState<Record<string, string> | null>(null);
+  const [guardandoCopy, setGuardandoCopy] = React.useState(false);
 
   const cargar = React.useCallback(async () => {
     try {
@@ -179,6 +197,14 @@ export default function OrdenDeTrabajo({ piezaId, miembros, onCerrar, onCambio, 
               <p className="mt-2 text-[11px] text-apple-secondary">
                 La pieza sigue con el texto que se mandó a producir. Actualizarla es una decisión, no algo que pase solo.
               </p>
+              {/* Antes el botón estaba siempre y fallaba en Lista con un 409. */}
+              {!(pieza.puedo.actualizarCopy && ['POR_ASIGNAR', 'EN_DISENO', 'POR_REVISAR'].includes(pieza.estado)) ? (
+                <p className="mt-2 text-[11px] font-medium text-amber-800">
+                  {pieza.estado === 'LISTA' || pieza.estado === 'CON_EL_CLIENTE'
+                    ? 'Para actualizarla, primero hay que devolverla o reabrirla.'
+                    : 'La actualiza quien administra o el responsable de la campaña.'}
+                </p>
+              ) : (
               <button
                 onClick={async () => {
                   try {
@@ -191,17 +217,92 @@ export default function OrdenDeTrabajo({ piezaId, miembros, onCerrar, onCambio, 
               >
                 Actualizar la orden
               </button>
+              )}
             </div>
           )}
 
           {pieza && (
             <section>
-              <h3 className="text-[11px] font-semibold uppercase tracking-wide text-apple-tertiary">
-                Copy aprobado
-              </h3>
+              <div className="flex items-center justify-between gap-2">
+                <h3 className="text-[11px] font-semibold uppercase tracking-wide text-apple-tertiary">
+                  Copy aprobado
+                </h3>
+                {/* El responsable corrige el mensaje acá: el copy en producción
+                    no se edita en Copy, y la pieza quedaba varada. */}
+                {pieza.puedo.corregirCopy &&
+                  ['EN_DISENO', 'POR_REVISAR', 'CON_EL_CLIENTE'].includes(pieza.estado) &&
+                  !corrigiendo && (
+                    <button
+                      onClick={() => setCorrigiendo(Object.fromEntries(publicables.map(s => [s.slot, s.textoCongelado])))}
+                      className={`flex items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-medium ${
+                        pieza.devolucion?.esperaCopy
+                          ? 'bg-ink text-white hover:bg-ink-hover'
+                          : 'border border-apple-border text-apple-text hover:bg-apple-fill'
+                      }`}
+                    >
+                      <Pencil className="h-3 w-3" />
+                      Corregir el copy
+                    </button>
+                  )}
+              </div>
               <p className="mt-1 text-[11px] text-apple-secondary">
-                Copiar y pegar, no retipear: la auditoría después compara carácter por carácter.
+                {corrigiendo
+                  ? 'Lo que cambies queda en la pieza y en Copy, aprobado por vos. Queda en el historial.'
+                  : 'Copiar y pegar, no retipear: la auditoría después compara carácter por carácter.'}
               </p>
+              {pieza.devolucion?.esperaCopy && !corrigiendo && (
+                <p className="mt-2 rounded-lg bg-sky-50 px-3 py-2 text-[11px] text-sky-800">
+                  La devolvieron con un cambio de mensaje. {pieza.puedo.corregirCopy ? 'Corregilo acá' : `Lo corrige ${pieza.project?.responsable?.name ?? 'el responsable'}`} antes de que se actualice el arte.
+                </p>
+              )}
+              {corrigiendo && (
+                <div className="mt-3 space-y-2">
+                  {publicables.map(s => (
+                    <label key={s.id} className="block rounded-xl border border-apple-border p-3">
+                      <span className="text-[10px] font-semibold uppercase tracking-wide text-apple-tertiary">{s.slotLabel}</span>
+                      <textarea
+                        rows={2}
+                        value={corrigiendo[s.slot] ?? ''}
+                        onChange={e => setCorrigiendo(c => ({ ...(c ?? {}), [s.slot]: e.target.value }))}
+                        className="mt-1 w-full rounded-lg border border-apple-border px-2 py-1.5 text-[12px] text-apple-text"
+                      />
+                    </label>
+                  ))}
+                  <div className="flex items-center gap-2">
+                    <button
+                      disabled={guardandoCopy}
+                      onClick={async () => {
+                        setGuardandoCopy(true);
+                        try {
+                          const cambios = publicables
+                            .filter(s => (corrigiendo[s.slot] ?? '').trim() && corrigiendo[s.slot].trim() !== s.textoCongelado)
+                            .map(s => ({ slot: s.slot, texto: corrigiendo[s.slot].trim() }));
+                          if (!cambios.length) {
+                            setCorrigiendo(null);
+                            return;
+                          }
+                          tras(await piezasApi.corregirCopy(pieza.id, cambios));
+                          setCorrigiendo(null);
+                        } catch (e) {
+                          onError(e instanceof Error ? e.message : 'No se pudo corregir el copy');
+                        } finally {
+                          setGuardandoCopy(false);
+                        }
+                      }}
+                      className="rounded-lg bg-ink px-3 py-1.5 text-[11px] font-medium text-white hover:bg-ink-hover disabled:opacity-40"
+                    >
+                      Guardar la corrección
+                    </button>
+                    <button
+                      onClick={() => setCorrigiendo(null)}
+                      className="rounded-lg border border-apple-border px-3 py-1.5 text-[11px] font-medium text-apple-text"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
+              )}
+              {!corrigiendo && (
               <ul className="mt-3 space-y-2">
                 {publicables.map(s => (
                   <li key={s.id} className="rounded-xl border border-apple-border p-3">
@@ -221,6 +322,7 @@ export default function OrdenDeTrabajo({ piezaId, miembros, onCerrar, onCambio, 
                   </li>
                 ))}
               </ul>
+              )}
             </section>
           )}
 
@@ -302,10 +404,9 @@ export default function OrdenDeTrabajo({ piezaId, miembros, onCerrar, onCambio, 
               <ul className="mt-2 space-y-1.5">
                 {pieza.eventos.map(e => (
                   <li key={e.id} className="text-[11px] text-apple-secondary">
-                    <span className="font-medium text-apple-text">
-                      {e.tipo === 'COMENTARIO' ? 'comentario' : e.tipo.toLowerCase()}
-                    </span>
-                    {e.autor ? ` · ${e.autor.name}` : ''} ·{' '}
+                    <span className="font-medium text-apple-text">{EVENTO[e.tipo] ?? e.tipo.toLowerCase()}</span>
+                    {/* El cliente no tiene cuenta: firma con su nombre. */}
+                    {e.autor ? ` · ${e.autor.name}` : e.autorExterno ? ` · ${e.autorExterno} (cliente)` : ''} ·{' '}
                     {new Date(e.createdAt).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })}
                     {/* La categoría va PEGADA a la nota, no al lado del tipo: lo
                         que se clasifica es el motivo, y quien lee el historial

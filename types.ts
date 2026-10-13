@@ -600,7 +600,9 @@ export interface PiezaEvento {
   /** COPY · DISENO. null = nadie lo clasificó, y es un valor válido. */
   categoria?: string | null;
   createdAt: string;
-  autor?: { id: string; name: string };
+  autor?: { id: string; name: string } | null;
+  /** Quien no tiene cuenta: el cliente desde el portal. */
+  autorExterno?: string | null;
 }
 
 export interface PiezaDetalle extends Pieza {
