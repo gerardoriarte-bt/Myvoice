@@ -469,9 +469,8 @@ async function main() {
             modoAprobacion: modo, responsableId: u.laura, createdAt: creada, ...extra,
           },
         });
-      const lanzamiento = await campana('Lanzamiento My Voice', 'my-voice-lanzamiento', ModoAprobacion.CLIENTE, hace(16), {
-        pideAprobacionDeCliente: true,
-      });
+      // Del cliente: la clienta aprueba el copy y también las piezas terminadas.
+      const lanzamiento = await campana('Lanzamiento My Voice', 'my-voice-lanzamiento', ModoAprobacion.CLIENTE, hace(16));
       const costo = await campana('El costo del copy genérico', 'costo-copy-generico', ModoAprobacion.CLIENTE, hace(4));
       await campana('Talento 2026', 'talento-2026', ModoAprobacion.INTERNA, hace(1));
 
@@ -701,13 +700,14 @@ async function main() {
             nota: extra.nota ?? null, categoria: extra.categoria ?? null,
           },
         });
-      const { POR_ASIGNAR, EN_DISENO, POR_REVISAR, LISTA } = PiezaEstado;
+      const { POR_ASIGNAR, EN_DISENO, POR_REVISAR, CON_EL_CLIENTE } = PiezaEstado;
       const grupoFeed = randomUUID();
 
-      // 1. Post de feed — LISTA. La historia completa: v1 con errores, devuelta, v2 limpia.
+      // 1. Post de feed — CON EL CLIENTE, enviado. La historia completa: v1 con
+      //    errores, devuelta, v2 limpia, aceptada y mandada a la clienta.
       const pPost = await crearPieza({
         canal: 'Instagram Post', tipo: PiezaTipo.GRAFICA, formato: '1080×1080',
-        titulo: 'Post de feed — Rápido escribe cualquiera', estado: LISTA, grupoId: grupoFeed,
+        titulo: 'Post de feed — Rápido escribe cualquiera', estado: CON_EL_CLIENTE, grupoId: grupoFeed,
         slots: [{ clave: 'Instagram Post/hook/1' }, { clave: 'Instagram Post/body/1' }, { clave: 'Instagram Post/hashtags/1' }, { clave: 'Instagram Post/visualBrief/1' }],
         asignadaA: 'mateo', creada: hace(12, 3), estadoDesde: hace(1, 5),
       });
@@ -719,7 +719,7 @@ async function main() {
         nota: 'Falta la tilde de «Rápido» y sobra el «¡Pida su demo!»: el CTA va en el caption y la marca no usa exclamaciones.',
       });
       await evento(pPost.id, 'ENTREGADA', hace(2, 6), 'mateo', { de: EN_DISENO, a: POR_REVISAR, nota: 'Versión 2' });
-      await evento(pPost.id, 'ACEPTADA', hace(1, 5), 'laura', { de: POR_REVISAR, a: LISTA });
+      await evento(pPost.id, 'ACEPTADA', hace(1, 5), 'laura', { de: POR_REVISAR, a: CON_EL_CLIENTE });
       await tx.piezaVersion.create({
         data: {
           piezaId: pPost.id, numero: 1, ...arteSubido.postV1, subidaPorId: u.mateo, createdAt: hace(6, 7),
@@ -812,17 +812,17 @@ async function main() {
       });
       await evento(pCarrusel.id, 'CREADA', hace(12, 3), 'laura', { a: POR_ASIGNAR });
 
-      // 5. Email — LISTA, con un hallazgo ILEGIBLE que alguien aceptó con nota.
+      // 5. Email — CON EL CLIENTE, enviado, con un hallazgo ILEGIBLE que Laura aceptó con nota.
       const pEmail = await crearPieza({
         canal: 'Email', tipo: PiezaTipo.GRAFICA, formato: '600 px de ancho',
-        titulo: 'Email de lanzamiento — Su marca ya sabe hablar', estado: LISTA,
+        titulo: 'Email de lanzamiento — Su marca ya sabe hablar', estado: CON_EL_CLIENTE,
         slots: [{ clave: 'Email/header/1' }, { clave: 'Email/body/1' }, { clave: 'Email/cta/2' }],
         asignadaA: 'mateo', creada: hace(12, 3), estadoDesde: hace(6, 2),
       });
       await evento(pEmail.id, 'CREADA', hace(12, 3), 'laura', { a: POR_ASIGNAR });
       await evento(pEmail.id, 'ASIGNADA', hace(12, 2), 'laura', { de: POR_ASIGNAR, a: EN_DISENO });
       await evento(pEmail.id, 'ENTREGADA', hace(7, 4), 'mateo', { de: EN_DISENO, a: POR_REVISAR, nota: 'Versión 1' });
-      await evento(pEmail.id, 'ACEPTADA', hace(6, 2), 'laura', { de: POR_REVISAR, a: LISTA });
+      await evento(pEmail.id, 'ACEPTADA', hace(6, 2), 'laura', { de: POR_REVISAR, a: CON_EL_CLIENTE });
       await tx.piezaVersion.create({
         data: {
           piezaId: pEmail.id, numero: 1, ...arteSubido.email, subidaPorId: u.mateo, createdAt: hace(7, 4),
@@ -839,10 +839,11 @@ async function main() {
         },
       });
 
-      // 6. TikTok — LISTA. Video: se entrega con enlace, sin archivo ni auditoría.
+      // 6. TikTok — CON EL CLIENTE, sin enviar: para mandarlo en vivo. Video: se
+      //    entrega con enlace, sin archivo ni auditoría.
       const pTikTok = await crearPieza({
         canal: 'TikTok', tipo: PiezaTipo.VIDEO, formato: '1080×1920',
-        titulo: 'TikTok — Seis titulares, seis marcas', estado: LISTA,
+        titulo: 'TikTok — Seis titulares, seis marcas', estado: CON_EL_CLIENTE,
         slots: [{ clave: 'TikTok/verbalHook/1' }, { clave: 'TikTok/narrative/1' }, { clave: 'TikTok/caption/1' }, { clave: 'TikTok/cta/1' }],
         asignadaA: 'mateo', creada: hace(12, 3), estadoDesde: hace(4, 3),
         enlace: 'https://drive.google.com/drive/folders/capacitacion-lobueno-tiktok',
@@ -850,7 +851,7 @@ async function main() {
       await evento(pTikTok.id, 'CREADA', hace(12, 3), 'laura', { a: POR_ASIGNAR });
       await evento(pTikTok.id, 'ASIGNADA', hace(12, 2), 'laura', { de: POR_ASIGNAR, a: EN_DISENO });
       await evento(pTikTok.id, 'ENTREGADA', hace(5, 1), 'mateo', { de: EN_DISENO, a: POR_REVISAR, nota: 'Enlace al corte v2' });
-      await evento(pTikTok.id, 'ACEPTADA', hace(4, 3), 'laura', { de: POR_REVISAR, a: LISTA });
+      await evento(pTikTok.id, 'ACEPTADA', hace(4, 3), 'laura', { de: POR_REVISAR, a: CON_EL_CLIENTE });
 
       // -- Aprobar, ronda de piezas: el arte terminado espera a la clienta
       const ronda3 = await tx.reviewSession.create({
