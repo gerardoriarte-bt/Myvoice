@@ -17,11 +17,12 @@
  */
 
 import { createHash } from 'node:crypto';
-import { Prisma, PiezaEstado, PiezaTipo } from '@prisma/client';
+import { ModoAprobacion, Prisma, PiezaEstado, PiezaTipo, RondaRevision, WorkspaceRole } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import { TenantContext, TenantError } from '../lib/tenancy.js';
 import { guardarVersion, medidasDelFormato, urlDeSnapshot, ArchivoSubido } from './piezaArchivo.js';
 import { auditarEnSegundoPlano } from './auditoriaService.js';
+import { exigir, permisosDe, AccionConPermiso } from './permisosPieza.js';
 import {
   AvisoEscrito,
   destinatariosDe,
@@ -90,8 +91,12 @@ export const TRANSICIONES: Record<AccionPieza, Transicion> = {
   asignar:            { desde: [PiezaEstado.POR_ASIGNAR], hacia: PiezaEstado.EN_DISENO,   evento: 'ASIGNADA' },
   reasignar:          { desde: [PiezaEstado.EN_DISENO],   hacia: null,                    evento: 'ASIGNADA' },
   entregar:           { desde: [PiezaEstado.EN_DISENO],   hacia: PiezaEstado.POR_REVISAR, evento: 'ENTREGADA' },
+  /**
+   * `hacia` es el de una campaña interna. En una campaña «del cliente» aceptar
+   * la deja en CON_EL_CLIENTE: el visto bueno del equipo no es el final.
+   */
   aceptar:            { desde: [PiezaEstado.POR_REVISAR], hacia: PiezaEstado.LISTA,       evento: 'ACEPTADA' },
-  devolver:           { desde: [PiezaEstado.POR_REVISAR], hacia: PiezaEstado.EN_DISENO,   evento: 'DEVUELTA',  exigeNota: true },
+  devolver:           { desde: [PiezaEstado.POR_REVISAR, PiezaEstado.CON_EL_CLIENTE], hacia: PiezaEstado.EN_DISENO, evento: 'DEVUELTA', exigeNota: true },
   reabrir:            { desde: [PiezaEstado.LISTA],       hacia: PiezaEstado.EN_DISENO,   evento: 'REABIERTA', exigeNota: true },
   /**
    * Un comentario no mueve la pieza: solo dice algo. Vive en el mismo
@@ -99,8 +104,20 @@ export const TRANSICIONES: Record<AccionPieza, Transicion> = {
    * por qué— en vez de en un chat aparte, porque al leer una pieza lo que
    * importa es la secuencia completa, no dos listas que hay que intercalar.
    */
-  comentar:           { desde: [PiezaEstado.POR_ASIGNAR, PiezaEstado.EN_DISENO, PiezaEstado.POR_REVISAR, PiezaEstado.LISTA], hacia: null, evento: 'COMENTARIO', exigeNota: true },
+  comentar:           { desde: [PiezaEstado.POR_ASIGNAR, PiezaEstado.EN_DISENO, PiezaEstado.POR_REVISAR, PiezaEstado.CON_EL_CLIENTE, PiezaEstado.LISTA], hacia: null, evento: 'COMENTARIO', exigeNota: true },
   'actualizar-copy':  { desde: [PiezaEstado.POR_ASIGNAR, PiezaEstado.EN_DISENO, PiezaEstado.POR_REVISAR], hacia: null, evento: 'COPY_ACTUALIZADO' },
+};
+
+/** Qué permiso pide cada acción de la tabla. Comentar es de cualquiera. */
+const PERMISO_DE: Record<AccionPieza, AccionConPermiso | null> = {
+  asignar: 'asignar',
+  reasignar: 'asignar',
+  entregar: 'entregar',
+  aceptar: 'aceptar',
+  devolver: 'devolver',
+  reabrir: 'reabrir',
+  comentar: null,
+  'actualizar-copy': 'actualizarCopy',
 };
 
 /** Lo que el tablero y la orden de trabajo necesitan de una pieza. */
@@ -122,10 +139,17 @@ const INCLUDE_PIEZA = {
     include: { autor: { select: { id: true, name: true } } },
   },
   client: { select: { id: true, name: true } },
-  // `pideAprobacionDeCliente` viaja con la pieza porque la columna Lista tiene
-  // que poder decir, sin otra consulta, si esta pieza se le puede mandar al
-  // cliente (H2.E · D3).
-  project: { select: { id: true, name: true, pideAprobacionDeCliente: true } },
+  // La campaña dice quién decide (su responsable) y adónde va la pieza al
+  // aceptarse (su modo de aprobación). Ver permisosPieza.ts.
+  project: {
+    select: {
+      id: true,
+      name: true,
+      modoAprobacion: true,
+      responsableId: true,
+      responsable: { select: { id: true, name: true } },
+    },
+  },
   /** La última entrega: de ahí salen la previa y el semáforo de la tarjeta. */
   versiones: {
     orderBy: { numero: 'desc' as const },
@@ -253,7 +277,7 @@ export interface PiezaPropuesta {
 export interface Excluido {
   savedVariationId: string;
   platform: string;
-  motivo: 'sin-pieza' | 'no-aprobado' | 'ya-en-pieza';
+  motivo: 'sin-pieza' | 'no-aprobado' | 'ya-en-pieza' | 'sin-campana' | 'sin-responsable';
   detalle: string;
 }
 
@@ -275,7 +299,7 @@ export const proponerPiezas = async (
 
   const variaciones = await prisma.savedVariation.findMany({
     where: { id: { in: savedVariationIds }, client: { workspaceId: tenant.workspaceId } },
-    include: { project: { select: { id: true, name: true } } },
+    include: { project: { select: { id: true, name: true, responsableId: true } } },
     orderBy: { savedAt: 'asc' },
   });
 
@@ -293,6 +317,16 @@ export const proponerPiezas = async (
 
   for (const v of variaciones) {
     const spec = getPiezaSpec(v.platform);
+    // La aprobación es obligatoria y tiene responsable (docs/plan-aprobacion-por-campana.md):
+    // sin campaña no hay quién la haya dado, aunque la fila diga «aprobado».
+    if (!v.project) {
+      excluidos.push({ savedVariationId: v.id, platform: v.platform, motivo: 'sin-campana', detalle: 'No tiene campaña: asignale una y aprobalo.' });
+      continue;
+    }
+    if (!v.project.responsableId) {
+      excluidos.push({ savedVariationId: v.id, platform: v.platform, motivo: 'sin-responsable', detalle: `«${v.project.name}» no tiene responsable de aprobación.` });
+      continue;
+    }
     if (!v.isApproved) {
       excluidos.push({ savedVariationId: v.id, platform: v.platform, motivo: 'no-aprobado', detalle: 'Todavía no está aprobado.' });
       continue;
@@ -392,6 +426,7 @@ export const crearPiezas = async (tenant: TenantContext, piezas: PiezaAConfirmar
 
   const variaciones = await prisma.savedVariation.findMany({
     where: { id: { in: todosLosIds }, client: { workspaceId: tenant.workspaceId } },
+    include: { project: { select: { responsableId: true } } },
   });
   const porId = new Map(variaciones.map(v => [v.id, v]));
 
@@ -418,6 +453,8 @@ export const crearPiezas = async (tenant: TenantContext, piezas: PiezaAConfirmar
       // uno inexistente.
       if (!v) throw new TenantError('Contenido no encontrado', 404);
       if (!v.isApproved) throw new TenantError('Solo va a producción lo aprobado', 400);
+      if (!v.project?.responsableId)
+        throw new TenantError('Solo va a producción el copy de una campaña con responsable de aprobación', 400);
       if (v.platform !== p.platform)
         throw new TenantError('Una pieza es de un solo canal', 400);
       return v;
@@ -493,8 +530,8 @@ export const crearPiezas = async (tenant: TenantContext, piezas: PiezaAConfirmar
  * después permite ver si el hallazgo se corrigió.
  */
 export const entregarArchivo = async (tenant: TenantContext, piezaId: string, archivo: ArchivoSubido) => {
-  const pieza = await prisma.pieza.findUnique({ where: { id: piezaId } });
-  if (!pieza || pieza.workspaceId !== tenant.workspaceId) throw new TenantError('Pieza no encontrada', 404);
+  const pieza = await piezaParaDecidir(tenant, piezaId);
+  exigir(tenant, pieza, 'entregar');
   if (pieza.tipo !== PiezaTipo.GRAFICA)
     throw new TenantError('Los canales de video y audio se entregan con un enlace, no con un archivo', 400);
   if (pieza.estado !== PiezaEstado.EN_DISENO)
@@ -510,21 +547,23 @@ export const entregarArchivo = async (tenant: TenantContext, piezaId: string, ar
   // versión en la base apuntando a un archivo que no existe.
   const guardada = await guardarVersion(piezaId, numero, archivo);
 
-  // Subir el archivo es la otra forma de entregar, así que avisa igual que el
-  // enlace: para quien aprueba, las dos dejan la pieza esperando una decisión.
-  const aviso = await prepararAviso(tenant, pieza, 'ENTREGA');
-
-  let escritos: AvisoEscrito[] = [];
   const esperadas = medidasDelFormato(pieza.formato);
   const midioDistinto =
     esperadas && guardada.anchoPx && guardada.altoPx
       ? guardada.anchoPx !== esperadas.ancho || guardada.altoPx !== esperadas.alto
       : false;
 
+  /*
+   * La pieza NO pasa a «Por revisar» al subirse: se queda en diseño con
+   * «Auditando…» y pasa cuando la auditoría termina (pasarARevision). Así el
+   * responsable recibe una pieza con su informe, no una que todavía se está
+   * leyendo — D3 decía «antes de que llegue a quien aprueba» y el código la
+   * mandaba antes.
+   */
   await prisma.$transaction(async tx => {
     const { count } = await tx.pieza.updateMany({
       where: { id: piezaId, estado: PiezaEstado.EN_DISENO },
-      data: { estado: PiezaEstado.POR_REVISAR, estadoDesde: new Date() },
+      data: { updatedAt: new Date() },
     });
     if (count === 0) throw new TenantError('Alguien más movió esta pieza mientras la mirabas', 409);
 
@@ -553,28 +592,90 @@ export const entregarArchivo = async (tenant: TenantContext, piezaId: string, ar
     await tx.piezaEvento.create({
       data: {
         piezaId,
-        tipo: 'ENTREGADA',
+        tipo: 'SUBIDA',
         deEstado: PiezaEstado.EN_DISENO,
-        aEstado: PiezaEstado.POR_REVISAR,
+        aEstado: PiezaEstado.EN_DISENO,
         autorId: tenant.userId,
         nota: `Versión ${numero}`,
       },
     });
-
-    escritos = await notificar(tx, tenant, aviso.evento, aviso.destinatarios);
   });
-
-  enviarEnSegundoPlano(tenant, escritos);
 
   const version = await prisma.piezaVersion.findFirstOrThrow({
     where: { piezaId, numero },
     select: { id: true },
   });
-  // La auditoría corre después de responder: el diseñador ya entregó y no
+  // La auditoría corre después de responder: la diseñadora ya entregó y no
   // tiene por qué esperar dos llamadas de visión. La tarjeta dice «Auditando».
-  auditarEnSegundoPlano(version.id);
+  auditarEnSegundoPlano(version.id, () => pasarARevision(tenant, piezaId, version.id));
 
-  return leerUna(piezaId);
+  return leerUna(tenant, piezaId);
+};
+
+/**
+ * La auditoría terminó (bien o con NO_DISPONIBLE): la pieza pasa a «Por
+ * revisar» y recién ahora se le avisa al responsable.
+ *
+ * Solo si la versión auditada sigue siendo la última y la pieza sigue en
+ * diseño: si mientras tanto se subió otra versión, la que importa es esa, y su
+ * propia auditoría la va a mover.
+ */
+export const pasarARevision = async (tenant: TenantContext, piezaId: string, versionId: string) => {
+  const pieza = await prisma.pieza.findUnique({
+    where: { id: piezaId },
+    include: { versiones: { orderBy: { numero: 'desc' }, take: 1, select: { id: true, numero: true, subidaPorId: true } } },
+  });
+  if (!pieza || pieza.estado !== PiezaEstado.EN_DISENO || pieza.versiones[0]?.id !== versionId) return;
+
+  // El aviso sale a nombre de quien subió: es su entrega, y así no se le avisa a sí mismo.
+  const autor = { ...tenant, userId: pieza.versiones[0].subidaPorId ?? tenant.userId };
+  const aviso = await prepararAviso(autor, pieza, 'ENTREGA');
+  let escritos: AvisoEscrito[] = [];
+  await prisma.$transaction(async tx => {
+    const { count } = await tx.pieza.updateMany({
+      where: { id: piezaId, estado: PiezaEstado.EN_DISENO },
+      data: { estado: PiezaEstado.POR_REVISAR, estadoDesde: new Date() },
+    });
+    if (count === 0) return;
+    await tx.piezaEvento.create({
+      data: {
+        piezaId,
+        tipo: 'ENTREGADA',
+        deEstado: PiezaEstado.EN_DISENO,
+        aEstado: PiezaEstado.POR_REVISAR,
+        autorId: autor.userId,
+        nota: `Versión ${pieza.versiones[0].numero}`,
+      },
+    });
+    escritos = await notificar(tx, autor, aviso.evento, aviso.destinatarios);
+  });
+  enviarEnSegundoPlano(autor, escritos);
+};
+
+/**
+ * Al arrancar: una auditoría que estaba corriendo cuando el servidor se
+ * reinició no va a terminar nunca, y su pieza quedaría en «Auditando» para
+ * siempre. Se cierra como NO_DISPONIBLE —se puede reintentar— y la pieza pasa
+ * a revisión, que es lo que haría una auditoría fallida.
+ */
+export const rescatarAuditoriasTrabadas = async () => {
+  const trabadas = await prisma.piezaVersion.findMany({
+    where: { estadoAuditoria: AuditoriaEstado.PENDIENTE, createdAt: { lt: new Date(Date.now() - 10 * 60_000) } },
+    include: { pieza: { select: { id: true, workspaceId: true } } },
+  });
+  for (const v of trabadas) {
+    await prisma.piezaVersion.update({
+      where: { id: v.id },
+      data: {
+        estadoAuditoria: AuditoriaEstado.NO_DISPONIBLE,
+        motivoNoDisponible: 'La auditoría se cortó (el servidor se reinició). Se puede reintentar.',
+        auditadaAt: new Date(),
+      },
+    });
+    const tenant = { workspaceId: v.pieza.workspaceId, userId: v.subidaPorId ?? '', role: WorkspaceRole.MEMBER };
+    await pasarARevision(tenant, v.pieza.id, v.id).catch(e => console.error('[auditoria] rescate:', e));
+  }
+  if (trabadas.length) console.log(`[auditoria] ${trabadas.length} auditoría(s) trabada(s) cerradas al arrancar`);
 };
 
 // --------------------------------------------------------------- la bandeja
@@ -587,16 +688,18 @@ export const entregarArchivo = async (tenant: TenantContext, piezaId: string, ar
  * escritura sí va adentro: un aviso de algo que no llegó a pasar es peor que
  * ningún aviso.
  */
-const prepararAviso = async (
+export const prepararAviso = async (
   tenant: TenantContext,
-  pieza: { id: string; clientId: string; platform: string; formato: string },
+  pieza: { id: string; clientId: string; platform: string; formato: string; projectId: string | null },
   tipo: EventoNotificable['tipo'],
   asignadaAId?: string | null
 ) => {
-  const marca = await prisma.client.findUnique({
-    where: { id: pieza.clientId },
-    select: { name: true },
-  });
+  const [marca, campana] = await Promise.all([
+    prisma.client.findUnique({ where: { id: pieza.clientId }, select: { name: true } }),
+    pieza.projectId
+      ? prisma.project.findUnique({ where: { id: pieza.projectId }, select: { responsableId: true } })
+      : null,
+  ]);
   const evento: EventoNotificable = {
     tipo,
     piezaId: pieza.id,
@@ -605,6 +708,7 @@ const prepararAviso = async (
     pieza: `${pieza.platform} ${pieza.formato}`,
     autorId: tenant.userId,
     asignadaAId,
+    responsableId: campana?.responsableId ?? null,
   };
   return { evento, destinatarios: await destinatariosDe(tenant, evento) };
 };
@@ -666,10 +770,29 @@ export const ejecutarAccion = async (
   if (transicion.exigeNota && motivos.length === 0)
     throw new TenantError('Esta acción necesita un motivo escrito', 400);
 
-  const actual = await prisma.pieza.findUnique({ where: { id: piezaId } });
-  if (!actual || actual.workspaceId !== tenant.workspaceId) throw new TenantError('Pieza no encontrada', 404);
+  const actual = await piezaParaDecidir(tenant, piezaId);
   if (!transicion.desde.includes(actual.estado))
     throw new TenantError(`Una pieza en "${actual.estado}" no admite esta acción`, 409);
+  const permiso = PERMISO_DE[accion];
+  if (permiso) exigir(tenant, actual, permiso);
+
+  // Aceptar en una campaña «del cliente» no es el final: queda esperándolo.
+  const hacia =
+    accion === 'aceptar' && actual.project?.modoAprobacion === ModoAprobacion.CLIENTE
+      ? PiezaEstado.CON_EL_CLIENTE
+      : transicion.hacia;
+
+  // Pasar por alto un hallazgo es una decisión, y queda escrita.
+  if (accion === 'aceptar') {
+    const sinDecidir = (actual.versiones[0]?.hallazgos ?? []).filter(
+      h => h.decision === 'PENDIENTE' && h.tipo !== 'ILEGIBLE'
+    ).length;
+    if (sinDecidir > 0 && motivos.length === 0)
+      throw new TenantError(
+        `Hay ${sinDecidir === 1 ? 'un hallazgo' : `${sinDecidir} hallazgos`} sin decidir: aceptarla igual pide una línea de por qué.`,
+        400
+      );
+  }
 
   const cambios: Prisma.PiezaUncheckedUpdateManyInput = {};
 
@@ -691,8 +814,8 @@ export const ejecutarAccion = async (
     cambios.enlace = enlace;
   }
 
-  if (transicion.hacia) {
-    cambios.estado = transicion.hacia;
+  if (hacia) {
+    cambios.estado = hacia;
     cambios.estadoDesde = new Date();
   }
 
@@ -703,16 +826,18 @@ export const ejecutarAccion = async (
   // movió.
   if (Object.keys(cambios).length === 0) cambios.updatedAt = new Date();
 
-  // Solo dos de las nueve acciones avisan (D4). Las otras siete —aceptar,
-  // devolver, comentar…— quedan en el tablero y en el historial, que es donde
-  // se miran; convertirlas en avisos es lo que hace que el equipo filtre los
-  // correos de la herramienta y se pierdan también los dos que importan.
+  // Avisan las acciones que le pasan el trabajo a otra persona (D4, revisada
+  // en docs/plan-produccion-con-responsable.md): asignar, entregar y devolver.
+  // Aceptar, comentar y el resto quedan en el tablero y en el historial;
+  // convertirlas en avisos es lo que hace que el equipo filtre los correos.
   const aviso =
     accion === 'asignar' || accion === 'reasignar'
       ? await prepararAviso(tenant, actual, 'ASIGNACION', datos.asignadaAId)
       : accion === 'entregar'
         ? await prepararAviso(tenant, actual, 'ENTREGA')
-        : null;
+        : (accion === 'devolver' || accion === 'reabrir') && actual.asignadaAId
+          ? await prepararAviso(tenant, actual, 'DEVOLUCION', actual.asignadaAId)
+          : null;
 
   let escritos: AvisoEscrito[] = [];
   await prisma.$transaction(async tx => {
@@ -733,7 +858,7 @@ export const ejecutarAccion = async (
           piezaId,
           tipo: transicion.evento,
           deEstado: actual.estado,
-          aEstado: transicion.hacia ?? actual.estado,
+          aEstado: hacia ?? actual.estado,
           autorId: tenant.userId,
           nota: motivo.texto,
           categoria: motivo.categoria,
@@ -752,13 +877,26 @@ export const ejecutarAccion = async (
   // Se relee fuera de la transacción y con la misma forma que el tablero: la
   // pantalla reemplaza la tarjeta con lo que devuelve esta llamada, así que
   // tiene que traer los desfases y los comentarios o la tarjeta se vacía.
-  return leerUna(piezaId);
+  return leerUna(tenant, piezaId);
 };
 
-const leerUna = async (piezaId: string) => {
+const leerUna = async (tenant: TenantContext, piezaId: string) => {
   const pieza = await prisma.pieza.findUniqueOrThrow({ where: { id: piezaId }, include: INCLUDE_PIEZA });
-  const comentarios = await contarComentarios([piezaId]);
-  return presentar(pieza, comentarios.get(piezaId) ?? 0);
+  const [comentarios, contexto] = await Promise.all([contarComentarios([piezaId]), contextoDe([pieza])]);
+  return presentar(tenant, pieza, comentarios.get(piezaId) ?? 0, contexto.get(piezaId));
+};
+
+/** Una pieza con lo que hace falta para decidir permisos. 404 si es de otro workspace. */
+const piezaParaDecidir = async (tenant: TenantContext, piezaId: string) => {
+  const pieza = await prisma.pieza.findUnique({
+    where: { id: piezaId },
+    include: {
+      project: { select: { name: true, modoAprobacion: true, responsableId: true, responsable: { select: { name: true } } } },
+      versiones: { orderBy: { numero: 'desc' }, take: 1, include: { hallazgos: true } },
+    },
+  });
+  if (!pieza || pieza.workspaceId !== tenant.workspaceId) throw new TenantError('Pieza no encontrada', 404);
+  return pieza;
 };
 
 /**
@@ -788,10 +926,170 @@ const recongelarCopy = async (tx: Prisma.TransactionClient, piezaId: string) => 
  * auditoría. La URL está firmada y vence, así que se pide en cada lectura en
  * vez de guardarse.
  */
-const presentar = async (pieza: PiezaConSlots, comentarios = 0) => ({
+const presentar = async (
+  tenant: TenantContext,
+  pieza: PiezaConSlots,
+  comentarios = 0,
+  contexto?: ContextoDePieza
+) => ({
   ...conDesfases(pieza, comentarios),
   previaUrl: await urlDeSnapshot(pieza.versiones[0]?.claveSnapshot),
+  ...permisosDe(tenant, pieza),
+  devolucion: contexto?.devolucion ?? null,
+  cierre: contexto?.cierre ?? null,
+  enviadaAlCliente: contexto?.enviadaAlCliente ?? null,
 });
+
+/**
+ * Lo que la tarjeta cuenta de lo que pasó, calculado del historial y no
+ * guardado: quién la devolvió y por qué, quién la cerró, cuándo se le mandó al
+ * cliente. Guardarlo sería otra columna que mantener en sincronía con los
+ * eventos, que ya son la verdad.
+ */
+interface ContextoDePieza {
+  devolucion: {
+    por: string;
+    createdAt: Date;
+    motivos: { categoria: string | null; nota: string | null }[];
+    /** Hubo motivo de copy y el responsable todavía no lo corrigió. */
+    esperaCopy: boolean;
+  } | null;
+  cierre: { via: 'CLIENTE' | 'INTERNA'; por: string; createdAt: Date } | null;
+  enviadaAlCliente: { createdAt: Date } | null;
+}
+
+const contextoDe = async (piezas: { id: string; estado: PiezaEstado }[]): Promise<Map<string, ContextoDePieza>> => {
+  const ids = piezas.map(p => p.id);
+  if (!ids.length) return new Map();
+  const [eventos, enRevision] = await Promise.all([
+    prisma.piezaEvento.findMany({
+      where: {
+        piezaId: { in: ids },
+        tipo: { in: ['DEVUELTA', 'REABIERTA', 'COPY_CORREGIDO', 'ACEPTADA', 'APROBADA_CLIENTE', 'ENTREGADA', 'SUBIDA'] },
+      },
+      orderBy: { createdAt: 'desc' },
+      include: { autor: { select: { name: true } } },
+    }),
+    prisma.reviewSessionItem.findMany({
+      where: {
+        piezaId: { in: ids },
+        reviewSession: { ronda: RondaRevision.PIEZA, status: { not: 'COMPLETED' }, expiresAt: { gt: new Date() } },
+      },
+      select: { piezaId: true, reviewSession: { select: { createdAt: true } } },
+    }),
+  ]);
+  const porPieza = new Map<string, typeof eventos>();
+  for (const e of eventos) porPieza.set(e.piezaId, [...(porPieza.get(e.piezaId) ?? []), e]);
+  const enviada = new Map(enRevision.map(i => [i.piezaId!, i.reviewSession.createdAt]));
+
+  return new Map(
+    piezas.map(p => {
+      const lista = porPieza.get(p.id) ?? [];
+      const nombre = (e: (typeof lista)[number]) => e.autor?.name ?? e.autorExterno ?? 'Alguien';
+      let devolucion: ContextoDePieza['devolucion'] = null;
+      if (p.estado === PiezaEstado.EN_DISENO) {
+        // La devolución vigente: la última, si nada se entregó después.
+        const i = lista.findIndex(e => e.tipo === 'DEVUELTA' || e.tipo === 'REABIERTA' || e.tipo === 'ENTREGADA' || e.tipo === 'SUBIDA');
+        const ultima = i >= 0 ? lista[i] : null;
+        if (ultima && (ultima.tipo === 'DEVUELTA' || ultima.tipo === 'REABIERTA')) {
+          // Una devolución con dos categorías deja dos eventos casi juntos, del
+          // mismo autor: sin mirar el autor, dos devoluciones seguidas (la del
+          // equipo y la del cliente) se mezclaban en una.
+          const juntos = lista.filter(
+            e =>
+              e.tipo === ultima.tipo &&
+              e.autorId === ultima.autorId &&
+              e.autorExterno === ultima.autorExterno &&
+              Math.abs(e.createdAt.getTime() - ultima.createdAt.getTime()) < 5000
+          );
+          const corregido = lista.some(e => e.tipo === 'COPY_CORREGIDO' && e.createdAt > ultima.createdAt);
+          devolucion = {
+            por: nombre(ultima),
+            createdAt: ultima.createdAt,
+            motivos: juntos.map(e => ({ categoria: e.categoria, nota: e.nota })),
+            esperaCopy: juntos.some(e => e.categoria === 'COPY') && !corregido,
+          };
+        }
+      }
+      let cierre: ContextoDePieza['cierre'] = null;
+      if (p.estado === PiezaEstado.LISTA) {
+        const c = lista.find(e => e.tipo === 'APROBADA_CLIENTE' || e.tipo === 'ACEPTADA');
+        if (c) cierre = { via: c.tipo === 'APROBADA_CLIENTE' ? 'CLIENTE' : 'INTERNA', por: nombre(c), createdAt: c.createdAt };
+      }
+      const env = p.estado === PiezaEstado.CON_EL_CLIENTE ? enviada.get(p.id) : undefined;
+      return [p.id, { devolucion, cierre, enviadaAlCliente: env ? { createdAt: env } : null }];
+    })
+  );
+};
+
+/**
+ * El responsable corrige el copy **dentro de la pieza**.
+ *
+ * Existe porque una corrección de mensaje no tenía por dónde hacerse: el copy
+ * en producción no se edita en Copy, y la pieza quedaba varada. Corregir acá
+ * actualiza el texto congelado de la pieza Y el copy original, que queda
+ * aprobado por el responsable —es quien aprueba—; en una campaña del cliente,
+ * él lo vuelve a ver cuando la pieza le llegue de nuevo.
+ *
+ * No mueve la pieza: la tarjeta deja de decir «Espera el copy» y la
+ * diseñadora actualiza el arte.
+ */
+export const corregirCopy = async (
+  tenant: TenantContext,
+  piezaId: string,
+  correcciones: { slot: string; texto: string }[]
+) => {
+  const pieza = await piezaParaDecidir(tenant, piezaId);
+  exigir(tenant, pieza, 'corregirCopy');
+  const permitidos: PiezaEstado[] = [PiezaEstado.EN_DISENO, PiezaEstado.POR_REVISAR, PiezaEstado.CON_EL_CLIENTE];
+  if (!permitidos.includes(pieza.estado))
+    throw new TenantError('El copy se corrige mientras la pieza está en curso: si ya está lista, reabrila', 409);
+
+  const limpias = (Array.isArray(correcciones) ? correcciones : [])
+    .map(c => ({ slot: typeof c?.slot === 'string' ? c.slot : '', texto: typeof c?.texto === 'string' ? c.texto.trim() : '' }))
+    .filter(c => c.slot && c.texto);
+  if (!limpias.length) throw new TenantError('No hay ningún texto corregido', 400);
+
+  const slots = await prisma.piezaSlot.findMany({ where: { piezaId } });
+  const porSlot = new Map(slots.map(s => [s.slot, s]));
+  const yo = await prisma.user.findUnique({ where: { id: tenant.userId }, select: { name: true } });
+
+  await prisma.$transaction(async tx => {
+    const cambiados: string[] = [];
+    for (const c of limpias) {
+      const s = porSlot.get(c.slot);
+      // Un slot que no es de esta pieza se ignora, como un id ajeno.
+      if (!s || s.esInstruccion || s.textoCongelado === c.texto) continue;
+      await tx.piezaSlot.update({ where: { id: s.id }, data: { textoCongelado: c.texto } });
+      if (s.savedVariationId) {
+        await tx.savedVariation.update({
+          where: { id: s.savedVariationId },
+          data: {
+            content: c.texto,
+            charCount: c.texto.length,
+            isApproved: true,
+            aprobadoPorId: tenant.userId,
+            aprobadoPorNombre: yo?.name ?? null,
+            aprobadoEn: new Date(),
+            aprobadoVia: ModoAprobacion.INTERNA,
+          },
+        });
+      }
+      cambiados.push(s.slotLabel);
+    }
+    if (!cambiados.length) throw new TenantError('El texto es el mismo: no hay nada que corregir', 400);
+    await tx.piezaEvento.create({
+      data: {
+        piezaId,
+        tipo: 'COPY_CORREGIDO',
+        autorId: tenant.userId,
+        categoria: 'COPY',
+        nota: `Corrigió: ${cambiados.join(', ')}`,
+      },
+    });
+  });
+  return leerUna(tenant, piezaId);
+};
 
 // ---------------------------------------------------------------- lecturas
 
@@ -801,22 +1099,37 @@ export const listarPorMarca = async (tenant: TenantContext, clientId: string) =>
     include: INCLUDE_PIEZA,
     orderBy: [{ estado: 'asc' }, { estadoDesde: 'asc' }],
   });
-  const comentarios = await contarComentarios(piezas.map(p => p.id));
-  return Promise.all(piezas.map(p => presentar(p, comentarios.get(p.id) ?? 0)));
+  return presentarVarias(tenant, piezas);
+};
+
+const presentarVarias = async (tenant: TenantContext, piezas: PiezaConSlots[]) => {
+  const ids = piezas.map(p => p.id);
+  const [comentarios, contexto] = await Promise.all([contarComentarios(ids), contextoDe(piezas)]);
+  return Promise.all(piezas.map(p => presentar(tenant, p, comentarios.get(p.id) ?? 0, contexto.get(p.id))));
 };
 
 /**
- * Mis piezas cruza marcas: el tablero es por marca porque así es todo el
- * producto, pero un diseñador trabaja en varias a la vez.
+ * «Lo mío» cruza marcas: el tablero es por marca porque así es todo el
+ * producto, pero una diseñadora trabaja en varias a la vez. Y no es solo lo
+ * que diseño: también lo que espera mi decisión como responsable, que antes no
+ * tenía dónde verse.
  */
 export const listarMias = async (tenant: TenantContext) => {
   const piezas = await prisma.pieza.findMany({
-    where: { workspaceId: tenant.workspaceId, asignadaAId: tenant.userId },
+    where: {
+      workspaceId: tenant.workspaceId,
+      OR: [
+        { asignadaAId: tenant.userId },
+        {
+          project: { responsableId: tenant.userId },
+          estado: { in: [PiezaEstado.POR_REVISAR, PiezaEstado.CON_EL_CLIENTE] },
+        },
+      ],
+    },
     include: INCLUDE_PIEZA,
     orderBy: { estadoDesde: 'asc' },
   });
-  const comentarios = await contarComentarios(piezas.map(p => p.id));
-  return Promise.all(piezas.map(p => presentar(p, comentarios.get(p.id) ?? 0)));
+  return presentarVarias(tenant, piezas);
 };
 
 export const detalle = async (tenant: TenantContext, piezaId: string) => {
@@ -844,7 +1157,8 @@ export const detalle = async (tenant: TenantContext, piezaId: string) => {
   // En el detalle `eventos` trae el historial completo, así que el último
   // comentario se calcula sobre los comentarios y no sobre el último evento.
   const comentarios = pieza.eventos.filter(e => e.tipo === 'COMENTARIO');
-  const base = await presentar({ ...pieza, eventos: comentarios.slice(0, 1) }, comentarios.length);
+  const contexto = await contextoDe([pieza]);
+  const base = await presentar(tenant, { ...pieza, eventos: comentarios.slice(0, 1) }, comentarios.length, contexto.get(pieza.id));
   // La orden de trabajo muestra el informe completo: los hallazgos de la
   // última versión con sus dos lados, no solo el semáforo (D3).
   const version = pieza.versiones[0]
@@ -864,12 +1178,13 @@ export const detalle = async (tenant: TenantContext, piezaId: string) => {
  * una decisión sobre el trabajo, es una corrección de etiqueta.
  */
 export const renombrar = async (tenant: TenantContext, piezaId: string, titulo: string) => {
+  exigir(tenant, await piezaParaDecidir(tenant, piezaId), 'renombrar');
   const { count } = await prisma.pieza.updateMany({
     where: { id: piezaId, workspaceId: tenant.workspaceId },
     data: { titulo: titulo.slice(0, 160) },
   });
   if (count === 0) throw new TenantError('Pieza no encontrada', 404);
-  return leerUna(piezaId);
+  return leerUna(tenant, piezaId);
 };
 
 /**
@@ -895,6 +1210,7 @@ export const decidirHallazgo = async (
   });
   if (!hallazgo || hallazgo.version.pieza.workspaceId !== tenant.workspaceId)
     throw new TenantError('Hallazgo no encontrado', 404);
+  exigir(tenant, await piezaParaDecidir(tenant, hallazgo.version.pieza.id), 'decidirHallazgos');
 
   const texto = typeof nota === 'string' ? nota.trim() : '';
   if (decision === 'ACEPTADO' && !texto)
@@ -910,7 +1226,7 @@ export const decidirHallazgo = async (
     },
   });
 
-  return leerUna(hallazgo.version.pieza.id);
+  return leerUna(tenant, hallazgo.version.pieza.id);
 };
 
 /**
@@ -936,6 +1252,6 @@ export const reauditar = async (tenant: TenantContext, piezaId: string) => {
       data: { estadoAuditoria: AuditoriaEstado.PENDIENTE, motivoNoDisponible: null, auditadaAt: null },
     }),
   ]);
-  auditarEnSegundoPlano(version.id);
-  return leerUna(piezaId);
+  auditarEnSegundoPlano(version.id, () => pasarARevision(tenant, piezaId, version.id));
+  return leerUna(tenant, piezaId);
 };

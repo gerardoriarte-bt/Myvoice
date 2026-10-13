@@ -58,6 +58,7 @@ router.post('/auth/login', authController.login);
 router.post('/auth/google', authController.googleLogin);
 router.get('/auth/me', ...authed, authController.me);
 router.post('/auth/switch-workspace', ...authed, authController.switchWorkspace);
+router.post('/auth/novedades/:id/vista', ...authed, authController.marcarNovedadVista);
 
 // --------------------------------------------------------------- workspaces
 router.get('/workspaces', ...authed, workspaceController.listMyWorkspaces);
@@ -120,10 +121,14 @@ router.get('/saved', ...inWorkspace, savedController.getSavedVariations);
 router.post('/saved', ...inWorkspace, savedController.saveVariation);
 // POST /saved/bulk-delete va antes que DELETE /saved/:id para evitar el choque de rutas.
 router.post('/saved/bulk-delete', ...inWorkspace, savedController.bulkDeleteSaved);
+// Quién puede aprobar lo decide la campaña (su responsable), no el rol: va con
+// inWorkspace y la regla vive en services/aprobacion.ts.
+router.post('/saved/aprobacion', ...inWorkspace, savedController.decidirAprobacionHandler);
 router.put('/saved/:id', ...inWorkspace, savedController.updateVariation);
 router.delete('/saved/:id', ...inWorkspace, savedController.deleteVariation);
 router.get('/projects', ...inWorkspace, savedController.getProjects);
 router.post('/projects', ...inWorkspace, savedController.createProject);
+router.get('/projects/de-brief/:dnaProfileId', ...inWorkspace, savedController.getCampanaDeBrief);
 router.patch('/projects/:id', ...inWorkspace, savedController.updateProject);
 router.delete('/projects/:id', ...inWorkspace, savedController.deleteProject);
 router.post('/feedback/negative', ...inWorkspace, savedController.saveNegativeFeedback);
@@ -144,8 +149,10 @@ router.get('/analytics/usage', ...asManager, analyticsController.getUsageAnalyti
  */
 router.get('/piezas', ...inWorkspace, piezaController.listarPorMarca);
 router.get('/piezas/mias', ...inWorkspace, piezaController.listarMias);
-router.post('/piezas/propuesta', ...inWorkspace, piezaController.proponer);
-router.post('/piezas', ...inWorkspace, piezaController.crear);
+// Mandar copy a producción es de quien administra: la pantalla ya lo ofrecía
+// solo a ellos, y el servidor lo aceptaba de cualquiera.
+router.post('/piezas/propuesta', ...asManager, piezaController.proponer);
+router.post('/piezas', ...asManager, piezaController.crear);
 router.get('/piezas/:id', ...inWorkspace, piezaController.detalle);
 router.patch('/piezas/:id', ...inWorkspace, piezaController.renombrar);
 /**
@@ -156,6 +163,7 @@ router.patch('/piezas/:id', ...inWorkspace, piezaController.renombrar);
 router.post('/piezas/:id/archivo', ...inWorkspace, piezaUpload.single('archivo'), piezaController.subirArchivo);
 router.post('/piezas/hallazgos/:hallazgoId/decision', ...inWorkspace, piezaController.decidirHallazgo);
 router.post('/piezas/:id/reauditar', ...inWorkspace, piezaController.reauditar);
+router.post('/piezas/:id/corregir-copy', ...inWorkspace, piezaController.corregirCopy);
 router.post('/piezas/:id/:accion', ...inWorkspace, piezaController.ejecutarAccion);
 
 // ---------------------------------------------------------------- bandeja

@@ -93,7 +93,10 @@ export interface User {
   workspaceName?: string | null;
   /** Todos los workspaces donde tiene membresía. Alimenta el selector. */
   workspaces?: WorkspaceSummary[];
-  createdAt?: number;
+  /** ISO. Decide si una novedad le corresponde: a quien llega después, no. */
+  createdAt?: string;
+  /** Ids de `novedades.ts` que ya vio. Vive en el servidor, no en el navegador. */
+  novedadesVistas?: string[];
 }
 
 /** Miembro de un workspace, tal como lo devuelve GET /workspace/members. */
@@ -275,18 +278,55 @@ export interface CoherenceReport {
   flags: string[];
 }
 
+/** Cómo se aprueba el copy de una campaña antes de producir. */
+export type ModoAprobacion = 'INTERNA' | 'CLIENTE';
+
+export const MODO_APROBACION_LABELS: Record<ModoAprobacion, string> = {
+  INTERNA: 'Interna',
+  CLIENTE: 'Del cliente',
+};
+
+/**
+ * Una campaña. La que se elige en Generar (el brief) y la que recibe el copy
+ * son la misma: `dnaProfileId` las une.
+ */
 export interface Project {
   id: string;
   name: string;
   createdAt: number;
+  clientId?: string | null;
+  dnaProfileId?: string | null;
+  modoAprobacion?: ModoAprobacion;
+  responsableId?: string | null;
+  responsable?: { id: string; name: string } | null;
 }
 
+/**
+ * El paso del recorrido de un copy. Lo calcula el servidor al leer
+ * (server/src/services/aprobacion.ts) y el orden de acá es el del proceso.
+ */
+export type EtapaCopy = 'SIN_CAMPANA' | 'POR_APROBAR' | 'DEVUELTO' | 'CON_EL_CLIENTE' | 'APROBADO' | 'EN_PRODUCCION';
+
+export const ETAPAS_COPY: { id: EtapaCopy; label: string; que: string }[] = [
+  { id: 'SIN_CAMPANA', label: 'Sin campaña', que: 'Guardado antes de que el copy perteneciera a una campaña. Asignale una para que pueda avanzar.' },
+  { id: 'POR_APROBAR', label: 'Por aprobar', que: 'Espera la aprobación del responsable o el envío al cliente.' },
+  { id: 'DEVUELTO', label: 'Devuelto', que: 'El cliente lo rechazó. Editalo y volvé a mandarlo.' },
+  { id: 'CON_EL_CLIENTE', label: 'Con el cliente', que: 'En una revisión abierta, esperando respuesta.' },
+  { id: 'APROBADO', label: 'Aprobado', que: 'Listo para mandar a producción.' },
+  { id: 'EN_PRODUCCION', label: 'En producción', que: 'Ya forma parte de una pieza.' },
+];
+
 export interface SavedVariation extends CopyVariation {
-  projectId?: string;
+  projectId?: string | null;
+  project?: Project | null;
   clientId?: string;
   tags: string[];
   savedAt: number;
   isApproved?: boolean;
+  etapa?: EtapaCopy;
+  aprobadoPorNombre?: string | null;
+  aprobadoEn?: string | null;
+  aprobadoVia?: ModoAprobacion | null;
   previousVersions?: Array<{ content: string; charCount: number; editedAt: string }>;
   /** True cuando el slot lo dedujo el backfill heurístico y no el writer. */
   slotInferred?: boolean;
@@ -327,6 +367,7 @@ export interface ReviewFeedback {
   comment?: string;
 }
 
+/** Un item de una revisión: copy en la ronda COPY, pieza en la ronda PIEZA. */
 export interface ReviewSessionItem {
   id: string;
   sortOrder: number;
@@ -337,11 +378,14 @@ export interface ReviewSessionItem {
     content: string;
     charCount: number;
     clientId: string;
-  };
+  } | null;
+  pieza?: { id: string; platform: string; formato: string; titulo: string } | null;
 }
 
 export interface ReviewItemFeedbackDetail {
-  savedVariationId: string;
+  /** Uno de los dos, según la ronda. */
+  savedVariationId: string | null;
+  piezaId?: string | null;
   decision: ReviewDecision;
   /** Era `comment`. En la ronda de copy todo comentario es sobre copy. */
   feedbackCopy?: string | null;
@@ -383,6 +427,7 @@ export interface ReviewSession {
   ronda?: RondaRevision;
   /** La marca de la sesión. Una sesión es de una sola, así que se afirma. */
   marca?: string | null;
+  clientId?: string | null;
   _count?: { items: number };
   items?: ReviewSessionItem[];
   /** Solo en la ronda 2: el portal recibe piezas en vez de items. */
@@ -411,7 +456,7 @@ export interface GenerationPreset {
  * porque `apiRequest` devuelve `any` (E2, punto 4): si la pantalla nueva
  * heredara eso, el tablero entero quedaría fuera de la gate de tipos.
  */
-export type PiezaEstado = 'POR_ASIGNAR' | 'EN_DISENO' | 'POR_REVISAR' | 'LISTA';
+export type PiezaEstado = 'POR_ASIGNAR' | 'EN_DISENO' | 'POR_REVISAR' | 'CON_EL_CLIENTE' | 'LISTA';
 export type PiezaTipo = 'GRAFICA' | 'VIDEO' | 'AUDIO';
 
 export interface PiezaSlot {
@@ -506,8 +551,45 @@ export interface Pieza {
   /** URL firmada del snapshot: nuestra, no depende de permisos ajenos. */
   previaUrl: string | null;
   client?: { id: string; name: string };
-  project?: { id: string; name: string; pideAprobacionDeCliente?: boolean } | null;
+  project?: {
+    id: string;
+    name: string;
+    modoAprobacion?: ModoAprobacion;
+    responsableId?: string | null;
+    responsable?: { id: string; name: string } | null;
+  } | null;
+  /**
+   * Qué puede hacer con esta pieza quien la mira. Lo calcula el servidor
+   * (permisosPieza.ts), que es el mismo que después lo hace cumplir.
+   */
+  puedo: Record<AccionPermitida, boolean>;
+  /** Si no puede decidir: quién lo hace, en una línea. */
+  quienDecide: string | null;
+  /** Solo en diseño: la devolución vigente y sus motivos. */
+  devolucion: {
+    por: string;
+    createdAt: string;
+    motivos: { categoria: 'COPY' | 'DISENO' | null; nota: string | null }[];
+    /** Hubo motivo de copy y el responsable todavía no lo corrigió. */
+    esperaCopy: boolean;
+  } | null;
+  /** Solo en Lista: quién la cerró. */
+  cierre: { via: 'CLIENTE' | 'INTERNA'; por: string; createdAt: string } | null;
+  /** Solo con el cliente: cuándo se le mandó, si ya se le mandó. */
+  enviadaAlCliente: { createdAt: string } | null;
 }
+
+export type AccionPermitida =
+  | 'asignar'
+  | 'entregar'
+  | 'aceptar'
+  | 'devolver'
+  | 'reabrir'
+  | 'decidirHallazgos'
+  | 'corregirCopy'
+  | 'actualizarCopy'
+  | 'renombrar'
+  | 'mandarAlCliente';
 
 export interface PiezaEvento {
   id: string;
@@ -518,7 +600,9 @@ export interface PiezaEvento {
   /** COPY · DISENO. null = nadie lo clasificó, y es un valor válido. */
   categoria?: string | null;
   createdAt: string;
-  autor?: { id: string; name: string };
+  autor?: { id: string; name: string } | null;
+  /** Quien no tiene cuenta: el cliente desde el portal. */
+  autorExterno?: string | null;
 }
 
 export interface PiezaDetalle extends Pieza {
@@ -557,7 +641,7 @@ export interface PropuestaDePiezas {
   excluidos: {
     savedVariationId: string;
     platform: string;
-    motivo: 'sin-pieza' | 'no-aprobado' | 'ya-en-pieza';
+    motivo: 'sin-pieza' | 'no-aprobado' | 'ya-en-pieza' | 'sin-campana' | 'sin-responsable';
     detalle: string;
   }[];
 }

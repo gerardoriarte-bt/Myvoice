@@ -16,11 +16,12 @@ import OrdenDeTrabajo from './OrdenDeTrabajo';
  *
  * Dos vistas sobre el mismo dato, y el orden de cada una es la diferencia:
  *
- *   · **Por marca** — cuatro columnas, como el proceso. Es el alcance de todo
+ *   · **Por marca** — cinco columnas, como el proceso. Es el alcance de todo
  *     el producto: una marca a la vez.
- *   · **Mis piezas** — cruza marcas, porque un diseñador trabaja en varias, y
- *     ordena por lo que él tiene que hacer, no por el estado: primero lo que
- *     está en sus manos, después lo que espera a otro.
+ *   · **Lo mío** — cruza marcas, y ordena por lo que te toca, no por el estado:
+ *     lo devuelto y lo que espera tu decisión primero, lo que ya entregaste
+ *     después. Suma lo que espera al responsable, que antes no tenía dónde
+ *     verse (docs/plan-produccion-con-responsable.md).
  *
  * La pantalla pide sus propios datos en vez de recibirlos de `App.tsx`. Es
  * deliberado: `App.tsx` ya concentra casi todo el estado del producto (E3), y
@@ -30,6 +31,10 @@ import OrdenDeTrabajo from './OrdenDeTrabajo';
 
 interface Props {
   clients: Client[];
+  /** La marca activa, la del encabezado: «Por marca» es esta. */
+  clientId: string;
+  /** Un aviso de otra marca cambia la marca activa, no un selector propio. */
+  onCambiarMarca: (clientId: string) => void;
   addNotification: (mensaje: string, tipo?: string) => void;
   /** A qué pieza saltar al abrir un aviso de la bandeja. */
   destino?: DestinoAviso | null;
@@ -41,21 +46,18 @@ interface Props {
 
 export default function TableroProduccion({
   clients,
+  clientId,
+  onCambiarMarca,
   addNotification,
   destino,
   onDestinoAtendido,
   onIrACopyAprobado,
 }: Props) {
   const [vista, setVista] = React.useState<'marca' | 'mias'>('marca');
-  const [clientId, setClientId] = React.useState(clients[0]?.id ?? '');
   const [piezas, setPiezas] = React.useState<Pieza[]>([]);
   const [miembros, setMiembros] = React.useState<WorkspaceMember[]>([]);
   const [cargando, setCargando] = React.useState(true);
   const [abierta, setAbierta] = React.useState<string | null>(null);
-
-  React.useEffect(() => {
-    if (!clientId && clients[0]) setClientId(clients[0].id);
-  }, [clients, clientId]);
 
   /**
    * El salto desde un aviso. Un lote no trae pieza —viene con `piezaId` en
@@ -65,10 +67,10 @@ export default function TableroProduccion({
   React.useEffect(() => {
     if (!destino) return;
     setVista('marca');
-    setClientId(destino.clientId);
+    onCambiarMarca(destino.clientId);
     setAbierta(destino.piezaId);
     onDestinoAtendido?.();
-  }, [destino, onDestinoAtendido]);
+  }, [destino, onDestinoAtendido, onCambiarMarca]);
 
   React.useEffect(() => {
     authApi
@@ -108,32 +110,77 @@ export default function TableroProduccion({
 
   const error = (mensaje: string) => addNotification(mensaje, 'error');
 
-  const enDiseno = piezas.filter(p => p.estado === 'EN_DISENO');
   const porColumna = (estado: PiezaEstado) => piezas.filter(p => p.estado === estado);
+
+  /**
+   * «Lo mío», en orden de urgencia. Se agrupa por lo que la persona puede
+   * hacer (`puedo`, del servidor), no por quién es: así no hace falta saber en
+   * la pantalla quién es el responsable de cada campaña.
+   */
+  const grupos: { titulo: string; que: string; piezas: Pieza[]; atenuado?: boolean }[] = [
+    {
+      titulo: 'Esperan tu visto bueno',
+      que: 'Entregadas y auditadas: aceptalas o devolvelas.',
+      piezas: piezas.filter(p => p.estado === 'POR_REVISAR' && p.puedo.aceptar),
+    },
+    {
+      titulo: 'Devueltas',
+      que: 'Volvieron a tus manos, con el motivo.',
+      piezas: piezas.filter(p => p.estado === 'EN_DISENO' && p.devolucion && p.puedo.entregar),
+    },
+    {
+      titulo: 'Para mandar al cliente',
+      que: 'Aceptadas por el equipo y todavía sin enviar.',
+      piezas: piezas.filter(p => p.estado === 'CON_EL_CLIENTE' && !p.enviadaAlCliente && p.puedo.mandarAlCliente),
+    },
+    {
+      titulo: 'En diseño',
+      que: 'Asignadas a vos y todavía sin entregar.',
+      piezas: piezas.filter(p => p.estado === 'EN_DISENO' && !p.devolucion && p.puedo.entregar),
+    },
+    {
+      titulo: 'Esperando a otros',
+      que: 'Las entregaste o se las mandaste al cliente: ahora decide otro.',
+      piezas: piezas.filter(
+        p =>
+          (p.estado === 'POR_REVISAR' && !p.puedo.aceptar) ||
+          (p.estado === 'CON_EL_CLIENTE' && (p.enviadaAlCliente || !p.puedo.mandarAlCliente))
+      ),
+      atenuado: true,
+    },
+    {
+      titulo: 'Terminadas',
+      que: 'Listas. Quedan acá como registro de lo tuyo.',
+      piezas: piezas.filter(p => p.estado === 'LISTA'),
+      atenuado: true,
+    },
+  ];
+
+  /** El dueño de una columna, con nombre cuando es el responsable de la campaña. */
+  const duenoDe = (delResponsable: boolean | undefined, generico: string, suyas: Pieza[]) => {
+    if (!delResponsable) return generico;
+    const nombres = [...new Set(suyas.map(p => p.project?.responsable?.name).filter(Boolean))];
+    if (nombres.length === 1) return `${nombres[0]} · responsable de la campaña`;
+    return generico;
+  };
 
   return (
     <div className="space-y-5">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h2 className="text-[22px] font-semibold text-apple-text">{SCREENS.produccion.name}</h2>
+          <h2 className="text-[22px] font-semibold text-apple-text">
+            {SCREENS.produccion.name}
+            {/* «Mis piezas» cruza marcas a propósito: la marca activa no la acota. */}
+            <span className="text-apple-secondary">
+              {' · '}
+              {vista === 'marca' ? clients.find(c => c.id === clientId)?.name : 'todas las marcas'}
+            </span>
+          </h2>
           <p className="mt-1 text-[13px] text-apple-secondary">{SCREENS.produccion.description}</p>
         </div>
         <div className="flex items-center gap-2">
-          {vista === 'marca' && (
-            <select
-              value={clientId}
-              onChange={e => setClientId(e.target.value)}
-              className="rounded-lg border border-apple-border px-3 py-2 text-[12px] text-apple-text"
-            >
-              {clients.map(c => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-          )}
           <div className="flex rounded-lg border border-apple-border p-0.5">
-            {([['marca', 'Por marca'], ['mias', 'Mis piezas']] as const).map(([id, label]) => (
+            {([['marca', 'Por marca'], ['mias', 'Lo mío']] as const).map(([id, label]) => (
               <button
                 key={id}
                 onClick={() => setVista(id)}
@@ -157,7 +204,7 @@ export default function TableroProduccion({
       {!cargando && piezas.length === 0 && (
         <div className="rounded-xl border border-dashed border-apple-border p-8 text-center">
           <p className="text-[13px] font-medium text-apple-text">
-            {vista === 'marca' ? 'Todavía no hay piezas en producción' : 'No tenés piezas asignadas'}
+            {vista === 'marca' ? 'Todavía no hay piezas en producción' : 'No hay nada esperando por vos'}
           </p>
           {/*
             El vacío decía dónde se resuelve pero no cómo, y el camino real son
@@ -182,7 +229,7 @@ export default function TableroProduccion({
       )}
 
       {!cargando && piezas.length > 0 && vista === 'marca' && (
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
           {COLUMNAS.map(col => {
             const suyas = porColumna(col.estado);
             const color = COLORES_ESTADO[col.estado];
@@ -230,7 +277,7 @@ export default function TableroProduccion({
                       Exportar a Excel
                     </button>
                   )}
-                  {col.estado === 'LISTA' && suyas.length > 0 && (
+                  {col.estado === 'CON_EL_CLIENTE' && suyas.length > 0 && (
                     <MandarAlCliente
                       piezas={suyas}
                       marca={clients.find(c => c.id === clientId)?.name ?? 'la marca'}
@@ -238,20 +285,9 @@ export default function TableroProduccion({
                       onError={m => addNotification(m, 'error')}
                     />
                   )}
-                  <dl className="mt-1.5 space-y-0.5">
-                    <div className="flex gap-1.5 text-[9px]">
-                      <dt className="w-14 shrink-0 font-bold uppercase tracking-wide" style={{ color: color.texto }}>
-                        Dueño
-                      </dt>
-                      <dd className="text-apple-secondary">{col.dueño}</dd>
-                    </div>
-                    <div className="flex gap-1.5 text-[9px]">
-                      <dt className="w-14 shrink-0 font-bold uppercase tracking-wide" style={{ color: color.texto }}>
-                        La vacía
-                      </dt>
-                      <dd className="text-apple-secondary">{col.vacia}</dd>
-                    </div>
-                  </dl>
+                  <p className="mt-1.5 text-[10px] font-semibold" style={{ color: color.texto }}>
+                    {duenoDe(col.delResponsable, col.dueño, suyas)}
+                  </p>
                 </header>
                 <div className="mt-3 space-y-3">
                   {suyas.map(p => (
@@ -273,40 +309,15 @@ export default function TableroProduccion({
 
       {!cargando && piezas.length > 0 && vista === 'mias' && (
         <div className="space-y-6">
-          {/*
-            Para el diseñador la urgencia no es el estado: lo que tiene que
-            hacer va primero, y lo que está esperando a otro, después. El motivo
-            de una devolución se lee en el historial de la orden de trabajo.
-          */}
-          {enDiseno.length > 0 && (
-            <section>
-              <h3 className="text-[12px] font-semibold text-apple-text">En diseño</h3>
-              <p className="text-[11px] text-apple-tertiary">Asignadas y todavía sin entregar.</p>
-              <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-                {enDiseno.map(p => (
-                  <TarjetaPieza
-                    key={p.id}
-                    pieza={p}
-                    miembros={miembros}
-                    mostrarMarca
-                    onAbrir={setAbierta}
-                    onCambio={trasCambio}
-                    onError={error}
-                  />
-                ))}
-              </div>
-            </section>
-          )}
-          {(['POR_REVISAR', 'LISTA', 'POR_ASIGNAR'] as PiezaEstado[]).map(estado => {
-            const suyas = porColumna(estado);
-            if (suyas.length === 0) return null;
-            const col = COLUMNAS.find(c => c.estado === estado)!;
-            return (
-              <section key={estado}>
-                <h3 className="text-[12px] font-semibold text-apple-text">{col.nombre}</h3>
-                <p className="text-[11px] text-apple-tertiary">{col.que}</p>
+          {grupos.map(g =>
+            g.piezas.length === 0 ? null : (
+              <section key={g.titulo} className={g.atenuado ? 'opacity-70' : undefined}>
+                <h3 className="text-[12px] font-semibold text-apple-text">
+                  {g.titulo} · {g.piezas.length}
+                </h3>
+                <p className="text-[11px] text-apple-tertiary">{g.que}</p>
                 <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-                  {suyas.map(p => (
+                  {g.piezas.map(p => (
                     <TarjetaPieza
                       key={p.id}
                       pieza={p}
@@ -319,8 +330,8 @@ export default function TableroProduccion({
                   ))}
                 </div>
               </section>
-            );
-          })}
+            )
+          )}
         </div>
       )}
 

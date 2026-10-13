@@ -1,15 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import { SCREENS } from '../screens';
-import { SavedVariation, Client, ReviewSession, ReviewItemFeedbackDetail } from '../types';
+import { SCREENS, screenName } from '../screens';
+import { Client, ReviewSession, ReviewItemFeedbackDetail, ReviewSessionItem } from '../types';
 import { reviewApi } from '../services/api';
 
 type NotificationType = 'success' | 'error' | 'info' | 'warning';
 
+/**
+ * Las revisiones de la marca activa: lo que se le mandó al cliente y lo que
+ * respondió.
+ *
+ * Ya no crea revisiones. Había dos caminos —esta pantalla y la barra de Copy—
+ * con resultados distintos (uno entregaba el enlace y el otro no, uno dejaba
+ * mezclar marcas y fallaba con un error genérico). Se crean desde Copy, donde
+ * se ve en qué paso está cada copy y qué campaña se aprueba con el cliente.
+ */
 interface CollaborationHubProps {
-  savedVariations: SavedVariation[];
   clients: Client[];
+  /** La marca activa, la del encabezado. */
+  clientId: string;
   addNotification: (message: string, type: NotificationType) => void;
   onSessionsLoaded?: (sessions: ReviewSession[]) => void;
+  onIrACopy: () => void;
 }
 
 const STATUS_LABELS: Record<string, { label: string; className: string }> = {
@@ -26,15 +37,27 @@ const PLATFORM_COLORS: Record<string, string> = {
   'WhatsApp': 'bg-green-50 text-green-700',
 };
 
-export default function CollaborationHub({ savedVariations, clients, addNotification, onSessionsLoaded }: CollaborationHubProps) {
-  const [sessions, setSessions] = useState<ReviewSession[]>([]);
-  const [isCreating, setIsCreating] = useState(false);
+/** La clave de un item: el copy en la ronda COPY, la pieza en la ronda PIEZA. */
+const claveDeItem = (item: ReviewSessionItem): string => item.savedVariation?.id ?? item.pieza?.id ?? item.id;
+
+/** Lo que se muestra de un item, sea copy o pieza. */
+const vistaDeItem = (item: ReviewSessionItem) =>
+  item.savedVariation
+    ? { platform: item.savedVariation.platform, tipo: item.savedVariation.type, texto: item.savedVariation.content ?? '' }
+    : { platform: item.pieza?.platform ?? 'Pieza', tipo: item.pieza?.formato ?? '', texto: item.pieza?.titulo ?? '' };
+
+/**
+ * En la ronda de copy todo comentario es sobre el mensaje y va solo. En la de
+ * piezas el cliente comenta el mensaje y el arte por separado, y se rotulan.
+ */
+const textoDeFeedback = (fb: ReviewItemFeedbackDetail): string => {
+  if (!fb.feedbackDiseno) return fb.feedbackCopy ? `«${fb.feedbackCopy}»` : '';
+  return [fb.feedbackCopy && `Mensaje: «${fb.feedbackCopy}»`, `Arte: «${fb.feedbackDiseno}»`].filter(Boolean).join(' · ');
+};
+
+export default function CollaborationHub({ clients, clientId, addNotification, onSessionsLoaded, onIrACopy }: CollaborationHubProps) {
+  const [todas, setSessions] = useState<ReviewSession[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-  const [newTitle, setNewTitle] = useState('');
-  const [expiresInDays, setExpiresInDays] = useState(7);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [clientFilter, setClientFilter] = useState('');
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [detailCache, setDetailCache] = useState<Record<string, ReviewSession>>({});
   const [showRejections, setShowRejections] = useState<Record<string, boolean>>({});
@@ -52,7 +75,7 @@ export default function CollaborationHub({ savedVariations, clients, addNotifica
         onSessionsLoaded?.(data);
       }
     } catch {
-      addNotification('Error al cargar sesiones de revisión', 'error');
+      addNotification('No se pudieron cargar las revisiones', 'error');
     } finally {
       setIsLoading(false);
     }
@@ -70,32 +93,6 @@ export default function CollaborationHub({ savedVariations, clients, addNotifica
     }
   };
 
-  const handleCreate = async () => {
-    if (!newTitle.trim() || selectedIds.size === 0) return;
-    setIsSaving(true);
-    try {
-      const session = await reviewApi.create({
-        title: newTitle.trim(),
-        variationIds: Array.from(selectedIds),
-        expiresInDays,
-      });
-      if (session?.token) {
-        const link = `${window.location.origin}/?review=${session.token}`;
-        await navigator.clipboard.writeText(link);
-        addNotification('Sesión creada — link copiado al portapapeles', 'success');
-      }
-      setIsCreating(false);
-      setNewTitle('');
-      setSelectedIds(new Set());
-      setExpiresInDays(7);
-      loadSessions();
-    } catch {
-      addNotification('Error al crear la sesión', 'error');
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
   const handleCopyLink = async (token: string) => {
     const link = `${window.location.origin}/?review=${token}`;
     await navigator.clipboard.writeText(link);
@@ -103,30 +100,18 @@ export default function CollaborationHub({ savedVariations, clients, addNotifica
   };
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm('¿Eliminar esta sesión de revisión?')) return;
+    if (!window.confirm('¿Eliminar esta revisión? El enlace deja de funcionar.')) return;
     try {
       await reviewApi.delete(id);
       setSessions(prev => prev.filter(s => s.id !== id));
-      addNotification('Sesión eliminada', 'info');
+      addNotification('Revisión eliminada', 'info');
     } catch {
-      addNotification('Error al eliminar la sesión', 'error');
+      addNotification('No se pudo eliminar la revisión', 'error');
     }
   };
 
-  const toggleVariation = (id: string) => {
-    setSelectedIds(prev => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
-  };
-
-  const filteredVariations = clientFilter
-    ? savedVariations.filter(v => v.clientId === clientFilter)
-    : savedVariations;
-
-  const clientName = (clientId?: string) =>
-    clients.find(c => c.id === clientId)?.name ?? clientId ?? '';
+  const marca = clients.find(c => c.id === clientId);
+  const sessions = todas.filter(s => s.clientId === clientId);
 
   const platformBadge = (platform: string) => {
     const cls = PLATFORM_COLORS[platform] ?? 'bg-gray-100 text-gray-600';
@@ -142,129 +127,31 @@ export default function CollaborationHub({ savedVariations, clients, addNotifica
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <h2 className="text-[20px] font-semibold text-[#1D1D1F] tracking-[-0.01em]">{SCREENS.collaboration.name}</h2>
-          <p className="text-[12px] text-gray-500 mt-0.5">
-            Crea sesiones de revisión, comparte links con clientes y cierra el bucle de aprobación.
-          </p>
+          <h2 className="text-[20px] font-semibold text-[#1D1D1F] tracking-[-0.01em]">
+            {SCREENS.collaboration.name}
+            {marca && <span className="text-gray-400"> · {marca.name}</span>}
+          </h2>
+          <p className="text-[12px] text-gray-500 mt-0.5">{SCREENS.collaboration.description}</p>
         </div>
         <button
-          onClick={() => setIsCreating(v => !v)}
+          onClick={onIrACopy}
           className="flex items-center gap-1.5 px-3 py-1.5 bg-ink text-white rounded-md text-[12px] font-medium hover:bg-gray-700 transition-colors"
         >
-          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-          </svg>
-          Nueva sesión
+          Enviar copy desde {screenName('saved')}
         </button>
       </div>
-
-      {/* Panel de creación */}
-      {isCreating && (
-        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm space-y-4">
-          <h3 className="text-[13px] font-semibold text-gray-800">Nueva sesión de revisión</h3>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-[11px] font-medium text-gray-500 mb-1">Título</label>
-              <input
-                type="text"
-                value={newTitle}
-                onChange={e => setNewTitle(e.target.value)}
-                placeholder="Ej: Revisión campaña Agosto"
-                className="w-full px-3 py-2 border border-gray-200 rounded-md text-[12px] focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-400"
-              />
-            </div>
-            <div>
-              <label className="block text-[11px] font-medium text-gray-500 mb-1">Vence en</label>
-              <select
-                value={expiresInDays}
-                onChange={e => setExpiresInDays(Number(e.target.value))}
-                className="w-full px-3 py-2 border border-gray-200 rounded-md text-[12px] bg-white focus:outline-none focus:border-gray-400"
-              >
-                <option value={3}>3 días</option>
-                <option value={7}>7 días</option>
-                <option value={14}>14 días</option>
-                <option value={30}>30 días</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Filtro + lista de variaciones */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="text-[11px] font-medium text-gray-500">
-                Seleccionar variaciones ({selectedIds.size} seleccionadas)
-              </label>
-              <select
-                value={clientFilter}
-                onChange={e => setClientFilter(e.target.value)}
-                className="px-2 py-1 border border-gray-200 rounded text-[11px] bg-white focus:outline-none"
-              >
-                <option value="">Todos los clientes</option>
-                {clients.map(c => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-              </select>
-            </div>
-            <div className="max-h-64 overflow-y-auto border border-gray-100 rounded-lg divide-y divide-gray-50">
-              {filteredVariations.length === 0 && (
-                <p className="p-4 text-[12px] text-gray-400 text-center">No hay variaciones guardadas</p>
-              )}
-              {filteredVariations.map(v => (
-                <label
-                  key={v.id}
-                  className={`flex items-start gap-3 p-3 cursor-pointer hover:bg-gray-50 transition-colors ${selectedIds.has(v.id!) ? 'bg-blue-50' : ''}`}
-                >
-                  <input
-                    type="checkbox"
-                    checked={selectedIds.has(v.id!)}
-                    onChange={() => toggleVariation(v.id!)}
-                    className="mt-0.5 accent-gray-900"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-0.5">
-                      {platformBadge(v.platform)}
-                      <span className="text-[10px] text-gray-400">{v.type}</span>
-                      {/* Era gris de 10 px después de un punto: se perdía. */}
-                      <span className="inline-flex items-center rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-semibold text-gray-700">
-                        {clientName(v.clientId)}
-                      </span>
-                    </div>
-                    <p className="text-[12px] text-gray-700 truncate">{v.content?.slice(0, 90)}</p>
-                  </div>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          <div className="flex items-center justify-end gap-2 pt-1">
-            <button
-              onClick={() => setIsCreating(false)}
-              className="px-3 py-1.5 text-[12px] text-gray-500 hover:text-gray-700 transition-colors"
-            >
-              Cancelar
-            </button>
-            <button
-              onClick={handleCreate}
-              disabled={!newTitle.trim() || selectedIds.size === 0 || isSaving}
-              className="px-4 py-1.5 bg-ink text-white rounded-md text-[12px] font-medium hover:bg-gray-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              {isSaving ? 'Creando...' : 'Crear y copiar link'}
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Lista de sesiones */}
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
         <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
-          <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Sesiones de revisión</span>
+          <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Revisiones enviadas</span>
         </div>
         {isLoading ? (
           <p className="p-6 text-[12px] text-gray-400 text-center">Cargando...</p>
         ) : sessions.length === 0 ? (
           <p className="p-8 text-[12px] text-gray-400 text-center">
-            No hay sesiones creadas. Crea una para empezar a colaborar con tus clientes.
+            {marca?.name ?? 'Esta marca'} no tiene revisiones. Se arman desde {screenName('saved')}: elegí el copy
+            de una campaña que aprueba el cliente y usá «Enviar al cliente».
           </p>
         ) : (
           <div className="divide-y divide-gray-50">
@@ -274,8 +161,10 @@ export default function CollaborationHub({ savedVariations, clients, addNotifica
               const isExpired = expiresAt < new Date();
               const isExpanded = expandedId === s.id;
               const detail = detailCache[s.id];
+              // Una sola clave por item: el copy en la ronda COPY, la pieza en la
+              // ronda PIEZA. Leer solo savedVariation rompía con las de piezas.
               const feedbackMap = new Map<string, ReviewItemFeedbackDetail>(
-                (detail?.submission?.feedbacks ?? []).map(f => [f.savedVariationId, f])
+                (detail?.submission?.feedbacks ?? []).map(f => [f.savedVariationId ?? f.piezaId ?? '', f])
               );
 
               return (
@@ -362,7 +251,7 @@ export default function CollaborationHub({ savedVariations, clients, addNotifica
                       {!detail ? (
                         <p className="text-[12px] text-gray-400 text-center py-2">Cargando detalle...</p>
                       ) : !detail.submission ? (
-                        <p className="text-[12px] text-gray-400 text-center py-2">Aún no hay revisión enviada.</p>
+                        <p className="text-[12px] text-gray-400 text-center py-2">El cliente todavía no respondió.</p>
                       ) : (
                         <div className="space-y-2">
                           {/* Resumen de revision (solo COMPLETED) */}
@@ -404,15 +293,16 @@ export default function CollaborationHub({ savedVariations, clients, addNotifica
                                     {isShowingRejections && (
                                       <div className="mt-2 space-y-1.5 pl-4 border-l-2 border-red-100">
                                         {rejectedFeedbacks.map(fb => {
-                                          const matchedItem = (detail.items ?? []).find(it => it.savedVariation.id === fb.savedVariationId);
-                                          const platformLabel = matchedItem?.savedVariation.platform ?? fb.savedVariationId;
+                                          const clave = fb.savedVariationId ?? fb.piezaId ?? '';
+                                          const matchedItem = (detail.items ?? []).find(it => claveDeItem(it) === clave);
+                                          const platformLabel = matchedItem ? vistaDeItem(matchedItem).platform : clave;
                                           return (
-                                            <div key={fb.savedVariationId} className="flex items-start gap-2">
+                                            <div key={clave} className="flex items-start gap-2">
                                               <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-medium shrink-0 ${PLATFORM_COLORS[platformLabel] ?? 'bg-gray-100 text-gray-600'}`}>
                                                 {platformLabel}
                                               </span>
                                               <span className="text-[11px] text-gray-600 italic">
-                                                {fb.feedbackCopy ? `"${fb.feedbackCopy}"` : 'Sin comentario'}
+                                                {textoDeFeedback(fb) || 'Sin comentario'}
                                               </span>
                                             </div>
                                           );
@@ -430,7 +320,8 @@ export default function CollaborationHub({ savedVariations, clients, addNotifica
                             {' '}· {new Date(detail.submission.submittedAt).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })}
                           </p>
                           {(detail.items ?? []).map(item => {
-                            const fb = feedbackMap.get(item.savedVariation.id);
+                            const fb = feedbackMap.get(claveDeItem(item));
+                            const vista = vistaDeItem(item);
                             const isApproved = fb?.decision === 'APPROVED';
                             const isRejected = fb?.decision === 'REJECTED';
                             return (
@@ -450,14 +341,14 @@ export default function CollaborationHub({ savedVariations, clients, addNotifica
                                 </div>
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-                                    <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${PLATFORM_COLORS[item.savedVariation.platform] ?? 'bg-gray-100 text-gray-600'}`}>
-                                      {item.savedVariation.platform}
+                                    <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${PLATFORM_COLORS[vista.platform] ?? 'bg-gray-100 text-gray-600'}`}>
+                                      {vista.platform}
                                     </span>
-                                    <span className="text-[10px] text-gray-400">{item.savedVariation.type}</span>
+                                    <span className="text-[10px] text-gray-400">{vista.tipo}</span>
                                   </div>
-                                  <p className="text-[12px] text-gray-700 truncate">{item.savedVariation.content?.slice(0, 100)}</p>
-                                  {fb?.feedbackCopy && (
-                                    <p className="text-[11px] text-red-600 mt-1 italic">"{fb.feedbackCopy}"</p>
+                                  <p className="text-[12px] text-gray-700 truncate">{vista.texto.slice(0, 100)}</p>
+                                  {fb && textoDeFeedback(fb) && (
+                                    <p className="text-[11px] text-red-600 mt-1 italic">{textoDeFeedback(fb)}</p>
                                   )}
                                 </div>
                               </div>

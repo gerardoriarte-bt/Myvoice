@@ -23,6 +23,7 @@ import {
   History,
   LayoutGrid,
   Library,
+  Megaphone,
   Settings,
   Sparkles,
   Users,
@@ -38,7 +39,8 @@ export type ScreenId =
   | 'produccion'
   | 'users'
   | 'settings'
-  | 'help';
+  | 'help'
+  | 'novedades';
 
 /**
  * Cinco etapas, no cuatro: cuando entra la pieza, «producir» dejaba de
@@ -80,13 +82,13 @@ export const SCREENS: Record<ScreenId, ScreenDef> = {
   saved: {
     id: 'saved',
     /**
-     * Se llamaba «Biblioteca» y el nombre trabajaba en contra: sonaba a archivo
-     * donde se guardan cosas, cuando es el paso donde el copy avanza — se
-     * elige, se aprueba, y de acá sale hacia el cliente o hacia producción.
-     * El nombre nuevo dice exactamente qué sale de acá.
+     * Fue «Biblioteca» (sonaba a archivo) y después «Copy aprobado», que
+     * mentía al revés: mostraba también lo pendiente. Desde el 2026-10-13 es
+     * el recorrido entero del copy de una marca —por aprobar, con el cliente,
+     * aprobado, en producción—, así que el nombre es lo que contiene.
      */
-    name: 'Copy aprobado',
-    description: 'Lo que pasó el filtro, listo para el cliente o para producir.',
+    name: 'Copy',
+    description: 'El copy de la marca y en qué paso va: por aprobar, con el cliente, aprobado, en producción.',
     icon: Library,
     stage: 'aprobar',
     adminOnly: false,
@@ -102,7 +104,7 @@ export const SCREENS: Record<ScreenId, ScreenDef> = {
   collaboration: {
     id: 'collaboration',
     name: 'Revisiones',
-    description: 'Enviá piezas a revisión del cliente y seguí sus decisiones.',
+    description: 'Lo que se le mandó al cliente y lo que respondió.',
     icon: ClipboardCheck,
     stage: 'aprobar',
     adminOnly: true,
@@ -118,7 +120,7 @@ export const SCREENS: Record<ScreenId, ScreenDef> = {
   produccion: {
     id: 'produccion',
     name: 'Producción',
-    description: 'Las piezas aprobadas, de quién es cada una y en qué va.',
+    description: 'Las piezas de la marca, quién las mueve y en qué paso van.',
     icon: LayoutGrid,
     stage: 'producir',
     // La primera pantalla de trabajo que ve alguien que no administra: un
@@ -146,6 +148,18 @@ export const SCREENS: Record<ScreenId, ScreenDef> = {
     name: 'Guía',
     description: 'Cómo funciona el motor y qué hace cada pantalla.',
     icon: BookOpen,
+    stage: 'administrar',
+    adminOnly: false,
+  },
+  /**
+   * Fuera de NAV_STAGES a propósito: no es un paso del proceso. Se llega por un
+   * enlace chico al pie de la barra lateral. El registro vive en `novedades.ts`.
+   */
+  novedades: {
+    id: 'novedades',
+    name: 'Novedades',
+    description: 'Lo que cambió en My Voice, de lo más reciente a lo más viejo.',
+    icon: Megaphone,
     stage: 'administrar',
     adminOnly: false,
   },

@@ -28,7 +28,7 @@ campañas, ni el responsable de aprobación, ni la cuota. Cada marca sigue con l
 relación sirve para que se vean juntas y para que nadie confunda una con otra.
 
 **El selector del encabezado agrupa.** Cada complementaria aparece sangrada debajo de su madre.
-Con el menú cerrado se lee «Terpel CRM · de Terpel». En «Mis piezas», que cruza marcas, cada
+Con el menú cerrado se lee «Terpel CRM · de Terpel». En «Lo mío», que cruza marcas, cada
 tarjeta dice lo mismo.
 
 **Dos marcas con el mismo nombre se notan.** Las dos llevan el aviso «nombre repetido» y una
@@ -96,7 +96,7 @@ selector, aunque alguien haya dicho «ya sé».
 - `ClientManager.tsx`: las tarjetas se agrupan por familia y aparece el aviso arriba. La tarjeta
   repetida trae «Renombrar» y «Es parte de…»; el campo «Es parte de» va en el formulario de
   edición, y el aviso aparece también al crear una marca.
-- `TableroProduccion.tsx` («Mis piezas»): la marca de cada tarjeta se lee «X · de Y».
+- `TableroProduccion.tsx` («Lo mío»): la marca de cada tarjeta se lee «X · de Y».
 
 **Criterios de aceptación:**
 - Pasan las tres compuertas de tipos.

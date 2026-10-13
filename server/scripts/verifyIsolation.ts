@@ -98,8 +98,10 @@ async function seedTenant(tag: string) {
       primaryCTA: 'test',
     },
   });
+  // Con responsable: desde 2026-10-13 nada va a producción sin una aprobación
+  // con nombre (docs/plan-aprobacion-por-campana.md).
   const project = await prisma.project.create({
-    data: { name: `Proyecto ${tag}`, workspaceId: workspace.id },
+    data: { name: `Proyecto ${tag}`, workspaceId: workspace.id, clientId: client.id, responsableId: user.id },
   });
   const variation = await prisma.savedVariation.create({
     data: {
@@ -372,16 +374,30 @@ async function main() {
       'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
       'base64'
     );
-    const subirComoB = async (piezaId: string) => {
+    const subir = async (piezaId: string, token: string) => {
       const form = new FormData();
       form.append('archivo', new Blob([pngMinimo], { type: 'image/png' }), 'pieza.png');
       const res = await fetch(`${API_URL}/piezas/${piezaId}/archivo`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${B.token}` },
+        headers: { Authorization: `Bearer ${token}` },
         body: form,
       });
       return { status: res.status, body: await res.json().catch(() => null) };
     };
+    const subirComoB = (piezaId: string) => subir(piezaId, B.token);
+    // La pieza pasa a Por revisar cuando termina la auditoría, en segundo
+    // plano. En CI no hay proveedor de IA y termina enseguida en NO_DISPONIBLE.
+    const esperarEstado = async (piezaId: string, estado: string) => {
+      for (let i = 0; i < 40; i++) {
+        const p = await prisma.pieza.findUnique({ where: { id: piezaId }, select: { estado: true } });
+        if (p?.estado === estado) return true;
+        await new Promise(r => setTimeout(r, 250));
+      }
+      return false;
+    };
+    // Quien diseña no es quien aprueba: B es el responsable de la campaña, y
+    // desde 2026-10-13 quien entrega una pieza nunca la acepta.
+    const disenaB = await nuevoMiembro(B.workspace.id, 'disenadora');
     const subidaAjena = await subirComoB(piezaA.id);
     record(
       'POST /piezas/:id/archivo de A',
@@ -459,7 +475,7 @@ async function main() {
     if (piezaB?.id) {
       const asignada = await api(`/piezas/${piezaB.id}/asignar`, B.token, {
         method: 'POST',
-        body: JSON.stringify({ asignadaAId: B.user.id }),
+        body: JSON.stringify({ asignadaAId: disenaB.user.id }),
       });
       record('POST /piezas/:id/asignar mueve a En diseño', asignada.body?.estado === 'EN_DISENO', `quedó en ${asignada.body?.estado}`);
 
@@ -471,16 +487,42 @@ async function main() {
       );
 
 
-      // La subida propia: mueve la pieza a Por revisar y deja una versión con
-      // su auditoría pendiente. La auditoría misma no corre en esta prueba
-      // —no hay proveedor de IA— y queda en NO_DISPONIBLE, que es justamente
-      // el estado que el tablero tiene que saber mostrar.
-      const subidaPropia = await subirComoB(piezaB.id);
+      const asignaUnMiembro = await api(`/piezas/${piezaB.id}/reasignar`, disenaB.token, {
+        method: 'POST',
+        body: JSON.stringify({ asignadaAId: disenaB.user.id }),
+      });
       record(
-        'POST /piezas/:id/archivo entrega la pieza propia y crea su versión',
-        subidaPropia.status === 200 && subidaPropia.body?.estado === 'POR_REVISAR' && subidaPropia.body?.version?.numero === 1,
+        'Un MEMBER que no es responsable no reasigna',
+        asignaUnMiembro.status === 403,
+        `respondió ${asignaUnMiembro.status}`
+      );
+
+      // La subida: crea la versión y deja la pieza EN DISEÑO mientras se
+      // audita. La auditoría no tiene proveedor en esta prueba y termina en
+      // NO_DISPONIBLE; recién ahí la pieza pasa a Por revisar.
+      const subidaPropia = await subir(piezaB.id, disenaB.token);
+      record(
+        'Subir crea la versión y deja la pieza en diseño mientras se audita',
+        subidaPropia.status === 200 && subidaPropia.body?.estado === 'EN_DISENO' && subidaPropia.body?.version?.numero === 1,
         `respondió ${subidaPropia.status}, estado ${subidaPropia.body?.estado}`
       );
+      record(
+        'Terminada la auditoría, la pieza pasa a Por revisar',
+        await esperarEstado(piezaB.id, 'POR_REVISAR'),
+        'no llegó a POR_REVISAR'
+      );
+
+      const autoaceptada = await api(`/piezas/${piezaB.id}/aceptar`, disenaB.token, { method: 'POST' });
+      record(
+        'Quien entregó la pieza no la acepta (403, con quién decide)',
+        autoaceptada.status === 403 && typeof autoaceptada.body?.error === 'string',
+        `respondió ${autoaceptada.status} ${JSON.stringify(autoaceptada.body)?.slice(0, 120)}`
+      );
+      const autodevuelta = await api(`/piezas/${piezaB.id}/devolver`, disenaB.token, {
+        method: 'POST',
+        body: JSON.stringify({ notaDiseno: 'Me la devuelvo' }),
+      });
+      record('Un MEMBER que no es responsable no devuelve', autodevuelta.status === 403, `respondió ${autodevuelta.status}`);
 
       const sinNota = await api(`/piezas/${piezaB.id}/devolver`, B.token, { method: 'POST', body: JSON.stringify({}) });
       record('Devolver sin motivo responde 400', sinNota.status === 400, `respondió ${sinNota.status}`);
@@ -518,7 +560,7 @@ async function main() {
 
       // Y una nota suelta NO recibe una categoría inventada: null significa
       // «nadie lo clasificó», que es cierto y no ensucia el enrutamiento.
-      await api(`/piezas/${piezaB.id}/entregar`, B.token, {
+      await api(`/piezas/${piezaB.id}/entregar`, disenaB.token, {
         method: 'POST',
         body: JSON.stringify({ enlace: 'https://drive.google.com/file/d/desglose' }),
       });
@@ -538,7 +580,7 @@ async function main() {
 
       // Se devuelve la pieza a Por revisar: los chequeos que siguen —comentar,
       // aceptar— esperan encontrarla ahí, y este bloque la movió dos veces.
-      await api(`/piezas/${piezaB.id}/entregar`, B.token, {
+      await api(`/piezas/${piezaB.id}/entregar`, disenaB.token, {
         method: 'POST',
         body: JSON.stringify({ enlace: 'https://drive.google.com/file/d/desglose-2' }),
       });
@@ -558,8 +600,21 @@ async function main() {
         `respondió ${comentada.status}, estado ${comentada.body?.estado}, comentarios ${comentada.body?.comentarios}`
       );
 
-      const aceptada = await api(`/piezas/${piezaB.id}/aceptar`, B.token, { method: 'POST' });
-      record('POST /piezas/:id/aceptar mueve a Lista', aceptada.body?.estado === 'LISTA', `quedó en ${aceptada.body?.estado}`);
+      const sinNotaConHallazgo = await api(`/piezas/${piezaB.id}/aceptar`, B.token, { method: 'POST' });
+      record(
+        'Aceptar con un hallazgo sin decidir pide una línea de por qué',
+        sinNotaConHallazgo.status === 400,
+        `respondió ${sinNotaConHallazgo.status} — el PNG de prueba mide 1×1 y deja un hallazgo de MEDIDAS`
+      );
+      const aceptada = await api(`/piezas/${piezaB.id}/aceptar`, B.token, {
+        method: 'POST',
+        body: JSON.stringify({ nota: 'Las medidas son de la prueba' }),
+      });
+      record(
+        'El responsable acepta, y en una campaña interna la pieza queda en Lista',
+        aceptada.body?.estado === 'LISTA',
+        `quedó en ${aceptada.body?.estado}`
+      );
 
       await prisma.savedVariation.update({ where: { id: aprobadoB.id }, data: { content: 'Hook editado después' } });
       const conDesfase = await api(`/piezas/${piezaB.id}`, B.token);
@@ -629,15 +684,26 @@ async function main() {
     const otraMarcaB = await prisma.client.create({
       data: { name: 'Segunda marca de B', industry: 'Test', workspaceId: B.workspace.id },
     });
+    // Una campaña que aprueba el cliente: es la única cuyo copy va en una
+    // revisión de copy.
+    const campanaDelCliente = await prisma.project.create({
+      data: {
+        name: 'Campaña que aprueba el cliente',
+        workspaceId: B.workspace.id,
+        clientId: otraMarcaB.id,
+        modoAprobacion: 'CLIENTE',
+        responsableId: B.user.id,
+      },
+    });
     const deOtraMarca = await prisma.savedVariation.create({
       data: {
         clientId: otraMarcaB.id,
+        projectId: campanaDelCliente.id,
         platform: 'Instagram Post',
         type: 'Beneficio',
         content: 'Copy de la otra marca de B',
         charCount: 26,
         tags: [],
-        isApproved: true,
       },
     });
     const mezclaDeMarcas = await api('/review-sessions', B.token, {
@@ -663,35 +729,63 @@ async function main() {
     );
 
     console.log('\nRONDA 2 — el cliente aprueba la pieza (H2.E)');
-    // La pieza de B está LISTA en este punto del guión. Su campaña todavía no
-    // pide aprobación del cliente, que es el estado por defecto (D3).
+    // La pieza de B está LISTA en este punto del guión: su campaña es interna,
+    // que es el valor por defecto, y una campaña interna no va al cliente.
     const sinPedir = await api('/review-sessions', B.token, {
       method: 'POST',
       body: JSON.stringify({ title: 'Piezas', piezaIds: [piezaB.id] }),
     });
     record(
-      'Una campaña que no pide aprobación no puede mandar piezas al cliente',
+      'Una pieza de una campaña interna no se manda al cliente',
       sinPedir.status === 404,
       `respondió ${sinPedir.status} ${JSON.stringify(sinPedir.body)?.slice(0, 110)}`
     );
 
+    // La campaña pasa a «del cliente» y la pieza vuelve a recorrer el camino:
+    // reabrir, entregar, aceptar. Aceptada, ya no queda en Lista sino con el cliente.
     await api(`/projects/${B.project.id}`, B.token, {
       method: 'PATCH',
-      body: JSON.stringify({ pideAprobacionDeCliente: true }),
+      body: JSON.stringify({ modoAprobacion: 'CLIENTE' }),
     });
     await expectDenied('PATCH /projects/:id de otro workspace', `/projects/${A.project.id}`, B.token, {
       method: 'PATCH',
-      body: JSON.stringify({ pideAprobacionDeCliente: true }),
+      body: JSON.stringify({ modoAprobacion: 'CLIENTE' }),
     });
+    await api(`/piezas/${piezaB.id}/reabrir`, B.token, {
+      method: 'POST',
+      body: JSON.stringify({ notaDiseno: 'Ahora la aprueba el cliente' }),
+    });
+    await api(`/piezas/${piezaB.id}/entregar`, disenaB.token, {
+      method: 'POST',
+      body: JSON.stringify({ enlace: 'https://drive.google.com/file/d/para-el-cliente' }),
+    });
+    const paraElCliente = await api(`/piezas/${piezaB.id}/aceptar`, B.token, {
+      method: 'POST',
+      body: JSON.stringify({ nota: 'Las medidas son de la prueba' }),
+    });
+    record(
+      'En una campaña del cliente, aceptar deja la pieza Con el cliente',
+      paraElCliente.body?.estado === 'CON_EL_CLIENTE',
+      `quedó en ${paraElCliente.body?.estado}`
+    );
 
     const conPieza = await api('/review-sessions', B.token, {
       method: 'POST',
       body: JSON.stringify({ title: 'Piezas de B', piezaIds: [piezaB.id] }),
     });
     record(
-      'Con la campaña activada, la pieza lista sí se manda',
+      'La pieza con el cliente se le manda',
       conPieza.status === 201 && conPieza.body?.ronda === 'PIEZA' && !!conPieza.body?.token,
       `respondió ${conPieza.status} ${JSON.stringify(conPieza.body)?.slice(0, 110)}`
+    );
+    const dosVeces = await api('/review-sessions', B.token, {
+      method: 'POST',
+      body: JSON.stringify({ title: 'Otra vez', piezaIds: [piezaB.id] }),
+    });
+    record(
+      'Lo que ya está en una revisión abierta no se manda dos veces',
+      dosVeces.status === 404,
+      `respondió ${dosVeces.status}`
     );
 
     const mezclada = await api('/review-sessions', B.token, {
@@ -728,9 +822,16 @@ async function main() {
       `devolvió ${JSON.stringify(publico)?.slice(0, 160)}`
     );
 
-    // El desglose decide qué se mueve: solo el feedback de arte devuelve la
-    // pieza a diseño. Un reparo sobre el mensaje la deja donde está, porque el
-    // diseñador no puede hacer nada hasta que el copy cambie.
+    const mudo = await fetch(`${API_URL}/review/public/${conPieza.body?.token}/submit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reviewerName: 'La clienta', feedbacks: [{ piezaId: piezaB.id, decision: 'REJECTED' }] }),
+    });
+    record('Pedir cambios sin escribir cuáles responde 400', mudo.status === 400, `respondió ${mudo.status}`);
+
+    // Desde 2026-10-13 un reparo sobre el mensaje también devuelve la pieza a
+    // diseño: en Lista quedaba varada, porque el copy en producción no se
+    // corregía en ningún lado. El responsable lo corrige dentro de la pieza.
     const entrega = await fetch(`${API_URL}/review/public/${conPieza.body?.token}/submit`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -741,9 +842,32 @@ async function main() {
     });
     const trasCopy = await prisma.pieza.findUnique({ where: { id: piezaB.id }, select: { estado: true } });
     record(
-      'Un reparo SOLO sobre el mensaje no mueve la pieza de Lista',
-      entrega.status === 201 && trasCopy?.estado === 'LISTA',
+      'Un reparo sobre el mensaje devuelve la pieza a diseño',
+      entrega.status === 201 && trasCopy?.estado === 'EN_DISENO',
       `respondió ${entrega.status}, quedó en ${trasCopy?.estado}`
+    );
+
+    const corrigeUnMiembro = await api(`/piezas/${piezaB.id}/corregir-copy`, disenaB.token, {
+      method: 'POST',
+      body: JSON.stringify({ correcciones: [{ slot: 'hook', texto: 'Hook corregido' }] }),
+    });
+    record('Un MEMBER que no es responsable no corrige el copy', corrigeUnMiembro.status === 403, `respondió ${corrigeUnMiembro.status}`);
+    const slotDeB = await prisma.piezaSlot.findFirst({ where: { piezaId: piezaB.id }, select: { slot: true, savedVariationId: true } });
+    const corregido = await api(`/piezas/${piezaB.id}/corregir-copy`, B.token, {
+      method: 'POST',
+      body: JSON.stringify({ correcciones: [{ slot: slotDeB?.slot, texto: 'Hook corregido por el responsable' }] }),
+    });
+    const original = await prisma.savedVariation.findUnique({
+      where: { id: slotDeB?.savedVariationId ?? '' },
+      select: { content: true, isApproved: true },
+    });
+    record(
+      'El responsable corrige el copy en la pieza y en Copy, y queda aprobado',
+      corregido.status === 200 &&
+        original?.content === 'Hook corregido por el responsable' &&
+        original?.isApproved === true &&
+        corregido.body?.devolucion?.esperaCopy === false,
+      `respondió ${corregido.status}, copy ${JSON.stringify(original)}, devolución ${JSON.stringify(corregido.body?.devolucion)?.slice(0, 100)}`
     );
 
     const eventoExterno = await prisma.piezaEvento.findFirst({
@@ -757,6 +881,9 @@ async function main() {
         eventoExterno?.categoria === 'COPY',
       `quedó ${JSON.stringify(eventoExterno)}`
     );
+
+    // La campaña de B vuelve a ser interna: lo que sigue la usa así.
+    await prisma.project.update({ where: { id: B.project.id }, data: { modoAprobacion: 'INTERNA' } });
 
     console.log('\nBANDEJA — a quién le llega el aviso y a quién no');
     /**
@@ -795,11 +922,13 @@ async function main() {
       `bandeja ${JSON.stringify(trasPrimera.body)?.slice(0, 140)}`
     );
 
+    // B ya tiene avisos de entrega por ser responsable: lo que se prueba es
+    // que no tenga uno de la asignación que hizo él.
     const delAutor = await api('/notificaciones', B.token);
     record(
       'A nadie por su propia acción: quien asigna no se avisa a sí mismo',
-      delAutor.body?.sinLeer === 0,
-      `el autor quedó con ${delAutor.body?.sinLeer} sin leer`
+      !(delAutor.body?.notificaciones ?? []).some((n: any) => n.tipo === 'ASIGNACION'),
+      `el autor tiene ${JSON.stringify(delAutor.body?.notificaciones?.map((n: any) => n.tipo))}`
     );
 
     await api(`/piezas/${lote2?.id}/asignar`, B.token, {
@@ -836,14 +965,16 @@ async function main() {
       delAprobadorAjeno.body?.sinLeer === 0,
       `recibió ${JSON.stringify(delAprobadorAjeno.body?.notificaciones)?.slice(0, 120)}`
     );
-    const delQueAdministra = await api('/notificaciones', B.token);
+    const delResponsable = await api('/notificaciones', B.token);
     record(
-      'Sin aprobadores para esa marca, la entrega avisa a quien administra',
-      delQueAdministra.body?.sinLeer === 1 && delQueAdministra.body?.notificaciones?.[0]?.tipo === 'ENTREGA',
-      `bandeja ${JSON.stringify(delQueAdministra.body)?.slice(0, 140)}`
+      'La entrega le avisa al responsable de la campaña',
+      delResponsable.body?.notificaciones?.some((n: any) => n.tipo === 'ENTREGA'),
+      `bandeja ${JSON.stringify(delResponsable.body)?.slice(0, 140)}`
     );
 
-    // Y con un aprobador declarado para la marca, el aviso deja de subir.
+    // Sin responsable en la campaña, el aviso cae en quien aprueba la marca:
+    // nunca en «nadie» (estado límite 1).
+    await prisma.project.update({ where: { id: B.project.id }, data: { responsableId: null } });
     await prisma.miembroFuncion.create({
       data: {
         workspaceId: B.workspace.id,
@@ -857,8 +988,9 @@ async function main() {
       body: JSON.stringify({ enlace: 'https://drive.google.com/file/lote2' }),
     });
     const delAprobadorPropio = await api('/notificaciones', terceroDeB.token);
+    await prisma.project.update({ where: { id: B.project.id }, data: { responsableId: B.user.id } });
     record(
-      'Declarado el aprobador de la marca, la entrega le llega a él',
+      'Sin responsable, la entrega le llega al aprobador declarado de la marca',
       delAprobadorPropio.body?.sinLeer === 1 &&
         delAprobadorPropio.body?.notificaciones?.[0]?.tipo === 'ENTREGA',
       `bandeja ${JSON.stringify(delAprobadorPropio.body)?.slice(0, 140)}`
@@ -959,6 +1091,93 @@ async function main() {
       'Vaciar la lista vuelve a permitir cualquier dominio',
       apagada.body?.dominios?.length === 0,
       `quedó ${JSON.stringify(apagada.body?.dominios)}`
+    );
+
+    console.log('\nAPROBACIÓN POR CAMPAÑA — siempre hay una, y tiene responsable');
+    await api(`/saved/${B.variation.id}`, B.token, {
+      method: 'PUT',
+      body: JSON.stringify({ isApproved: true }),
+    });
+    const trasPut = await prisma.savedVariation.findUnique({ where: { id: B.variation.id } });
+    record(
+      'PUT /saved/:id ya no aprueba: isApproved no está en la lista blanca',
+      trasPut?.isApproved === false,
+      `quedó isApproved=${trasPut?.isApproved}`
+    );
+
+    const aprobacionAjena = await api('/saved/aprobacion', B.token, {
+      method: 'POST',
+      body: JSON.stringify({ ids: [A.variation.id], aprobar: true }),
+    });
+    const aTrasAjena = await prisma.savedVariation.findUnique({ where: { id: A.variation.id } });
+    record(
+      'POST /saved/aprobacion ignora copy de otro workspace',
+      aTrasAjena?.isApproved === false && (aprobacionAjena.body?.aplicados?.length ?? 0) === 0,
+      `respondió ${aprobacionAjena.status} ${JSON.stringify(aprobacionAjena.body)?.slice(0, 110)}`
+    );
+
+    const aprobacionPropia = await api('/saved/aprobacion', B.token, {
+      method: 'POST',
+      body: JSON.stringify({ ids: [B.variation.id], aprobar: true }),
+    });
+    const bAprobada = await prisma.savedVariation.findUnique({ where: { id: B.variation.id } });
+    record(
+      'El responsable aprueba su copy y queda su nombre',
+      aprobacionPropia.status === 200 && bAprobada?.isApproved === true && bAprobada?.aprobadoPorId === B.user.id,
+      `respondió ${aprobacionPropia.status}, aprobadoPorId=${bAprobada?.aprobadoPorId}`
+    );
+
+    await api(`/saved/${B.variation.id}`, B.token, {
+      method: 'PUT',
+      body: JSON.stringify({ content: 'otro texto, que nadie aprobó' }),
+    });
+    const bEditada = await prisma.savedVariation.findUnique({ where: { id: B.variation.id } });
+    record(
+      'Editar el texto de un aprobado lo devuelve a por aprobar',
+      bEditada?.isApproved === false && bEditada?.aprobadoPorId === null,
+      `quedó isApproved=${bEditada?.isApproved}`
+    );
+
+    const clienteAprueba = await api('/saved/aprobacion', B.token, {
+      method: 'POST',
+      body: JSON.stringify({ ids: [deOtraMarca.id], aprobar: true }),
+    });
+    record(
+      'En una campaña del cliente, el responsable no aprueba por él',
+      clienteAprueba.body?.rechazados?.length === 1 && clienteAprueba.body?.aplicados?.length === 0,
+      `respondió ${JSON.stringify(clienteAprueba.body)?.slice(0, 120)}`
+    );
+
+    await expectDenied('PATCH /projects/:id con un responsable de otro workspace', `/projects/${B.project.id}`, B.token, {
+      method: 'PATCH',
+      body: JSON.stringify({ responsableId: A.user.id }),
+    });
+
+    // La revisión «Una marca» de arriba lleva a deOtraMarca. Su enlace es
+    // público: no puede aprobar copy que no está en ella.
+    const fuga = await fetch(`${API_URL}/review/public/${unaSola.body?.token}/submit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reviewerName: 'Intruso', feedbacks: [{ savedVariationId: A.variation.id, decision: 'APPROVED' }] }),
+    });
+    const aTrasFuga = await prisma.savedVariation.findUnique({ where: { id: A.variation.id } });
+    record(
+      'La respuesta pública solo decide sobre los items de su revisión',
+      fuga.status === 400 && aTrasFuga?.isApproved === false,
+      `respondió ${fuga.status}, A.isApproved=${aTrasFuga?.isApproved}`
+    );
+
+    const rechazo = await fetch(`${API_URL}/review/public/${unaSola.body?.token}/submit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reviewerName: 'Cliente', feedbacks: [{ savedVariationId: deOtraMarca.id, decision: 'REJECTED', comment: 'No' }] }),
+    });
+    const lista = await api('/saved', B.token);
+    const devuelto = Array.isArray(lista.body) ? lista.body.find((v: any) => v.id === deOtraMarca.id) : null;
+    record(
+      'Un rechazo del cliente deja el copy desaprobado y «Devuelto»',
+      rechazo.status === 201 && devuelto?.isApproved === false && devuelto?.etapa === 'DEVUELTO',
+      `respondió ${rechazo.status}, etapa=${devuelto?.etapa}`
     );
 
     console.log('\nCONTROL POSITIVO — B sí puede con lo suyo');

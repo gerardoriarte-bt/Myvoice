@@ -4,6 +4,10 @@ import { filterVariationsInWorkspace, TenantError } from '../lib/tenancy.js';
 import { prisma } from '../lib/prisma.js';
 import { notifyReviewCompleted } from '../services/notificationService.js';
 import * as piezasRevision from '../services/revisionDePiezas.js';
+import { prepararAviso } from '../services/piezaService.js';
+import { AvisoEscrito, enviarEnSegundoPlano, notificar } from '../services/notificacionService.js';
+import { WorkspaceRole } from '@prisma/client';
+import { aprobadoPorCliente, motivosParaNoRevisar, SIN_APROBACION } from '../services/aprobacion.js';
 
 export const createReviewSession = async (req: AuthRequest, res: Response) => {
   const tenant = req.tenant!;
@@ -67,6 +71,11 @@ export const createReviewSession = async (req: AuthRequest, res: Response) => {
       );
     }
 
+    // Solo va al cliente el copy de campañas que el cliente aprueba, y que no
+    // esté ya aprobado ni en otra revisión abierta (services/aprobacion.ts).
+    const motivos = await motivosParaNoRevisar(items);
+    if (motivos.length) throw new TenantError(`No se puede mandar al cliente: ${motivos.join(' ')}`, 400);
+
     const session = await prisma.reviewSession.create({
       data: {
         title,
@@ -106,8 +115,8 @@ export const listReviewSessions = async (req: AuthRequest, res: Response) => {
         items: {
           take: 1,
           select: {
-            savedVariation: { select: { client: { select: { name: true } } } },
-            pieza: { select: { client: { select: { name: true } } } },
+            savedVariation: { select: { client: { select: { id: true, name: true } } } },
+            pieza: { select: { client: { select: { id: true, name: true } } } },
           },
         },
       },
@@ -115,10 +124,12 @@ export const listReviewSessions = async (req: AuthRequest, res: Response) => {
     // La marca sube al nivel de la sesión y el item auxiliar se descarta: la
     // pantalla no tiene por qué saber que vino de ahí.
     res.json(
-      sessions.map(({ items, ...s }) => ({
-        ...s,
-        marca: items[0]?.savedVariation?.client.name ?? items[0]?.pieza?.client.name ?? null,
-      }))
+      sessions.map(({ items, ...s }) => {
+        const marca = items[0]?.savedVariation?.client ?? items[0]?.pieza?.client ?? null;
+        // El id además del nombre: la pantalla filtra por la marca activa, y dos
+        // marcas pueden llamarse igual (producción tuvo dos «Terpel»).
+        return { ...s, marca: marca?.name ?? null, clientId: marca?.id ?? null };
+      })
     );
   } catch (error) {
     console.error('listReviewSessions error:', error);
@@ -136,11 +147,14 @@ export const getReviewSessionDetail = async (req: AuthRequest, res: Response) =>
           orderBy: { sortOrder: 'asc' },
           include: {
             savedVariation: { select: { id: true, platform: true, type: true, content: true, charCount: true } },
+            // La ronda de piezas (H2.E) no tiene savedVariation: sin esto el
+            // detalle de una revisión de piezas respondida rompía Revisiones.
+            pieza: { select: { id: true, platform: true, formato: true, titulo: true } },
           },
         },
         submission: {
           include: {
-            feedbacks: { select: { savedVariationId: true, decision: true, feedbackCopy: true, feedbackDiseno: true } },
+            feedbacks: { select: { savedVariationId: true, piezaId: true, decision: true, feedbackCopy: true, feedbackDiseno: true } },
           },
         },
       },
@@ -244,7 +258,7 @@ export const submitReview = async (req: Request, res: Response) => {
       // respondió. Hasta H3.D esto iba a una casilla fija del entorno.
       include: {
         createdBy: { select: { email: true } },
-        items: { select: { piezaId: true } },
+        items: { select: { piezaId: true, savedVariationId: true } },
       },
     });
 
@@ -256,6 +270,17 @@ export const submitReview = async (req: Request, res: Response) => {
       const deLaSesion = new Set(session.items.map(i => i.piezaId).filter((id): id is string => !!id));
       const decisiones = feedbacks.filter((f: any) => typeof f?.piezaId === 'string');
 
+      // Pedir cambios sin decir cuáles no se puede: no le dice a nadie qué
+      // arreglar, y antes ni siquiera dejaba rastro en el historial.
+      const mudo = decisiones.find(
+        (f: any) =>
+          f.decision === 'REJECTED' &&
+          !(typeof f.feedbackCopy === 'string' && f.feedbackCopy.trim()) &&
+          !(typeof f.feedbackDiseno === 'string' && f.feedbackDiseno.trim())
+      );
+      if (mudo) return res.status(400).json({ error: 'Para pedir cambios, escribí qué cambiar: del mensaje, del arte o de los dos.' });
+
+      let movidas: { piezaId: string; rechazada: boolean }[] = [];
       await prisma.$transaction(async tx => {
         const entrega = await tx.reviewSubmission.create({
           data: { reviewSessionId: session.id, reviewerName: reviewerName || null },
@@ -263,7 +288,7 @@ export const submitReview = async (req: Request, res: Response) => {
         });
         // Todo junto o nada: una entrega a medias dejaría piezas movidas sin el
         // motivo que las movió.
-        await piezasRevision.aplicarDecisiones(
+        movidas = await piezasRevision.aplicarDecisiones(
           tx,
           entrega.id,
           typeof reviewerName === 'string' && reviewerName.trim() ? reviewerName.trim() : 'El cliente',
@@ -281,22 +306,43 @@ export const submitReview = async (req: Request, res: Response) => {
         para: [session.createdBy.email],
       }).catch(() => {});
 
+      // En la bandeja: al responsable, que el cliente respondió; a la
+      // diseñadora, lo que vuelve a sus manos. Nunca tumba la respuesta.
+      avisarRespuestaDelCliente(session.workspaceId, movidas).catch(e =>
+        console.error('[revision] avisos de la respuesta del cliente:', e)
+      );
+
       return res.status(201).json({ message: 'Revisión enviada con éxito' });
     }
 
+    /*
+     * Solo cuentan las decisiones sobre los items de ESTA sesión. Antes el
+     * endpoint —público, sin cuenta— aprobaba cualquier id que viniera en el
+     * body, de esta marca, de otra o de otro workspace.
+     */
+    const deLaSesion = new Set(session.items.map(i => i.savedVariationId).filter((id): id is string => !!id));
+    const validos = feedbacks.filter(
+      (f: any) => typeof f?.savedVariationId === 'string' && deLaSesion.has(f.savedVariationId)
+    );
+    if (validos.length === 0) return res.status(400).json({ error: 'Ninguna decisión corresponde a esta revisión' });
+
     // Pre-fetch all variations to avoid queries inside the transaction
-    const variationIds: string[] = feedbacks.map((f: any) => f.savedVariationId);
+    const variationIds: string[] = validos.map((f: any) => f.savedVariationId);
     const variations = await prisma.savedVariation.findMany({
       where: { id: { in: variationIds } },
       select: { id: true, clientId: true, platform: true, content: true },
     });
     const varMap = new Map(variations.map(v => [v.id, v]));
 
-    const approvedIds = feedbacks
+    const approvedIds = validos
       .filter((f: any) => f.decision === 'APPROVED')
       .map((f: any) => f.savedVariationId);
 
-    const rejectedFeedbacks = feedbacks
+    const rejectedIds: string[] = validos
+      .filter((f: any) => f.decision === 'REJECTED')
+      .map((f: any) => f.savedVariationId);
+
+    const rejectedFeedbacks = validos
       .filter((f: any) => f.decision === 'REJECTED')
       .map((f: any) => {
         const v = varMap.get(f.savedVariationId);
@@ -311,7 +357,7 @@ export const submitReview = async (req: Request, res: Response) => {
           reviewerName: reviewerName || null,
           feedbacks: {
             createMany: {
-              data: feedbacks.map((f: any) => ({
+              data: validos.map((f: any) => ({
                 savedVariationId: f.savedVariationId,
                 decision: f.decision,
                 // La ronda de copy solo puede producir feedback de copy: no hay
@@ -326,7 +372,16 @@ export const submitReview = async (req: Request, res: Response) => {
       ...(approvedIds.length > 0 ? [
         prisma.savedVariation.updateMany({
           where: { id: { in: approvedIds } },
-          data: { isApproved: true },
+          data: aprobadoPorCliente(reviewerName),
+        }),
+      ] : []),
+      // Un rechazo del cliente DESAPRUEBA. Antes no tocaba nada, y un copy
+      // aprobado antes de mandarlo seguía «aprobado» después de que el cliente
+      // lo rechazara — y podía ir a producción.
+      ...(rejectedIds.length > 0 ? [
+        prisma.savedVariation.updateMany({
+          where: { id: { in: rejectedIds } },
+          data: SIN_APROBACION,
         }),
       ] : []),
       ...(rejectedFeedbacks.length > 0 ? [
@@ -351,5 +406,26 @@ export const submitReview = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('submitReview error:', error);
     res.status(500).json({ error: 'Error al procesar la revisión' });
+  }
+};
+
+/**
+ * Los avisos de una respuesta del cliente en la ronda de piezas. Va afuera de
+ * la transacción del portal: si un aviso falla, la respuesta del cliente ya
+ * quedó guardada, que es lo que no se puede perder.
+ */
+const avisarRespuestaDelCliente = async (workspaceId: string, movidas: { piezaId: string; rechazada: boolean }[]) => {
+  // El cliente no tiene cuenta: el aviso sale sin autor, y nadie queda excluido.
+  const tenant = { workspaceId, userId: '', role: WorkspaceRole.MEMBER };
+  for (const m of movidas) {
+    const pieza = await prisma.pieza.findUnique({ where: { id: m.piezaId } });
+    if (!pieza) continue;
+    const avisos = [await prepararAviso(tenant, pieza, 'RESPUESTA_CLIENTE')];
+    if (m.rechazada && pieza.asignadaAId) avisos.push(await prepararAviso(tenant, pieza, 'DEVOLUCION', pieza.asignadaAId));
+    let escritos: AvisoEscrito[] = [];
+    await prisma.$transaction(async tx => {
+      for (const a of avisos) escritos = escritos.concat(await notificar(tx, tenant, a.evento, a.destinatarios));
+    });
+    enviarEnSegundoPlano(tenant, escritos);
   }
 };

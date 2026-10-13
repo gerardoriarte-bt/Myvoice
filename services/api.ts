@@ -54,6 +54,8 @@ export const authApi = {
   }),
   /** Refresca la sesión sin volver a loguearse (rol y workspaces al día). */
   me: () => apiRequest('/auth/me'),
+  marcarNovedadVista: (id: string) =>
+    apiRequest(`/auth/novedades/${encodeURIComponent(id)}/vista`, { method: 'POST' }) as Promise<{ novedadesVistas: string[] }>,
   switchWorkspace: (workspaceId: string) => apiRequest('/auth/switch-workspace', {
     method: 'POST',
     body: JSON.stringify({ workspaceId }),
@@ -211,7 +213,15 @@ export const libraryApi = {
   updateVariation: (id: string, data: any) => apiRequest(`/saved/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteVariation: (id: string) => apiRequest(`/saved/${id}`, { method: 'DELETE' }),
   bulkDelete: (ids: string[]) => apiRequest('/saved/bulk-delete', { method: 'POST', body: JSON.stringify({ ids }) }),
-  listProjects: () => apiRequest('/projects'),
+  /** Aprueba o desaprueba. Solo decide el responsable de la campaña de cada copy. */
+  decidirAprobacion: (ids: string[], aprobar: boolean): Promise<{ aplicados: string[]; rechazados: { id: string; motivo: string }[] }> =>
+    apiRequest('/saved/aprobacion', { method: 'POST', body: JSON.stringify({ ids, aprobar }) }),
+  listProjects: (clientId?: string) =>
+    apiRequest(clientId ? `/projects?clientId=${encodeURIComponent(clientId)}` : '/projects'),
+  /** La campaña de un brief; el servidor la crea la primera vez. */
+  campanaDeBrief: (dnaProfileId: string) => apiRequest(`/projects/de-brief/${dnaProfileId}`),
+  updateProject: (id: string, data: { modoAprobacion?: string; responsableId?: string | null }) =>
+    apiRequest(`/projects/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   createProject: (data: any) => apiRequest('/projects', { method: 'POST', body: JSON.stringify(data) }),
   deleteProject: (id: string) => apiRequest(`/projects/${id}`, { method: 'DELETE' }),
 };
@@ -237,12 +247,6 @@ export const reviewApi = {
   crearDePiezas: (data: { title: string; piezaIds: string[]; expiresInDays?: number }) =>
     apiRequest('/review-sessions', { method: 'POST', body: JSON.stringify(data) }),
   delete: (id: string) => apiRequest(`/review-sessions/${id}`, { method: 'DELETE' }),
-  /** El interruptor de la ronda 2, por campaña (D3). */
-  pedirAprobacionDePiezas: (projectId: string, pide: boolean) =>
-    apiRequest(`/projects/${projectId}`, {
-      method: 'PATCH',
-      body: JSON.stringify({ pideAprobacionDeCliente: pide }),
-    }),
   // Rutas públicas: fetch directo sin Bearer token
   getByToken: (token: string) =>
     fetch(`${API_URL}/review/public/${token}`).then(r => r.json()),
@@ -326,6 +330,9 @@ export const piezasApi = {
   reabrir: (id: string, motivos: { notaCopy?: string; notaDiseno?: string }): Promise<Pieza> =>
     accion(id, 'reabrir', motivos),
   actualizarCopy: (id: string): Promise<Pieza> => accion(id, 'actualizar-copy', {}),
+  /** El responsable corrige el copy dentro de la pieza: la pieza y Copy quedan iguales. */
+  corregirCopy: (id: string, correcciones: { slot: string; texto: string }[]): Promise<Pieza> =>
+    apiRequest(`/piezas/${id}/corregir-copy`, { method: 'POST', body: JSON.stringify({ correcciones }) }),
   /** Un comentario no mueve la pieza: queda en su historial. */
   comentar: (id: string, nota: string): Promise<Pieza> => accion(id, 'comentar', { nota }),
   /**
