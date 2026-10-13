@@ -25,6 +25,8 @@ interface ClientManagerProps {
   onUpdateProfile: (id: string, updates: Partial<ContentDNAProfile>) => void;
   onDeleteProfile: (id: string) => void;
   onDuplicateProfile: (profile: ContentDNAProfile) => void;
+  /** Entrar a una marca la vuelve la marca activa de toda la app. */
+  onAbrirMarca?: (clientId: string) => void;
 }
 
 const ClientManager: React.FC<ClientManagerProps> = ({
@@ -42,7 +44,8 @@ const ClientManager: React.FC<ClientManagerProps> = ({
   onSaveProfile,
   onUpdateProfile,
   onDeleteProfile,
-  onDuplicateProfile
+  onDuplicateProfile,
+  onAbrirMarca,
 }) => {
   const [isAddingClient, setIsAddingClient] = React.useState(false);
   const [showGlobalSettings, setShowGlobalSettings] = React.useState(false);
@@ -301,6 +304,7 @@ const ClientManager: React.FC<ClientManagerProps> = ({
 
   const enterHub = (clientId: string) => {
     setActiveClientHub(clientId);
+    onAbrirMarca?.(clientId);
     resetDnaForm();
     setShowGlobalSettings(false);
     setClientDetailView('campaigns');

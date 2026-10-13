@@ -10,7 +10,7 @@ import ClientManager from './components/ClientManager';
 import UserManager from './components/UserManager';
 import UserHeader from './components/UserHeader';
 import NotificationSystem, { Notification, NotificationType } from './components/NotificationSystem';
-import { CopyParameters, CopyVariation, Project, SavedVariation, BrandConfig, Client, User, WorkspaceMember, WorkspaceSummary, canManageWorkspace, ContentDNAProfile } from './types';
+import { CopyParameters, CopyVariation, ReviewSession, SavedVariation, BrandConfig, Client, User, WorkspaceMember, WorkspaceSummary, canManageWorkspace, ContentDNAProfile } from './types';
 import TableroProduccion from './components/produccion/TableroProduccion';
 import Bandeja, { DestinoAviso } from './components/Bandeja';
 import { NAV_STAGES, SCREENS, ScreenId } from './screens';
@@ -18,7 +18,10 @@ import { VOICES, GOALS } from './constants';
 import HomePage from './components/HomePage';
 import AISettings from './components/AISettings';
 import HelpGuide from './components/HelpGuide';
-import { generationApi, clientApi, libraryApi, authApi, workspaceApi, refineApi } from './services/api';
+import Novedades from './components/Novedades';
+import AvisoDeNovedad from './components/AvisoDeNovedad';
+import { Novedad, novedadPendiente } from './novedades';
+import { generationApi, clientApi, libraryApi, authApi, workspaceApi, refineApi, reviewApi } from './services/api';
 
 import CollaborationHub from './components/CollaborationHub';
 import ReviewPortal from './components/ReviewPortal';
@@ -87,7 +90,19 @@ const App: React.FC = () => {
    */
   const [destinoProduccion, setDestinoProduccion] = React.useState<DestinoAviso | null>(null);
   const [reviewToken, setReviewToken] = React.useState(() => new URLSearchParams(window.location.search).get('review'));
-  const [completedSessionsCount, setCompletedSessionsCount] = React.useState(0);
+  /**
+   * Respuestas del cliente que todavía no se vieron. Antes contaba TODAS las
+   * revisiones completadas —un número que solo crecía— y además recién se
+   * calculaba al entrar a Revisiones, así que el aviso nunca avisaba nada.
+   */
+  const [respuestasNuevas, setRespuestasNuevas] = React.useState(0);
+  const contarRespuestasNuevas = (sesiones: ReviewSession[]) => {
+    let vistas = 0;
+    try { vistas = Number(localStorage.getItem('vt_revisiones_vistas') || 0); } catch { /* sin storage */ }
+    setRespuestasNuevas(
+      sesiones.filter(x => x.submission?.submittedAt && new Date(x.submission.submittedAt).getTime() > vistas).length
+    );
+  };
   const [variations, setVariations] = React.useState<CopyVariation[]>([]);
   const [coherence, setCoherence] = React.useState<any | null>(null);
   const [spine, setSpine] = React.useState<any | null>(null);
@@ -99,13 +114,28 @@ const App: React.FC = () => {
   const [progressCoherenceStatus, setProgressCoherenceStatus] = React.useState<'pending' | 'active' | 'done' | 'error'>('pending');
   const [progressChannelMeta, setProgressChannelMeta] = React.useState<Record<string, string>>({});
   const [failedChannels, setFailedChannels] = React.useState<Record<string, CanalFallido>>({});
-  const [projects, setProjects] = React.useState<Project[]>([]);
   const [savedVariations, setSavedVariations] = React.useState<SavedVariation[]>([]);
   const [clients, setClients] = React.useState<Client[]>([]);
   const [dnaProfiles, setDnaProfiles] = React.useState<ContentDNAProfile[]>([]);
   const [users, setUsers] = React.useState<WorkspaceMember[]>([]);
   const [currentUser, setCurrentUser] = React.useState<User | null>(null);
-  const [activeClientId, setActiveClientId] = React.useState<string>('');
+  /** Cerrado con Escape o afuera: no cuenta como visto, vuelve en la próxima sesión. */
+  const [avisoCerradoEnSesion, setAvisoCerradoEnSesion] = React.useState(false);
+  /** Abierto a mano desde Novedades, aunque ya se haya visto. */
+  const [avisoReabierto, setAvisoReabierto] = React.useState<Novedad | null>(null);
+  /**
+   * La marca activa. Es UNA para toda la app y vive en el encabezado: antes
+   * cada pantalla tenía su propio selector y cambiar en una no se arrastraba a
+   * la siguiente. Se recuerda entre sesiones.
+   */
+  const [activeClientId, setActiveClientId] = React.useState<string>(() => {
+    try { return localStorage.getItem('vt_marca_activa') || ''; } catch { return ''; }
+  });
+  React.useEffect(() => {
+    try { if (activeClientId) localStorage.setItem('vt_marca_activa', activeClientId); } catch { /* sin storage */ }
+  }, [activeClientId]);
+  /** El inicio se decide una vez, cuando llegan los datos; después manda la persona. */
+  const inicioElegido = React.useRef(false);
   const [customVoices, setCustomVoices] = React.useState<BrandConfig[]>([]);
   const [customGoals, setCustomGoals] = React.useState<BrandConfig[]>([]);
   const [isLoading, setIsLoading] = React.useState(false);
@@ -169,14 +199,13 @@ const App: React.FC = () => {
       setCoherence(null);
       setActiveClientId('');
       setIsDataReady(false);
-      const [apiClients, apiSaved, apiProjects] = await Promise.all([
+      const [apiClients, apiSaved] = await Promise.all([
         clientApi.list(),
         libraryApi.listSaved(),
-        libraryApi.listProjects(),
       ]);
       setClients(apiClients);
       setSavedVariations(apiSaved);
-      setProjects(apiProjects);
+      setActiveClientId(apiClients[0]?.id ?? '');
       setDnaProfiles(apiClients.flatMap((c: Client) => c.dnaProfiles || []));
       setIsDataReady(true);
       addNotification(`Ahora estás en ${session.user.workspaceName}`, 'success');
@@ -262,12 +291,13 @@ const App: React.FC = () => {
 
     const fetchData = async () => {
       try {
-        const [apiClients, apiSaved, apiProjects, apiUsers] = await Promise.all([
+        const [apiClients, apiSaved, apiUsers, apiSesiones] = await Promise.all([
           clientApi.list(),
           libraryApi.listSaved(),
-          libraryApi.listProjects(),
-          isAdmin ? authApi.list() : Promise.resolve([])
+          isAdmin ? authApi.list() : Promise.resolve([]),
+          isAdmin ? reviewApi.list().catch(() => []) : Promise.resolve([]),
         ]);
+        if (Array.isArray(apiSesiones)) contarRespuestasNuevas(apiSesiones);
 
         // Normalize Clients (logoUrl -> logo, Date -> number)
         const normalizedClients = apiClients.map((c: any) => ({
@@ -285,11 +315,6 @@ const App: React.FC = () => {
         }));
         setSavedVariations(normalizedSaved);
         
-        setProjects(apiProjects.map((p: any) => ({
-          ...p,
-          createdAt: typeof p.createdAt === 'string' ? new Date(p.createdAt).getTime() : p.createdAt
-        })));
-        
         setUsers(apiUsers);
         
         // Extract and Normalize DNA profiles from clients
@@ -299,7 +324,18 @@ const App: React.FC = () => {
         })));
         setDnaProfiles(allDNA);
 
-        if (normalizedClients.length > 0) setActiveClientId(normalizedClients[0].id);
+        // La marca recordada, si sigue existiendo en este workspace.
+        setActiveClientId(prev =>
+          normalizedClients.some((c: Client) => c.id === prev) ? prev : (normalizedClients[0]?.id ?? '')
+        );
+
+        // El inicio: quien administra entra a Copy —donde está lo que espera una
+        // decisión—, o a Marcas si todavía no hay ninguna. Quien no administra
+        // ya fue llevado a Producción. Un enlace de correo (?pieza=) ya eligió.
+        if (!inicioElegido.current) {
+          inicioElegido.current = true;
+          if (isAdmin) setActiveTab(prev => (prev === 'clients' && normalizedClients.length > 0 ? 'saved' : prev));
+        }
 
         addNotification('Datos sincronizados con éxito', 'success');
       } catch (err: any) {
@@ -504,6 +540,8 @@ const App: React.FC = () => {
 
   const handleSaveDNAProfile = async (profile: Omit<ContentDNAProfile, 'id' | 'createdAt'>) => {
     try {
+      // La marca del brief es la del formulario. Antes se pisaba con la marca
+      // activa global, y un brief creado dentro de otra marca caía en la equivocada.
       const savedProfile = await clientApi.saveDNA({ ...profile, clientId: profile.clientId || activeClientId });
       setDnaProfiles(prev => [savedProfile, ...prev]);
       addNotification('ADN Estratégico guardado en DB', 'success');
@@ -534,33 +572,69 @@ const App: React.FC = () => {
     }
   };
 
-  const createProject = async (name: string): Promise<string> => {
-    try {
-      const newProject = await libraryApi.createProject({ name });
-      setProjects(prev => [newProject, ...prev]);
-      addNotification(`Proyecto "${name}" creado`, 'success');
-      return newProject.id;
-    } catch (err) {
-      addNotification('Error al crear proyecto', 'error');
-      return '';
-    }
-  };
-
-  const handleSaveVariation = async (variation: CopyVariation, projectId: string) => {
+  /**
+   * Guardar el copy en SU campaña: la del brief con que se generó. La marca y
+   * el brief salen de `lastParams` —lo que realmente se generó— y no de la
+   * marca activa: si alguien cambia de marca arriba con resultados en pantalla,
+   * o restaura una generación del Historial, el copy no puede caer en otra.
+   */
+  const handleSaveVariation = async (variation: CopyVariation, silencioso = false) => {
+    const clientId = lastParams?.clientId || activeClientId;
     try {
       const saved = await libraryApi.saveVariation({
         ...variation,
-        projectId: projectId || null,
-        clientId: activeClientId,
+        clientId,
+        dnaProfileId: lastParams?.dnaProfileId,
         tags: []
       });
-      setSavedVariations(prev => [saved, ...prev]);
-      addNotification('Contenido guardado en la biblioteca', 'success');
-    } catch (err) {
-      addNotification('Error al guardar contenido', 'error');
+      setSavedVariations(prev => [{ ...saved, savedAt: new Date(saved.savedAt).getTime() }, ...prev]);
+      if (!silencioso) addNotification('Guardado en la campaña, por aprobar', 'success');
+      return true;
+    } catch (err: any) {
+      addNotification(err?.message || 'No se pudo guardar el copy', 'error');
+      return false;
     }
   };
 
+  const refrescarCopy = async () => {
+    try {
+      const apiSaved = await libraryApi.listSaved();
+      setSavedVariations(apiSaved.map((v: any) => ({
+        ...v,
+        savedAt: typeof v.savedAt === 'string' ? new Date(v.savedAt).getTime() : v.savedAt
+      })));
+    } catch { /* la lista vieja sigue a la vista */ }
+  };
+
+  /** El nombre de la campaña donde cae lo que se guarda, para decirlo en pantalla. */
+  const campanaDeLoGenerado = lastParams?.dnaProfileId
+    ? dnaProfiles.find(p => p.id === lastParams.dnaProfileId)?.name
+    : undefined;
+  const marcaDeLoGenerado = clients.find(c => c.id === (lastParams?.clientId || activeClientId));
+
+  const pantallaConMarca = !['clients', 'users', 'settings', 'help', 'analytics', 'novedades'].includes(activeTab);
+
+  /*
+   * La novedad a avisar al entrar. Se espera a que la sesión venga del
+   * servidor (`novedadesVistas` definido): con el usuario viejo del
+   * localStorage, alguien que ya la vio la vería de nuevo por un instante.
+   */
+  const pendiente =
+    currentUser?.novedadesVistas !== undefined
+      ? novedadPendiente(currentUser.novedadesVistas, currentUser.createdAt)
+      : null;
+  const avisoVisible = avisoReabierto ?? (avisoCerradoEnSesion ? null : pendiente);
+
+  const marcarAvisoVisto = (novedad: Novedad, irA?: ScreenId) => {
+    setAvisoReabierto(null);
+    if (irA) setActiveTab(irA);
+    if (!currentUser || currentUser.novedadesVistas?.includes(novedad.id)) return;
+    const actualizado = { ...currentUser, novedadesVistas: [...(currentUser.novedadesVistas ?? []), novedad.id] };
+    setCurrentUser(actualizado);
+    localStorage.setItem('vt_user', JSON.stringify(actualizado));
+    // Si falla, vuelve a aparecer en la próxima sesión: mejor eso que perderlo.
+    authApi.marcarNovedadVista(novedad.id).catch(() => {});
+  };
 
   if (reviewToken) {
     return (
@@ -587,6 +661,17 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen flex" style={{ background: '#F5F5F7' }}>
       <NotificationSystem notifications={notifications} onDismiss={dismissNotification} />
+      {avisoVisible && (
+        <AvisoDeNovedad
+          novedad={avisoVisible}
+          administra={isAdmin}
+          onVista={irA => marcarAvisoVisto(avisoVisible, irA)}
+          onCerrar={() => {
+            setAvisoReabierto(null);
+            setAvisoCerradoEnSesion(true);
+          }}
+        />
+      )}
 
       {/* SIDEBAR — Apple macOS style */}
       <aside className="apple-sidebar w-[216px] fixed top-0 bottom-0 left-0 flex flex-col z-50">
@@ -648,9 +733,12 @@ const App: React.FC = () => {
                     >
                       <Icono className={`w-[15px] h-[15px] shrink-0 ${isActive ? 'text-[#1D1D1F]' : 'text-[#86868B]'}`} strokeWidth={1.75} />
                       <span className="flex-1">{pantalla.name}</span>
-                      {pantalla.id === 'collaboration' && completedSessionsCount > 0 && !isActive && (
-                        <span className="w-4 h-4 rounded-full bg-emerald-500 text-white text-[9px] font-bold flex items-center justify-center leading-none shrink-0">
-                          {completedSessionsCount > 9 ? '9+' : completedSessionsCount}
+                      {pantalla.id === 'collaboration' && respuestasNuevas > 0 && !isActive && (
+                        <span
+                          title="Respuestas del cliente sin ver"
+                          className="w-4 h-4 rounded-full bg-emerald-500 text-white text-[9px] font-bold flex items-center justify-center leading-none shrink-0"
+                        >
+                          {respuestasNuevas > 9 ? '9+' : respuestasNuevas}
                         </span>
                       )}
                     </button>
@@ -682,6 +770,16 @@ const App: React.FC = () => {
             </button>
           </div>
           <div className="px-4 py-3 border-t border-[rgba(0,0,0,0.05)] flex flex-col items-center gap-1.5">
+            {/* Discreto a propósito: el registro está a mano, pero no es un paso del proceso. */}
+            <button
+              onClick={() => setActiveTab('novedades')}
+              className={`mb-1 text-[10.5px] hover:text-[#1D1D1F] hover:underline ${
+                activeTab === 'novedades' ? 'text-[#1D1D1F] font-medium' : 'text-[#86868B]'
+              }`}
+            >
+              {SCREENS.novedades.name}
+              {pendiente && <span className="ml-1 inline-block h-1.5 w-1.5 rounded-full bg-indigo-500 align-middle" />}
+            </button>
             <span className="text-[9px] uppercase tracking-[0.12em] text-[#86868B] font-medium">Powered by</span>
             <img src="/LobuenoLogo.png" alt="LoBueno" className="h-[14px] w-auto opacity-50" />
           </div>
@@ -692,7 +790,30 @@ const App: React.FC = () => {
       <div className="flex-1 ml-[216px] flex flex-col min-h-screen">
         {/* HEADER */}
         <header className="apple-header h-[48px] sticky top-0 z-40 flex items-center justify-between px-7">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
+            {/*
+              La marca activa, una para toda la app. No aparece donde no acota
+              nada: el equipo, la configuración, la guía, el consumo del
+              workspace, ni Marcas, que es donde se elige entrando a una.
+            */}
+            {pantallaConMarca && clients.length > 0 && (
+              <>
+                <label className="flex items-center gap-1.5">
+                  <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-[#86868B]">Marca</span>
+                  <select
+                    aria-label="Marca activa"
+                    value={activeClientId}
+                    onChange={e => setActiveClientId(e.target.value)}
+                    className="rounded-md border border-[rgba(0,0,0,0.12)] bg-white px-2 py-1 text-[13px] font-semibold text-[#1D1D1F] outline-none focus-visible:ring-1 focus-visible:ring-[#1D1D1F]"
+                  >
+                    {clients.map(c => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
+                </label>
+                <span className="text-[#C7C7CC]">/</span>
+              </>
+            )}
             <span className="text-[13px] font-semibold text-[#1D1D1F]">{SCREENS[activeTab]?.name}</span>
           </div>
           {/* La campana vive en el header y no en la nav: el aviso no es una
@@ -716,7 +837,11 @@ const App: React.FC = () => {
                   clients={clients} 
                   dnaProfiles={dnaProfiles}
                   defaultClientId={activeClientId}
+                  onClientChange={setActiveClientId}
                   onNavigateToClients={() => setActiveTab('clients')}
+                  miembros={users}
+                  puedeEditarAprobacion={isAdmin}
+                  onError={m => addNotification(m, 'error')}
                 />
               </div>
               <div className="lg:col-span-9 space-y-6">
@@ -743,10 +868,9 @@ const App: React.FC = () => {
                 {variations.length > 0 ? (
                   <ResultsTable
                     variations={variations}
-                    projects={projects}
-                    activeClient={activeClient}
-                    onSave={handleSaveVariation}
-                    onCreateProject={createProject}
+                    activeClient={marcaDeLoGenerado}
+                    campanaNombre={campanaDeLoGenerado}
+                    onSave={v => { void handleSaveVariation(v); }}
                     savedContentList={savedVariations.map(s => s.content)}
                     coherence={coherence}
                     spine={spine}
@@ -757,8 +881,8 @@ const App: React.FC = () => {
                     isLoading={isLoading}
                     onBulkSave={async (vars) => {
                       let count = 0;
-                      for (const v of vars) { try { await handleSaveVariation(v, ""); count++; } catch {} }
-                      if (count > 0) addNotification(count + " variaciones guardadas en la biblioteca", "success");
+                      for (const v of vars) if (await handleSaveVariation(v, true)) count++;
+                      if (count > 0) addNotification(`${count} guardado${count === 1 ? '' : 's'} en la campaña, por aprobar`, 'success');
                     }}
                   />
                 ) : !isLoading ? (
@@ -851,6 +975,7 @@ const App: React.FC = () => {
                 }
               }}
               savedVariations={savedVariations}
+              onAbrirMarca={setActiveClientId}
               onSaveProfile={handleSaveDNAProfile}
               onUpdateProfile={handleUpdateDNAProfile}
               onDeleteProfile={handleDeleteDNAProfile}
@@ -900,60 +1025,46 @@ const App: React.FC = () => {
             />
           )}
           {activeTab === 'saved' && (
-            <SavedManager 
-              saved={savedVariations} 
-              projects={projects} 
-              clients={clients} 
+            <SavedManager
+              saved={savedVariations}
+              clients={clients}
+              clientId={activeClientId}
+              currentUserId={currentUser.id}
+              isAdmin={isAdmin}
+              miembros={users}
               onRemove={async id => {
-                if (window.confirm('¿Eliminar este contenido de la biblioteca?')) {
+                if (window.confirm('¿Eliminar este copy?')) {
                   try {
                     await libraryApi.deleteVariation(id);
                     setSavedVariations(prev => prev.filter(v => v.id !== id));
-                    addNotification('Contenido eliminado', 'success');
-                  } catch (err) {
-                    addNotification('Error al eliminar contenido', 'error');
+                    addNotification('Copy eliminado', 'success');
+                  } catch (err: any) {
+                    addNotification(err?.message || 'No se pudo eliminar el copy', 'error');
                   }
                 }
-              }} 
+              }}
               onUpdate={async (id, u) => {
                 try {
-                  const updated = await libraryApi.updateVariation(id, u);
-                  setSavedVariations(prev => prev.map(v => v.id === id ? updated : v));
-                  addNotification('Contenido actualizado', 'success');
-                } catch (err) {
-                  addNotification('Error al actualizar contenido', 'error');
+                  await libraryApi.updateVariation(id, u);
+                  // Se relee la lista en vez de parchear la fila: editar el texto
+                  // de un aprobado lo devuelve a «por aprobar», y el paso de cada
+                  // copy lo calcula el servidor.
+                  await refrescarCopy();
+                  addNotification('Copy actualizado', 'success');
+                } catch (err: any) {
+                  addNotification(err?.message || 'No se pudo actualizar el copy', 'error');
                 }
-              }} 
-              onAddTag={() => {}} 
-              onRemoveTag={() => {}} 
-              onDeleteProject={async id => {
-                if (window.confirm('¿Eliminar este proyecto? Los contenidos asociados permanecerán pero sin proyecto.')) {
-                  try {
-                    await libraryApi.deleteProject(id);
-                    setProjects(prev => prev.filter(p => p.id !== id));
-                    addNotification('Proyecto eliminado', 'success');
-                  } catch (err) {
-                    addNotification('Error al eliminar proyecto', 'error');
-                  }
-                }
-              }} 
-              onCreateProject={createProject}
-              onRefreshSaved={async () => {
-                try {
-                  const apiSaved = await libraryApi.listSaved();
-                  const normalized = apiSaved.map((v: any) => ({
-                    ...v,
-                    savedAt: typeof v.savedAt === 'string' ? new Date(v.savedAt).getTime() : v.savedAt
-                  }));
-                  setSavedVariations(normalized);
-                } catch {}
               }}
-              readOnly={!isAdmin}
+              onRefreshSaved={refrescarCopy}
+              addNotification={addNotification}
+              onIrA={setActiveTab}
             />
           )}
           {activeTab === 'produccion' && (
             <TableroProduccion
               clients={clients}
+              clientId={activeClientId}
+              onCambiarMarca={setActiveClientId}
               addNotification={addNotification}
               destino={destinoProduccion}
               onDestinoAtendido={() => setDestinoProduccion(null)}
@@ -964,6 +1075,7 @@ const App: React.FC = () => {
             <GenerationHistory
               clients={clients}
               dnaProfiles={dnaProfiles}
+              initialClientId={activeClientId}
               onRestore={(log) => {
                 if (log.spineJson) setSpine(log.spineJson);
                 const restoredVars = Array.isArray(log.outputJson)
@@ -972,8 +1084,13 @@ const App: React.FC = () => {
                     ? (log.outputJson as any).variations
                     : [];
                 if (restoredVars.length > 0) setVariations(restoredVars);
+                // La marca de la generación pasa a ser la activa: antes se
+                // restauraba el copy de una marca con otra seleccionada, y al
+                // guardarlo caía en la equivocada.
+                setActiveClientId(log.clientId);
                 setLastParams({
                   clientId: log.clientId,
+                  dnaProfileId: log.dnaProfileId,
                   platforms: log.platforms as any,
                   voice: '', goal: '', theme: '', product: '',
                   targetAudience: '', keywords: '', brandVoiceGuidelines: '',
@@ -988,10 +1105,14 @@ const App: React.FC = () => {
           {activeTab === 'analytics' && isAdmin && <Analytics />}
           {activeTab === 'collaboration' && isAdmin && (
             <CollaborationHub
-              savedVariations={savedVariations}
               clients={clients}
+              clientId={activeClientId}
               addNotification={addNotification}
-              onSessionsLoaded={s => setCompletedSessionsCount(s.filter(x => x.status === 'COMPLETED').length)}
+              onSessionsLoaded={() => {
+                try { localStorage.setItem('vt_revisiones_vistas', String(Date.now())); } catch { /* sin storage */ }
+                setRespuestasNuevas(0);
+              }}
+              onIrACopy={() => setActiveTab('saved')}
             />
           )}
           {activeTab === 'settings' && isAdmin && (
@@ -1003,6 +1124,9 @@ const App: React.FC = () => {
             <div className="apple-card p-8">
               <HelpGuide />
             </div>
+          )}
+          {activeTab === 'novedades' && (
+            <Novedades vistas={currentUser.novedadesVistas ?? []} onVerAviso={setAvisoReabierto} />
           )}
         </main>
       </div>

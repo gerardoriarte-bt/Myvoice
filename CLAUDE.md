@@ -158,6 +158,16 @@ nothing. `User.workspaceId` is the *active* workspace pointer, not a membership.
 data reachable from a review session is effectively public, so anything that adds items to a
 session must be workspace-filtered.
 
+**Approval is per campaign and always has an owner** (`services/aprobacion.ts`, see
+`docs/plan-aprobacion-por-campana.md`). A `Project` (campaign) is tied 1:1 to its brief
+(`dnaProfileId`) and carries `modoAprobacion` (`INTERNA` | `CLIENTE`) and `responsableId`.
+`isApproved` is **not** in the `PUT /saved/:id` allow-list: internal approval goes through
+`POST /saved/aprobacion` and only the campaign's responsable may decide; client approval comes only
+from `submitReview`, which now ignores ids outside its own session and **un-approves** rejected copy.
+Editing an approved text or moving it to another campaign resets it to pending. Production requires
+`isApproved` plus a campaign with a responsable. A copy's `etapa` (por aprobar → con el cliente →
+aprobado → en producción) is computed on read, never stored.
+
 **And filtered by brand.** A session is one `Client` and the server rejects a mixed one
 (`createReviewSession`). Workspace filtering is not enough here: inside one workspace an agency
 has several clients, and a link mixing two brands shows one client the other's content — with no
@@ -177,14 +187,26 @@ when the session's `ronda` is `PIEZA` — `?invite=<token>` is picked up by the 
 and `?pieza=<id>&marca=<clientId>` is where the notification emails land (the URL is cleaned
 after reading, so a refresh does not reopen an old piece).
 
+**The active brand is one, app-wide**: `activeClientId` in `App.tsx`, chosen in the header and
+persisted in `localStorage` (`vt_marca_activa`). Copy, Revisiones, Producción («Por marca»),
+Generar and Historial read it instead of keeping their own selector; only «Mis piezas» crosses brands.
+
 **`screens.ts` is the single source of screen names and of the stage order**, and the stages are
 the process: Preparar · Escribir · Aprobar · Producir · Medir · Administrar. They were reordered
 on 2026-09-26 because they weren't: «Revisiones» sat in stage 4 and happens *before* Producción,
 which was stage 3. Numbering the stages is a good decision only while the numbers match what
 happens. Screen names are read with `screenName(id)` rather than written by hand — the rename of
-«Biblioteca» to «Copy aprobado» had to chase eleven hardcoded copies through the UI. `isAdmin` derives from `canManageWorkspace(currentUser.role)` — the role in
+«Biblioteca» to «Copy aprobado» (and on 2026-10-13 to «Copy») had to chase eleven hardcoded copies through the UI. `isAdmin` derives from `canManageWorkspace(currentUser.role)` — the role in
 the *active* workspace, refreshed via `authApi.me()` on mount and swapped by
 `POST /auth/switch-workspace`.
+
+**`novedades.ts` is the changelog users see**, and the only place it is written. Every change a
+user would notice gets an entry (date = the day it reaches production; internal work does not).
+Entries with `aviso` also open a modal once per person at login — only for users created before
+that date, and «seen» lives in `User.novedadesVistas` on the server, because the browser's
+storage is wiped on every expired session. The «Novedades» screen is reachable only from a small
+link in the sidebar footer: it is deliberately not a stage of the process. An entry's `id` never
+changes once published.
 
 `services/api.ts` wraps every call; a 401 clears localStorage and dispatches a
 `vt:session-expired` event rather than hard-reloading.
@@ -242,6 +264,8 @@ history.
 `docs/ROADMAP.md` is the living roadmap (three horizons plus cross-cutting enablers) and the
 place to update status. `docs/plan-h1-multitenant-motor.md` is the detailed plan for the
 current horizon, with file:line references for known open issues.
+`docs/plan-aprobacion-por-campana.md` is the UX audit follow-up (2026-10-13): one brand context,
+one meaning of «campaña», mandatory approval with a named owner, and the Copy screen's stage lane.
 `docs/bitacora-2026-09-26.md` records the first day the product was actually used: five findings,
 four of them from a person walking through the tool rather than from reading code — including a
 review link that could mix two brands and show one client the other's copy.

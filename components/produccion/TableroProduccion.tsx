@@ -30,6 +30,10 @@ import OrdenDeTrabajo from './OrdenDeTrabajo';
 
 interface Props {
   clients: Client[];
+  /** La marca activa, la del encabezado: «Por marca» es esta. */
+  clientId: string;
+  /** Un aviso de otra marca cambia la marca activa, no un selector propio. */
+  onCambiarMarca: (clientId: string) => void;
   addNotification: (mensaje: string, tipo?: string) => void;
   /** A qué pieza saltar al abrir un aviso de la bandeja. */
   destino?: DestinoAviso | null;
@@ -41,21 +45,18 @@ interface Props {
 
 export default function TableroProduccion({
   clients,
+  clientId,
+  onCambiarMarca,
   addNotification,
   destino,
   onDestinoAtendido,
   onIrACopyAprobado,
 }: Props) {
   const [vista, setVista] = React.useState<'marca' | 'mias'>('marca');
-  const [clientId, setClientId] = React.useState(clients[0]?.id ?? '');
   const [piezas, setPiezas] = React.useState<Pieza[]>([]);
   const [miembros, setMiembros] = React.useState<WorkspaceMember[]>([]);
   const [cargando, setCargando] = React.useState(true);
   const [abierta, setAbierta] = React.useState<string | null>(null);
-
-  React.useEffect(() => {
-    if (!clientId && clients[0]) setClientId(clients[0].id);
-  }, [clients, clientId]);
 
   /**
    * El salto desde un aviso. Un lote no trae pieza —viene con `piezaId` en
@@ -65,10 +66,10 @@ export default function TableroProduccion({
   React.useEffect(() => {
     if (!destino) return;
     setVista('marca');
-    setClientId(destino.clientId);
+    onCambiarMarca(destino.clientId);
     setAbierta(destino.piezaId);
     onDestinoAtendido?.();
-  }, [destino, onDestinoAtendido]);
+  }, [destino, onDestinoAtendido, onCambiarMarca]);
 
   React.useEffect(() => {
     authApi
@@ -115,23 +116,17 @@ export default function TableroProduccion({
     <div className="space-y-5">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h2 className="text-[22px] font-semibold text-apple-text">{SCREENS.produccion.name}</h2>
+          <h2 className="text-[22px] font-semibold text-apple-text">
+            {SCREENS.produccion.name}
+            {/* «Mis piezas» cruza marcas a propósito: la marca activa no la acota. */}
+            <span className="text-apple-secondary">
+              {' · '}
+              {vista === 'marca' ? clients.find(c => c.id === clientId)?.name : 'todas las marcas'}
+            </span>
+          </h2>
           <p className="mt-1 text-[13px] text-apple-secondary">{SCREENS.produccion.description}</p>
         </div>
         <div className="flex items-center gap-2">
-          {vista === 'marca' && (
-            <select
-              value={clientId}
-              onChange={e => setClientId(e.target.value)}
-              className="rounded-lg border border-apple-border px-3 py-2 text-[12px] text-apple-text"
-            >
-              {clients.map(c => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-          )}
           <div className="flex rounded-lg border border-apple-border p-0.5">
             {([['marca', 'Por marca'], ['mias', 'Mis piezas']] as const).map(([id, label]) => (
               <button

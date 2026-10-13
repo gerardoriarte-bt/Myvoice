@@ -253,7 +253,7 @@ export interface PiezaPropuesta {
 export interface Excluido {
   savedVariationId: string;
   platform: string;
-  motivo: 'sin-pieza' | 'no-aprobado' | 'ya-en-pieza';
+  motivo: 'sin-pieza' | 'no-aprobado' | 'ya-en-pieza' | 'sin-campana' | 'sin-responsable';
   detalle: string;
 }
 
@@ -275,7 +275,7 @@ export const proponerPiezas = async (
 
   const variaciones = await prisma.savedVariation.findMany({
     where: { id: { in: savedVariationIds }, client: { workspaceId: tenant.workspaceId } },
-    include: { project: { select: { id: true, name: true } } },
+    include: { project: { select: { id: true, name: true, responsableId: true } } },
     orderBy: { savedAt: 'asc' },
   });
 
@@ -293,6 +293,16 @@ export const proponerPiezas = async (
 
   for (const v of variaciones) {
     const spec = getPiezaSpec(v.platform);
+    // La aprobación es obligatoria y tiene responsable (docs/plan-aprobacion-por-campana.md):
+    // sin campaña no hay quién la haya dado, aunque la fila diga «aprobado».
+    if (!v.project) {
+      excluidos.push({ savedVariationId: v.id, platform: v.platform, motivo: 'sin-campana', detalle: 'No tiene campaña: asignale una y aprobalo.' });
+      continue;
+    }
+    if (!v.project.responsableId) {
+      excluidos.push({ savedVariationId: v.id, platform: v.platform, motivo: 'sin-responsable', detalle: `«${v.project.name}» no tiene responsable de aprobación.` });
+      continue;
+    }
     if (!v.isApproved) {
       excluidos.push({ savedVariationId: v.id, platform: v.platform, motivo: 'no-aprobado', detalle: 'Todavía no está aprobado.' });
       continue;
@@ -392,6 +402,7 @@ export const crearPiezas = async (tenant: TenantContext, piezas: PiezaAConfirmar
 
   const variaciones = await prisma.savedVariation.findMany({
     where: { id: { in: todosLosIds }, client: { workspaceId: tenant.workspaceId } },
+    include: { project: { select: { responsableId: true } } },
   });
   const porId = new Map(variaciones.map(v => [v.id, v]));
 
@@ -418,6 +429,8 @@ export const crearPiezas = async (tenant: TenantContext, piezas: PiezaAConfirmar
       // uno inexistente.
       if (!v) throw new TenantError('Contenido no encontrado', 404);
       if (!v.isApproved) throw new TenantError('Solo va a producción lo aprobado', 400);
+      if (!v.project?.responsableId)
+        throw new TenantError('Solo va a producción el copy de una campaña con responsable de aprobación', 400);
       if (v.platform !== p.platform)
         throw new TenantError('Una pieza es de un solo canal', 400);
       return v;

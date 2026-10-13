@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Lock, Unlock, RefreshCw, FileSpreadsheet } from 'lucide-react';
-import { CopyVariation, Project, Platform, Client, CoherenceReport, CampaignSpine, UsageReport } from '../types';
+import { CopyVariation, Platform, Client, CoherenceReport, CampaignSpine, UsageReport } from '../types';
 import CoherenceBanner from './CoherenceBanner';
 import SpineHero from './SpineHero';
 import UsageBadge from './UsageBadge';
@@ -13,10 +13,14 @@ import PrintPreview from './PrintPreview';
 
 interface ResultsTableProps {
   variations: CopyVariation[];
-  projects: Project[];
   activeClient?: Client;
-  onSave: (variation: CopyVariation, projectId: string) => void;
-  onCreateProject: (name: string) => Promise<string>;
+  /**
+   * Dónde cae lo que se guarda: la campaña del brief elegido en Generar. Ya no
+   * se pregunta en un modal —«¿en qué proyecto?»—, que era elegir por segunda
+   * vez la campaña que ya se había elegido para generar.
+   */
+  campanaNombre?: string;
+  onSave: (variation: CopyVariation) => void;
   savedContentList: string[];
   coherence?: CoherenceReport | null;
   spine?: CampaignSpine | null;
@@ -31,15 +35,13 @@ interface ResultsTableProps {
 const variationKey = (v: CopyVariation) =>
   `${v.platform}::${v.slot || '_default'}::${v.variationIndex ?? 0}`;
 
-const ResultsTable: React.FC<ResultsTableProps> = ({ variations, projects, activeClient, onSave, onCreateProject, savedContentList, coherence, spine, usage, onRegenerate, onRegenerateChannel, isLoading, onBulkSave, onRefine }) => {
+const ResultsTable: React.FC<ResultsTableProps> = ({ variations, activeClient, campanaNombre, onSave, savedContentList, coherence, spine, usage, onRegenerate, onRegenerateChannel, isLoading, onBulkSave, onRefine }) => {
   const [refineInstruction, setRefineInstruction] = React.useState('');
   const [refineLoading, setRefineLoading] = React.useState(false);
-  const [savingId, setSavingId] = React.useState<string | null>(null);
   const [editingId, setEditingId] = React.useState<string | null>(null);
   const [mockupId, setMockupId] = React.useState<string | null>(null);
   const [editBuffer, setEditBuffer] = React.useState('');
   const [localVariations, setLocalVariations] = React.useState<CopyVariation[]>(variations);
-  const [newProjectName, setNewProjectName] = React.useState('');
   const [collapsedSlots, setCollapsedSlots] = React.useState<Set<string>>(new Set());
   const [lockedKeys, setLockedKeys] = React.useState<Set<string>>(new Set());
   const [lockedPlatforms, setLockedPlatforms] = React.useState<Set<string>>(new Set());
@@ -197,19 +199,6 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ variations, projects, activ
   const saveEdit = (id: string) => {
     setLocalVariations(prev => prev.map(v => v.id === id ? { ...v, content: editBuffer, charCount: editBuffer.length } : v));
     setEditingId(null);
-  };
-
-  const handleSave = (variation: CopyVariation, projectId: string) => {
-    onSave(variation, projectId);
-    setSavingId(null);
-  };
-
-  const handleCreateAndSave = async (variation: CopyVariation) => {
-    if (!newProjectName.trim()) return;
-    const projectId = await onCreateProject(newProjectName);
-    onSave(variation, projectId);
-    setNewProjectName('');
-    setSavingId(null);
   };
 
   const exportToExcel = () => {
@@ -564,7 +553,7 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ variations, projects, activ
               </div>
             ) : (
               <button
-                onClick={() => setSavingId(v.id)}
+                onClick={() => onSave(v)}
                 className="flex-1 bg-ink text-white py-2 rounded-lg text-[12px] font-medium hover:bg-ink-hover transition-colors flex items-center justify-center shadow-sm"
               >
                 Guardar
@@ -582,6 +571,13 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ variations, projects, activ
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      {campanaNombre && (
+        <p className="text-[12px] text-gray-500">
+          Lo que guardes va a{' '}
+          <span className="font-medium text-gray-900">{activeClient?.name ? `${activeClient.name} · ` : ''}{campanaNombre}</span>
+          , por aprobar.
+        </p>
+      )}
       {onRefine && (
         <div className="flex items-center gap-2 mb-4 p-3 bg-gray-50 border border-gray-200 rounded-xl">
           <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -834,7 +830,7 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ variations, projects, activ
                                     </span>
                                   ) : (
                                     <button
-                                      onClick={() => setSavingId(v.id)}
+                                      onClick={() => onSave(v)}
                                       className="text-[10px] font-medium text-gray-500 hover:text-gray-900 px-2 py-0.5 bg-white border border-gray-200 rounded hover:border-gray-400 transition-colors"
                                     >
                                       Guardar
@@ -1048,59 +1044,6 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ variations, projects, activ
         />
       )}
 
-      {/* MODAL PARA GUARDAR */}
-      {savingId && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 animate-in fade-in duration-200">
-           <div className="absolute inset-0 bg-ink/40 backdrop-blur-sm" onClick={() => setSavingId(null)}></div>
-           <div className="relative z-10 w-full max-w-md bg-white p-6 rounded-xl shadow-xl border border-gray-200 animate-in zoom-in-95 duration-300">
-              <div className="flex justify-between items-center mb-6">
-                <div>
-                   <h3 className="text-[16px] font-medium text-gray-900">Guardar como copy aprobado</h3>
-                   <p className="text-gray-500 text-[12px] mt-0.5">Selecciona el proyecto de destino</p>
-                </div>
-                <button onClick={() => setSavingId(null)} className="p-1 text-gray-400 hover:text-gray-900 rounded-md transition-colors">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
-                </button>
-              </div>
-
-              <div className="space-y-2 max-h-60 overflow-y-auto custom-scrollbar mb-6 pr-2">
-                {projects.length === 0 && (
-                  <p className="text-center py-6 text-gray-400 text-[12px] border border-dashed border-gray-200 rounded-lg">No hay proyectos activos</p>
-                )}
-                {projects.map(p => (
-                  <button 
-                    key={p.id}
-                    onClick={() => handleSave(localVariations.find(v => v.id === savingId)!, p.id)}
-                    className="w-full text-left p-3 hover:bg-gray-50 rounded-lg text-[13px] font-medium text-gray-700 transition-colors flex items-center justify-between border border-gray-200"
-                  >
-                    <span>{p.name}</span>
-                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg>
-                  </button>
-                ))}
-              </div>
-
-              <div className="border-t border-gray-100 pt-6 space-y-4">
-                <div>
-                   <label className="block text-[12px] font-medium text-gray-700 mb-1">O crear nuevo proyecto</label>
-                   <input 
-                      type="text" 
-                      placeholder="Nombre del proyecto..."
-                      className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-[13px] outline-none focus:border-gray-400 transition-colors"
-                      value={newProjectName}
-                      onChange={(e) => setNewProjectName(e.target.value)}
-                   />
-                </div>
-                <button 
-                  onClick={() => handleCreateAndSave(localVariations.find(v => v.id === savingId)!)}
-                  disabled={!newProjectName.trim()}
-                  className="w-full bg-ink text-white py-2 rounded-lg text-[13px] font-medium hover:bg-ink-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
-                >
-                  Confirmar y Guardar
-                </button>
-              </div>
-           </div>
-        </div>
-      )}
       {/* 1B — FLOATING BULK ACTION BAR */}
       {onBulkSave && selectedVariationKeys.size > 0 && (
         <div className="sticky bottom-0 left-0 right-0 z-50 flex items-center justify-between gap-4 px-6 py-4 bg-white border-t border-gray-200 shadow-lg animate-in slide-in-from-bottom-2 duration-200">

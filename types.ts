@@ -93,7 +93,10 @@ export interface User {
   workspaceName?: string | null;
   /** Todos los workspaces donde tiene membresía. Alimenta el selector. */
   workspaces?: WorkspaceSummary[];
-  createdAt?: number;
+  /** ISO. Decide si una novedad le corresponde: a quien llega después, no. */
+  createdAt?: string;
+  /** Ids de `novedades.ts` que ya vio. Vive en el servidor, no en el navegador. */
+  novedadesVistas?: string[];
 }
 
 /** Miembro de un workspace, tal como lo devuelve GET /workspace/members. */
@@ -275,18 +278,56 @@ export interface CoherenceReport {
   flags: string[];
 }
 
+/** Cómo se aprueba el copy de una campaña antes de producir. */
+export type ModoAprobacion = 'INTERNA' | 'CLIENTE';
+
+export const MODO_APROBACION_LABELS: Record<ModoAprobacion, string> = {
+  INTERNA: 'Interna',
+  CLIENTE: 'Del cliente',
+};
+
+/**
+ * Una campaña. La que se elige en Generar (el brief) y la que recibe el copy
+ * son la misma: `dnaProfileId` las une.
+ */
 export interface Project {
   id: string;
   name: string;
   createdAt: number;
+  clientId?: string | null;
+  dnaProfileId?: string | null;
+  modoAprobacion?: ModoAprobacion;
+  responsableId?: string | null;
+  responsable?: { id: string; name: string } | null;
+  pideAprobacionDeCliente?: boolean;
 }
 
+/**
+ * El paso del recorrido de un copy. Lo calcula el servidor al leer
+ * (server/src/services/aprobacion.ts) y el orden de acá es el del proceso.
+ */
+export type EtapaCopy = 'SIN_CAMPANA' | 'POR_APROBAR' | 'DEVUELTO' | 'CON_EL_CLIENTE' | 'APROBADO' | 'EN_PRODUCCION';
+
+export const ETAPAS_COPY: { id: EtapaCopy; label: string; que: string }[] = [
+  { id: 'SIN_CAMPANA', label: 'Sin campaña', que: 'Guardado antes de que el copy perteneciera a una campaña. Asignale una para que pueda avanzar.' },
+  { id: 'POR_APROBAR', label: 'Por aprobar', que: 'Espera la aprobación del responsable o el envío al cliente.' },
+  { id: 'DEVUELTO', label: 'Devuelto', que: 'El cliente lo rechazó. Editalo y volvé a mandarlo.' },
+  { id: 'CON_EL_CLIENTE', label: 'Con el cliente', que: 'En una revisión abierta, esperando respuesta.' },
+  { id: 'APROBADO', label: 'Aprobado', que: 'Listo para mandar a producción.' },
+  { id: 'EN_PRODUCCION', label: 'En producción', que: 'Ya forma parte de una pieza.' },
+];
+
 export interface SavedVariation extends CopyVariation {
-  projectId?: string;
+  projectId?: string | null;
+  project?: Project | null;
   clientId?: string;
   tags: string[];
   savedAt: number;
   isApproved?: boolean;
+  etapa?: EtapaCopy;
+  aprobadoPorNombre?: string | null;
+  aprobadoEn?: string | null;
+  aprobadoVia?: ModoAprobacion | null;
   previousVersions?: Array<{ content: string; charCount: number; editedAt: string }>;
   /** True cuando el slot lo dedujo el backfill heurístico y no el writer. */
   slotInferred?: boolean;
@@ -383,6 +424,7 @@ export interface ReviewSession {
   ronda?: RondaRevision;
   /** La marca de la sesión. Una sesión es de una sola, así que se afirma. */
   marca?: string | null;
+  clientId?: string | null;
   _count?: { items: number };
   items?: ReviewSessionItem[];
   /** Solo en la ronda 2: el portal recibe piezas en vez de items. */
@@ -557,7 +599,7 @@ export interface PropuestaDePiezas {
   excluidos: {
     savedVariationId: string;
     platform: string;
-    motivo: 'sin-pieza' | 'no-aprobado' | 'ya-en-pieza';
+    motivo: 'sin-pieza' | 'no-aprobado' | 'ya-en-pieza' | 'sin-campana' | 'sin-responsable';
     detalle: string;
   }[];
 }

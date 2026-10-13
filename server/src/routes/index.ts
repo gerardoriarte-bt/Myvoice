@@ -58,6 +58,7 @@ router.post('/auth/login', authController.login);
 router.post('/auth/google', authController.googleLogin);
 router.get('/auth/me', ...authed, authController.me);
 router.post('/auth/switch-workspace', ...authed, authController.switchWorkspace);
+router.post('/auth/novedades/:id/vista', ...authed, authController.marcarNovedadVista);
 
 // --------------------------------------------------------------- workspaces
 router.get('/workspaces', ...authed, workspaceController.listMyWorkspaces);
@@ -120,10 +121,14 @@ router.get('/saved', ...inWorkspace, savedController.getSavedVariations);
 router.post('/saved', ...inWorkspace, savedController.saveVariation);
 // POST /saved/bulk-delete va antes que DELETE /saved/:id para evitar el choque de rutas.
 router.post('/saved/bulk-delete', ...inWorkspace, savedController.bulkDeleteSaved);
+// Quién puede aprobar lo decide la campaña (su responsable), no el rol: va con
+// inWorkspace y la regla vive en services/aprobacion.ts.
+router.post('/saved/aprobacion', ...inWorkspace, savedController.decidirAprobacionHandler);
 router.put('/saved/:id', ...inWorkspace, savedController.updateVariation);
 router.delete('/saved/:id', ...inWorkspace, savedController.deleteVariation);
 router.get('/projects', ...inWorkspace, savedController.getProjects);
 router.post('/projects', ...inWorkspace, savedController.createProject);
+router.get('/projects/de-brief/:dnaProfileId', ...inWorkspace, savedController.getCampanaDeBrief);
 router.patch('/projects/:id', ...inWorkspace, savedController.updateProject);
 router.delete('/projects/:id', ...inWorkspace, savedController.deleteProject);
 router.post('/feedback/negative', ...inWorkspace, savedController.saveNegativeFeedback);
