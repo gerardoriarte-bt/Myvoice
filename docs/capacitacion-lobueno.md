@@ -39,7 +39,7 @@ CAPACITACION_PASSWORD='…' npm run seed:capacitacion
 | Usuario | Persona | Rol | Función | Para mostrar |
 |---|---|---|---|---|
 | `laura@` | Laura Gómez, Dirección de cuentas | OWNER | Aprobación | Marcas, revisiones, aceptar/devolver piezas |
-| `andres@` | Andrés Mejía, Redacción | ADMIN | Copy | Generar, Historial, Copy aprobado |
+| `andres@` | Andrés Mejía, Redacción | ADMIN | Copy | Generar, Historial, Copy |
 | `sofia@` | Sofía Vargas, Diseño | MEMBER | Diseño | «Mis piezas», subir arte |
 | `mateo@` | Mateo Ríos, Diseño | MEMBER | Diseño | El diseñador con trabajo cerrado |
 
@@ -53,7 +53,10 @@ en otra.
 |---|---|---|
 | Lanzamiento My Voice | Producción, con revisión de piezas pendiente | 4 generaciones, 40 copys guardados, ronda de copy cerrada (2 rechazos), 6 piezas |
 | El costo del copy genérico | Esperando a la clienta | 1 generación, 15 copys sin aprobar, enlace de revisión abierto |
-| Talento 2026 | Solo el brief | Nada: es la que se genera en vivo |
+| Talento 2026 | Solo el brief | Nada: es la que se genera en vivo. Aprobación interna, la aprueba Laura |
+
+Las tres campañas tienen responsable (Laura). Las dos primeras las aprueba la clienta; Talento es
+interna. El copy de antes de las campañas (los ejemplos del motor) vive en «Aprobados históricos».
 
 ## El recorrido
 
@@ -81,23 +84,29 @@ intento antes de afinar el brief.
 
 **En vivo.** Generar con el brief **«Reclutamiento creativo — Talento 2026»**, dos o tres canales
 (Instagram Post, Email, WhatsApp). Mientras corre, señalar el orden: primero el concepto, después
-cada canal, al final el informe de coherencia. Guardar en «Copy aprobado» dos o tres variaciones con
-la campaña «Talento 2026».
+cada canal, al final el informe de coherencia. Antes de generar, señalar el recuadro de aprobación
+de la campaña: interna, la aprueba Laura. Guardar dos o tres variaciones: caen solas en «Talento
+2026», por aprobar — no se pregunta la campaña, es la del brief.
 
 > **Esto gasta crédito real** del proveedor configurado — unos centavos de dólar por generación. Lo
 > mismo las dos subidas de arte (cada una corre una auditoría) y, si se hace, la guía en PDF del
 > paso 1. Nada más del guion llama a la IA.
 
-### 3. Aprobar — Copy aprobado y Revisiones
+### 3. Aprobar — Copy y Revisiones
 
 **Mostrar (Laura).** En Revisiones, la ronda de copy del Lanzamiento ya cerrada: Natalia aprobó casi
 todo y rechazó dos con sus palabras — el asunto «Su marca ya tiene voz. ¿La está usando?» («suena a
 regaño») y el título «Demo con su propia marca» («es casi igual al de la competencia»). Esos dos
 rechazos ya están en los anti-ejemplos de la marca: así aprende el motor.
 
+**En vivo (Laura).** En Copy, filtrar «Por aprobar»: está lo que Andrés guardó de Talento. Marcarlo
+y usar **Aprobar** — Laura es la responsable. Mostrar que con Andrés el mismo botón no aparece: la
+barra dice que lo aprueba Laura.
+
 **En vivo (clienta).** Abrir el enlace **«Copy, campaña 2»** que imprimió el seed. Aprobar casi todo,
-rechazar uno con comentario, enviar. Volver a Laura: la sesión pasa a completada, los aprobados se
-marcan en Copy aprobado y el rechazo aparece como anti-ejemplo en la marca.
+rechazar uno con comentario, enviar. Volver a Laura: la revisión pasa a completada, en Copy los
+aprobados están en «Aprobado» (por la clienta, con su nombre) y el rechazado en «Devuelto»; el
+rechazo además aparece como anti-ejemplo en la marca.
 
 ### 4. Producir — el tablero (Laura, Sofía)
 
