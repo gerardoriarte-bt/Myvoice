@@ -23,6 +23,8 @@ interface ClientManagerProps {
   onAdd: (client: Omit<Client, 'id' | 'createdAt'>) => void;
   onUpdate: (id: string, updates: Partial<Client>) => void;
   onRemove: (id: string) => void;
+  /** Une dos marcas que eran la misma. Resuelve cuando terminó, o falla con el motivo. */
+  onUnir?: (origenId: string, destinoId: string) => Promise<void>;
   onSaveProfile: (profile: Omit<ContentDNAProfile, 'id' | 'createdAt'>) => void;
   onUpdateProfile: (id: string, updates: Partial<ContentDNAProfile>) => void;
   onDeleteProfile: (id: string) => void;
@@ -43,6 +45,7 @@ const ClientManager: React.FC<ClientManagerProps> = ({
   onAdd,
   onUpdate,
   onRemove,
+  onUnir,
   onSaveProfile,
   onUpdateProfile,
   onDeleteProfile,
@@ -56,6 +59,9 @@ const ClientManager: React.FC<ClientManagerProps> = ({
   const [clientForm, setClientForm] = React.useState({ name: '', industry: '', logo: '', marcaMadreId: '' });
   /** La tarjeta con nombre repetido que se está resolviendo, y el nombre nuevo si se renombra. */
   const [resolviendo, setResolviendo] = React.useState<{ id: string; modo: 'renombrar' | 'madre'; valor: string } | null>(null);
+  /** El diálogo de unir: las dos marcas y cuál queda. */
+  const [uniendo, setUniendo] = React.useState<{ a: string; b: string; queda: string } | null>(null);
+  const [unirOcupado, setUnirOcupado] = React.useState(false);
   
   // States for Global Strategy Catalog
   const [newVoice, setNewVoice] = React.useState('');
@@ -488,6 +494,96 @@ const ClientManager: React.FC<ClientManagerProps> = ({
       )}
 
 
+      {/* UNIR — docs/plan-marcas-relacionadas.md, entrega 2. Dibujado en el .pen,
+          «§ Marcas · Declarar y unir». */}
+      {uniendo && (() => {
+        const a = clients.find(c => c.id === uniendo.a);
+        const b = clients.find(c => c.id === uniendo.b);
+        if (!a || !b) return null;
+        const queda = uniendo.queda === a.id ? a : b;
+        const seVa = queda === a ? b : a;
+        const copyDe = (c: Client) => savedVariations.filter(v => v.clientId === c.id).length;
+        const ADN: [keyof Client, string][] = [
+          ['voice', 'voz'],
+          ['valueProposition', 'propuesta de valor'],
+          ['brandVoiceGuidelines', 'guía de voz'],
+          ['brandKeywords', 'palabras clave'],
+          ['brandProhibitions', 'prohibiciones'],
+        ];
+        const adnPropio = ADN.filter(([k]) => {
+          const v = (seVa[k] as string | undefined)?.trim();
+          return v && v !== (queda[k] as string | undefined)?.trim();
+        }).map(([, n]) => n);
+        const otraEnLista = (c: Client) => (c.nombreRepetidoCon ?? []).map(id => clients.find(x => x.id === id)).filter(Boolean) as Client[];
+        return (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-6">
+            <div className="absolute inset-0 bg-ink/40" onClick={() => !unirOcupado && setUniendo(null)} />
+            <div role="dialog" aria-modal="true" className="relative w-full max-w-lg space-y-4 rounded-xl border border-gray-200 bg-white p-6 shadow-xl">
+              <h3 className="text-[16px] font-semibold text-gray-900">Unir las dos «{a.name.trim()}»</h3>
+              {otraEnLista(a).length > 1 && (
+                <label className="block text-[12px] text-gray-600">
+                  Con cuál
+                  <select
+                    value={uniendo.b}
+                    onChange={e => setUniendo({ ...uniendo, b: e.target.value, queda: e.target.value })}
+                    className="mt-1 w-full rounded-lg border border-gray-200 px-2 py-1.5 text-[13px]"
+                  >
+                    {otraEnLista(a).map(o => (
+                      <option key={o.id} value={o.id}>{o.name} · {distincion(o)}</option>
+                    ))}
+                  </select>
+                </label>
+              )}
+              <div className="space-y-2">
+                <p className="text-[12px] font-medium text-gray-700">Queda esta, con todo lo de las dos</p>
+                {[a, b].map(c => (
+                  <label key={c.id} className={`flex cursor-pointer items-start gap-2.5 rounded-lg border px-3 py-2.5 ${uniendo.queda === c.id ? 'border-gray-900' : 'border-gray-200'}`}>
+                    <input type="radio" checked={uniendo.queda === c.id} onChange={() => setUniendo({ ...uniendo, queda: c.id })} className="mt-1" />
+                    <span>
+                      <span className="block text-[13px] font-semibold text-gray-900">{c.name}{madreDe(c, clients) ? ` · de ${madreDe(c, clients)!.name}` : ''}</span>
+                      <span className="block text-[11px] text-gray-500">{distincion(c)} · {copyDe(c) === 1 ? '1 copy' : `${copyDe(c)} copys`}</span>
+                    </span>
+                  </label>
+                ))}
+              </div>
+              <ul className="space-y-1.5 rounded-lg bg-gray-50 p-3 text-[12px] text-gray-700">
+                <li>→ Pasan a «{queda.name.trim()}»: {seVa.conteos?.campanas === 1 ? '1 campaña' : `${seVa.conteos?.campanas ?? 0} campañas`}, {copyDe(seVa) === 1 ? '1 copy' : `${copyDe(seVa)} copys`}, y sus piezas, revisiones, historial y consumo.</li>
+                <li>
+                  → «{seVa.name.trim()}» se borra. El ADN de marca es el de la que queda.
+                  {adnPropio.length > 0 && (
+                    <span className="mt-1 block font-medium text-amber-800">
+                      La que se borra tiene su propio ADN ({adnPropio.join(', ')}) y no se mezcla: si hace falta, copialo antes de unir.
+                    </span>
+                  )}
+                </li>
+                {(seVa.conteos?.complementarias ?? 0) > 0 && <li>→ Sus complementarias pasan a ser de «{queda.name.trim()}».</li>}
+                <li>→ Quien la tenía elegida en el selector pasa a la que queda.</li>
+              </ul>
+              <div className="flex justify-end gap-2">
+                <button disabled={unirOcupado} onClick={() => setUniendo(null)} className="rounded-lg border border-gray-200 px-3.5 py-2 text-[12.5px] font-medium text-gray-700">
+                  Cancelar
+                </button>
+                <button
+                  disabled={unirOcupado}
+                  onClick={async () => {
+                    setUnirOcupado(true);
+                    try {
+                      await onUnir!(seVa.id, queda.id);
+                      setUniendo(null);
+                    } finally {
+                      setUnirOcupado(false);
+                    }
+                  }}
+                  className="rounded-lg bg-ink px-3.5 py-2 text-[12.5px] font-semibold text-white disabled:opacity-50"
+                >
+                  {unirOcupado ? 'Uniendo…' : 'Unir · no se puede deshacer'}
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* MAIN VIEW SWITCHER */}
       {!activeClientHub ? (
         // VIEW: PORTFOLIO GRID
@@ -585,6 +681,19 @@ const ClientManager: React.FC<ClientManagerProps> = ({
                             <p className="text-[11.5px] font-medium text-gray-800">Otra marca se llama igual. ¿Qué es esta?</p>
                             {resolviendo?.id !== client.id ? (
                               <div className="flex flex-wrap gap-1.5">
+                                {onUnir && (
+                                  <button
+                                    onClick={() => {
+                                      const otra = clients.find(c => c.id === client.nombreRepetidoCon![0])!;
+                                      // Por defecto queda la que más tiene: es la que menos se mueve.
+                                      const peso = (c: Client) => (c.conteos?.campanas ?? 0) + (c.conteos?.complementarias ?? 0);
+                                      setUniendo({ a: client.id, b: otra.id, queda: peso(otra) >= peso(client) ? otra.id : client.id });
+                                    }}
+                                    className="rounded-md bg-ink px-2 py-1 text-[11px] font-medium text-white hover:bg-ink-hover"
+                                  >
+                                    Es la misma: unir
+                                  </button>
+                                )}
                                 <button
                                   onClick={() => setResolviendo({ id: client.id, modo: 'renombrar', valor: client.name })}
                                   className="rounded-md border border-gray-200 bg-white px-2 py-1 text-[11px] font-medium text-gray-700 hover:bg-gray-100"
