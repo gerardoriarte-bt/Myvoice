@@ -149,8 +149,10 @@ router.get('/analytics/usage', ...asManager, analyticsController.getUsageAnalyti
  */
 router.get('/piezas', ...inWorkspace, piezaController.listarPorMarca);
 router.get('/piezas/mias', ...inWorkspace, piezaController.listarMias);
-router.post('/piezas/propuesta', ...inWorkspace, piezaController.proponer);
-router.post('/piezas', ...inWorkspace, piezaController.crear);
+// Mandar copy a producción es de quien administra: la pantalla ya lo ofrecía
+// solo a ellos, y el servidor lo aceptaba de cualquiera.
+router.post('/piezas/propuesta', ...asManager, piezaController.proponer);
+router.post('/piezas', ...asManager, piezaController.crear);
 router.get('/piezas/:id', ...inWorkspace, piezaController.detalle);
 router.patch('/piezas/:id', ...inWorkspace, piezaController.renombrar);
 /**
@@ -161,6 +163,7 @@ router.patch('/piezas/:id', ...inWorkspace, piezaController.renombrar);
 router.post('/piezas/:id/archivo', ...inWorkspace, piezaUpload.single('archivo'), piezaController.subirArchivo);
 router.post('/piezas/hallazgos/:hallazgoId/decision', ...inWorkspace, piezaController.decidirHallazgo);
 router.post('/piezas/:id/reauditar', ...inWorkspace, piezaController.reauditar);
+router.post('/piezas/:id/corregir-copy', ...inWorkspace, piezaController.corregirCopy);
 router.post('/piezas/:id/:accion', ...inWorkspace, piezaController.ejecutarAccion);
 
 // ---------------------------------------------------------------- bandeja

@@ -4,6 +4,9 @@ import { filterVariationsInWorkspace, TenantError } from '../lib/tenancy.js';
 import { prisma } from '../lib/prisma.js';
 import { notifyReviewCompleted } from '../services/notificationService.js';
 import * as piezasRevision from '../services/revisionDePiezas.js';
+import { prepararAviso } from '../services/piezaService.js';
+import { AvisoEscrito, enviarEnSegundoPlano, notificar } from '../services/notificacionService.js';
+import { WorkspaceRole } from '@prisma/client';
 import { aprobadoPorCliente, motivosParaNoRevisar, SIN_APROBACION } from '../services/aprobacion.js';
 
 export const createReviewSession = async (req: AuthRequest, res: Response) => {
@@ -267,6 +270,17 @@ export const submitReview = async (req: Request, res: Response) => {
       const deLaSesion = new Set(session.items.map(i => i.piezaId).filter((id): id is string => !!id));
       const decisiones = feedbacks.filter((f: any) => typeof f?.piezaId === 'string');
 
+      // Pedir cambios sin decir cuáles no se puede: no le dice a nadie qué
+      // arreglar, y antes ni siquiera dejaba rastro en el historial.
+      const mudo = decisiones.find(
+        (f: any) =>
+          f.decision === 'REJECTED' &&
+          !(typeof f.feedbackCopy === 'string' && f.feedbackCopy.trim()) &&
+          !(typeof f.feedbackDiseno === 'string' && f.feedbackDiseno.trim())
+      );
+      if (mudo) return res.status(400).json({ error: 'Para pedir cambios, escribí qué cambiar: del mensaje, del arte o de los dos.' });
+
+      let movidas: { piezaId: string; rechazada: boolean }[] = [];
       await prisma.$transaction(async tx => {
         const entrega = await tx.reviewSubmission.create({
           data: { reviewSessionId: session.id, reviewerName: reviewerName || null },
@@ -274,7 +288,7 @@ export const submitReview = async (req: Request, res: Response) => {
         });
         // Todo junto o nada: una entrega a medias dejaría piezas movidas sin el
         // motivo que las movió.
-        await piezasRevision.aplicarDecisiones(
+        movidas = await piezasRevision.aplicarDecisiones(
           tx,
           entrega.id,
           typeof reviewerName === 'string' && reviewerName.trim() ? reviewerName.trim() : 'El cliente',
@@ -291,6 +305,12 @@ export const submitReview = async (req: Request, res: Response) => {
         rejectedCount: decisiones.filter((f: any) => f.decision === 'REJECTED').length,
         para: [session.createdBy.email],
       }).catch(() => {});
+
+      // En la bandeja: al responsable, que el cliente respondió; a la
+      // diseñadora, lo que vuelve a sus manos. Nunca tumba la respuesta.
+      avisarRespuestaDelCliente(session.workspaceId, movidas).catch(e =>
+        console.error('[revision] avisos de la respuesta del cliente:', e)
+      );
 
       return res.status(201).json({ message: 'Revisión enviada con éxito' });
     }
@@ -386,5 +406,26 @@ export const submitReview = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('submitReview error:', error);
     res.status(500).json({ error: 'Error al procesar la revisión' });
+  }
+};
+
+/**
+ * Los avisos de una respuesta del cliente en la ronda de piezas. Va afuera de
+ * la transacción del portal: si un aviso falla, la respuesta del cliente ya
+ * quedó guardada, que es lo que no se puede perder.
+ */
+const avisarRespuestaDelCliente = async (workspaceId: string, movidas: { piezaId: string; rechazada: boolean }[]) => {
+  // El cliente no tiene cuenta: el aviso sale sin autor, y nadie queda excluido.
+  const tenant = { workspaceId, userId: '', role: WorkspaceRole.MEMBER };
+  for (const m of movidas) {
+    const pieza = await prisma.pieza.findUnique({ where: { id: m.piezaId } });
+    if (!pieza) continue;
+    const avisos = [await prepararAviso(tenant, pieza, 'RESPUESTA_CLIENTE')];
+    if (m.rechazada && pieza.asignadaAId) avisos.push(await prepararAviso(tenant, pieza, 'DEVOLUCION', pieza.asignadaAId));
+    let escritos: AvisoEscrito[] = [];
+    await prisma.$transaction(async tx => {
+      for (const a of avisos) escritos = escritos.concat(await notificar(tx, tenant, a.evento, a.destinatarios));
+    });
+    enviarEnSegundoPlano(tenant, escritos);
   }
 };

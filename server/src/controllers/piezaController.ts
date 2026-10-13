@@ -156,3 +156,13 @@ export const reauditar = async (req: AuthRequest, res: Response) => {
     handleTenantError(error, res, 'Error al reintentar la auditoría');
   }
 };
+
+/** El responsable corrige el copy dentro de la pieza (ver piezaService.corregirCopy). */
+export const corregirCopy = async (req: AuthRequest, res: Response) => {
+  try {
+    await assertPiezaInWorkspace(req.tenant!, req.params.id);
+    res.json(await piezas.corregirCopy(req.tenant!, req.params.id, req.body?.correcciones));
+  } catch (error) {
+    handleTenantError(error, res, 'Error al corregir el copy');
+  }
+};
