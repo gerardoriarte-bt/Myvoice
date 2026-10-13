@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { SCREENS, screenName } from '../screens';
-import { Client, ReviewSession, ReviewItemFeedbackDetail } from '../types';
+import { Client, ReviewSession, ReviewItemFeedbackDetail, ReviewSessionItem } from '../types';
 import { reviewApi } from '../services/api';
 
 type NotificationType = 'success' | 'error' | 'info' | 'warning';
@@ -35,6 +35,24 @@ const PLATFORM_COLORS: Record<string, string> = {
   'TikTok': 'bg-ink text-white',
   'Email': 'bg-blue-50 text-blue-700',
   'WhatsApp': 'bg-green-50 text-green-700',
+};
+
+/** La clave de un item: el copy en la ronda COPY, la pieza en la ronda PIEZA. */
+const claveDeItem = (item: ReviewSessionItem): string => item.savedVariation?.id ?? item.pieza?.id ?? item.id;
+
+/** Lo que se muestra de un item, sea copy o pieza. */
+const vistaDeItem = (item: ReviewSessionItem) =>
+  item.savedVariation
+    ? { platform: item.savedVariation.platform, tipo: item.savedVariation.type, texto: item.savedVariation.content ?? '' }
+    : { platform: item.pieza?.platform ?? 'Pieza', tipo: item.pieza?.formato ?? '', texto: item.pieza?.titulo ?? '' };
+
+/**
+ * En la ronda de copy todo comentario es sobre el mensaje y va solo. En la de
+ * piezas el cliente comenta el mensaje y el arte por separado, y se rotulan.
+ */
+const textoDeFeedback = (fb: ReviewItemFeedbackDetail): string => {
+  if (!fb.feedbackDiseno) return fb.feedbackCopy ? `«${fb.feedbackCopy}»` : '';
+  return [fb.feedbackCopy && `Mensaje: «${fb.feedbackCopy}»`, `Arte: «${fb.feedbackDiseno}»`].filter(Boolean).join(' · ');
 };
 
 export default function CollaborationHub({ clients, clientId, addNotification, onSessionsLoaded, onIrACopy }: CollaborationHubProps) {
@@ -143,8 +161,10 @@ export default function CollaborationHub({ clients, clientId, addNotification, o
               const isExpired = expiresAt < new Date();
               const isExpanded = expandedId === s.id;
               const detail = detailCache[s.id];
+              // Una sola clave por item: el copy en la ronda COPY, la pieza en la
+              // ronda PIEZA. Leer solo savedVariation rompía con las de piezas.
               const feedbackMap = new Map<string, ReviewItemFeedbackDetail>(
-                (detail?.submission?.feedbacks ?? []).map(f => [f.savedVariationId, f])
+                (detail?.submission?.feedbacks ?? []).map(f => [f.savedVariationId ?? f.piezaId ?? '', f])
               );
 
               return (
@@ -231,7 +251,7 @@ export default function CollaborationHub({ clients, clientId, addNotification, o
                       {!detail ? (
                         <p className="text-[12px] text-gray-400 text-center py-2">Cargando detalle...</p>
                       ) : !detail.submission ? (
-                        <p className="text-[12px] text-gray-400 text-center py-2">Aún no hay revisión enviada.</p>
+                        <p className="text-[12px] text-gray-400 text-center py-2">El cliente todavía no respondió.</p>
                       ) : (
                         <div className="space-y-2">
                           {/* Resumen de revision (solo COMPLETED) */}
@@ -273,15 +293,16 @@ export default function CollaborationHub({ clients, clientId, addNotification, o
                                     {isShowingRejections && (
                                       <div className="mt-2 space-y-1.5 pl-4 border-l-2 border-red-100">
                                         {rejectedFeedbacks.map(fb => {
-                                          const matchedItem = (detail.items ?? []).find(it => it.savedVariation.id === fb.savedVariationId);
-                                          const platformLabel = matchedItem?.savedVariation.platform ?? fb.savedVariationId;
+                                          const clave = fb.savedVariationId ?? fb.piezaId ?? '';
+                                          const matchedItem = (detail.items ?? []).find(it => claveDeItem(it) === clave);
+                                          const platformLabel = matchedItem ? vistaDeItem(matchedItem).platform : clave;
                                           return (
-                                            <div key={fb.savedVariationId} className="flex items-start gap-2">
+                                            <div key={clave} className="flex items-start gap-2">
                                               <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-medium shrink-0 ${PLATFORM_COLORS[platformLabel] ?? 'bg-gray-100 text-gray-600'}`}>
                                                 {platformLabel}
                                               </span>
                                               <span className="text-[11px] text-gray-600 italic">
-                                                {fb.feedbackCopy ? `"${fb.feedbackCopy}"` : 'Sin comentario'}
+                                                {textoDeFeedback(fb) || 'Sin comentario'}
                                               </span>
                                             </div>
                                           );
@@ -299,7 +320,8 @@ export default function CollaborationHub({ clients, clientId, addNotification, o
                             {' '}· {new Date(detail.submission.submittedAt).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })}
                           </p>
                           {(detail.items ?? []).map(item => {
-                            const fb = feedbackMap.get(item.savedVariation.id);
+                            const fb = feedbackMap.get(claveDeItem(item));
+                            const vista = vistaDeItem(item);
                             const isApproved = fb?.decision === 'APPROVED';
                             const isRejected = fb?.decision === 'REJECTED';
                             return (
@@ -319,14 +341,14 @@ export default function CollaborationHub({ clients, clientId, addNotification, o
                                 </div>
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-                                    <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${PLATFORM_COLORS[item.savedVariation.platform] ?? 'bg-gray-100 text-gray-600'}`}>
-                                      {item.savedVariation.platform}
+                                    <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${PLATFORM_COLORS[vista.platform] ?? 'bg-gray-100 text-gray-600'}`}>
+                                      {vista.platform}
                                     </span>
-                                    <span className="text-[10px] text-gray-400">{item.savedVariation.type}</span>
+                                    <span className="text-[10px] text-gray-400">{vista.tipo}</span>
                                   </div>
-                                  <p className="text-[12px] text-gray-700 truncate">{item.savedVariation.content?.slice(0, 100)}</p>
-                                  {fb?.feedbackCopy && (
-                                    <p className="text-[11px] text-red-600 mt-1 italic">"{fb.feedbackCopy}"</p>
+                                  <p className="text-[12px] text-gray-700 truncate">{vista.texto.slice(0, 100)}</p>
+                                  {fb && textoDeFeedback(fb) && (
+                                    <p className="text-[11px] text-red-600 mt-1 italic">{textoDeFeedback(fb)}</p>
                                   )}
                                 </div>
                               </div>

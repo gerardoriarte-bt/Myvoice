@@ -144,11 +144,14 @@ export const getReviewSessionDetail = async (req: AuthRequest, res: Response) =>
           orderBy: { sortOrder: 'asc' },
           include: {
             savedVariation: { select: { id: true, platform: true, type: true, content: true, charCount: true } },
+            // La ronda de piezas (H2.E) no tiene savedVariation: sin esto el
+            // detalle de una revisión de piezas respondida rompía Revisiones.
+            pieza: { select: { id: true, platform: true, formato: true, titulo: true } },
           },
         },
         submission: {
           include: {
-            feedbacks: { select: { savedVariationId: true, decision: true, feedbackCopy: true, feedbackDiseno: true } },
+            feedbacks: { select: { savedVariationId: true, piezaId: true, decision: true, feedbackCopy: true, feedbackDiseno: true } },
           },
         },
       },

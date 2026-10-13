@@ -368,6 +368,7 @@ export interface ReviewFeedback {
   comment?: string;
 }
 
+/** Un item de una revisión: copy en la ronda COPY, pieza en la ronda PIEZA. */
 export interface ReviewSessionItem {
   id: string;
   sortOrder: number;
@@ -378,11 +379,14 @@ export interface ReviewSessionItem {
     content: string;
     charCount: number;
     clientId: string;
-  };
+  } | null;
+  pieza?: { id: string; platform: string; formato: string; titulo: string } | null;
 }
 
 export interface ReviewItemFeedbackDetail {
-  savedVariationId: string;
+  /** Uno de los dos, según la ronda. */
+  savedVariationId: string | null;
+  piezaId?: string | null;
   decision: ReviewDecision;
   /** Era `comment`. En la ronda de copy todo comentario es sobre copy. */
   feedbackCopy?: string | null;

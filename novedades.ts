@@ -87,6 +87,14 @@ export const NOVEDADES: Novedad[] = [
     },
   },
   {
+    id: 'revisiones-de-piezas',
+    fecha: '2026-10-13',
+    titulo: 'Corregido: Revisiones con piezas respondidas',
+    cambios: [
+      'Abrir una revisión de piezas que el cliente ya respondió rompía la pantalla. Ahora muestra qué aprobó, qué pidió cambiar y si el comentario es del mensaje o del arte.',
+    ],
+  },
+  {
     id: 'campana-en-su-marca',
     fecha: '2026-10-13',
     titulo: 'Corregido: campañas que caían en otra marca',
