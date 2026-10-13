@@ -992,9 +992,15 @@ const contextoDe = async (piezas: { id: string; estado: PiezaEstado }[]): Promis
         const i = lista.findIndex(e => e.tipo === 'DEVUELTA' || e.tipo === 'REABIERTA' || e.tipo === 'ENTREGADA' || e.tipo === 'SUBIDA');
         const ultima = i >= 0 ? lista[i] : null;
         if (ultima && (ultima.tipo === 'DEVUELTA' || ultima.tipo === 'REABIERTA')) {
-          // Una devolución con dos categorías deja dos eventos casi juntos.
+          // Una devolución con dos categorías deja dos eventos casi juntos, del
+          // mismo autor: sin mirar el autor, dos devoluciones seguidas (la del
+          // equipo y la del cliente) se mezclaban en una.
           const juntos = lista.filter(
-            e => e.tipo === ultima.tipo && Math.abs(e.createdAt.getTime() - ultima.createdAt.getTime()) < 5000
+            e =>
+              e.tipo === ultima.tipo &&
+              e.autorId === ultima.autorId &&
+              e.autorExterno === ultima.autorExterno &&
+              Math.abs(e.createdAt.getTime() - ultima.createdAt.getTime()) < 5000
           );
           const corregido = lista.some(e => e.tipo === 'COPY_CORREGIDO' && e.createdAt > ultima.createdAt);
           devolucion = {
