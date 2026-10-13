@@ -262,6 +262,9 @@ can go first, and the audit spend does not count toward the quota yet.
 `docs/despliegue-h1.md` is the single sheet for the H1 deploy — the whole ordered sequence,
 including the three steps that surprise an operator. `docs/runbook-tenancy.md` and
 `docs/runbook-mejoras-h1.md` remain the detail behind each step.
+`docs/plan-marcas-relacionadas.md` (2026-10-13): a brand can be declared part of another (one level,
+ordering only, nothing inherited) and two brands with the same normalized name are flagged until
+one is renamed or merged; two deliveries, «Unir» is the second.
 `docs/plan-h2-produccion-auditoria.md` is the next phase (approved copy → assigned piece → AI
 audit); it is design-first and shares no code with the H1 deploy.
 `docs/diseno-sistema.md` holds the design decisions — screen names live in `screens.ts`, colors
