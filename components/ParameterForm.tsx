@@ -4,6 +4,7 @@ import { Platform, PLATFORM_GROUPS, FunnelStage, FUNNEL_STAGE_DESCRIPTIONS, Copy
 import { PlatformIcon } from './ui/platformIcons';
 import { apiRequest, clientApi, libraryApi } from '../services/api';
 import AprobacionDeCampana from './AprobacionDeCampana';
+import { nombreConMadre } from '../marcas';
 
 interface ParameterFormProps {
   onSubmit: (params: CopyParameters) => void;
@@ -319,7 +320,7 @@ const ParameterForm: React.FC<ParameterFormProps> = ({
           className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-gray-900 focus:border-gray-400 outline-none transition-colors text-[13px]"
         >
           {clients.length === 0 && <option value="">Sin marcas registradas</option>}
-          {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+          {clients.map(c => <option key={c.id} value={c.id}>{nombreConMadre(c, clients)}</option>)}
         </select>
 
         {activeClient && (

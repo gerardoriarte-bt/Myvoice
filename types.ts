@@ -190,6 +190,12 @@ export interface Client {
   /** La API los devuelve anidados en el cliente; el estado vivo de la app es
    *  el de `dnaProfiles`, esta copia solo alimenta la carga inicial. */
   dnaProfiles?: ContentDNAProfile[];
+  /** La marca de la que es complementaria (docs/plan-marcas-relacionadas.md). Un solo nivel. */
+  marcaMadreId?: string | null;
+  /** Calculado por GET /clients: las marcas del workspace que se llaman igual. */
+  nombreRepetidoCon?: string[];
+  /** Calculado por GET /clients: lo que distingue a una marca de otra con el mismo nombre. */
+  conteos?: { campanas: number; complementarias: number };
 }
 
 export interface FeedbackExample {

@@ -10,6 +10,7 @@ import { authApi, piezasApi } from '../../services/api';
 import TarjetaPieza from './TarjetaPieza';
 import MandarAlCliente from './MandarAlCliente';
 import OrdenDeTrabajo from './OrdenDeTrabajo';
+import { nombreConMadre } from '../../marcas';
 
 /**
  * El tablero de producción (H2 fase 2).
@@ -323,6 +324,10 @@ export default function TableroProduccion({
                       pieza={p}
                       miembros={ordenarParaAsignar(miembros, p.clientId)}
                       mostrarMarca
+                      nombreDeMarca={(() => {
+                        const m = clients.find(c => c.id === p.clientId);
+                        return m ? nombreConMadre(m, clients) : undefined;
+                      })()}
                       onAbrir={setAbierta}
                       onCambio={trasCambio}
                       onError={error}
