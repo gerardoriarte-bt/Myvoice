@@ -12,6 +12,7 @@ import {
   TenantError,
 } from '../lib/tenancy.js';
 import { normalizarNombre } from '../lib/nombreDeMarca.js';
+import { unirMarcas } from '../services/unirMarcas.js';
 import { prisma } from '../lib/prisma.js';
 import { claveGuiaDeMarca, storage } from '../lib/storage.js';
 
@@ -422,5 +423,17 @@ export const computeFingerprint = async (req: AuthRequest, res: Response) => {
     res.json({ client: await conUrlDeGuia(updated), fingerprint });
   } catch (error: any) {
     handleTenantError(error, res, error?.message || 'Error calculando fingerprint');
+  }
+};
+
+/**
+ * Une la marca `:id` con `destinoId`: todo pasa al destino y `:id` se borra.
+ * Ver services/unirMarcas.ts. No se puede deshacer; la pantalla lo dice.
+ */
+export const unirConOtra = async (req: AuthRequest, res: Response) => {
+  try {
+    res.json(await unirMarcas(req.tenant!, req.params.id, req.body?.destinoId));
+  } catch (error) {
+    handleTenantError(error, res, 'Error al unir las marcas');
   }
 };
