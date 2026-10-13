@@ -504,7 +504,7 @@ const App: React.FC = () => {
 
   const handleSaveDNAProfile = async (profile: Omit<ContentDNAProfile, 'id' | 'createdAt'>) => {
     try {
-      const savedProfile = await clientApi.saveDNA({ ...profile, clientId: activeClientId });
+      const savedProfile = await clientApi.saveDNA({ ...profile, clientId: profile.clientId || activeClientId });
       setDnaProfiles(prev => [savedProfile, ...prev]);
       addNotification('ADN Estratégico guardado en DB', 'success');
     } catch (err) {
