@@ -177,7 +177,18 @@ A session is also **homogeneous in `ronda`**: `COPY` carries `savedVariationId` 
 carries `piezaId` ones, never both. A `CHECK` in the migration holds the XOR that Prisma cannot
 express, because this is content published behind an unauthenticated token and an application
 validation is the wrong last line of defence. `services/revisionDePiezas.ts` owns the second
-round — including the rule that a rejection with **only** copy feedback does not move the piece.
+round: only pieces in `CON_EL_CLIENTE` of a `CLIENTE` campaign and not already in an open session
+can be sent; approval moves them to `LISTA`; any rejection must carry text and sends the piece
+back to `EN_DISENO` — **including copy-only feedback**, which until 2026-10-13 left the piece
+stranded in Lista (the responsable now fixes the copy inside the piece, `corregir-copy`).
+
+**Pieces follow the same owner rule as copy** (`services/permisosPieza.ts`, see
+`docs/plan-produccion-con-responsable.md`). That file is the single place that decides who may act
+on a piece; the board receives it precomputed as `puedo` / `quienDecide`. Accept, return and
+deciding audit findings belong to the campaign's responsable, **never to whoever uploaded the
+current version**; creating pieces is manager-only. A graphic upload stays `EN_DISENO` while the
+audit runs and moves to `POR_REVISAR` (and notifies) only when it ends; `rescatarAuditoriasTrabadas`
+at boot closes audits cut by a restart. `Project.pideAprobacionDeCliente` is legacy and unused.
 
 ### Frontend
 
@@ -189,7 +200,7 @@ after reading, so a refresh does not reopen an old piece).
 
 **The active brand is one, app-wide**: `activeClientId` in `App.tsx`, chosen in the header and
 persisted in `localStorage` (`vt_marca_activa`). Copy, Revisiones, Producción («Por marca»),
-Generar and Historial read it instead of keeping their own selector; only «Mis piezas» crosses brands.
+Generar and Historial read it instead of keeping their own selector; only «Lo mío» (Producción) crosses brands.
 
 **`screens.ts` is the single source of screen names and of the stage order**, and the stages are
 the process: Preparar · Escribir · Aprobar · Producir · Medir · Administrar. They were reordered
@@ -264,6 +275,8 @@ history.
 `docs/ROADMAP.md` is the living roadmap (three horizons plus cross-cutting enablers) and the
 place to update status. `docs/plan-h1-multitenant-motor.md` is the detailed plan for the
 current horizon, with file:line references for known open issues.
+`docs/plan-produccion-con-responsable.md` (2026-10-13): the production UX review — every piece
+step has a named owner, a `CON_EL_CLIENTE` column, audit before review, copy fixed inside the piece.
 `docs/plan-aprobacion-por-campana.md` is the UX audit follow-up (2026-10-13): one brand context,
 one meaning of «campaña», mandatory approval with a named owner, and the Copy screen's stage lane.
 `docs/bitacora-2026-09-26.md` records the first day the product was actually used: five findings,

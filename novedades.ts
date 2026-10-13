@@ -48,6 +48,45 @@ export interface Novedad {
 
 export const NOVEDADES: Novedad[] = [
   {
+    id: 'produccion-con-responsable',
+    fecha: '2026-10-13',
+    titulo: 'Producción: cada pieza la aprueba el responsable de su campaña',
+    cambios: [
+      'Acepta o devuelve una pieza el responsable de la campaña, y nunca quien la entregó. Los demás ven quién lo hace.',
+      'Nueva columna «Con el cliente»: si la campaña es del cliente, la pieza aceptada lo espera ahí. Lista vuelve a ser el final.',
+      'La pieza llega a revisión con la verificación terminada, y la tarjeta dice si fue devuelta, por quién y por qué.',
+      'Un cambio de mensaje ya no deja la pieza varada: el responsable corrige el copy dentro de la pieza.',
+      '«Mis piezas» ahora es «Lo mío»: suma lo que espera tu visto bueno.',
+    ],
+    aviso: {
+      porQue:
+        'Hasta ahora cualquiera del equipo podía aceptar una pieza, incluso quien la había diseñado, y la aprobación del cliente sobre el arte era un interruptor suelto. Ahora la pieza sigue la misma regla que el copy: la aprueba el responsable de su campaña, y el cliente la ve si la campaña es del cliente.',
+      paraQuienAdministra: {
+        titulo: 'Lo que cambia para quien administra',
+        pasos: [
+          'Revisá que cada campaña con piezas en curso tenga responsable: sin él, nadie puede aceptarlas.',
+          'Si el responsable es también quien diseña, nombrá a otra persona: nadie acepta lo que entregó.',
+          'Las piezas de campañas del cliente que ya estaban enviadas pasaron a «Con el cliente».',
+        ],
+        accion: { label: 'Ir a Producción', pantalla: 'produccion' },
+      },
+      paraElEquipo: {
+        titulo: 'Qué cambia para vos',
+        pasos: [
+          'Si diseñás: lo devuelto aparece primero en «Lo mío», con el motivo, y te llega un aviso.',
+          'Si sos responsable de una campaña: aceptás, devolvés y corregís el copy de sus piezas.',
+          'Si no te toca decidir, la tarjeta te dice quién lo hace en lugar de los botones.',
+        ],
+        accion: { label: 'Ver lo mío', pantalla: 'produccion' },
+      },
+      tambien: [
+        'El cliente tiene que escribir qué cambiar cuando pide cambios.',
+        'Revisiones ya no se rompe al abrir una revisión de piezas respondida.',
+      ],
+      guia: 'Producción',
+    },
+  },
+  {
     id: 'aprobacion-por-campana',
     fecha: '2026-10-13',
     titulo: 'La aprobación ahora es por campaña, y siempre tiene un responsable',
