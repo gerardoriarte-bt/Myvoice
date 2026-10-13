@@ -677,6 +677,69 @@ async function main() {
       `devolvió ${JSON.stringify(miembros.body?.[0]?.funciones)}`
     );
 
+    console.log('\nMARCAS RELACIONADAS — madre, complementarias y nombres repetidos');
+    await expectDenied('PUT /clients/:id con una madre de A', `/clients/${B.client.id}`, B.token, {
+      method: 'PUT',
+      body: JSON.stringify({ marcaMadreId: A.client.id }),
+    });
+    const madre = await api('/clients', B.token, {
+      method: 'POST',
+      body: JSON.stringify({ name: 'Madre de B', industry: 'Test' }),
+    });
+    const hija = await api('/clients', B.token, {
+      method: 'POST',
+      body: JSON.stringify({ name: 'Hija de B', industry: 'Test', marcaMadreId: madre.body?.id }),
+    });
+    record(
+      'POST /clients crea una complementaria de una madre propia',
+      hija.status === 201 && hija.body?.marcaMadreId === madre.body?.id,
+      `respondió ${hija.status} ${JSON.stringify(hija.body)?.slice(0, 100)}`
+    );
+    const nieta = await api('/clients', B.token, {
+      method: 'POST',
+      body: JSON.stringify({ name: 'Nieta de B', industry: 'Test', marcaMadreId: hija.body?.id }),
+    });
+    record('Una complementaria no tiene complementarias (400)', nieta.status === 400, `respondió ${nieta.status}`);
+    const madreHija = await api(`/clients/${madre.body?.id}`, B.token, {
+      method: 'PUT',
+      body: JSON.stringify({ marcaMadreId: B.client.id }),
+    });
+    record('Una marca con complementarias no pasa a ser complementaria (400)', madreHija.status === 400, `respondió ${madreHija.status}`);
+    const asiMisma = await api(`/clients/${B.client.id}`, B.token, {
+      method: 'PUT',
+      body: JSON.stringify({ marcaMadreId: B.client.id }),
+    });
+    record('Una marca no es parte de sí misma (400)', asiMisma.status === 400, `respondió ${asiMisma.status}`);
+
+    const miembroMarcas = await nuevoMiembro(B.workspace.id, 'marcas');
+    const sinPermiso = await api(`/clients/${hija.body?.id}`, miembroMarcas.token, {
+      method: 'PUT',
+      body: JSON.stringify({ marcaMadreId: null }),
+    });
+    record('Un MEMBER no declara qué marca es parte de cuál (403)', sinPermiso.status === 403, `respondió ${sinPermiso.status}`);
+
+    // Nombres repetidos: se comparan sin mayúsculas, tildes ni espacios, y
+    // nunca contra otro workspace — sería decirle a B que A tiene esa marca.
+    await prisma.client.create({ data: { name: 'Repetida Ñandú', industry: 'Test', workspaceId: A.workspace.id } });
+    const r1 = await prisma.client.create({ data: { name: 'Repetida Ñandú', industry: 'Test', workspaceId: B.workspace.id } });
+    const r2 = await prisma.client.create({ data: { name: '  repetida  ñandu ', industry: 'Test', workspaceId: B.workspace.id } });
+    const conRepetidas = await api('/clients', B.token);
+    const deR1 = (conRepetidas.body ?? []).find((c: any) => c.id === r1.id);
+    record(
+      'GET /clients avisa el nombre repetido sin mayúsculas, tildes ni espacios',
+      JSON.stringify(deR1?.nombreRepetidoCon) === JSON.stringify([r2.id]),
+      `nombreRepetidoCon ${JSON.stringify(deR1?.nombreRepetidoCon)}`
+    );
+    record(
+      'El nombre repetido nunca incluye marcas de otro workspace',
+      (conRepetidas.body ?? []).every((c: any) =>
+        (c.nombreRepetidoCon ?? []).every((id: string) => (conRepetidas.body ?? []).some((o: any) => o.id === id))
+      ),
+      'apareció un id ajeno'
+    );
+    const deMadre = (conRepetidas.body ?? []).find((c: any) => c.id === madre.body?.id);
+    record('GET /clients cuenta las complementarias', deMadre?.conteos?.complementarias === 1, `conteos ${JSON.stringify(deMadre?.conteos)}`);
+
     console.log('\nUNA REVISIÓN, UNA MARCA — fuga entre clientes del mismo workspace');
     // No es aislamiento entre empresas —eso ya está cubierto— sino entre las
     // marcas de una misma agencia. El enlace de revisión no pide cuenta, así

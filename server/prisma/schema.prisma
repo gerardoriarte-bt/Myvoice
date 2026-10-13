@@ -154,6 +154,13 @@ model Client {
   brandFingerprintAt        DateTime?
   workspaceId               String
   workspace                 Workspace           @relation(fields: [workspaceId], references: [id])
+  /// La marca de la que esta es complementaria (docs/plan-marcas-relacionadas.md).
+  /// Un solo nivel: una madre no es complementaria de otra. Solo ordena el
+  /// selector y Marcas: no hereda ADN, campañas, responsables ni cuota. Borrar la
+  /// madre suelta a sus complementarias en vez de arrastrarlas.
+  marcaMadreId              String?
+  marcaMadre                Client?             @relation("MarcaMadre", fields: [marcaMadreId], references: [id], onDelete: SetNull)
+  complementarias           Client[]            @relation("MarcaMadre")
   dnaProfiles               ContentDNAProfile[]
   generationLogs            GenerationLog[]
   negativeFeedbacks         NegativeFeedback[]
@@ -164,6 +171,8 @@ model Client {
   funciones                 MiembroFuncion[]
   notificaciones            Notificacion[]
   campanas                  Project[]
+
+  @@index([marcaMadreId])
 }
 
 /// Una fila por generación. Además del rastro de auditoría, es la tabla de
