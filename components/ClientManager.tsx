@@ -8,6 +8,8 @@ import GenerationHistory from './GenerationHistory';
 import VoiceFingerprintCard from './VoiceFingerprintCard';
 import BrandHubHero from './BrandHubHero';
 import { clientApi, analyticsApi } from '../services/api';
+import { Copy, CornerDownRight } from 'lucide-react';
+import { distincion, familias, madreDe, madresPosibles, normalizarNombre, tieneNombreRepetido } from '../marcas';
 
 interface ClientManagerProps {
   clients: Client[];
@@ -21,6 +23,8 @@ interface ClientManagerProps {
   onAdd: (client: Omit<Client, 'id' | 'createdAt'>) => void;
   onUpdate: (id: string, updates: Partial<Client>) => void;
   onRemove: (id: string) => void;
+  /** Une dos marcas que eran la misma. Resuelve cuando terminó, o falla con el motivo. */
+  onUnir?: (origenId: string, destinoId: string) => Promise<void>;
   onSaveProfile: (profile: Omit<ContentDNAProfile, 'id' | 'createdAt'>) => void;
   onUpdateProfile: (id: string, updates: Partial<ContentDNAProfile>) => void;
   onDeleteProfile: (id: string) => void;
@@ -41,6 +45,7 @@ const ClientManager: React.FC<ClientManagerProps> = ({
   onAdd,
   onUpdate,
   onRemove,
+  onUnir,
   onSaveProfile,
   onUpdateProfile,
   onDeleteProfile,
@@ -51,7 +56,12 @@ const ClientManager: React.FC<ClientManagerProps> = ({
   const [showGlobalSettings, setShowGlobalSettings] = React.useState(false);
   const [activeClientHub, setActiveClientHub] = React.useState<string | null>(null);
   const [editingProfileId, setEditingProfileId] = React.useState<string | null>(null);
-  const [clientForm, setClientForm] = React.useState({ name: '', industry: '', logo: '' });
+  const [clientForm, setClientForm] = React.useState({ name: '', industry: '', logo: '', marcaMadreId: '' });
+  /** La tarjeta con nombre repetido que se está resolviendo, y el nombre nuevo si se renombra. */
+  const [resolviendo, setResolviendo] = React.useState<{ id: string; modo: 'renombrar' | 'madre'; valor: string } | null>(null);
+  /** El diálogo de unir: las dos marcas y cuál queda. */
+  const [uniendo, setUniendo] = React.useState<{ a: string; b: string; queda: string } | null>(null);
+  const [unirOcupado, setUnirOcupado] = React.useState(false);
   
   // States for Global Strategy Catalog
   const [newVoice, setNewVoice] = React.useState('');
@@ -423,7 +433,7 @@ const ClientManager: React.FC<ClientManagerProps> = ({
                  </button>
               </div>
 
-              <form onSubmit={(e) => { e.preventDefault(); onAdd(clientForm); setIsAddingClient(false); setClientForm({name:'', industry:'', logo:''}); }} className="p-6">
+              <form onSubmit={(e) => { e.preventDefault(); onAdd({ ...clientForm, marcaMadreId: clientForm.marcaMadreId || null } as any); setIsAddingClient(false); setClientForm({name:'', industry:'', logo:'', marcaMadreId: ''}); }} className="p-6">
                 <div className="flex flex-col md:flex-row gap-6 mb-8">
                   <div className="w-24 h-24 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center overflow-hidden shrink-0 cursor-pointer hover:bg-gray-100 transition-colors group" onClick={() => document.getElementById('logo-upload')?.click()}>
                     {clientForm.logo ? (
@@ -445,6 +455,32 @@ const ClientManager: React.FC<ClientManagerProps> = ({
                       <label className="block text-[12px] font-medium text-gray-700 mb-1">Industria</label>
                       <input required type="text" className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-gray-900 text-[13px] outline-none focus:border-gray-400 transition-colors" placeholder="Ej: SaaS, Finanzas..." value={clientForm.industry} onChange={e => setClientForm({...clientForm, industry: e.target.value})} />
                     </div>
+                    {/* No se bloquea crear un nombre que ya existe: se avisa antes, y
+                        muchas veces lo que se quería era una complementaria. */}
+                    {(() => {
+                      const igual = clientForm.name.trim()
+                        ? clients.find(c => normalizarNombre(c.name) === normalizarNombre(clientForm.name))
+                        : undefined;
+                      return igual && !clientForm.marcaMadreId ? (
+                        <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[12px] text-amber-800">
+                          Ya hay una «{igual.name}» en este workspace. ¿Querías crear una complementaria? Elegila en «Es parte de».
+                        </p>
+                      ) : null;
+                    })()}
+                    <div>
+                      <label className="block text-[12px] font-medium text-gray-700 mb-1">Es parte de</label>
+                      <select
+                        className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-gray-900 text-[13px] outline-none focus:border-gray-400"
+                        value={clientForm.marcaMadreId}
+                        onChange={e => setClientForm({ ...clientForm, marcaMadreId: e.target.value })}
+                      >
+                        <option value="">Ninguna: es una marca madre</option>
+                        {madresPosibles(null, clients).map(m => (
+                          <option key={m.id} value={m.id}>{m.name}</option>
+                        ))}
+                      </select>
+                      <p className="mt-1 text-[11px] text-gray-500">Ordena el selector y esta pantalla. No comparte ADN, campañas ni aprobaciones.</p>
+                    </div>
                   </div>
                 </div>
                 
@@ -457,6 +493,96 @@ const ClientManager: React.FC<ClientManagerProps> = ({
         </div>
       )}
 
+
+      {/* UNIR — docs/plan-marcas-relacionadas.md, entrega 2. Dibujado en el .pen,
+          «§ Marcas · Declarar y unir». */}
+      {uniendo && (() => {
+        const a = clients.find(c => c.id === uniendo.a);
+        const b = clients.find(c => c.id === uniendo.b);
+        if (!a || !b) return null;
+        const queda = uniendo.queda === a.id ? a : b;
+        const seVa = queda === a ? b : a;
+        const copyDe = (c: Client) => savedVariations.filter(v => v.clientId === c.id).length;
+        const ADN: [keyof Client, string][] = [
+          ['voice', 'voz'],
+          ['valueProposition', 'propuesta de valor'],
+          ['brandVoiceGuidelines', 'guía de voz'],
+          ['brandKeywords', 'palabras clave'],
+          ['brandProhibitions', 'prohibiciones'],
+        ];
+        const adnPropio = ADN.filter(([k]) => {
+          const v = (seVa[k] as string | undefined)?.trim();
+          return v && v !== (queda[k] as string | undefined)?.trim();
+        }).map(([, n]) => n);
+        const otraEnLista = (c: Client) => (c.nombreRepetidoCon ?? []).map(id => clients.find(x => x.id === id)).filter(Boolean) as Client[];
+        return (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-6">
+            <div className="absolute inset-0 bg-ink/40" onClick={() => !unirOcupado && setUniendo(null)} />
+            <div role="dialog" aria-modal="true" className="relative w-full max-w-lg space-y-4 rounded-xl border border-gray-200 bg-white p-6 shadow-xl">
+              <h3 className="text-[16px] font-semibold text-gray-900">Unir las dos «{a.name.trim()}»</h3>
+              {otraEnLista(a).length > 1 && (
+                <label className="block text-[12px] text-gray-600">
+                  Con cuál
+                  <select
+                    value={uniendo.b}
+                    onChange={e => setUniendo({ ...uniendo, b: e.target.value, queda: e.target.value })}
+                    className="mt-1 w-full rounded-lg border border-gray-200 px-2 py-1.5 text-[13px]"
+                  >
+                    {otraEnLista(a).map(o => (
+                      <option key={o.id} value={o.id}>{o.name} · {distincion(o)}</option>
+                    ))}
+                  </select>
+                </label>
+              )}
+              <div className="space-y-2">
+                <p className="text-[12px] font-medium text-gray-700">Queda esta, con todo lo de las dos</p>
+                {[a, b].map(c => (
+                  <label key={c.id} className={`flex cursor-pointer items-start gap-2.5 rounded-lg border px-3 py-2.5 ${uniendo.queda === c.id ? 'border-gray-900' : 'border-gray-200'}`}>
+                    <input type="radio" checked={uniendo.queda === c.id} onChange={() => setUniendo({ ...uniendo, queda: c.id })} className="mt-1" />
+                    <span>
+                      <span className="block text-[13px] font-semibold text-gray-900">{c.name}{madreDe(c, clients) ? ` · de ${madreDe(c, clients)!.name}` : ''}</span>
+                      <span className="block text-[11px] text-gray-500">{distincion(c)} · {copyDe(c) === 1 ? '1 copy' : `${copyDe(c)} copys`}</span>
+                    </span>
+                  </label>
+                ))}
+              </div>
+              <ul className="space-y-1.5 rounded-lg bg-gray-50 p-3 text-[12px] text-gray-700">
+                <li>→ Pasan a «{queda.name.trim()}»: {seVa.conteos?.campanas === 1 ? '1 campaña' : `${seVa.conteos?.campanas ?? 0} campañas`}, {copyDe(seVa) === 1 ? '1 copy' : `${copyDe(seVa)} copys`}, y sus piezas, revisiones, historial y consumo.</li>
+                <li>
+                  → «{seVa.name.trim()}» se borra. El ADN de marca es el de la que queda.
+                  {adnPropio.length > 0 && (
+                    <span className="mt-1 block font-medium text-amber-800">
+                      La que se borra tiene su propio ADN ({adnPropio.join(', ')}) y no se mezcla: si hace falta, copialo antes de unir.
+                    </span>
+                  )}
+                </li>
+                {(seVa.conteos?.complementarias ?? 0) > 0 && <li>→ Sus complementarias pasan a ser de «{queda.name.trim()}».</li>}
+                <li>→ Quien la tenía elegida en el selector pasa a la que queda.</li>
+              </ul>
+              <div className="flex justify-end gap-2">
+                <button disabled={unirOcupado} onClick={() => setUniendo(null)} className="rounded-lg border border-gray-200 px-3.5 py-2 text-[12.5px] font-medium text-gray-700">
+                  Cancelar
+                </button>
+                <button
+                  disabled={unirOcupado}
+                  onClick={async () => {
+                    setUnirOcupado(true);
+                    try {
+                      await onUnir!(seVa.id, queda.id);
+                      setUniendo(null);
+                    } finally {
+                      setUnirOcupado(false);
+                    }
+                  }}
+                  className="rounded-lg bg-ink px-3.5 py-2 text-[12.5px] font-semibold text-white disabled:opacity-50"
+                >
+                  {unirOcupado ? 'Uniendo…' : 'Unir · no se puede deshacer'}
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* MAIN VIEW SWITCHER */}
       {!activeClientHub ? (
@@ -484,15 +610,37 @@ const ClientManager: React.FC<ClientManagerProps> = ({
               </div>
            </div>
 
-           {/* Grid Layout */}
+           {/* El aviso no se descarta: se va cuando los nombres dejan de ser iguales. */}
+           {clients.some(tieneNombreRepetido) && (
+             <div className="flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[12.5px] text-amber-900">
+               <Copy className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+               <span>
+                 {(() => {
+                   // Uno por nombre normalizado: «Terpel» y «terpel » son el mismo nombre.
+                   const porClave = new Map<string, string>();
+                   for (const c of clients.filter(tieneNombreRepetido)) {
+                     const clave = normalizarNombre(c.name);
+                     if (!porClave.has(clave)) porClave.set(clave, c.name.trim());
+                   }
+                   const nombres = [...porClave.values()];
+                   return nombres.length === 1 ? `Dos o más marcas se llaman «${nombres[0]}».` : `Hay nombres repetidos: ${nombres.map(n => `«${n}»`).join(', ')}.`;
+                 })()}{' '}
+                 En el selector se ven iguales y es fácil trabajar en la equivocada. Resolvelo en las tarjetas marcadas: renombrá la que sobra o hacela parte de la otra.
+               </span>
+             </div>
+           )}
+
+           {/* Grid Layout: ordenada por familia, cada madre seguida de sus complementarias. */}
            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-             {clients.map(client => {
+             {familias(clients).flatMap(f => [f.madre, ...f.complementarias]).map(client => {
+                const madre = madreDe(client, clients);
+                const repetido = tieneNombreRepetido(client);
                 const profilesCount = dnaProfiles.filter(p => p.clientId === client.id).length;
                 const clientSaved = savedVariations.filter(v => v.clientId === client.id);
                 const savedCount = clientSaved.length;
                 const approvedCount = clientSaved.filter(v => v.isApproved).length;
                 return (
-                  <div key={client.id} onClick={() => enterHub(client.id)} className="bg-white rounded-xl p-5 border border-gray-200 hover:border-gray-300 transition-colors cursor-pointer group flex flex-col h-full shadow-sm">
+                  <div key={client.id} onClick={() => enterHub(client.id)} className={`bg-white rounded-xl p-5 border hover:border-gray-300 transition-colors cursor-pointer group flex flex-col h-full shadow-sm ${repetido ? 'border-amber-400' : 'border-gray-200'}`}>
                      <div className="flex justify-between items-start mb-4">
                        <div className="w-10 h-10 rounded-lg bg-gray-50 border border-gray-100 flex items-center justify-center overflow-hidden">
                           {client.logo ? <img src={client.logo} className="w-full h-full object-contain p-1" /> : <div className="text-gray-400 font-medium text-sm">{client.name.substring(0, 2).toUpperCase()}</div>}
@@ -511,8 +659,99 @@ const ClientManager: React.FC<ClientManagerProps> = ({
                        </div>
                      </div>
                      <div className="flex-1">
-                        <h3 className="text-[15px] font-medium text-gray-900 truncate mb-1">{client.name}</h3>
-                        <p className="text-[12px] text-gray-500 truncate mb-3">{client.industry}</p>
+                        {madre && (
+                          <p className="mb-1 flex items-center gap-1 text-[11px] text-gray-500">
+                            <CornerDownRight className="h-3 w-3" /> Complementaria de {madre.name}
+                          </p>
+                        )}
+                        <div className="mb-1 flex items-center gap-1.5">
+                          <h3 className="truncate text-[15px] font-medium text-gray-900">{client.name}</h3>
+                          {repetido && (
+                            <span className="flex shrink-0 items-center gap-0.5 rounded border border-amber-200 bg-amber-50 px-1 text-[9.5px] font-semibold text-amber-700">
+                              <Copy className="h-2.5 w-2.5" /> nombre repetido
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[12px] text-gray-500 truncate mb-3">
+                          {repetido ? distincion(client) : client.industry}
+                          {!madre && (client.conteos?.complementarias ?? 0) > 0 && ` · madre de ${client.conteos!.complementarias}`}
+                        </p>
+                        {repetido && (
+                          <div className="mb-3 space-y-2 rounded-lg border border-gray-200 bg-gray-50 p-2.5" onClick={e => e.stopPropagation()}>
+                            <p className="text-[11.5px] font-medium text-gray-800">Otra marca se llama igual. ¿Qué es esta?</p>
+                            {resolviendo?.id !== client.id ? (
+                              <div className="flex flex-wrap gap-1.5">
+                                {onUnir && (
+                                  <button
+                                    onClick={() => {
+                                      const otra = clients.find(c => c.id === client.nombreRepetidoCon![0])!;
+                                      // Por defecto queda la que más tiene: es la que menos se mueve.
+                                      const peso = (c: Client) => (c.conteos?.campanas ?? 0) + (c.conteos?.complementarias ?? 0);
+                                      setUniendo({ a: client.id, b: otra.id, queda: peso(otra) >= peso(client) ? otra.id : client.id });
+                                    }}
+                                    className="rounded-md bg-ink px-2 py-1 text-[11px] font-medium text-white hover:bg-ink-hover"
+                                  >
+                                    Es la misma: unir
+                                  </button>
+                                )}
+                                <button
+                                  onClick={() => setResolviendo({ id: client.id, modo: 'renombrar', valor: client.name })}
+                                  className="rounded-md border border-gray-200 bg-white px-2 py-1 text-[11px] font-medium text-gray-700 hover:bg-gray-100"
+                                >
+                                  Es otra: renombrar
+                                </button>
+                                {(client.conteos?.complementarias ?? 0) === 0 && !client.marcaMadreId && (
+                                  <button
+                                    onClick={() => setResolviendo({ id: client.id, modo: 'madre', valor: '' })}
+                                    className="rounded-md border border-gray-200 bg-white px-2 py-1 text-[11px] font-medium text-gray-700 hover:bg-gray-100"
+                                  >
+                                    Es parte de otra marca
+                                  </button>
+                                )}
+                              </div>
+                            ) : (
+                              <div className="space-y-1.5">
+                                {resolviendo.modo === 'renombrar' ? (
+                                  <input
+                                    autoFocus
+                                    value={resolviendo.valor}
+                                    onChange={e => setResolviendo({ ...resolviendo, valor: e.target.value })}
+                                    className="w-full rounded-md border border-gray-200 bg-white px-2 py-1 text-[12px]"
+                                  />
+                                ) : (
+                                  <select
+                                    value={resolviendo.valor}
+                                    onChange={e => setResolviendo({ ...resolviendo, valor: e.target.value })}
+                                    className="w-full rounded-md border border-gray-200 bg-white px-2 py-1 text-[12px]"
+                                  >
+                                    <option value="">Elegí la marca madre…</option>
+                                    {madresPosibles(client, clients).map(m => (
+                                      <option key={m.id} value={m.id}>{m.name}{tieneNombreRepetido(m) ? ` · ${distincion(m)}` : ''}</option>
+                                    ))}
+                                  </select>
+                                )}
+                                {resolviendo.modo === 'madre' && (
+                                  <p className="text-[10.5px] text-gray-500">El aviso sigue hasta que se renombre: un «{client.name}» dentro de otro sigue siendo ambiguo.</p>
+                                )}
+                                <div className="flex gap-1.5">
+                                  <button
+                                    disabled={!resolviendo.valor.trim()}
+                                    onClick={() => {
+                                      onUpdate(client.id, resolviendo.modo === 'renombrar' ? { name: resolviendo.valor.trim() } : { marcaMadreId: resolviendo.valor });
+                                      setResolviendo(null);
+                                    }}
+                                    className="rounded-md bg-ink px-2 py-1 text-[11px] font-medium text-white disabled:opacity-40"
+                                  >
+                                    Guardar
+                                  </button>
+                                  <button onClick={() => setResolviendo(null)} className="rounded-md px-2 py-1 text-[11px] text-gray-600">
+                                    Cancelar
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
                         {savedCount > 0 && (
                           <div className="inline-flex items-center gap-1.5 bg-violet-50 border border-violet-100 rounded-full px-2 py-0.5">
                             <span className="w-1.5 h-1.5 rounded-full bg-violet-400" />
@@ -614,6 +853,28 @@ const ClientManager: React.FC<ClientManagerProps> = ({
                         </div>
 
                         <div className="space-y-4 pt-4 border-t border-gray-100">
+                           <div>
+                              <label className="block text-[12px] font-medium text-gray-700 mb-1">Es parte de</label>
+                              {(client.conteos?.complementarias ?? 0) > 0 ? (
+                                <p className="rounded-lg bg-gray-50 px-3 py-2 text-[12px] text-gray-600">
+                                  {client.name} tiene {client.conteos!.complementarias === 1 ? 'una complementaria' : `${client.conteos!.complementarias} complementarias`}, así que no puede ser parte de otra. Un solo nivel.
+                                </p>
+                              ) : (
+                                <>
+                                  <select
+                                    className="w-full bg-white border border-gray-200 text-gray-900 rounded-lg px-3 py-2 text-[13px] outline-none focus:border-gray-400"
+                                    value={client.marcaMadreId ?? ''}
+                                    onChange={e => onUpdate(client.id, { marcaMadreId: e.target.value || null })}
+                                  >
+                                    <option value="">Ninguna: es una marca madre</option>
+                                    {madresPosibles(client, clients).map(m => (
+                                      <option key={m.id} value={m.id}>{m.name}</option>
+                                    ))}
+                                  </select>
+                                  <p className="mt-1 text-[10.5px] text-gray-500">Solo ordena el selector y Marcas: no comparte ADN, campañas ni aprobaciones.</p>
+                                </>
+                              )}
+                           </div>
                            <div>
                               <label className="block text-[12px] font-medium text-gray-700 mb-1">Voz Global</label>
                               <select

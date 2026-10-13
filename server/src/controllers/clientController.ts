@@ -8,7 +8,11 @@ import {
   assertClientInWorkspace,
   assertDnaProfileInWorkspace,
   pickFields,
+  TenantContext,
+  TenantError,
 } from '../lib/tenancy.js';
+import { normalizarNombre } from '../lib/nombreDeMarca.js';
+import { unirMarcas } from '../services/unirMarcas.js';
 import { prisma } from '../lib/prisma.js';
 import { claveGuiaDeMarca, storage } from '../lib/storage.js';
 
@@ -73,10 +77,66 @@ export const getClients = async (req: AuthRequest, res: Response) => {
       include: { dnaProfiles: true },
       orderBy: { createdAt: 'asc' },
     });
-    res.json(await Promise.all(clients.map(conUrlDeGuia)));
+    res.json(await Promise.all(conRelaciones(clients).map(conUrlDeGuia)));
   } catch (error) {
     handleTenantError(error, res, 'Error al obtener marcas');
   }
+};
+
+/**
+ * Lo que la pantalla necesita para notar marcas relacionadas, calculado al
+ * leer y no guardado (docs/plan-marcas-relacionadas.md): con quién comparte
+ * nombre —el aviso no tiene estado propio, así que no puede quedar desfasado
+ * del nombre ni hay nada que descartar— y lo que distingue a cada una.
+ * Se calcula sobre la lista del workspace, nunca entre workspaces.
+ */
+const conRelaciones = <T extends { id: string; name: string; marcaMadreId: string | null; dnaProfiles: unknown[] }>(
+  marcas: T[]
+) => {
+  const porNombre = new Map<string, string[]>();
+  for (const m of marcas) {
+    const clave = normalizarNombre(m.name);
+    porNombre.set(clave, [...(porNombre.get(clave) ?? []), m.id]);
+  }
+  return marcas.map(m => ({
+    ...m,
+    nombreRepetidoCon: (porNombre.get(normalizarNombre(m.name)) ?? []).filter(id => id !== m.id),
+    conteos: {
+      campanas: m.dnaProfiles.length,
+      complementarias: marcas.filter(o => o.marcaMadreId === m.id).length,
+    },
+  }));
+};
+
+/**
+ * Valida una marca madre antes de escribirla. `marcaId` es null al crear.
+ *
+ * Un solo nivel, en las dos direcciones: la madre no puede ser complementaria
+ * de otra, y una marca que ya tiene complementarias no puede pasar a ser
+ * complementaria. Una madre de otro workspace es 404, como cualquier id ajeno.
+ */
+const validarMadre = async (tenant: TenantContext, marcaId: string | null, madreId: string) => {
+  if (marcaId && madreId === marcaId) throw new TenantError('Una marca no puede ser parte de sí misma', 400);
+  const madre = await assertClientInWorkspace(tenant, madreId);
+  if (madre.marcaMadreId)
+    throw new TenantError(`«${madre.name}» ya es parte de otra marca: las complementarias no tienen complementarias`, 400);
+  if (marcaId) {
+    const hijas = await prisma.client.count({ where: { marcaMadreId: marcaId } });
+    if (hijas > 0)
+      throw new TenantError(
+        `Esta marca tiene ${hijas === 1 ? 'una complementaria' : `${hijas} complementarias`}, así que no puede ser parte de otra`,
+        400
+      );
+  }
+};
+
+/** `marcaMadreId` del body: undefined = no tocar, null o '' = soltar, string = validar. */
+const madreDelBody = (body: any): string | null | undefined => {
+  if (!body || !('marcaMadreId' in body)) return undefined;
+  const v = body.marcaMadreId;
+  if (v === null || v === '') return null;
+  if (typeof v !== 'string') throw new TenantError('marcaMadreId tiene que ser un id o null', 400);
+  return v;
 };
 
 export const createClient = async (req: AuthRequest, res: Response) => {
@@ -85,8 +145,11 @@ export const createClient = async (req: AuthRequest, res: Response) => {
     return res.status(400).json({ error: 'name e industry son obligatorios' });
   }
   try {
+    const marcaMadreId = madreDelBody(req.body);
+    if (marcaMadreId) await validarMadre(req.tenant!, null, marcaMadreId);
     const client = await prisma.client.create({
       data: {
+        marcaMadreId: marcaMadreId ?? null,
         workspaceId: req.tenant!.workspaceId,
         name,
         industry,
@@ -110,6 +173,10 @@ export const updateClient = async (req: AuthRequest, res: Response) => {
     const data: Record<string, any> = pickFields(req.body, CLIENT_UPDATABLE);
     // El frontend manda `logo`; la columna es `logoUrl`.
     if (req.body.logo) data.logoUrl = req.body.logo;
+    // La marca madre no va por la lista blanca: se valida antes de escribirla.
+    const marcaMadreId = madreDelBody(req.body);
+    if (marcaMadreId) await validarMadre(req.tenant!, id, marcaMadreId);
+    if (marcaMadreId !== undefined) data.marcaMadreId = marcaMadreId;
 
     const client = await prisma.client.update({ where: { id }, data });
     res.json(await conUrlDeGuia(client));
@@ -356,5 +423,17 @@ export const computeFingerprint = async (req: AuthRequest, res: Response) => {
     res.json({ client: await conUrlDeGuia(updated), fingerprint });
   } catch (error: any) {
     handleTenantError(error, res, error?.message || 'Error calculando fingerprint');
+  }
+};
+
+/**
+ * Une la marca `:id` con `destinoId`: todo pasa al destino y `:id` se borra.
+ * Ver services/unirMarcas.ts. No se puede deshacer; la pantalla lo dice.
+ */
+export const unirConOtra = async (req: AuthRequest, res: Response) => {
+  try {
+    res.json(await unirMarcas(req.tenant!, req.params.id, req.body?.destinoId));
+  } catch (error) {
+    handleTenantError(error, res, 'Error al unir las marcas');
   }
 };

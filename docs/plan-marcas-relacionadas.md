@@ -109,10 +109,39 @@ selector, aunque alguien haya dicho «ya sé».
   - ver el aviso en las dos «Terpel»;
   - renombrar la vacía y ver que el aviso desaparece de las dos.
 
-**Después del despliegue:** con los datos de hoy, la segunda «Terpel» no tiene campañas. Para
-resolverla alcanza con renombrarla o borrarla; no hace falta esperar a la entrega 2.
+**Después del despliegue:** ~~con los datos de hoy, la segunda «Terpel» no tiene campañas~~.
+**Corrección del 2026-10-13:** el ensayo de la entrega 2 contra una copia de producción mostró que
+la segunda «Terpel» (alta 2026-05-12) tiene 25 generaciones, 3 briefs, 11 copys y 3 campañas, más
+que la primera en varios rubros. El supuesto venía de los datos ilustrativos del `.pen`. Borrarla no
+es una opción —las generaciones y el copy lo impiden, y se perdería trabajo—: o se renombra, si es
+otra marca, o se une con la primera.
+
+**Lo que cambió al construirla** (2026-10-14):
+- El normalizador no vive en `shared/`: la API compila solo `src/` y su imagen de Docker se arma
+  desde `server/`, así que importarlo rompería el deploy. Está en `server/src/lib/nombreDeMarca.ts`,
+  y el frontend tiene una copia en `marcas.ts` solo para el aviso previo al crear. La verdad
+  (`nombreRepetidoCon`) la calcula el servidor.
+- Las validaciones de la madre corren antes de escribir, no dentro de una transacción. Dos personas
+  que en el mismo segundo hacen a A madre de B y a B madre de A podrían romper el límite de un nivel;
+  con las dos o tres personas que administran un workspace, el riesgo no justifica el bloqueo.
+- Marcas mantiene la grilla de tarjetas, ordenada por familia (cada madre seguida de sus
+  complementarias, marcadas «Complementaria de…»), en vez de las filas por familia del `.pen`.
+- Después de cambiar el nombre o la madre, la app vuelve a pedir la lista: los campos calculados
+  dependen de todas las marcas.
 
 ## Nivel 2 · Entrega 2 — Unir
+
+**Construida el 2026-10-13** (`services/unirMarcas.ts`, `POST /clients/:id/unir`, el diálogo en
+Marcas). Mueve once tablas, suma el consumo del mismo mes, descarta funciones repetidas, reacomoda la
+familia y, antes de borrar el origen, cuenta que no le quede ninguna fila apuntando: cuatro tablas
+borran en cascada con la marca, y olvidarse de una sería perder datos sin aviso. Sin aislamiento
+`Serializable`: en una transacción larga, cualquier generación concurrente la abortaría.
+
+**Ensayo contra la copia de producción del 2026-10-13** (restaurada en local y borrada al
+terminar): unir la segunda «Terpel» con la primera movió 25 generaciones, 3 briefs, 11 copys,
+3 campañas y 1 feedback negativo en 35 ms. Los totales de la marca que queda son la suma exacta, y
+los de toda la base son idénticos antes y después salvo una marca menos.
+
 
 `POST /clients/:id/unir` con `{ destinoId }`, solo para OWNER y ADMIN. Antes de tocar nada pasa
 por `assertClientInWorkspace` para las dos marcas. Todo ocurre en **una sola transacción**: si

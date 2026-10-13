@@ -170,6 +170,9 @@ export const clientApi = {
   create: (data: any) => apiRequest('/clients', { method: 'POST', body: JSON.stringify(data) }),
   update: (id: string, data: any) => apiRequest(`/clients/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   delete: (id: string) => apiRequest(`/clients/${id}`, { method: 'DELETE' }),
+  /** Une `id` con `destinoId`: todo pasa al destino y `id` se borra. No se deshace. */
+  unir: (id: string, destinoId: string) =>
+    apiRequest(`/clients/${id}/unir`, { method: 'POST', body: JSON.stringify({ destinoId }) }),
   saveDNA: (data: any) => apiRequest('/dna-profiles', { method: 'POST', body: JSON.stringify(data) }),
   duplicateDNA: (id: string) => apiRequest(`/dna-profiles/${id}/duplicate`, { method: 'POST' }),
   updateDNA: (id: string, data: any) => apiRequest(`/dna-profiles/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
