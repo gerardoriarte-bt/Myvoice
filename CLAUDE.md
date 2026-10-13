@@ -211,6 +211,12 @@ happens. Screen names are read with `screenName(id)` rather than written by hand
 the *active* workspace, refreshed via `authApi.me()` on mount and swapped by
 `POST /auth/switch-workspace`.
 
+**Related brands** (`Client.marcaMadreId`, one level, ordering only — nothing is inherited):
+`marcas.ts` groups families and writes «Terpel CRM · de Terpel»; `components/SelectorDeMarca.tsx`
+replaced the header's native `<select>`. `GET /clients` computes `nombreRepetidoCon` (normalized
+name, same workspace only) and `conteos` on read; the normalizer lives in
+`server/src/lib/nombreDeMarca.ts` with a copy in `marcas.ts` — the API cannot import `shared/`.
+
 **`novedades.ts` is the changelog users see**, and the only place it is written. Every change a
 user would notice gets an entry (date = the day it reaches production; internal work does not).
 Entries with `aviso` also open a modal once per person at login — only for users created before

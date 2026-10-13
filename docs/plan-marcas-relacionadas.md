@@ -112,6 +112,19 @@ selector, aunque alguien haya dicho «ya sé».
 **Después del despliegue:** con los datos de hoy, la segunda «Terpel» no tiene campañas. Para
 resolverla alcanza con renombrarla o borrarla; no hace falta esperar a la entrega 2.
 
+**Lo que cambió al construirla** (2026-10-14):
+- El normalizador no vive en `shared/`: la API compila solo `src/` y su imagen de Docker se arma
+  desde `server/`, así que importarlo rompería el deploy. Está en `server/src/lib/nombreDeMarca.ts`,
+  y el frontend tiene una copia en `marcas.ts` solo para el aviso previo al crear. La verdad
+  (`nombreRepetidoCon`) la calcula el servidor.
+- Las validaciones de la madre corren antes de escribir, no dentro de una transacción. Dos personas
+  que en el mismo segundo hacen a A madre de B y a B madre de A podrían romper el límite de un nivel;
+  con las dos o tres personas que administran un workspace, el riesgo no justifica el bloqueo.
+- Marcas mantiene la grilla de tarjetas, ordenada por familia (cada madre seguida de sus
+  complementarias, marcadas «Complementaria de…»), en vez de las filas por familia del `.pen`.
+- Después de cambiar el nombre o la madre, la app vuelve a pedir la lista: los campos calculados
+  dependen de todas las marcas.
+
 ## Nivel 2 · Entrega 2 — Unir
 
 `POST /clients/:id/unir` con `{ destinoId }`, solo para OWNER y ADMIN. Antes de tocar nada pasa
