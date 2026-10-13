@@ -54,7 +54,12 @@ export default function RevisionDePiezas({ token, sesion, onEnviada, onError }: 
 
   const notasDe = (id: string): Notas => notas[id] ?? { feedbackCopy: '', feedbackDiseno: '' };
   const decididas = piezas.filter(p => decisiones[p.id]).length;
-  const listo = decididas === piezas.length && piezas.length > 0;
+  // Pedir cambios sin decir cuáles no le dice a nadie qué arreglar: el
+  // servidor lo rechaza, y la pantalla lo pide antes de mandar.
+  const sinMotivo = piezas.filter(
+    p => decisiones[p.id] === 'REJECTED' && !notasDe(p.id).feedbackCopy.trim() && !notasDe(p.id).feedbackDiseno.trim()
+  ).length;
+  const listo = decididas === piezas.length && piezas.length > 0 && sinMotivo === 0;
 
   const enviar = async () => {
     if (!quien.trim()) {
@@ -108,8 +113,8 @@ export default function RevisionDePiezas({ token, sesion, onEnviada, onError }: 
 
       <main className="mx-auto max-w-[1080px] space-y-5 px-6 py-7">
         <p className="text-[13px] text-[#6E6E73]">
-          Estas piezas ya las revisó el equipo. Miralas contra el copy que aprobaste y marcá tu
-          decisión.
+          Estas piezas ya las revisó el equipo. Miralas contra el copy aprobado, que va con cada una,
+          y marcá tu decisión.
         </p>
 
         {piezas.map((pieza, i) => (
@@ -150,7 +155,9 @@ export default function RevisionDePiezas({ token, sesion, onEnviada, onError }: 
           </button>
           {!listo && (
             <p className="mt-2 text-center text-[11px] text-[#86868B]">
-              Falta decidir {piezas.length - decididas} de {piezas.length}.
+              {decididas < piezas.length
+                ? `Falta decidir ${piezas.length - decididas} de ${piezas.length}.`
+                : `En ${sinMotivo === 1 ? 'una pieza' : `${sinMotivo} piezas`} pediste cambios: escribí cuáles.`}
             </p>
           )}
         </section>
@@ -220,7 +227,9 @@ const Tarjeta: React.FC<{
             <div className="flex items-center gap-1.5">
               <span className="h-1.5 w-1.5 rounded-full" style={{ background: campo.color }} />
               <span className="text-[11px] font-semibold text-[#1D1D1F]">{campo.etiqueta}</span>
-              <span className="text-[10px] text-[#86868B]">opcional</span>
+              <span className="text-[10px] text-[#86868B]">
+                {decision === 'REJECTED' ? 'al menos uno de los dos' : 'opcional'}
+              </span>
             </div>
             <textarea
               rows={2}
@@ -236,8 +245,8 @@ const Tarjeta: React.FC<{
             tooltip no lo lee nadie, y es lo que evita el cambio de mensaje de
             último momento — el caro. */}
         <p className="text-[10px] leading-snug text-[#86868B]">
-          Un cambio del arte vuelve a producción. Un cambio del mensaje vuelve dos pasos: hay que
-          reaprobar el copy y rehacer la pieza.
+          Un cambio del arte vuelve a diseño. Un cambio del mensaje también: primero se corrige el
+          copy y después se actualiza la pieza, así que tarda un poco más.
         </p>
       </div>
     </div>

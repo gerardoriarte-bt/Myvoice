@@ -242,24 +242,22 @@ export const createProject = async (req: AuthRequest, res: Response) => {
 };
 
 /**
- * Lo editable de una campaña: cómo se aprueba, quién responde y si el cliente
- * ve también el arte (H2.E · D3). Con lista blanca explícita: el body no puede
- * reasignar `workspaceId` ni `clientId`.
+ * Lo editable de una campaña: cómo se aprueba y quién responde. Con lista
+ * blanca explícita: el body no puede reasignar `workspaceId` ni `clientId`.
+ *
+ * `pideAprobacionDeCliente` ya no se escribe: si el cliente ve también el arte
+ * lo dice el modo de la campaña (docs/plan-produccion-con-responsable.md). Era
+ * un interruptor suelto que cualquiera cambiaba desde la columna Lista.
  *
  * El modo y el responsable los decide quien administra: son la regla bajo la
  * que se aprueba, y quien aprueba no puede elegirse a sí mismo.
  */
 export const updateProject = async (req: AuthRequest, res: Response) => {
   const { id } = req.params;
-  const { pideAprobacionDeCliente, modoAprobacion, responsableId } = req.body ?? {};
+  const { modoAprobacion, responsableId } = req.body ?? {};
   const data: Record<string, unknown> = {};
   try {
     const tenant = req.tenant!;
-    if (pideAprobacionDeCliente !== undefined) {
-      if (typeof pideAprobacionDeCliente !== 'boolean')
-        return res.status(400).json({ error: 'pideAprobacionDeCliente tiene que ser true o false' });
-      data.pideAprobacionDeCliente = pideAprobacionDeCliente;
-    }
     if (modoAprobacion !== undefined || responsableId !== undefined) {
       if (!canManage(tenant.role))
         return res.status(403).json({ error: 'Cómo se aprueba una campaña lo decide quien administra' });

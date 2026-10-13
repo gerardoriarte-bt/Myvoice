@@ -341,7 +341,9 @@ model Project {
   name                    String
   createdAt               DateTime           @default(now())
   workspaceId             String
-  /// D3 de H2.E. Apagado —el valor por defecto— la campaña se comporta como
+  /// LEGADO desde 2026-10-13: ya no se lee ni se escribe. Si el cliente ve el
+  /// arte lo dice `modoAprobacion`. Se dropea en una migración posterior.
+  /// Era: D3 de H2.E. Apagado —el valor por defecto— la campaña se comporta como
   /// siempre: la pieza llega a Lista y ahí termina. Vive en la campaña y no en
   /// el workspace porque una agencia tiene clientes que quieren ver el arte y
   /// clientes que no, y esa diferencia es por campaña.
@@ -494,6 +496,9 @@ enum PiezaEstado {
   POR_ASIGNAR
   EN_DISENO
   POR_REVISAR
+  /// Aceptada por el responsable en una campaña «del cliente»: falta su
+  /// aprobación. Antes vivía mezclada en LISTA, que dejaba de ser el final.
+  CON_EL_CLIENTE
   LISTA
 }
 

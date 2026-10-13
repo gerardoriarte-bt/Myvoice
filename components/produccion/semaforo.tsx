@@ -26,7 +26,9 @@ export const ETIQUETA_SEMAFORO: Record<NonNullable<Semaforo>, {
     ayuda: 'El texto coincide con lo aprobado y la marca no tiene observaciones.',
   },
   hallazgos: {
-    texto: n => `${n} hallazgo${n === 1 ? '' : 's'}`,
+    // Cuenta los que faltan decidir: el total incluía los ya decididos y los
+    // ilegibles, y la tarjeta seguía alarmando después de resolver todo.
+    texto: n => (n > 0 ? `${n} hallazgo${n === 1 ? '' : 's'} sin decidir` : 'Hallazgos decididos'),
     fondo: '#FFFBEB',
     color: '#B45309',
     Icono: TriangleAlert,
@@ -51,7 +53,7 @@ export const ETIQUETA_SEMAFORO: Record<NonNullable<Semaforo>, {
     fondo: '#EFF6FF',
     color: '#1D4ED8',
     Icono: Loader2,
-    ayuda: 'Corriendo. Dura un par de minutos y la pieza ya está en revisión.',
+    ayuda: 'Corriendo. La pieza pasa a revisión cuando termine.',
   },
 };
 

@@ -269,6 +269,11 @@ export const auditarVersion = async (versionId: string): Promise<void> => {
  * hacerle pagar a él un costo que no es suyo. La tarjeta muestra «Auditando»
  * mientras tanto.
  */
-export const auditarEnSegundoPlano = (versionId: string): void => {
-  void auditarVersion(versionId).catch(e => console.error('[auditoria] fallo no capturado:', e));
+export const auditarEnSegundoPlano = (versionId: string, alTerminar?: () => Promise<void>): void => {
+  // `alTerminar` corre pase lo que pase: una auditoría que falla deja la
+  // versión en NO_DISPONIBLE, y la pieza igual tiene que llegar a revisión.
+  void auditarVersion(versionId)
+    .catch(e => console.error('[auditoria] fallo no capturado:', e))
+    .then(() => alTerminar?.())
+    .catch(e => console.error('[auditoria] no se pudo pasar la pieza a revisión:', e));
 };

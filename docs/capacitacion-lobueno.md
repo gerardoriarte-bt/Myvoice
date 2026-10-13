@@ -40,7 +40,7 @@ CAPACITACION_PASSWORD='…' npm run seed:capacitacion
 |---|---|---|---|---|
 | `laura@` | Laura Gómez, Dirección de cuentas | OWNER | Aprobación | Marcas, revisiones, aceptar/devolver piezas |
 | `andres@` | Andrés Mejía, Redacción | ADMIN | Copy | Generar, Historial, Copy |
-| `sofia@` | Sofía Vargas, Diseño | MEMBER | Diseño | «Mis piezas», subir arte |
+| `sofia@` | Sofía Vargas, Diseño | MEMBER | Diseño | «Lo mío», subir arte |
 | `mateo@` | Mateo Ríos, Diseño | MEMBER | Diseño | El diseñador con trabajo cerrado |
 
 La clienta es **Natalia Ospina (Mercadeo LoBueno)**. No tiene cuenta: revisa desde los enlaces.
@@ -110,21 +110,26 @@ rechazo además aparece como anti-ejemplo en la marca.
 
 ### 4. Producir — el tablero (Laura, Sofía)
 
-El tablero de LoBueno tiene una pieza en cada situación que vale mostrar:
+Cada columna tiene un dueño, y Por revisar y Con el cliente lo dicen con nombre: Laura, responsable
+de Lanzamiento. El tablero tiene una pieza en cada situación que vale mostrar:
 
 | Columna | Pieza | Lo que enseña |
 |---|---|---|
 | Por asignar | Carrusel — Adivine cuál es su marca | Crear y asignar son dos decisiones |
 | En diseño | Post de feed (B) — Le medimos la voz | El A/B (comparte cuerpo con el post A) y el aviso **«El copy cambió después de aprobarse»** |
 | Por revisar | Historia — ¿Su copy suena a su marca? | Una auditoría con **2 hallazgos** esperando decisión |
-| Lista | Post de feed — Rápido escribe cualquiera | La historia completa: v1 devuelta, v2 aceptada |
-| Lista | Email de lanzamiento | Un hallazgo **Ilegible** aceptado con nota: ilegible no es «mal» |
-| Lista | TikTok | El video se entrega con enlace, sin archivo ni auditoría |
+| Con el cliente | Post de feed — Rápido escribe cualquiera | La historia completa: v1 devuelta, v2 aceptada y enviada |
+| Con el cliente | Email de lanzamiento | Un hallazgo **Ilegible** aceptado con nota: ilegible no es «mal» |
+| Con el cliente | TikTok | Sin enviar. El video se entrega con enlace, sin archivo ni auditoría |
 
-**Mostrar.** Abrir el Post de feed listo y recorrer sus versiones: en la v1 la auditoría encontró
+**Mostrar.** Abrir el Post de feed y recorrer sus versiones: en la v1 la auditoría encontró
 «Rapido» sin tilde (un **hecho**: muestra lo esperado y lo encontrado lado a lado) y un «¡Pida su
-demo!» con exclamación (un **juicio** de marca). Laura los marcó como corregidos y la devolvió con
-nota; la v2 salió limpia.
+demo!» con exclamación (un **juicio** de marca). Laura los marcó «Lo corrige diseño» y la devolvió
+con nota; la v2 salió limpia.
+
+**Quién decide.** Entrar como Sofía y abrir la Historia: no tiene «Aceptar»; la tarjeta dice «La
+entregaste. Espera el visto bueno de Laura Gómez». Lo mismo ve Andrés, que administra pero no es
+el responsable.
 
 **En vivo, en este orden:**
 
@@ -132,27 +137,33 @@ nota; la v2 salió limpia.
    aviso.
 2. **Decidir hallazgos y devolver (Laura).** La campana tiene «Una pieza espera tu visto bueno».
    Abrir la Historia: el hecho dice «competencia» donde el aprobado dice «categoría», y el juicio
-   marca que «Desliza» tutea. Marcar los dos como corregidos y **devolver a diseño** con una nota.
-3. **Actualizar el copy y subir (Sofía).** En «Mis piezas», el Post (B) muestra el aviso de copy
-   cambiado: Andrés ajustó el hook después de hablar con Natalia. Actualizar el copy de la pieza y
-   subir `server/capacitacion-artes/1-post-ab-1080x1080.png`. La tarjeta dice «Auditando» y en un
-   minuto llega el informe real.
-4. **Subir la corrección (Sofía).** En la Historia devuelta, subir
-   `2-historia-corregida-1080x1920.png` (v2). Laura la acepta.
+   marca que «Desliza» tutea. Marcar los dos «Lo corrige diseño» y **devolver** con el motivo en
+   «Del arte». A Sofía le llega el aviso y la ve primero en «Lo mío», con el motivo en la tarjeta.
+3. **Actualizar la orden (Laura) y subir (Sofía).** El Post (B) muestra el aviso de copy cambiado:
+   Andrés ajustó el hook después de hablar con Natalia. Laura toca «Actualizar la orden» en la orden
+   de trabajo —le toca al responsable, no a quien diseña—. Sofía sube
+   `server/capacitacion-artes/1-post-ab-1080x1080.png`. La tarjeta dice «Auditando la versión 1» y
+   la pieza recién pasa a Por revisar cuando llega el informe real.
+4. **Subir la corrección (Sofía) y aceptar (Laura).** En la Historia devuelta, subir
+   `2-historia-corregida-1080x1920.png` (v2). Cuando termina la auditoría, Laura la acepta: como
+   Lanzamiento es una campaña del cliente, va a **Con el cliente**, no a Lista.
 
-> Si en el paso 3 se sube el arte **sin** actualizar el copy, la auditoría marca el hook como
-> diferente: el arte tiene el texto nuevo y la pieza todavía el viejo. Es un buen error para
-> cometer a propósito.
+> Si en el paso 3 Sofía sube el arte **sin** que Laura actualice la orden, la auditoría marca el
+> hook como diferente: el arte tiene el texto nuevo y la pieza todavía el viejo. Es un buen error
+> para cometer a propósito.
 
 ### 5. Aprobar el arte — la ronda de piezas (clienta)
 
-La campaña Lanzamiento pide aprobación del cliente sobre las piezas, así que la columna Lista
-ofrece «Mandar las piezas al cliente». Ya hay una sesión abierta con el Post y el Email.
+Lanzamiento es una campaña del cliente, así que lo que el equipo acepta espera en **Con el
+cliente**. Ya hay una revisión abierta con el Post y el Email («Enviada el… · esperando»); el
+TikTok y la Historia del paso 4 dicen «Sin enviar».
 
-**En vivo.** Abrir el enlace **«Piezas, campaña 1»**. Aprobar el Email; en el Post pedir cambios
-**solo de copy**. Volver al tablero: el Post **sigue en Lista**, porque el diseñador no puede hacer
-nada hasta que el copy cambie (ver `services/revisionDePiezas.ts`). Si en cambio se piden cambios de
-diseño, vuelve a En diseño.
+**En vivo.** Laura toca «Mandar 2 sin enviar al cliente» en la cabecera de la columna. Después
+abrir el enlace **«Piezas, campaña 1»**: aprobar el Email —va a Lista, «Aprobada por el cliente»— y
+en el Post pedir cambios **del mensaje**. Probar primero «Pedir cambios» sin escribir nada: el
+portal no deja enviar. Volver al tablero: el Post está en En diseño, «Devuelta por Natalia», con
+«Espera el copy corregido». Laura abre la orden de trabajo, toca «Corregir el copy», corrige el
+hook y la tarjeta deja de esperar: ahora Sofía actualiza el arte.
 
 ### 6. Medir — Métricas (Laura)
 

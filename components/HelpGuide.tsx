@@ -262,7 +262,7 @@ export default function HelpGuide() {
 
         <SubHead>Como usarlo</SubHead>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <Step n={1} title="La marca, arriba" desc="El selector del encabezado elige la marca para toda la herramienta: Generar, Copy, Revisiones y Producción trabajan sobre ella. Solo Mis piezas cruza marcas." />
+          <Step n={1} title="La marca, arriba" desc="El selector del encabezado elige la marca para toda la herramienta: Generar, Copy, Revisiones y Producción trabajan sobre ella. Solo «Lo mío», en Producción, cruza marcas." />
           <Step n={2} title="Cada campaña dice quién aprueba" desc="La campaña que elegís en Generar es la misma donde cae lo que guardás. Su aprobación es interna (aprueba el responsable) o del cliente (aprueba el cliente por el enlace y el responsable se lo manda). Sin responsable, el copy se guarda pero no avanza: quien administra lo define en Generar o en Copy." />
           <Step n={3} title="Seguí el carril" desc="Los pasos de arriba cuentan cuánto copy hay en cada uno y filtran con un clic. Devuelto es lo que el cliente rechazó; Sin campaña es copy viejo que hay que asignar antes de que avance." />
           <Step n={4} title="La barra ofrece el paso siguiente" desc="Marcá copys y la barra muestra solo lo que los hace avanzar: Aprobar (si sos el responsable), Enviar al cliente o Mandar a producción. Lo que no se puede, lo explica en una línea. Al terminar, muestra el resultado y el enlace o el botón para ir a verlo." />
@@ -300,22 +300,24 @@ export default function HelpGuide() {
         <SectionHeader
           icon={<IconTablero />}
           title="Producción"
-          what="El tablero donde el copy aprobado se convierte en pieza: quién la diseña, en qué va y qué texto exacto lleva adentro. Es la mitad del proceso que antes se coordinaba por fuera del sistema."
+          what="El tablero donde el copy aprobado se convierte en pieza: quién la diseña, quién la aprueba, en qué va y qué texto exacto lleva adentro. Cada columna tiene un dueño, y Por revisar y Con el cliente lo dicen con nombre: el responsable de la campaña."
         />
 
         <SubHead>Como usarlo</SubHead>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           <Step n={1} title="Manda el copy aprobado a producción" desc="Desde Copy, filtrá Aprobado, marcá el copy y presioná Mandar a producción. El sistema propone las piezas —una por canal, un aprobado por slot, el formato por defecto del canal— y vos confirmás o corregís. Nada entra al tablero solo." />
           <Step n={2} title="Resolvé las preguntas de la propuesta" desc="Si hay dos aprobados para el mismo slot, la propuesta pregunta si va uno solo o si son dos piezas (un A/B). El que no entra no se borra ni se desaprueba: queda ahí para otra pieza. Si el mismo visual va a dos canales, marcá 'mismo visual' y las dos piezas se asignan juntas." />
-          <Step n={3} title="Asigná" desc="Las piezas nacen en Por asignar y sin dueño. Elegí a quién se la das y pasa a En diseño. Crear y asignar son dos decisiones distintas." />
+          <Step n={3} title="Asigná" desc="Las piezas nacen en Por asignar y sin dueño. Quien administra o el responsable de la campaña elige a quién se la da, y pasa a En diseño. Crear y asignar son dos decisiones distintas. Para reasignar, la orden de trabajo tiene su propio selector." />
           <Step n={4} title="El diseñador trabaja con la orden de trabajo" desc="Abrí la tarjeta: ahí está el copy exacto para copiar y pegar —no retipear—, el brief de producción que el motor emite (idea visual, estructura, indicaciones), las piezas hermanas y el historial de quién hizo qué." />
-          <Step n={5} title="Entregá la pieza" desc="En los canales gráficos el diseñador SUBE el archivo (PNG, JPG o WEBP, hasta 10 MB) y la pieza pasa a Por revisar. En los de video y audio se entrega con un enlace, porque un reel no entra en 10 MB. Del archivo salen la previa y la verificación automática." />
-          <Step n={6} title="La verificación automática" desc="Apenas se sube, la herramienta mira la pieza y hace dos preguntas distintas: si dice exactamente el copy aprobado —un hecho, que muestra los dos textos— y si respeta la marca en ortografía, tono y prohibiciones —un juicio. Avisa, no bloquea: nunca detiene una pieza. Cada hallazgo se cierra con 'lo corrijo' o 'aceptar igual', y aceptar pide una nota que queda registrada." />
-          <Step n={7} title="Aprobá o devolvé" desc="Quien aprueba ve el semáforo en la tarjeta —Verificada, N hallazgos, o Revisar a ojo cuando la auditoría no pudo leer algo— y abre el informe con un clic. Acepta, y la pieza va a Lista, o la devuelve a diseño con un motivo escrito. Si la verificación no pudo correr, dice 'Sin auditoría' y se puede reintentar: eso no dice nada sobre la pieza." />
-          <Step n={8} title="Revisá sin salir de la herramienta" desc="Desde que una pieza se entrega, la tarjeta muestra su previa: hacé clic para verla en grande. En los canales gráficos es la imagen que se subió, la misma que miró la verificación. En los de video y audio sale del enlace, y solo si es un archivo de Drive compartido; si no se puede, la tarjeta lo dice en vez de mostrar una imagen rota." />
-          <Step n={9} title="Comentá lo que haga falta" desc="En la orden de trabajo hay un campo de comentarios para lo que hay que decir sobre la pieza y no es un motivo de devolución. Queda en el historial, con autor y fecha, y no cambia el estado de la pieza." />
-          <Step n={10} title="Exportá lo que quedó Lista" desc="La columna Lista tiene un botón para bajar un Excel con dos hojas: 'Piezas' —una fila por pieza, con su enlace, formato y fecha de aprobación— y 'Copy' —una fila por slot con el texto exacto, listo para pegar en el programador. El brief de producción viaja marcado como tal para que nadie lo publique por error." />
-          <Step n={11} title="Mis piezas" desc="Cambiá la vista con el selector de arriba a la derecha. El tablero es por marca, pero Mis piezas cruza todas las marcas del workspace y muestra solo lo tuyo." />
+          <Step n={5} title="Entregá la pieza" desc="En los canales gráficos la persona asignada SUBE el archivo (PNG, JPG o WEBP, hasta 10 MB). La pieza se queda en En diseño con «Auditando…» y pasa a Por revisar cuando la verificación termina, así quien aprueba la recibe con su informe. En los de video y audio se entrega con un enlace, porque un reel no entra en 10 MB, y pasa directo." />
+          <Step n={6} title="La verificación automática" desc="La herramienta mira la pieza y hace dos preguntas distintas: si dice exactamente el copy aprobado —un hecho, que muestra los dos textos— y si respeta la marca en ortografía, tono y prohibiciones —un juicio. Avisa, no bloquea. Cada hallazgo lo decide el responsable de la campaña: «Lo corrige diseño» o «Va igual», con una nota que queda registrada." />
+          <Step n={7} title="Aprobá o devolvé" desc="Acepta o devuelve el responsable de la campaña, y nunca quien entregó la pieza. Los demás ven quién lo hace en lugar de los botones. Aceptar con hallazgos sin decidir pide una línea de por qué. Si la campaña es interna, la pieza aceptada va a Lista; si es del cliente, va a Con el cliente. Devolver pide el motivo, separado en «Del arte» y «Del mensaje», y a la persona asignada le llega el aviso." />
+          <Step n={8} title="Con el cliente" desc="Las piezas de una campaña del cliente esperan su aprobación en su propia columna. «Mandar al cliente» arma el enlace solo con las que todavía no se enviaron. El cliente aprueba —la pieza va a Lista— o pide cambios, y tiene que escribir cuáles. Al responsable le llega «El cliente respondió»." />
+          <Step n={9} title="Corregir el mensaje" desc="Cuando una devolución trae un cambio de mensaje, la tarjeta dice «Espera el copy corregido». El responsable corrige el copy en la orden de trabajo con «Corregir el copy»: cambia en la pieza y en Copy, queda aprobado por él, y la diseñadora actualiza el arte." />
+          <Step n={10} title="Revisá sin salir de la herramienta" desc="Desde que una pieza se entrega, la tarjeta muestra su previa: hacé clic para verla en grande. En los canales gráficos es la imagen que se subió, la misma que miró la verificación. En los de video y audio sale del enlace, y solo si es un archivo de Drive compartido; si no se puede, la tarjeta lo dice en vez de mostrar una imagen rota." />
+          <Step n={11} title="Comentá lo que haga falta" desc="En la orden de trabajo hay un campo de comentarios para lo que hay que decir sobre la pieza y no es un motivo de devolución. Queda en el historial, con autor y fecha, y no cambia el estado de la pieza." />
+          <Step n={12} title="Exportá lo que quedó Lista" desc="La columna Lista tiene un botón para bajar un Excel con dos hojas: 'Piezas' —una fila por pieza, con su enlace, formato y fecha de aprobación— y 'Copy' —una fila por slot con el texto exacto, listo para pegar en el programador. El brief de producción viaja marcado como tal para que nadie lo publique por error." />
+          <Step n={13} title="Lo mío" desc="Cambiá la vista con el selector de arriba a la derecha. El tablero es por marca; Lo mío cruza todas las marcas y ordena por lo que te toca: lo que espera tu visto bueno y lo devuelto primero, lo que ya entregaste después." />
         </div>
 
         <SubHead>Qué canales entran</SubHead>
@@ -329,7 +331,7 @@ export default function HelpGuide() {
         <Tip>
           Si alguien edita un copy aprobado que ya está en una pieza, la tarjeta avisa «El copy cambió»
           y la pieza conserva el texto con el que se mandó a producir. Actualizarla es una decisión que tomás
-          vos desde la orden de trabajo, no algo que pase solo mientras el diseñador trabaja.
+          quien administra o el responsable desde la orden de trabajo, no algo que pase solo mientras se diseña.
         </Tip>
       </Section>
 

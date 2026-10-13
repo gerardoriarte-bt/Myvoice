@@ -38,11 +38,24 @@ const ICONO: Record<string, typeof Check> = {
 };
 
 const DECIDIDO: Record<string, string> = {
-  ACEPTADO: 'Aceptado',
-  CORREGIDO: 'Corregido',
+  ACEPTADO: 'Va igual',
+  CORREGIDO: 'Lo corrige diseño',
 };
 
-function FilaHallazgo({ hallazgo, onDecidir }: { hallazgo: Hallazgo; onDecidir: (d: 'ACEPTADO' | 'CORREGIDO', nota?: string) => Promise<void> }) {
+/**
+ * Cada hallazgo lo decide el responsable de la campaña, que es quien acepta o
+ * devuelve la pieza: «Lo corrige diseño» o «Va igual», con una línea. Antes
+ * los botones no decían de quién eran, y los veía cualquiera.
+ */
+function FilaHallazgo({
+  hallazgo,
+  onDecidir,
+  puedeDecidir,
+}: {
+  hallazgo: Hallazgo;
+  onDecidir: (d: 'ACEPTADO' | 'CORREGIDO', nota?: string) => Promise<void>;
+  puedeDecidir: boolean;
+}) {
   const [aceptando, setAceptando] = React.useState(false);
   const [nota, setNota] = React.useState('');
   const [ocupado, setOcupado] = React.useState(false);
@@ -100,21 +113,25 @@ function FilaHallazgo({ hallazgo, onDecidir }: { hallazgo: Hallazgo; onDecidir: 
             </p>
           )}
 
-          {!esIlegible && hallazgo.decision === 'PENDIENTE' && !aceptando && (
+          {!esIlegible && hallazgo.decision === 'PENDIENTE' && !puedeDecidir && (
+            <p className="mt-1.5 text-[10px] text-apple-tertiary">Sin decidir: lo decide el responsable de la campaña.</p>
+          )}
+
+          {!esIlegible && hallazgo.decision === 'PENDIENTE' && puedeDecidir && !aceptando && (
             <div className="mt-2 flex items-center gap-2">
               <button
                 disabled={ocupado}
                 onClick={() => void correr('CORREGIDO')}
                 className="rounded-lg bg-ink px-2.5 py-1 text-[11px] font-medium text-white hover:bg-ink-hover disabled:opacity-40"
               >
-                Lo corrijo
+                Lo corrige diseño
               </button>
               <button
                 disabled={ocupado}
                 onClick={() => setAceptando(true)}
                 className="rounded-lg border border-apple-border px-2.5 py-1 text-[11px] font-medium text-apple-text hover:bg-apple-fill"
               >
-                Aceptar igual
+                Va igual
               </button>
             </div>
           )}
@@ -126,7 +143,7 @@ function FilaHallazgo({ hallazgo, onDecidir }: { hallazgo: Hallazgo; onDecidir: 
                 rows={2}
                 value={nota}
                 onChange={e => setNota(e.target.value)}
-                placeholder="Por qué se acepta así…"
+                placeholder="Por qué va así…"
                 className="w-full rounded-lg border border-apple-border px-2 py-1.5 text-[11px] text-apple-text"
               />
               <p className="text-[10px] text-apple-tertiary">
@@ -195,7 +212,7 @@ export default function Informe({ pieza, onCambio, onError, onRecargar }: Props)
         <h3 className="text-[11px] font-semibold uppercase tracking-wide text-apple-tertiary">
           Verificación · versión {informe.numero}
         </h3>
-        <ChipSemaforo estado={pieza.semaforo} hallazgos={informe.hallazgos.length} />
+        <ChipSemaforo estado={pieza.semaforo} hallazgos={pieza.version?.pendientes ?? 0} />
       </div>
       <p className="mt-1 text-[11px] text-apple-secondary">
         {pieza.semaforo ? ETIQUETA_SEMAFORO[pieza.semaforo].ayuda : ''}
@@ -204,7 +221,7 @@ export default function Informe({ pieza, onCambio, onError, onRecargar }: Props)
 
       {informe.estadoAuditoria === 'PENDIENTE' && (
         <p className="mt-2 flex items-center gap-2 text-[12px] text-apple-secondary">
-          <Loader2 className="h-3.5 w-3.5 animate-spin" /> Corriendo. La pieza ya está en revisión igual.
+          <Loader2 className="h-3.5 w-3.5 animate-spin" /> Corriendo. La pieza pasa a revisión cuando termine.
         </p>
       )}
 
@@ -241,7 +258,7 @@ export default function Informe({ pieza, onCambio, onError, onRecargar }: Props)
             ) : (
               <ul className="mt-2 space-y-2">
                 {hechos.map(h => (
-                  <FilaHallazgo key={h.id} hallazgo={h} onDecidir={(d, n) => decidir(h.id, d, n)} />
+                  <FilaHallazgo key={h.id} hallazgo={h} puedeDecidir={pieza.puedo.decidirHallazgos} onDecidir={(d, n) => decidir(h.id, d, n)} />
                 ))}
               </ul>
             )}
@@ -259,7 +276,7 @@ export default function Informe({ pieza, onCambio, onError, onRecargar }: Props)
             ) : (
               <ul className="mt-2 space-y-2">
                 {juicios.map(h => (
-                  <FilaHallazgo key={h.id} hallazgo={h} onDecidir={(d, n) => decidir(h.id, d, n)} />
+                  <FilaHallazgo key={h.id} hallazgo={h} puedeDecidir={pieza.puedo.decidirHallazgos} onDecidir={(d, n) => decidir(h.id, d, n)} />
                 ))}
               </ul>
             )}
@@ -270,7 +287,7 @@ export default function Informe({ pieza, onCambio, onError, onRecargar }: Props)
               <p className="text-[11px] font-semibold text-apple-text">Lo que no se pudo leer</p>
               <ul className="mt-2 space-y-2">
                 {ilegibles.map(h => (
-                  <FilaHallazgo key={h.id} hallazgo={h} onDecidir={(d, n) => decidir(h.id, d, n)} />
+                  <FilaHallazgo key={h.id} hallazgo={h} puedeDecidir={pieza.puedo.decidirHallazgos} onDecidir={(d, n) => decidir(h.id, d, n)} />
                 ))}
               </ul>
             </div>

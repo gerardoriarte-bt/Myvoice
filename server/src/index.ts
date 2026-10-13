@@ -47,6 +47,7 @@ import { Request, Response, NextFunction } from 'express';
 import { almacenamientoExterno, initStorage } from './lib/storage.js';
 import multer from 'multer';
 import routes from './routes/index.js';
+import { rescatarAuditoriasTrabadas } from './services/piezaService.js';
 
 const app = express();
 const prisma = new PrismaClient();
@@ -89,4 +90,7 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
 
 app.listen(PORT, () => {
   console.log(`My Voice API running on port ${PORT}`);
+  // Una auditoría cortada por el reinicio dejaría su pieza en «Auditando» para
+  // siempre: se cierra y la pieza pasa a revisión (piezaService).
+  rescatarAuditoriasTrabadas().catch(e => console.error('[auditoria] rescate al arrancar:', e));
 });

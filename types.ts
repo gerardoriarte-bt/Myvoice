@@ -299,7 +299,6 @@ export interface Project {
   modoAprobacion?: ModoAprobacion;
   responsableId?: string | null;
   responsable?: { id: string; name: string } | null;
-  pideAprobacionDeCliente?: boolean;
 }
 
 /**
@@ -368,6 +367,7 @@ export interface ReviewFeedback {
   comment?: string;
 }
 
+/** Un item de una revisión: copy en la ronda COPY, pieza en la ronda PIEZA. */
 export interface ReviewSessionItem {
   id: string;
   sortOrder: number;
@@ -378,11 +378,14 @@ export interface ReviewSessionItem {
     content: string;
     charCount: number;
     clientId: string;
-  };
+  } | null;
+  pieza?: { id: string; platform: string; formato: string; titulo: string } | null;
 }
 
 export interface ReviewItemFeedbackDetail {
-  savedVariationId: string;
+  /** Uno de los dos, según la ronda. */
+  savedVariationId: string | null;
+  piezaId?: string | null;
   decision: ReviewDecision;
   /** Era `comment`. En la ronda de copy todo comentario es sobre copy. */
   feedbackCopy?: string | null;
@@ -453,7 +456,7 @@ export interface GenerationPreset {
  * porque `apiRequest` devuelve `any` (E2, punto 4): si la pantalla nueva
  * heredara eso, el tablero entero quedaría fuera de la gate de tipos.
  */
-export type PiezaEstado = 'POR_ASIGNAR' | 'EN_DISENO' | 'POR_REVISAR' | 'LISTA';
+export type PiezaEstado = 'POR_ASIGNAR' | 'EN_DISENO' | 'POR_REVISAR' | 'CON_EL_CLIENTE' | 'LISTA';
 export type PiezaTipo = 'GRAFICA' | 'VIDEO' | 'AUDIO';
 
 export interface PiezaSlot {
@@ -548,8 +551,45 @@ export interface Pieza {
   /** URL firmada del snapshot: nuestra, no depende de permisos ajenos. */
   previaUrl: string | null;
   client?: { id: string; name: string };
-  project?: { id: string; name: string; pideAprobacionDeCliente?: boolean } | null;
+  project?: {
+    id: string;
+    name: string;
+    modoAprobacion?: ModoAprobacion;
+    responsableId?: string | null;
+    responsable?: { id: string; name: string } | null;
+  } | null;
+  /**
+   * Qué puede hacer con esta pieza quien la mira. Lo calcula el servidor
+   * (permisosPieza.ts), que es el mismo que después lo hace cumplir.
+   */
+  puedo: Record<AccionPermitida, boolean>;
+  /** Si no puede decidir: quién lo hace, en una línea. */
+  quienDecide: string | null;
+  /** Solo en diseño: la devolución vigente y sus motivos. */
+  devolucion: {
+    por: string;
+    createdAt: string;
+    motivos: { categoria: 'COPY' | 'DISENO' | null; nota: string | null }[];
+    /** Hubo motivo de copy y el responsable todavía no lo corrigió. */
+    esperaCopy: boolean;
+  } | null;
+  /** Solo en Lista: quién la cerró. */
+  cierre: { via: 'CLIENTE' | 'INTERNA'; por: string; createdAt: string } | null;
+  /** Solo con el cliente: cuándo se le mandó, si ya se le mandó. */
+  enviadaAlCliente: { createdAt: string } | null;
 }
+
+export type AccionPermitida =
+  | 'asignar'
+  | 'entregar'
+  | 'aceptar'
+  | 'devolver'
+  | 'reabrir'
+  | 'decidirHallazgos'
+  | 'corregirCopy'
+  | 'actualizarCopy'
+  | 'renombrar'
+  | 'mandarAlCliente';
 
 export interface PiezaEvento {
   id: string;
@@ -560,7 +600,9 @@ export interface PiezaEvento {
   /** COPY · DISENO. null = nadie lo clasificó, y es un valor válido. */
   categoria?: string | null;
   createdAt: string;
-  autor?: { id: string; name: string };
+  autor?: { id: string; name: string } | null;
+  /** Quien no tiene cuenta: el cliente desde el portal. */
+  autorExterno?: string | null;
 }
 
 export interface PiezaDetalle extends Pieza {

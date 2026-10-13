@@ -4,26 +4,27 @@
  * Vive en un servicio y no en el controller porque acá hay una decisión por
  * cada combinación de lo que el cliente manda, y esa tabla es el producto:
  *
- * | Lo que mandó            | La pieza          | El feedback                       |
- * |-------------------------|-------------------|-----------------------------------|
- * | Aprobada, sin comentar  | sigue `LISTA`     | —                                 |
- * | Aprobada, con comentario| sigue `LISTA`     | un evento por categoría           |
- * | Cambios, del arte       | vuelve a diseño   | evento `DEVUELTA` · `DISENO`      |
- * | Cambios, solo del copy  | **sigue `LISTA`** | evento `COMENTARIO` · `COPY`      |
+ * | Lo que mandó             | La pieza                     | El feedback                  |
+ * |--------------------------|------------------------------|------------------------------|
+ * | Aprobada, sin comentar   | `CON_EL_CLIENTE` → `LISTA`   | evento `APROBADA_CLIENTE`    |
+ * | Aprobada, con comentario | `CON_EL_CLIENTE` → `LISTA`   | + un comentario por categoría|
+ * | Cambios (arte o mensaje) | `CON_EL_CLIENTE` → diseño    | un `DEVUELTA` por categoría  |
+ * | Cambios sin escribir qué | — (400 antes de llegar acá)  | —                            |
  *
- * **La última fila es la que hay que mirar dos veces.** Una pieza cuyo problema
- * es el mensaje no vuelve sola a diseño: el diseñador no puede hacer nada hasta
- * que el copy cambie, y mandársela sería ponerle en el tablero trabajo que
- * todavía no existe. Lo que queda esperando es el copy — y cuando alguien lo
- * edite en la Biblioteca, el aviso de desfase que YA existe va a saltar en esa
- * pieza y en sus hermanas. Cero estado nuevo.
+ * **Cambió el 2026-10-13** (docs/plan-produccion-con-responsable.md). Antes un
+ * rechazo solo de copy dejaba la pieza quieta en Lista esperando que alguien
+ * editara el copy en la Biblioteca, y eso ya no podía pasar: el copy en
+ * producción no se edita ahí, y «Actualizar la orden» fallaba en Lista. La
+ * pieza quedaba varada. Ahora vuelve a diseño marcada «Espera el copy» y el
+ * responsable corrige el copy dentro de la pieza; la diseñadora no tiene
+ * trabajo que hacer hasta entonces, y la tarjeta se lo dice.
  *
  * Ver docs/plan-h2e-aprobacion-de-pieza.md.
  */
 
-import { PiezaEstado, Prisma, RondaRevision, ReviewDecision } from '@prisma/client';
+import { ModoAprobacion, PiezaEstado, Prisma, RondaRevision, ReviewDecision } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
-import { TenantContext, TenantError } from '../lib/tenancy.js';
+import { canManage, TenantContext, TenantError } from '../lib/tenancy.js';
 import { urlDeSnapshot } from './piezaArchivo.js';
 
 /** Cuántas piezas puede llevar una sesión. Un enlace con cincuenta no se revisa: se abandona. */
@@ -32,25 +33,33 @@ const TOPE = 30;
 /**
  * Las piezas que pueden ir a la ronda 2, ya filtradas por workspace.
  *
- * Tres condiciones, y las tres importan:
+ * Cuatro condiciones, y las cuatro importan:
  *   · **del workspace** — lo que entra a una sesión queda detrás de un token
  *     sin autenticación, así que es el último lugar donde confiar en el body;
- *   · **en `LISTA`** — D2: al cliente no se le muestra una pieza que el equipo
- *     todavía no respalda;
- *   · **de una campaña que lo pidió** — D3.
+ *   · **en `CON_EL_CLIENTE`** — el equipo ya la aceptó: al cliente no se le
+ *     muestra una pieza que el equipo todavía no respalda;
+ *   · **de una campaña «del cliente»** — lo dice el modo de la campaña, el
+ *     mismo que rige el copy. El interruptor suelto que había se fue;
+ *   · **sin otra revisión abierta** — mandar dos veces lo mismo era como el
+ *     cliente terminaba aprobando dos veces lo ya aprobado.
  */
 export const piezasElegibles = async (tenant: TenantContext, piezaIds: string[]) => {
   const ids = [...new Set(piezaIds.filter(id => typeof id === 'string' && id))].slice(0, TOPE);
   if (ids.length === 0) return [];
-  return prisma.pieza.findMany({
+  const piezas = await prisma.pieza.findMany({
     where: {
       id: { in: ids },
       workspaceId: tenant.workspaceId,
-      estado: PiezaEstado.LISTA,
-      project: { pideAprobacionDeCliente: true },
+      estado: PiezaEstado.CON_EL_CLIENTE,
+      project: { modoAprobacion: ModoAprobacion.CLIENTE },
+      itemsDeRevision: {
+        none: { reviewSession: { status: { not: 'COMPLETED' }, expiresAt: { gt: new Date() } } },
+      },
     },
-    select: { id: true },
+    select: { id: true, clientId: true, project: { select: { responsableId: true } } },
   });
+  // Se la manda el responsable de su campaña, o quien administra.
+  return piezas.filter(p => canManage(tenant.role) || p.project?.responsableId === tenant.userId);
 };
 
 export const crearSesionDePiezas = async (
@@ -60,9 +69,13 @@ export const crearSesionDePiezas = async (
   const elegibles = await piezasElegibles(tenant, datos.piezaIds);
   if (elegibles.length === 0)
     throw new TenantError(
-      'Ninguna de esas piezas se puede mandar al cliente: tienen que estar listas y pertenecer a una campaña que pida su aprobación.',
+      'Ninguna de esas piezas se puede mandar al cliente: tienen que estar aceptadas por el equipo, ser de una campaña «del cliente» y no estar ya en otra revisión.',
       404
     );
+  // Un enlace es de una sola marca, igual que en la ronda de copy: mezclar dos
+  // le muestra a un cliente el trabajo de otro, sin contraseña de por medio.
+  if (new Set(elegibles.map(p => p.clientId)).size > 1)
+    throw new TenantError('Una revisión es de una sola marca', 400);
 
   const dias = typeof datos.expiresInDays === 'number' && datos.expiresInDays > 0 ? datos.expiresInDays : 7;
   // Se preserva el orden pedido, que es el orden en que el equipo las mira.
@@ -149,6 +162,7 @@ export const aplicarDecisiones = async (
   piezasDeLaSesion: Set<string>,
   decisiones: DecisionDePieza[]
 ) => {
+  const movidas: { piezaId: string; rechazada: boolean }[] = [];
   for (const d of decisiones) {
     // Una decisión sobre una pieza que no está en esta sesión se ignora: el
     // body del portal es público y no manda sobre qué se decide.
@@ -168,17 +182,27 @@ export const aplicarDecisiones = async (
     });
 
     const rechaza = d.decision === ReviewDecision.REJECTED;
-    // Solo el feedback de arte mueve la pieza, y solo si además hay rechazo.
-    const vuelveADiseno = rechaza && !!diseno;
+    const hacia = rechaza ? PiezaEstado.EN_DISENO : PiezaEstado.LISTA;
+    const { count } = await tx.pieza.updateMany({
+      where: { id: d.piezaId, estado: PiezaEstado.CON_EL_CLIENTE },
+      data: { estado: hacia, estadoDesde: new Date() },
+    });
+    // Si otro la movió mientras el cliente decidía, el feedback igual se guarda
+    // como comentario: perderlo sería peor que tener una pieza en otra columna.
+    const movio = count > 0;
+    if (movio) movidas.push({ piezaId: d.piezaId, rechazada: rechaza });
 
-    if (vuelveADiseno) {
-      const { count } = await tx.pieza.updateMany({
-        where: { id: d.piezaId, estado: PiezaEstado.LISTA },
-        data: { estado: PiezaEstado.EN_DISENO, estadoDesde: new Date() },
+    if (movio && !rechaza) {
+      await tx.piezaEvento.create({
+        data: {
+          piezaId: d.piezaId,
+          tipo: 'APROBADA_CLIENTE',
+          deEstado: PiezaEstado.CON_EL_CLIENTE,
+          aEstado: PiezaEstado.LISTA,
+          autorId: null,
+          autorExterno: revisor,
+        },
       });
-      // Si otro la movió mientras el cliente decidía, el feedback igual se
-      // guarda: perderlo sería peor que tener una pieza en otra columna.
-      if (count === 0) continue;
     }
 
     for (const [categoria, texto] of [
@@ -186,15 +210,15 @@ export const aplicarDecisiones = async (
       ['COPY', copy],
     ] as const) {
       if (!texto) continue;
-      const mueve = vuelveADiseno && categoria === 'DISENO';
+      const devuelve = movio && rechaza;
       await tx.piezaEvento.create({
         data: {
           piezaId: d.piezaId,
-          tipo: mueve ? 'DEVUELTA' : 'COMENTARIO',
-          // Un comentario no mueve nada, y decir «de LISTA a LISTA» sería
-          // afirmar un estado que este código no verificó.
-          deEstado: mueve ? PiezaEstado.LISTA : null,
-          aEstado: mueve ? PiezaEstado.EN_DISENO : null,
+          tipo: devuelve ? 'DEVUELTA' : 'COMENTARIO',
+          // Un comentario no mueve nada, y afirmar un estado que este código
+          // no verificó sería mentirle al historial.
+          deEstado: devuelve ? PiezaEstado.CON_EL_CLIENTE : null,
+          aEstado: devuelve ? PiezaEstado.EN_DISENO : null,
           autorId: null,
           autorExterno: revisor,
           nota: texto,
@@ -203,4 +227,5 @@ export const aplicarDecisiones = async (
       });
     }
   }
+  return movidas;
 };

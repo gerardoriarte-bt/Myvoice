@@ -120,7 +120,7 @@ export const SCREENS: Record<ScreenId, ScreenDef> = {
   produccion: {
     id: 'produccion',
     name: 'Producción',
-    description: 'Las piezas aprobadas, de quién es cada una y en qué va.',
+    description: 'Las piezas de la marca, quién las mueve y en qué paso van.',
     icon: LayoutGrid,
     stage: 'producir',
     // La primera pantalla de trabajo que ve alguien que no administra: un

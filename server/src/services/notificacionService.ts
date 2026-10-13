@@ -27,7 +27,7 @@ import { prisma } from '../lib/prisma.js';
 import { TenantContext, TenantError } from '../lib/tenancy.js';
 import { notifyAviso } from './notificationService.js';
 
-export type TipoNotificacion = 'ASIGNACION' | 'ENTREGA';
+export type TipoNotificacion = 'ASIGNACION' | 'ENTREGA' | 'DEVOLUCION' | 'RESPUESTA_CLIENTE';
 
 /**
  * Cuánto tiempo sigue abierto un aviso para absorber la pieza siguiente.
@@ -49,8 +49,10 @@ export interface EventoNotificable {
   pieza: string;
   /** Quién hizo la acción. Nunca se le avisa a sí mismo (D4, regla 1). */
   autorId: string;
-  /** Solo en ASIGNACION: a quién se le asignó. */
+  /** En ASIGNACION y DEVOLUCION: a quién le toca la pieza. */
   asignadaAId?: string | null;
+  /** El responsable de la campaña: a quien le llegan la entrega y la respuesta del cliente. */
+  responsableId?: string | null;
 }
 
 /**
@@ -65,10 +67,15 @@ export const destinatariosDe = async (
 ): Promise<string[]> => {
   const ids = new Set<string>();
 
-  if (evento.tipo === 'ASIGNACION') {
+  if (evento.tipo === 'ASIGNACION' || evento.tipo === 'DEVOLUCION') {
     // La asignación no mira funciones: le toca a quien recibió la pieza, tenga
     // declarada la función de Diseño o no (D2: la función sugiere, no manda).
+    // Una devolución, lo mismo: vuelve a quien la tiene asignada.
     if (evento.asignadaAId) ids.add(evento.asignadaAId);
+  } else if (evento.responsableId) {
+    // Entregada o respondida por el cliente: le toca al responsable de la
+    // campaña, que es quien decide (docs/plan-produccion-con-responsable.md).
+    ids.add(evento.responsableId);
   } else {
     const aprobadores = await prisma.miembroFuncion.findMany({
       where: {
@@ -107,6 +114,14 @@ const textoDe = (evento: EventoNotificable, cantidad: number) => {
     return cantidad === 1
       ? { titulo: 'Te asignaron una pieza', detalle: `${evento.pieza} · ${evento.marca}` }
       : { titulo: `Te asignaron ${cantidad} piezas`, detalle: evento.marca };
+  if (evento.tipo === 'DEVOLUCION')
+    return cantidad === 1
+      ? { titulo: 'Te devolvieron una pieza', detalle: `${evento.pieza} · ${evento.marca}` }
+      : { titulo: `Te devolvieron ${cantidad} piezas`, detalle: evento.marca };
+  if (evento.tipo === 'RESPUESTA_CLIENTE')
+    return cantidad === 1
+      ? { titulo: 'El cliente respondió sobre una pieza', detalle: `${evento.pieza} · ${evento.marca}` }
+      : { titulo: `El cliente respondió sobre ${cantidad} piezas`, detalle: evento.marca };
 
   return cantidad === 1
     ? { titulo: 'Una pieza espera tu visto bueno', detalle: `${evento.pieza} · ${evento.marca}` }
