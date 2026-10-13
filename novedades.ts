@@ -49,7 +49,7 @@ export interface Novedad {
 export const NOVEDADES: Novedad[] = [
   {
     id: 'aprobacion-por-campana',
-    fecha: '2026-10-14',
+    fecha: '2026-10-13',
     titulo: 'La aprobación ahora es por campaña, y siempre tiene un responsable',
     cambios: [
       'Cada campaña dice quién aprueba —el equipo o el cliente— y quién es el responsable. Nada se produce sin esa aprobación.',
