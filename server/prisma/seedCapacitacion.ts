@@ -42,6 +42,7 @@ import {
   FuncionEquipo,
   HallazgoDecision,
   HallazgoTipo,
+  ModoAprobacion,
   PiezaEstado,
   PiezaTipo,
   Prisma,
@@ -435,13 +436,22 @@ async function main() {
         briefs[key] = creado.id;
       }
 
-      // Los aprobados «históricos», sin campaña: son los few-shot del motor.
+      // Los aprobados «históricos»: son los few-shot del motor. Van en una
+      // campaña propia con su aprobación, porque desde 2026-10-13 todo copy
+      // aprobado tiene campaña y responsable (docs/plan-aprobacion-por-campana.md).
+      const historicos = await tx.project.create({
+        data: {
+          name: 'Aprobados históricos', workspaceId: ws.id, clientId: marca.id,
+          modoAprobacion: ModoAprobacion.INTERNA, responsableId: u.laura, createdAt: hace(29),
+        },
+      });
       for (const [i, ex] of LOBUENO_APPROVED_EXAMPLES.entries()) {
         await tx.savedVariation.create({
           data: {
-            clientId: marca.id, platform: ex.platform, type: ex.type, content: ex.content,
+            clientId: marca.id, projectId: historicos.id, platform: ex.platform, type: ex.type, content: ex.content,
             charCount: ex.content.length, tags: ex.tags, isApproved: true, approvalNote: ex.approvalNote,
-            savedAt: hace(29, i),
+            aprobadoPorId: u.laura, aprobadoPorNombre: 'Laura Gómez', aprobadoEn: hace(29, i),
+            aprobadoVia: ModoAprobacion.INTERNA, savedAt: hace(29, i),
           },
         });
       }
@@ -449,15 +459,21 @@ async function main() {
         await tx.negativeFeedback.create({ data: { ...n, clientId: marca.id, createdAt: hace(29) } });
       }
 
-      const lanzamiento = await tx.project.create({
-        data: { name: 'Lanzamiento My Voice', workspaceId: ws.id, pideAprobacionDeCliente: true, createdAt: hace(16) },
+      // Cada campaña es la de su brief: la que se elige en Generar es la misma
+      // donde cae el copy. Las dos primeras las aprueba la clienta (Laura se
+      // las manda); Talento es interna y la aprueba Laura misma.
+      const campana = (nombre: string, brief: string, modo: ModoAprobacion, creada: Date, extra: Partial<Prisma.ProjectUncheckedCreateInput> = {}) =>
+        tx.project.create({
+          data: {
+            name: nombre, workspaceId: ws.id, clientId: marca.id, dnaProfileId: briefs[brief],
+            modoAprobacion: modo, responsableId: u.laura, createdAt: creada, ...extra,
+          },
+        });
+      const lanzamiento = await campana('Lanzamiento My Voice', 'my-voice-lanzamiento', ModoAprobacion.CLIENTE, hace(16), {
+        pideAprobacionDeCliente: true,
       });
-      const costo = await tx.project.create({
-        data: { name: 'El costo del copy genérico', workspaceId: ws.id, createdAt: hace(4) },
-      });
-      await tx.project.create({
-        data: { name: 'Talento 2026', workspaceId: ws.id, createdAt: hace(1) },
-      });
+      const costo = await campana('El costo del copy genérico', 'costo-copy-generico', ModoAprobacion.CLIENTE, hace(4));
+      await campana('Talento 2026', 'talento-2026', ModoAprobacion.INTERNA, hace(1));
 
       await tx.generationPreset.create({
         data: {
@@ -573,14 +589,19 @@ async function main() {
         for (const n of indices) {
           const it = LOBUENO_CHANNEL_COPY[canal].find(i => i.slot === slot && i.variationIndex === n)!;
           const clave = `${canal}/${slot}/${n}`;
+          // Lo que la clienta aprobó queda aprobado POR ELLA: la campaña se
+          // aprueba con el cliente, y así lo hace submitReview.
           const creado = await guardar(lanzamiento.id, canal, it, hace(15, 4, -minuto++), {
             isApproved: !RECHAZOS[clave],
             approvalNote: COMENTARIOS_APROBADOS[clave] ?? null,
+            ...(!RECHAZOS[clave] && {
+              aprobadoPorNombre: REVISORA_CLIENTE, aprobadoEn: hace(13, 19), aprobadoVia: ModoAprobacion.CLIENTE,
+            }),
           });
           sv.set(clave, creado);
         }
       }
-      // WhatsApp entró después de la revisión: aprobado internamente, nunca pasó por la clienta.
+      // WhatsApp entró después de la revisión: está por aprobar, todavía no se le mandó a la clienta.
       for (const [slot, n] of [['message', 1], ['cta', 1]] as const) {
         const it = LOBUENO_CHANNEL_COPY.WhatsApp.find(i => i.slot === slot && i.variationIndex === n)!;
         await guardar(lanzamiento.id, 'WhatsApp', it, hace(12), { isApproved: false });

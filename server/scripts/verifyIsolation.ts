@@ -98,8 +98,10 @@ async function seedTenant(tag: string) {
       primaryCTA: 'test',
     },
   });
+  // Con responsable: desde 2026-10-13 nada va a producción sin una aprobación
+  // con nombre (docs/plan-aprobacion-por-campana.md).
   const project = await prisma.project.create({
-    data: { name: `Proyecto ${tag}`, workspaceId: workspace.id },
+    data: { name: `Proyecto ${tag}`, workspaceId: workspace.id, clientId: client.id, responsableId: user.id },
   });
   const variation = await prisma.savedVariation.create({
     data: {
@@ -629,15 +631,26 @@ async function main() {
     const otraMarcaB = await prisma.client.create({
       data: { name: 'Segunda marca de B', industry: 'Test', workspaceId: B.workspace.id },
     });
+    // Una campaña que aprueba el cliente: es la única cuyo copy va en una
+    // revisión de copy.
+    const campanaDelCliente = await prisma.project.create({
+      data: {
+        name: 'Campaña que aprueba el cliente',
+        workspaceId: B.workspace.id,
+        clientId: otraMarcaB.id,
+        modoAprobacion: 'CLIENTE',
+        responsableId: B.user.id,
+      },
+    });
     const deOtraMarca = await prisma.savedVariation.create({
       data: {
         clientId: otraMarcaB.id,
+        projectId: campanaDelCliente.id,
         platform: 'Instagram Post',
         type: 'Beneficio',
         content: 'Copy de la otra marca de B',
         charCount: 26,
         tags: [],
-        isApproved: true,
       },
     });
     const mezclaDeMarcas = await api('/review-sessions', B.token, {
@@ -959,6 +972,93 @@ async function main() {
       'Vaciar la lista vuelve a permitir cualquier dominio',
       apagada.body?.dominios?.length === 0,
       `quedó ${JSON.stringify(apagada.body?.dominios)}`
+    );
+
+    console.log('\nAPROBACIÓN POR CAMPAÑA — siempre hay una, y tiene responsable');
+    await api(`/saved/${B.variation.id}`, B.token, {
+      method: 'PUT',
+      body: JSON.stringify({ isApproved: true }),
+    });
+    const trasPut = await prisma.savedVariation.findUnique({ where: { id: B.variation.id } });
+    record(
+      'PUT /saved/:id ya no aprueba: isApproved no está en la lista blanca',
+      trasPut?.isApproved === false,
+      `quedó isApproved=${trasPut?.isApproved}`
+    );
+
+    const aprobacionAjena = await api('/saved/aprobacion', B.token, {
+      method: 'POST',
+      body: JSON.stringify({ ids: [A.variation.id], aprobar: true }),
+    });
+    const aTrasAjena = await prisma.savedVariation.findUnique({ where: { id: A.variation.id } });
+    record(
+      'POST /saved/aprobacion ignora copy de otro workspace',
+      aTrasAjena?.isApproved === false && (aprobacionAjena.body?.aplicados?.length ?? 0) === 0,
+      `respondió ${aprobacionAjena.status} ${JSON.stringify(aprobacionAjena.body)?.slice(0, 110)}`
+    );
+
+    const aprobacionPropia = await api('/saved/aprobacion', B.token, {
+      method: 'POST',
+      body: JSON.stringify({ ids: [B.variation.id], aprobar: true }),
+    });
+    const bAprobada = await prisma.savedVariation.findUnique({ where: { id: B.variation.id } });
+    record(
+      'El responsable aprueba su copy y queda su nombre',
+      aprobacionPropia.status === 200 && bAprobada?.isApproved === true && bAprobada?.aprobadoPorId === B.user.id,
+      `respondió ${aprobacionPropia.status}, aprobadoPorId=${bAprobada?.aprobadoPorId}`
+    );
+
+    await api(`/saved/${B.variation.id}`, B.token, {
+      method: 'PUT',
+      body: JSON.stringify({ content: 'otro texto, que nadie aprobó' }),
+    });
+    const bEditada = await prisma.savedVariation.findUnique({ where: { id: B.variation.id } });
+    record(
+      'Editar el texto de un aprobado lo devuelve a por aprobar',
+      bEditada?.isApproved === false && bEditada?.aprobadoPorId === null,
+      `quedó isApproved=${bEditada?.isApproved}`
+    );
+
+    const clienteAprueba = await api('/saved/aprobacion', B.token, {
+      method: 'POST',
+      body: JSON.stringify({ ids: [deOtraMarca.id], aprobar: true }),
+    });
+    record(
+      'En una campaña del cliente, el responsable no aprueba por él',
+      clienteAprueba.body?.rechazados?.length === 1 && clienteAprueba.body?.aplicados?.length === 0,
+      `respondió ${JSON.stringify(clienteAprueba.body)?.slice(0, 120)}`
+    );
+
+    await expectDenied('PATCH /projects/:id con un responsable de otro workspace', `/projects/${B.project.id}`, B.token, {
+      method: 'PATCH',
+      body: JSON.stringify({ responsableId: A.user.id }),
+    });
+
+    // La revisión «Una marca» de arriba lleva a deOtraMarca. Su enlace es
+    // público: no puede aprobar copy que no está en ella.
+    const fuga = await fetch(`${API_URL}/review/public/${unaSola.body?.token}/submit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reviewerName: 'Intruso', feedbacks: [{ savedVariationId: A.variation.id, decision: 'APPROVED' }] }),
+    });
+    const aTrasFuga = await prisma.savedVariation.findUnique({ where: { id: A.variation.id } });
+    record(
+      'La respuesta pública solo decide sobre los items de su revisión',
+      fuga.status === 400 && aTrasFuga?.isApproved === false,
+      `respondió ${fuga.status}, A.isApproved=${aTrasFuga?.isApproved}`
+    );
+
+    const rechazo = await fetch(`${API_URL}/review/public/${unaSola.body?.token}/submit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reviewerName: 'Cliente', feedbacks: [{ savedVariationId: deOtraMarca.id, decision: 'REJECTED', comment: 'No' }] }),
+    });
+    const lista = await api('/saved', B.token);
+    const devuelto = Array.isArray(lista.body) ? lista.body.find((v: any) => v.id === deOtraMarca.id) : null;
+    record(
+      'Un rechazo del cliente deja el copy desaprobado y «Devuelto»',
+      rechazo.status === 201 && devuelto?.isApproved === false && devuelto?.etapa === 'DEVUELTO',
+      `respondió ${rechazo.status}, etapa=${devuelto?.etapa}`
     );
 
     console.log('\nCONTROL POSITIVO — B sí puede con lo suyo');

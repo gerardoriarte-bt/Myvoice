@@ -2,13 +2,24 @@ import { Response } from 'express';
 import { AuthRequest, handleTenantError } from '../middleware/auth.js';
 import {
   assertClientInWorkspace,
+  assertMemberOfWorkspace,
   assertProjectInWorkspace,
   assertVariationInWorkspace,
   filterVariationsInWorkspace,
+  canManage,
   pickFields,
+  TenantError,
 } from '../lib/tenancy.js';
 import { prisma } from '../lib/prisma.js';
 import { resolveSlotLabel } from '../channels/registry.js';
+import { ModoAprobacion } from '@prisma/client';
+import {
+  assertCampanaDeLaMarca,
+  campanaDeBrief,
+  decidirAprobacion,
+  etapasDe,
+  SIN_APROBACION,
+} from '../services/aprobacion.js';
 
 /**
  * Campos editables de una variación guardada. Antes el handler hacía
@@ -21,11 +32,15 @@ import { resolveSlotLabel } from '../channels/registry.js';
  * handler tiene que re-derivar `slotLabel` del registry y poner `slotInferred = false` en el
  * mismo update, o la bandera queda mintiendo.
  */
+/*
+ * `isApproved` no está: aprobar tiene dueño —el responsable de la campaña— y
+ * pasa por `POST /saved/aprobacion` (services/aprobacion.ts). Acá cualquiera
+ * del workspace podía tildarlo, incluso quien no administra.
+ */
 const VARIATION_UPDATABLE = [
   'content',
   'charCount',
   'tags',
-  'isApproved',
   'approvalNote',
   'projectId',
   'type',
@@ -35,23 +50,42 @@ export const getSavedVariations = async (req: AuthRequest, res: Response) => {
   try {
     const variations = await prisma.savedVariation.findMany({
       where: { client: { workspaceId: req.tenant!.workspaceId } },
-      include: { project: true, client: true },
+      include: {
+        project: { include: { responsable: { select: { id: true, name: true } } } },
+        client: true,
+      },
       orderBy: { savedAt: 'desc' },
     });
-    res.json(variations);
+    // El paso del recorrido viaja con cada copy: la pantalla no tiene cómo
+    // saber, sin tres consultas más, si algo está con el cliente o ya en una pieza.
+    const etapas = await etapasDe(variations);
+    res.json(variations.map(v => ({ ...v, etapa: etapas.get(v.id) })));
   } catch (error) {
-    handleTenantError(error, res, 'Error al obtener la biblioteca');
+    handleTenantError(error, res, 'Error al obtener el copy');
   }
 };
 
+/**
+ * Guardar el copy en SU campaña. Si viene `dnaProfileId` —lo normal desde
+ * Generar— la campaña es la del brief y no se pregunta: elegirla a mano era
+ * elegir dos veces lo mismo, con la posibilidad de elegir distinto.
+ */
 export const saveVariation = async (req: AuthRequest, res: Response) => {
   // `slotLabel` NO se lee del body: la etiqueta la resuelve el servidor contra el registry.
-  const { clientId, projectId, platform, type, content, charCount, tags, slot, variationIndex } =
+  const { clientId, projectId, dnaProfileId, platform, type, content, charCount, tags, slot, variationIndex } =
     req.body;
   try {
     const tenant = req.tenant!;
     await assertClientInWorkspace(tenant, clientId);
-    if (projectId) await assertProjectInWorkspace(tenant, projectId);
+    let campanaId: string | null = null;
+    if (projectId) {
+      campanaId = (await assertCampanaDeLaMarca(tenant, projectId, clientId)).id;
+    } else if (dnaProfileId) {
+      const campana = await campanaDeBrief(tenant, dnaProfileId);
+      if (campana.clientId && campana.clientId !== clientId)
+        throw new TenantError('El brief es de otra marca', 400);
+      campanaId = campana.id;
+    }
 
     // El slot es procedencia, no contenido: se guarda tal como lo emitió el writer. Un slot
     // que no pertenece al canal se guarda igual con slotLabel null — perder el guardado del
@@ -63,7 +97,7 @@ export const saveVariation = async (req: AuthRequest, res: Response) => {
     const variation = await prisma.savedVariation.create({
       data: {
         clientId,
-        projectId: projectId || null,
+        projectId: campanaId,
         platform,
         type,
         content,
@@ -73,10 +107,22 @@ export const saveVariation = async (req: AuthRequest, res: Response) => {
         slotLabel: resolveSlotLabel(platform, slotId),
         variationIndex: index,
       },
+      include: { project: { include: { responsable: { select: { id: true, name: true } } } } },
     });
-    res.status(201).json(variation);
+    res.status(201).json({ ...variation, etapa: campanaId ? 'POR_APROBAR' : 'SIN_CAMPANA' });
   } catch (error) {
-    handleTenantError(error, res, 'Error al guardar en la biblioteca');
+    handleTenantError(error, res, 'Error al guardar el copy');
+  }
+};
+
+/** Aprobar o desaprobar, por el responsable de la campaña. */
+export const decidirAprobacionHandler = async (req: AuthRequest, res: Response) => {
+  const { ids, aprobar } = req.body ?? {};
+  if (typeof aprobar !== 'boolean') return res.status(400).json({ error: 'aprobar tiene que ser true o false' });
+  try {
+    res.json(await decidirAprobacion(req.tenant!, ids, aprobar));
+  } catch (error) {
+    handleTenantError(error, res, 'Error al decidir la aprobación');
   }
 };
 
@@ -87,7 +133,17 @@ export const updateVariation = async (req: AuthRequest, res: Response) => {
     const current = await assertVariationInWorkspace(tenant, id);
 
     const updates: Record<string, any> = pickFields(req.body, VARIATION_UPDATABLE);
-    if (updates.projectId) await assertProjectInWorkspace(tenant, updates.projectId);
+    if (updates.projectId) await assertCampanaDeLaMarca(tenant, updates.projectId, current.clientId);
+
+    /*
+     * Lo aprobado es ESE texto en ESA campaña. Cambiar cualquiera de las dos
+     * cosas lo devuelve a «por aprobar»: si no, se aprobaba una frase y se
+     * producía otra, o se aprobaba con las reglas de una campaña y se
+     * producía con las de otra.
+     */
+    const cambiaTexto = typeof updates.content === 'string' && updates.content !== current.content;
+    const cambiaCampana = 'projectId' in updates && (updates.projectId || null) !== current.projectId;
+    if (current.isApproved && (cambiaTexto || cambiaCampana)) Object.assign(updates, SIN_APROBACION);
 
     // Save current content as a version before updating
     if (updates.content && updates.content !== current.content) {
@@ -136,48 +192,91 @@ export const bulkDeleteSaved = async (req: AuthRequest, res: Response) => {
 
 // ------------------------------------------------------------------ proyectos
 
+const INCLUDE_CAMPANA = { responsable: { select: { id: true, name: true } } } as const;
+
+/**
+ * Las campañas. Con `?clientId=` solo las de esa marca —más las viejas sin
+ * marca que tienen copy suyo, que la migración no pudo asignar.
+ */
 export const getProjects = async (req: AuthRequest, res: Response) => {
+  const clientId = typeof req.query.clientId === 'string' ? req.query.clientId : undefined;
   try {
     const projects = await prisma.project.findMany({
-      where: { workspaceId: req.tenant!.workspaceId },
+      where: {
+        workspaceId: req.tenant!.workspaceId,
+        ...(clientId && {
+          OR: [{ clientId }, { clientId: null, variations: { some: { clientId } } }],
+        }),
+      },
+      include: INCLUDE_CAMPANA,
       orderBy: { createdAt: 'desc' },
     });
     res.json(projects);
   } catch (error) {
-    handleTenantError(error, res, 'Error al obtener proyectos');
+    handleTenantError(error, res, 'Error al obtener las campañas');
+  }
+};
+
+/** La campaña de un brief: la crea la primera vez que alguien la pide. */
+export const getCampanaDeBrief = async (req: AuthRequest, res: Response) => {
+  try {
+    res.json(await campanaDeBrief(req.tenant!, req.params.dnaProfileId));
+  } catch (error) {
+    handleTenantError(error, res, 'Error al obtener la campaña');
   }
 };
 
 export const createProject = async (req: AuthRequest, res: Response) => {
-  const { name } = req.body;
+  const { name, clientId } = req.body;
   if (!name?.trim()) return res.status(400).json({ error: 'El nombre es obligatorio' });
   try {
+    if (clientId) await assertClientInWorkspace(req.tenant!, clientId);
     const project = await prisma.project.create({
-      data: { name: name.trim(), workspaceId: req.tenant!.workspaceId },
+      data: { name: name.trim(), workspaceId: req.tenant!.workspaceId, clientId: clientId || null },
+      include: INCLUDE_CAMPANA,
     });
     res.status(201).json(project);
   } catch (error) {
-    handleTenantError(error, res, 'Error al crear proyecto');
+    handleTenantError(error, res, 'Error al crear la campaña');
   }
 };
 
 /**
- * El interruptor de la ronda 2 (H2.E · D3). Es lo único editable de una
- * campaña por ahora, y va con lista blanca explícita: el body no puede
- * reasignar `workspaceId` ni renombrar nada de paso.
+ * Lo editable de una campaña: cómo se aprueba, quién responde y si el cliente
+ * ve también el arte (H2.E · D3). Con lista blanca explícita: el body no puede
+ * reasignar `workspaceId` ni `clientId`.
+ *
+ * El modo y el responsable los decide quien administra: son la regla bajo la
+ * que se aprueba, y quien aprueba no puede elegirse a sí mismo.
  */
 export const updateProject = async (req: AuthRequest, res: Response) => {
   const { id } = req.params;
-  const pide = req.body?.pideAprobacionDeCliente;
-  if (typeof pide !== 'boolean')
-    return res.status(400).json({ error: 'pideAprobacionDeCliente tiene que ser true o false' });
+  const { pideAprobacionDeCliente, modoAprobacion, responsableId } = req.body ?? {};
+  const data: Record<string, unknown> = {};
   try {
-    await assertProjectInWorkspace(req.tenant!, id);
-    const project = await prisma.project.update({
-      where: { id },
-      data: { pideAprobacionDeCliente: pide },
-      select: { id: true, name: true, pideAprobacionDeCliente: true },
-    });
+    const tenant = req.tenant!;
+    if (pideAprobacionDeCliente !== undefined) {
+      if (typeof pideAprobacionDeCliente !== 'boolean')
+        return res.status(400).json({ error: 'pideAprobacionDeCliente tiene que ser true o false' });
+      data.pideAprobacionDeCliente = pideAprobacionDeCliente;
+    }
+    if (modoAprobacion !== undefined || responsableId !== undefined) {
+      if (!canManage(tenant.role))
+        return res.status(403).json({ error: 'Cómo se aprueba una campaña lo decide quien administra' });
+      if (modoAprobacion !== undefined) {
+        if (!Object.values(ModoAprobacion).includes(modoAprobacion))
+          return res.status(400).json({ error: 'modoAprobacion tiene que ser INTERNA o CLIENTE' });
+        data.modoAprobacion = modoAprobacion;
+      }
+      if (responsableId !== undefined) {
+        if (responsableId !== null) await assertMemberOfWorkspace(tenant, responsableId);
+        data.responsableId = responsableId;
+      }
+    }
+    if (!Object.keys(data).length) return res.status(400).json({ error: 'No hay nada que cambiar' });
+
+    await assertProjectInWorkspace(tenant, id);
+    const project = await prisma.project.update({ where: { id }, data, include: INCLUDE_CAMPANA });
     res.json(project);
   } catch (error) {
     handleTenantError(error, res, 'Error al actualizar la campaña');

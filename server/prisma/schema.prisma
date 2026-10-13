@@ -76,6 +76,8 @@ model User {
   versionesSubidas      PiezaVersion[]
   hallazgosDecididos    Hallazgo[]
   notificaciones        Notificacion[]
+  campanasAResponder    Project[]         @relation("ResponsableDeAprobacion")
+  copyAprobado          SavedVariation[]  @relation("CopyAprobadoPor")
 }
 
 /// La única fuente de verdad de "quién puede entrar a qué workspace".
@@ -157,6 +159,7 @@ model Client {
   piezas                    Pieza[]
   funciones                 MiembroFuncion[]
   notificaciones            Notificacion[]
+  campanas                  Project[]
 }
 
 /// Una fila por generación. Además del rastro de auditoría, es la tabla de
@@ -271,44 +274,58 @@ model ContentDNAProfile {
   prohibitions         String?
   campaignConcept      String?
   client               Client   @relation(fields: [clientId], references: [id])
+  /// La campaña operativa de este brief: donde cae el copy que genera y quien
+  /// lo aprueba. Una a una, ver docs/plan-aprobacion-por-campana.md.
+  campana              Project?
 }
 
 model SavedVariation {
-  id               String              @id @default(uuid())
-  clientId         String
-  projectId        String?
-  platform         String
-  type             String
+  id                String              @id @default(uuid())
+  clientId          String
+  projectId         String?
+  platform          String
+  type              String
   /// Procedencia de la pieza: el id de slot que emitió el writer
   /// (p. ej. "slidesBody"). NULLABLE sin default a propósito: NULL significa
   /// "no sabemos", que es la verdad para las filas anteriores a esta migración.
   /// Un default '' las volvería indistinguibles de un dato real.
-  slot             String?
+  slot              String?
   /// Etiqueta legible del slot, resuelta SIEMPRE en el servidor contra
   /// channels/registry.ts. Nunca se copia del body: el cliente no puede
   /// inventar la etiqueta de un slot.
-  slotLabel        String?
+  slotLabel         String?
   /// Cuál de las N variaciones del slot es. No es deducible para las filas
   /// viejas: el backfill lo deja en NULL en vez de numerar por fecha, que
   /// refleja el orden en que un humano fue clickeando "guardar".
-  variationIndex   Int?
+  variationIndex    Int?
   /// Marca las filas cuyo slot lo dedujo el backfill heurístico por conteo de
   /// unidades contra el ChannelSpec. Es columna aparte y no un sufijo en
   /// slotLabel porque tiene que sobrevivir a cualquier edición del texto y ser
   /// consultable desde SQL. NOT NULL con default false: es una afirmación sobre
   /// el origen del dato y siempre hay una respuesta correcta.
-  slotInferred     Boolean             @default(false)
-  content          String
-  charCount        Int
-  tags             String[]
-  previousVersions Json                @default("[]")
-  isApproved       Boolean             @default(false)
-  approvalNote     String?
-  savedAt          DateTime            @default(now())
-  client           Client              @relation(fields: [clientId], references: [id])
-  project          Project?            @relation(fields: [projectId], references: [id])
-  reviewItems      ReviewSessionItem[]
-  piezaSlots       PiezaSlot[]
+  slotInferred      Boolean             @default(false)
+  content           String
+  charCount         Int
+  tags              String[]
+  previousVersions  Json                @default("[]")
+  /// Aprobado según la regla de SU campaña. Desde la app solo lo escribe
+  /// services/aprobacion.ts (y la respuesta del cliente); no está en la lista
+  /// blanca de PUT /saved/:id.
+  isApproved        Boolean             @default(false)
+  approvalNote      String?
+  /// Quién aprobó. En una campaña interna, el responsable (id y nombre); en una
+  /// del cliente, el nombre que dejó en el enlace y el id en NULL. Las filas
+  /// aprobadas antes de 2026-10-13 quedan sin dato: no se inventa un aprobador.
+  aprobadoPorId     String?
+  aprobadoPorNombre String?
+  aprobadoEn        DateTime?
+  aprobadoVia       ModoAprobacion?
+  aprobadoPor       User?               @relation("CopyAprobadoPor", fields: [aprobadoPorId], references: [id], onDelete: SetNull)
+  savedAt           DateTime            @default(now())
+  client            Client              @relation(fields: [clientId], references: [id])
+  project           Project?            @relation(fields: [projectId], references: [id])
+  reviewItems       ReviewSessionItem[]
+  piezaSlots        PiezaSlot[]
 
   /// La consulta de H2.A: todos los slots de un canal para una marca. Es el
   /// primer índice de la tabla.
@@ -316,18 +333,41 @@ model SavedVariation {
 }
 
 model Project {
-  id                      String           @id @default(uuid())
+  id                      String             @id @default(uuid())
   name                    String
-  createdAt               DateTime         @default(now())
+  createdAt               DateTime           @default(now())
   workspaceId             String
   /// D3 de H2.E. Apagado —el valor por defecto— la campaña se comporta como
   /// siempre: la pieza llega a Lista y ahí termina. Vive en la campaña y no en
   /// el workspace porque una agencia tiene clientes que quieren ver el arte y
   /// clientes que no, y esa diferencia es por campaña.
-  pideAprobacionDeCliente Boolean          @default(false)
-  workspace               Workspace        @relation(fields: [workspaceId], references: [id])
+  pideAprobacionDeCliente Boolean            @default(false)
+  /// La marca de la campaña. Nullable por las campañas viejas que mezclaban
+  /// copy de varias marcas; las nuevas siempre la traen.
+  clientId                String?
+  /// El brief del que sale. Único: la campaña que se elige en Generar es la
+  /// misma donde cae el copy al guardar.
+  dnaProfileId            String?            @unique
+  /// Cómo se aprueba el copy antes de producir. Siempre hay una aprobación.
+  modoAprobacion          ModoAprobacion     @default(INTERNA)
+  /// Quien aprueba (interna) o quien responde por la aprobación del cliente.
+  /// Sin responsable el copy de la campaña no avanza.
+  responsableId           String?
+  workspace               Workspace          @relation(fields: [workspaceId], references: [id])
+  client                  Client?            @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  dnaProfile              ContentDNAProfile? @relation(fields: [dnaProfileId], references: [id], onDelete: SetNull)
+  responsable             User?              @relation("ResponsableDeAprobacion", fields: [responsableId], references: [id], onDelete: SetNull)
   variations              SavedVariation[]
   piezas                  Pieza[]
+
+  @@index([clientId])
+}
+
+/// INTERNA: aprueba el responsable. CLIENTE: aprueba el cliente desde el
+/// enlace de revisión, y el responsable es quien se lo manda.
+enum ModoAprobacion {
+  INTERNA
+  CLIENTE
 }
 
 model NegativeFeedback {
