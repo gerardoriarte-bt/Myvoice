@@ -1,16 +1,23 @@
 import React from 'react';
 import { Building2, Layers, Target, Radio, Zap, Check, Loader2, Sparkles, ChevronRight, BookOpen, X } from 'lucide-react';
-import { Platform, PLATFORM_GROUPS, FunnelStage, FUNNEL_STAGE_DESCRIPTIONS, CopyParameters, BrandConfig, Client, ContentDNAProfile } from '../types';
+import { Platform, PLATFORM_GROUPS, FunnelStage, FUNNEL_STAGE_DESCRIPTIONS, CopyParameters, BrandConfig, Client, ContentDNAProfile, Project, WorkspaceMember } from '../types';
 import { PlatformIcon } from './ui/platformIcons';
-import { apiRequest, clientApi } from '../services/api';
+import { apiRequest, clientApi, libraryApi } from '../services/api';
+import AprobacionDeCampana from './AprobacionDeCampana';
 
 interface ParameterFormProps {
   onSubmit: (params: CopyParameters) => void;
   isLoading: boolean;
   clients: Client[];
   dnaProfiles: ContentDNAProfile[];
+  /** La marca activa. El selector de acá y el del encabezado son el mismo dato. */
   defaultClientId: string;
+  onClientChange?: (clientId: string) => void;
   onNavigateToClients: () => void;
+  /** Para mostrar y, si administra, definir quién aprueba la campaña elegida. */
+  miembros?: WorkspaceMember[];
+  puedeEditarAprobacion?: boolean;
+  onError?: (mensaje: string) => void;
 }
 
 const ParameterForm: React.FC<ParameterFormProps> = ({
@@ -19,7 +26,11 @@ const ParameterForm: React.FC<ParameterFormProps> = ({
   clients,
   dnaProfiles,
   defaultClientId,
+  onClientChange,
   onNavigateToClients,
+  miembros = [],
+  puedeEditarAprobacion = false,
+  onError = () => {},
 }) => {
 
 
@@ -112,10 +123,31 @@ const ParameterForm: React.FC<ParameterFormProps> = ({
     }
   }, [clients, defaultClientId]);
 
+  // La marca del encabezado manda: si cambia allá, cambia acá.
+  React.useEffect(() => {
+    if (defaultClientId && defaultClientId !== clientId) setClientId(defaultClientId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [defaultClientId]);
+
   React.useEffect(() => {
     setActiveProfileId(null);
     setDnaInsights(null);
   }, [clientId]);
+
+  /**
+   * La campaña operativa del brief elegido: quién aprueba lo que se genere.
+   * Se muestra antes de generar porque sin responsable el copy se guarda pero
+   * no avanza, y conviene saberlo antes de gastar, no después.
+   */
+  const [campana, setCampana] = React.useState<Project | null>(null);
+  React.useEffect(() => {
+    setCampana(null);
+    if (!activeProfileId) return;
+    libraryApi
+      .campanaDeBrief(activeProfileId)
+      .then((c: Project) => setCampana(c))
+      .catch(() => setCampana(null));
+  }, [activeProfileId]);
 
   React.useEffect(() => {
     if (!activeProfileId) { setDnaInsights(null); return; }
@@ -280,7 +312,10 @@ const ParameterForm: React.FC<ParameterFormProps> = ({
       <Section icon={<Building2 className="w-3.5 h-3.5" />} label="Marca">
         <select
           value={clientId}
-          onChange={e => setClientId(e.target.value)}
+          onChange={e => {
+            setClientId(e.target.value);
+            onClientChange?.(e.target.value);
+          }}
           className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-gray-900 focus:border-gray-400 outline-none transition-colors text-[13px]"
         >
           {clients.length === 0 && <option value="">Sin marcas registradas</option>}
@@ -363,6 +398,17 @@ const ParameterForm: React.FC<ParameterFormProps> = ({
                 <ChevronRight className="w-3 h-3" />
               </button>
             )}
+          </div>
+        )}
+        {campana && (
+          <div className="mt-2">
+            <AprobacionDeCampana
+              campana={campana}
+              miembros={miembros}
+              puedeEditar={puedeEditarAprobacion}
+              onCambio={setCampana}
+              onError={onError}
+            />
           </div>
         )}
         {dnaInsights && (dnaInsights.approvedCount > 0 || dnaInsights.negativeCount > 0) && (

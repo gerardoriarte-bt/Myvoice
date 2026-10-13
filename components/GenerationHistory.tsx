@@ -67,6 +67,9 @@ export default function GenerationHistory({ clients = [], dnaProfiles = [], init
   const [isLoading, setIsLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [clientFilter, setClientFilter] = useState(initialClientId ?? '');
+  // Sigue a la marca activa del encabezado; el filtro de acá puede abrirse a
+  // «todas» para buscar una corrida vieja.
+  useEffect(() => { setClientFilter(initialClientId ?? ''); }, [initialClientId]);
 
   useEffect(() => {
     setIsLoading(true);

@@ -181,7 +181,7 @@ export default function HelpGuide() {
         <div style={{ display: 'flex', gap: 8, marginTop: 14, flexWrap: 'wrap' }}>
           {[
             { label: 'Generador', color: '#6366F1' },
-            { label: 'Copy aprobado', color: '#10B981' },
+            { label: 'Copy', color: '#10B981' },
             { label: 'Colaboracion', color: '#EC4899' },
             { label: 'Métricas', color: '#0071E3' },
           ].map(b => <span key={b.label}><Badge color={b.color}>{b.label}</Badge></span>)}
@@ -252,25 +252,25 @@ export default function HelpGuide() {
         </Tip>
       </Section>
 
-      {/* ── 4. Copy aprobado ── */}
-      <Section id="biblioteca" title="4. Copy aprobado" badge="Copy aprobado" badgeColor="#10B981" open={open === 'biblioteca'} onToggle={() => toggle('biblioteca')}>
+      {/* ── 4. Copy ── */}
+      <Section id="biblioteca" title="4. Copy" badge="Aprobar" badgeColor="#10B981" open={open === 'biblioteca'} onToggle={() => toggle('biblioteca')}>
         <SectionHeader
           icon={<IconBookmark />}
-          title="Copy aprobado"
-          what="El repositorio central de todo el copy guardado. Organiza, filtra, etiqueta y gestiona las variaciones aprobadas de todos los clientes."
+          title="Copy"
+          what="El copy guardado de la marca activa y en qué paso va: por aprobar, con el cliente, aprobado, en producción. Nada va a producción sin una aprobación, y toda aprobación tiene un responsable."
         />
 
         <SubHead>Como usarlo</SubHead>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <Step n={1} title="Guarda variaciones" desc="Desde los resultados del generador, presiona Guardar en cualquier variacion individual. Para guardarlas todas de una vez, usa el boton Guardar todas que aparece en la parte superior de los resultados." />
-          <Step n={2} title="Filtra y busca" desc="Usa los filtros de plataforma, estado (aprobado / pendiente) y ordenamiento. La busqueda de texto es en tiempo real sobre el contenido de las variaciones. Tambien podes filtrar por etiquetas." />
-          <Step n={3} title="Agrega etiquetas" desc="Abre cualquier variacion y agrega o quita etiquetas para organizarla. Las etiquetas son libres: podes crear las que necesites (ej. 'verano', 'promo', 'lanzamiento')." />
-          <Step n={4} title="Operaciones en lote" desc="Selecciona multiples variaciones con los checkboxes. Aparecera una barra de acciones en lote con opciones para eliminar en masa o crear una sesion de revision con las seleccionadas." />
-          <Step n={5} title="Exporta a PDF" desc="Presiona Exportar PDF para generar un documento imprimible con todas las variaciones visibles segun los filtros activos. Util para presentaciones al cliente." />
+          <Step n={1} title="La marca, arriba" desc="El selector del encabezado elige la marca para toda la herramienta: Generar, Copy, Revisiones y Producción trabajan sobre ella. Solo Mis piezas cruza marcas." />
+          <Step n={2} title="Cada campaña dice quién aprueba" desc="La campaña que elegís en Generar es la misma donde cae lo que guardás. Su aprobación es interna (aprueba el responsable) o del cliente (aprueba el cliente por el enlace y el responsable se lo manda). Sin responsable, el copy se guarda pero no avanza: quien administra lo define en Generar o en Copy." />
+          <Step n={3} title="Seguí el carril" desc="Los pasos de arriba cuentan cuánto copy hay en cada uno y filtran con un clic. Devuelto es lo que el cliente rechazó; Sin campaña es copy viejo que hay que asignar antes de que avance." />
+          <Step n={4} title="La barra ofrece el paso siguiente" desc="Marcá copys y la barra muestra solo lo que los hace avanzar: Aprobar (si sos el responsable), Enviar al cliente o Mandar a producción. Lo que no se puede, lo explica en una línea. Al terminar, muestra el resultado y el enlace o el botón para ir a verlo." />
+          <Step n={5} title="Editar un aprobado lo reabre" desc="Si cambiás el texto de un copy aprobado, o lo pasás a otra campaña, vuelve a Por aprobar: lo aprobado es ese texto en esa campaña." />
         </div>
 
         <Tip>
-          Las variaciones que marcas como aprobadas se inyectan automaticamente como ejemplos few-shot en la proxima generacion de esa marca. Cuantas mas variaciones aprobadas tengas, mas afinado el estilo del output.
+          El copy aprobado se inyecta como ejemplo few-shot en la proxima generacion de esa marca. Cuanto mas copy aprobado tengas, mas afinado el estilo del output.
         </Tip>
       </Section>
 
@@ -279,16 +279,15 @@ export default function HelpGuide() {
         <SectionHeader
           icon={<IconUsers />}
           title="Revisiones"
-          what="Crea sesiones de revision para compartir variaciones con el cliente via un link publico. El cliente aprueba o rechaza con comentarios sin necesitar cuenta en la plataforma."
+          what="Lo que se le mandó al cliente de la marca activa y lo que respondió. El cliente aprueba o rechaza con comentarios desde un enlace, sin cuenta."
         />
 
         <SubHead>Como usarlo</SubHead>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <Step n={1} title="Crea una sesion de revision" desc="Desde la biblioteca, selecciona las variaciones que quieres enviar al cliente (checkbox), luego presiona Crear sesion de revision. Asignale un titulo y define la cantidad de dias de validez del link." />
-          <Step n={2} title="Comparte el link publico" desc="Copia el link generado y enviaselo al cliente por el canal que prefieras (email, WhatsApp, Slack). El cliente puede acceder sin iniciar sesion." />
-          <Step n={3} title="El cliente revisa" desc="El cliente ve cada variacion y puede aprobarla o rechazarla. Si rechaza, puede escribir un comentario explicando el motivo. Al terminar, ingresa su nombre para identificar quien reviso." />
-          <Step n={4} title="Consulta los resultados" desc="En Revisiones, abre la sesion para ver el resumen: cuantas variaciones fueron aprobadas, cuantas rechazadas y los motivos de rechazo por variacion." />
-          <Step n={5} title="Sincronizacion automatica con la biblioteca" desc="Las variaciones aprobadas por el cliente quedan marcadas automaticamente como aprobadas en la biblioteca central." />
+          <Step n={1} title="Se envía desde Copy" desc="En Copy, marcá copy de una campaña que aprueba el cliente y usá Enviar al cliente. Elegís el título y el vencimiento, y el enlace queda copiado." />
+          <Step n={2} title="Comparte el link publico" desc="Envialo por el canal que prefieras (email, WhatsApp, Slack). El cliente entra sin iniciar sesion y solo ve copy de esa marca." />
+          <Step n={3} title="El cliente revisa" desc="Aprueba o rechaza cada copy y puede comentar el motivo. Lo que aprueba queda aprobado por el cliente; lo que rechaza vuelve a Copy como Devuelto, aunque antes estuviera aprobado." />
+          <Step n={4} title="Consulta los resultados" desc="En Revisiones, abre cada una para ver lo aprobado, lo rechazado y los motivos. El numero verde del menu cuenta las respuestas que todavia no viste." />
         </div>
 
         <Tip>
@@ -306,7 +305,7 @@ export default function HelpGuide() {
 
         <SubHead>Como usarlo</SubHead>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <Step n={1} title="Manda el copy aprobado a producción" desc="Desde Copy aprobado, seleccioná las variaciones aprobadas y presioná Mandar a producción. El sistema propone las piezas —una por canal, un aprobado por slot, el formato por defecto del canal— y vos confirmás o corregís. Nada entra al tablero solo." />
+          <Step n={1} title="Manda el copy aprobado a producción" desc="Desde Copy, filtrá Aprobado, marcá el copy y presioná Mandar a producción. El sistema propone las piezas —una por canal, un aprobado por slot, el formato por defecto del canal— y vos confirmás o corregís. Nada entra al tablero solo." />
           <Step n={2} title="Resolvé las preguntas de la propuesta" desc="Si hay dos aprobados para el mismo slot, la propuesta pregunta si va uno solo o si son dos piezas (un A/B). El que no entra no se borra ni se desaprueba: queda ahí para otra pieza. Si el mismo visual va a dos canales, marcá 'mismo visual' y las dos piezas se asignan juntas." />
           <Step n={3} title="Asigná" desc="Las piezas nacen en Por asignar y sin dueño. Elegí a quién se la das y pasa a En diseño. Crear y asignar son dos decisiones distintas." />
           <Step n={4} title="El diseñador trabaja con la orden de trabajo" desc="Abrí la tarjeta: ahí está el copy exacto para copiar y pegar —no retipear—, el brief de producción que el motor emite (idea visual, estructura, indicaciones), las piezas hermanas y el historial de quién hizo qué." />

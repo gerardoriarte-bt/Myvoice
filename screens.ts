@@ -80,13 +80,13 @@ export const SCREENS: Record<ScreenId, ScreenDef> = {
   saved: {
     id: 'saved',
     /**
-     * Se llamaba «Biblioteca» y el nombre trabajaba en contra: sonaba a archivo
-     * donde se guardan cosas, cuando es el paso donde el copy avanza — se
-     * elige, se aprueba, y de acá sale hacia el cliente o hacia producción.
-     * El nombre nuevo dice exactamente qué sale de acá.
+     * Fue «Biblioteca» (sonaba a archivo) y después «Copy aprobado», que
+     * mentía al revés: mostraba también lo pendiente. Desde el 2026-10-13 es
+     * el recorrido entero del copy de una marca —por aprobar, con el cliente,
+     * aprobado, en producción—, así que el nombre es lo que contiene.
      */
-    name: 'Copy aprobado',
-    description: 'Lo que pasó el filtro, listo para el cliente o para producir.',
+    name: 'Copy',
+    description: 'El copy de la marca y en qué paso va: por aprobar, con el cliente, aprobado, en producción.',
     icon: Library,
     stage: 'aprobar',
     adminOnly: false,
@@ -102,7 +102,7 @@ export const SCREENS: Record<ScreenId, ScreenDef> = {
   collaboration: {
     id: 'collaboration',
     name: 'Revisiones',
-    description: 'Enviá piezas a revisión del cliente y seguí sus decisiones.',
+    description: 'Lo que se le mandó al cliente y lo que respondió.',
     icon: ClipboardCheck,
     stage: 'aprobar',
     adminOnly: true,

@@ -211,7 +211,15 @@ export const libraryApi = {
   updateVariation: (id: string, data: any) => apiRequest(`/saved/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteVariation: (id: string) => apiRequest(`/saved/${id}`, { method: 'DELETE' }),
   bulkDelete: (ids: string[]) => apiRequest('/saved/bulk-delete', { method: 'POST', body: JSON.stringify({ ids }) }),
-  listProjects: () => apiRequest('/projects'),
+  /** Aprueba o desaprueba. Solo decide el responsable de la campaña de cada copy. */
+  decidirAprobacion: (ids: string[], aprobar: boolean): Promise<{ aplicados: string[]; rechazados: { id: string; motivo: string }[] }> =>
+    apiRequest('/saved/aprobacion', { method: 'POST', body: JSON.stringify({ ids, aprobar }) }),
+  listProjects: (clientId?: string) =>
+    apiRequest(clientId ? `/projects?clientId=${encodeURIComponent(clientId)}` : '/projects'),
+  /** La campaña de un brief; el servidor la crea la primera vez. */
+  campanaDeBrief: (dnaProfileId: string) => apiRequest(`/projects/de-brief/${dnaProfileId}`),
+  updateProject: (id: string, data: { modoAprobacion?: string; responsableId?: string | null; pideAprobacionDeCliente?: boolean }) =>
+    apiRequest(`/projects/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   createProject: (data: any) => apiRequest('/projects', { method: 'POST', body: JSON.stringify(data) }),
   deleteProject: (id: string) => apiRequest(`/projects/${id}`, { method: 'DELETE' }),
 };
