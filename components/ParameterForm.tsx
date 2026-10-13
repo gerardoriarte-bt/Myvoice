@@ -350,8 +350,8 @@ const ParameterForm: React.FC<ParameterFormProps> = ({
               const active = activeProfileId === profile.id;
               const trained = (profile.feedbackExamples?.length || 0) > 0;
               return (
+                <React.Fragment key={profile.id}>
                 <button
-                  key={profile.id}
                   type="button"
                   onClick={() => setActiveProfileId(profile.id)}
                   className={`w-full text-left p-3 rounded-lg border transition-all ${
@@ -380,6 +380,18 @@ const ParameterForm: React.FC<ParameterFormProps> = ({
                     {trained && <Pill variant="info">◉ Entrenada ({profile.feedbackExamples!.length})</Pill>}
                   </div>
                 </button>
+                {/* Pegado a la campaña elegida y no al final de la lista: con
+                    muchas campañas quedaba lejos de lo que se acababa de elegir. */}
+                {active && campana && (
+                  <AprobacionDeCampana
+                    campana={campana}
+                    miembros={miembros}
+                    puedeEditar={puedeEditarAprobacion}
+                    onCambio={setCampana}
+                    onError={onError}
+                  />
+                )}
+                </React.Fragment>
               );
             })}
           </div>
@@ -398,17 +410,6 @@ const ParameterForm: React.FC<ParameterFormProps> = ({
                 <ChevronRight className="w-3 h-3" />
               </button>
             )}
-          </div>
-        )}
-        {campana && (
-          <div className="mt-2">
-            <AprobacionDeCampana
-              campana={campana}
-              miembros={miembros}
-              puedeEditar={puedeEditarAprobacion}
-              onCambio={setCampana}
-              onError={onError}
-            />
           </div>
         )}
         {dnaInsights && (dnaInsights.approvedCount > 0 || dnaInsights.negativeCount > 0) && (
