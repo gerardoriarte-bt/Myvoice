@@ -1,5 +1,5 @@
 import React from 'react';
-import { Loader2, Upload } from 'lucide-react';
+import { Loader2, Upload, UserRoundCheck } from 'lucide-react';
 import { Pieza, PiezaEstado } from '../../types';
 import { piezasApi } from '../../services/api';
 
@@ -7,8 +7,10 @@ import { piezasApi } from '../../services/api';
  * La acción que vacía cada columna (D5), y ninguna más.
  *
  * Cada estado tiene exactamente una salida hacia adelante y, donde corresponde,
- * una hacia atrás que exige motivo escrito. El servidor vuelve a validar la
- * transición: esto decide qué se muestra, no qué se permite.
+ * una hacia atrás que exige motivo escrito. **Solo se muestra lo que quien mira
+ * puede hacer** (`pieza.puedo`, calculado por el servidor); en lugar del botón
+ * que no le toca, se lee quién lo hace. Antes todos veían todo, y el servidor
+ * se lo permitía a todos.
  *
  * **El motivo se escribe acá adentro, no en un `window.prompt`.** Es un dato
  * que queda guardado en el historial y que alguien va a leer después —es lo
@@ -28,8 +30,9 @@ interface Props {
 
 const AYUDA: Record<PiezaEstado, string> = {
   POR_ASIGNAR: 'Elegí quién la diseña.',
-  EN_DISENO: 'Cuando esté lista, subila. De ahí salen la previa y la verificación automática.',
+  EN_DISENO: 'Cuando esté lista, subila. Se audita y recién ahí pasa a revisión.',
   POR_REVISAR: 'Miralo contra la orden de trabajo y decidí.',
+  CON_EL_CLIENTE: 'El equipo ya la aceptó. Falta la aprobación del cliente.',
   LISTA: 'Terminada. Se puede reabrir con un motivo.',
 };
 
@@ -40,6 +43,14 @@ const PEDIDO: Record<ConMotivo, { titulo: string; boton: string }> = {
   devolver: { titulo: '¿Por qué vuelve a diseño?', boton: 'Devolver' },
   reabrir: { titulo: '¿Por qué se reabre?', boton: 'Reabrir' },
 };
+
+/** Quien no puede decidir lee quién lo hace, en vez de un botón que no le toca. */
+const QuienDecide = ({ texto }: { texto: string }) => (
+  <p className="flex items-start gap-1.5 rounded-lg bg-apple-bg px-2 py-1.5 text-[10.5px] leading-snug text-apple-secondary">
+    <UserRoundCheck className="mt-px h-3 w-3 shrink-0" />
+    {texto}
+  </p>
+);
 
 /**
  * El motivo va separado en dos, y no es un capricho de formulario: **lo de copy
@@ -74,7 +85,12 @@ export default function AccionesPieza({ pieza, miembros, onCambio, onError, comp
     notaDiseno: '',
   });
   const [subiendo, setSubiendo] = React.useState(false);
+  /** Aceptar con hallazgos sin decidir pide una línea de por qué. */
+  const [notaAceptar, setNotaAceptar] = React.useState<string | null>(null);
   const archivoRef = React.useRef<HTMLInputElement>(null);
+  const { puedo } = pieza;
+  const pendientes = pieza.version?.pendientes ?? 0;
+  const responsable = pieza.project?.responsable?.name ?? 'el responsable de la campaña';
 
   /**
    * Los canales gráficos entregan el ARCHIVO: es lo único que la auditoría
@@ -132,6 +148,41 @@ export default function AccionesPieza({ pieza, miembros, onCambio, onError, comp
   const primario = `${boton} bg-ink text-white hover:bg-ink-hover`;
   const secundario = `${boton} border border-apple-border text-apple-text hover:bg-apple-fill`;
 
+  if (notaAceptar !== null) {
+    return (
+      <div className="space-y-2">
+        <p className="text-[11px] font-semibold text-apple-text">
+          {pendientes === 1 ? 'Hay un hallazgo sin decidir.' : `Hay ${pendientes} hallazgos sin decidir.`} ¿Por qué va igual?
+        </p>
+        <textarea
+          autoFocus
+          rows={2}
+          value={notaAceptar}
+          onChange={e => setNotaAceptar(e.target.value)}
+          onKeyDown={e => e.key === 'Escape' && setNotaAceptar(null)}
+          placeholder="La diferencia es de la miniatura; en el tamaño real se lee bien…"
+          className="w-full rounded-lg border border-apple-border px-2 py-1.5 text-[11px] text-apple-text"
+        />
+        <p className="text-[10px] text-apple-tertiary">Queda en el historial. También podés decidir cada hallazgo en la orden de trabajo.</p>
+        <div className="flex items-center gap-2">
+          <button
+            disabled={!notaAceptar.trim() || ocupado}
+            onClick={async () => {
+              await correr(() => piezasApi.aceptar(pieza.id, notaAceptar.trim()));
+              setNotaAceptar(null);
+            }}
+            className={primario}
+          >
+            Aceptar igual
+          </button>
+          <button disabled={ocupado} onClick={() => setNotaAceptar(null)} className={secundario}>
+            Cancelar
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   // Mientras se escribe el motivo, esa es la única acción visible: evita
   // aceptar por error una pieza que se estaba por devolver.
   if (pidiendo) {
@@ -182,7 +233,11 @@ export default function AccionesPieza({ pieza, miembros, onCambio, onError, comp
     <div className="space-y-2">
       {!compacto && <p className="text-[11px] text-apple-tertiary">{AYUDA[pieza.estado]}</p>}
 
-      {pieza.estado === 'POR_ASIGNAR' && (
+      {pieza.estado === 'POR_ASIGNAR' && !puedo.asignar && (
+        <QuienDecide texto={`Asigna quien administra o ${responsable}.`} />
+      )}
+
+      {pieza.estado === 'POR_ASIGNAR' && puedo.asignar && (
         <div className="flex items-center gap-2">
           <select
             value={quien}
@@ -207,7 +262,20 @@ export default function AccionesPieza({ pieza, miembros, onCambio, onError, comp
         </div>
       )}
 
-      {pieza.estado === 'EN_DISENO' && grafica && (
+      {pieza.estado === 'EN_DISENO' && pieza.devolucion?.esperaCopy && (
+        <p className="rounded-lg bg-sky-50 px-2 py-1.5 text-[10.5px] leading-snug text-sky-800">
+          Hay un cambio de mensaje pendiente: {responsable} corrige el copy en la orden de trabajo antes de que
+          se actualice el arte.
+        </p>
+      )}
+
+      {pieza.estado === 'EN_DISENO' && !puedo.entregar && (
+        <QuienDecide
+          texto={pieza.asignadaA ? `La está diseñando ${pieza.asignadaA.name}.` : 'Todavía no tiene a quién se le asignó.'}
+        />
+      )}
+
+      {pieza.estado === 'EN_DISENO' && grafica && puedo.entregar && (
         <div className="space-y-2">
           <input
             ref={archivoRef}
@@ -222,22 +290,21 @@ export default function AccionesPieza({ pieza, miembros, onCambio, onError, comp
             className={`${primario} flex w-full items-center justify-center gap-1.5`}
           >
             {subiendo ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
-            {subiendo ? 'Subiendo y auditando…' : 'Subir la pieza'}
+            {subiendo
+              ? 'Subiendo…'
+              : pieza.semaforo === 'auditando'
+                ? 'Subir otra versión'
+                : 'Subir la pieza'}
           </button>
-          <p className="text-[10px] text-apple-tertiary">PNG, JPG o WEBP · hasta 10 MB</p>
-          {!compacto && quien && (
-            <button
-              disabled={ocupado}
-              onClick={() => correr(() => piezasApi.reasignar(pieza.id, quien))}
-              className={secundario}
-            >
-              Reasignar a quien esté elegido
-            </button>
-          )}
+          <p className="text-[10px] text-apple-tertiary">
+            {pieza.semaforo === 'auditando'
+              ? `Auditando la versión ${pieza.version?.numero ?? ''}: pasa a revisión cuando termine.`
+              : 'PNG, JPG o WEBP · hasta 10 MB'}
+          </p>
         </div>
       )}
 
-      {pieza.estado === 'EN_DISENO' && !grafica && (
+      {pieza.estado === 'EN_DISENO' && !grafica && puedo.entregar && (
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <input
@@ -255,21 +322,42 @@ export default function AccionesPieza({ pieza, miembros, onCambio, onError, comp
               Entregar
             </button>
           </div>
-          {!compacto && quien && (
-            <button
-              disabled={ocupado}
-              onClick={() => correr(() => piezasApi.reasignar(pieza.id, quien))}
-              className={secundario}
-            >
-              Reasignar a quien esté elegido
-            </button>
-          )}
         </div>
       )}
 
-      {pieza.estado === 'POR_REVISAR' && (
+      {/* Reasignar: antes el selector solo existía en Por asignar, y el botón
+          reasignaba a la misma persona. */}
+      {pieza.estado === 'EN_DISENO' && puedo.asignar && !compacto && (
         <div className="flex items-center gap-2">
-          <button disabled={ocupado} onClick={() => correr(() => piezasApi.aceptar(pieza.id))} className={primario}>
+          <select
+            value={quien}
+            onChange={e => setQuien(e.target.value)}
+            className="min-w-0 flex-1 rounded-lg border border-apple-border px-2 py-1.5 text-[11px] text-apple-text"
+          >
+            {miembros.map(m => (
+              <option key={m.id} value={m.id}>
+                {m.name}
+                {m.etiqueta ? ` · ${m.etiqueta}` : ''}
+              </option>
+            ))}
+          </select>
+          <button
+            disabled={!quien || quien === pieza.asignadaAId || ocupado}
+            onClick={() => correr(() => piezasApi.reasignar(pieza.id, quien))}
+            className={secundario}
+          >
+            Reasignar
+          </button>
+        </div>
+      )}
+
+      {pieza.estado === 'POR_REVISAR' && puedo.aceptar && (
+        <div className="flex items-center gap-2">
+          <button
+            disabled={ocupado}
+            onClick={() => (pendientes > 0 ? setNotaAceptar('') : correr(() => piezasApi.aceptar(pieza.id)))}
+            className={primario}
+          >
             Aceptar
           </button>
           <button disabled={ocupado} onClick={() => pedir('devolver')} className={secundario}>
@@ -277,8 +365,28 @@ export default function AccionesPieza({ pieza, miembros, onCambio, onError, comp
           </button>
         </div>
       )}
+      {pieza.estado === 'POR_REVISAR' && !puedo.aceptar && pieza.quienDecide && (
+        <QuienDecide texto={pieza.quienDecide} />
+      )}
 
-      {pieza.estado === 'LISTA' && (
+      {pieza.estado === 'CON_EL_CLIENTE' && (
+        <div className="space-y-2">
+          {!compacto && (
+            <p className="text-[10.5px] text-apple-secondary">
+              {pieza.enviadaAlCliente
+                ? 'Enviada: espera la respuesta del cliente.'
+                : 'Sin enviar: se manda desde la cabecera de la columna «Con el cliente».'}
+            </p>
+          )}
+          {puedo.devolver && !compacto && (
+            <button disabled={ocupado} onClick={() => pedir('devolver')} className={secundario}>
+              Devolver a diseño
+            </button>
+          )}
+        </div>
+      )}
+
+      {pieza.estado === 'LISTA' && puedo.reabrir && (
         <button disabled={ocupado} onClick={() => pedir('reabrir')} className={secundario}>
           Reabrir
         </button>

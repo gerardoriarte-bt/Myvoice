@@ -299,7 +299,6 @@ export interface Project {
   modoAprobacion?: ModoAprobacion;
   responsableId?: string | null;
   responsable?: { id: string; name: string } | null;
-  pideAprobacionDeCliente?: boolean;
 }
 
 /**
@@ -457,7 +456,7 @@ export interface GenerationPreset {
  * porque `apiRequest` devuelve `any` (E2, punto 4): si la pantalla nueva
  * heredara eso, el tablero entero quedaría fuera de la gate de tipos.
  */
-export type PiezaEstado = 'POR_ASIGNAR' | 'EN_DISENO' | 'POR_REVISAR' | 'LISTA';
+export type PiezaEstado = 'POR_ASIGNAR' | 'EN_DISENO' | 'POR_REVISAR' | 'CON_EL_CLIENTE' | 'LISTA';
 export type PiezaTipo = 'GRAFICA' | 'VIDEO' | 'AUDIO';
 
 export interface PiezaSlot {
@@ -552,8 +551,45 @@ export interface Pieza {
   /** URL firmada del snapshot: nuestra, no depende de permisos ajenos. */
   previaUrl: string | null;
   client?: { id: string; name: string };
-  project?: { id: string; name: string; pideAprobacionDeCliente?: boolean } | null;
+  project?: {
+    id: string;
+    name: string;
+    modoAprobacion?: ModoAprobacion;
+    responsableId?: string | null;
+    responsable?: { id: string; name: string } | null;
+  } | null;
+  /**
+   * Qué puede hacer con esta pieza quien la mira. Lo calcula el servidor
+   * (permisosPieza.ts), que es el mismo que después lo hace cumplir.
+   */
+  puedo: Record<AccionPermitida, boolean>;
+  /** Si no puede decidir: quién lo hace, en una línea. */
+  quienDecide: string | null;
+  /** Solo en diseño: la devolución vigente y sus motivos. */
+  devolucion: {
+    por: string;
+    createdAt: string;
+    motivos: { categoria: 'COPY' | 'DISENO' | null; nota: string | null }[];
+    /** Hubo motivo de copy y el responsable todavía no lo corrigió. */
+    esperaCopy: boolean;
+  } | null;
+  /** Solo en Lista: quién la cerró. */
+  cierre: { via: 'CLIENTE' | 'INTERNA'; por: string; createdAt: string } | null;
+  /** Solo con el cliente: cuándo se le mandó, si ya se le mandó. */
+  enviadaAlCliente: { createdAt: string } | null;
 }
+
+export type AccionPermitida =
+  | 'asignar'
+  | 'entregar'
+  | 'aceptar'
+  | 'devolver'
+  | 'reabrir'
+  | 'decidirHallazgos'
+  | 'corregirCopy'
+  | 'actualizarCopy'
+  | 'renombrar'
+  | 'mandarAlCliente';
 
 export interface PiezaEvento {
   id: string;

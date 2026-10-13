@@ -220,7 +220,7 @@ export const libraryApi = {
     apiRequest(clientId ? `/projects?clientId=${encodeURIComponent(clientId)}` : '/projects'),
   /** La campaña de un brief; el servidor la crea la primera vez. */
   campanaDeBrief: (dnaProfileId: string) => apiRequest(`/projects/de-brief/${dnaProfileId}`),
-  updateProject: (id: string, data: { modoAprobacion?: string; responsableId?: string | null; pideAprobacionDeCliente?: boolean }) =>
+  updateProject: (id: string, data: { modoAprobacion?: string; responsableId?: string | null }) =>
     apiRequest(`/projects/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   createProject: (data: any) => apiRequest('/projects', { method: 'POST', body: JSON.stringify(data) }),
   deleteProject: (id: string) => apiRequest(`/projects/${id}`, { method: 'DELETE' }),
@@ -247,12 +247,6 @@ export const reviewApi = {
   crearDePiezas: (data: { title: string; piezaIds: string[]; expiresInDays?: number }) =>
     apiRequest('/review-sessions', { method: 'POST', body: JSON.stringify(data) }),
   delete: (id: string) => apiRequest(`/review-sessions/${id}`, { method: 'DELETE' }),
-  /** El interruptor de la ronda 2, por campaña (D3). */
-  pedirAprobacionDePiezas: (projectId: string, pide: boolean) =>
-    apiRequest(`/projects/${projectId}`, {
-      method: 'PATCH',
-      body: JSON.stringify({ pideAprobacionDeCliente: pide }),
-    }),
   // Rutas públicas: fetch directo sin Bearer token
   getByToken: (token: string) =>
     fetch(`${API_URL}/review/public/${token}`).then(r => r.json()),
@@ -336,6 +330,9 @@ export const piezasApi = {
   reabrir: (id: string, motivos: { notaCopy?: string; notaDiseno?: string }): Promise<Pieza> =>
     accion(id, 'reabrir', motivos),
   actualizarCopy: (id: string): Promise<Pieza> => accion(id, 'actualizar-copy', {}),
+  /** El responsable corrige el copy dentro de la pieza: la pieza y Copy quedan iguales. */
+  corregirCopy: (id: string, correcciones: { slot: string; texto: string }[]): Promise<Pieza> =>
+    apiRequest(`/piezas/${id}/corregir-copy`, { method: 'POST', body: JSON.stringify({ correcciones }) }),
   /** Un comentario no mueve la pieza: queda en su historial. */
   comentar: (id: string, nota: string): Promise<Pieza> => accion(id, 'comentar', { nota }),
   /**
