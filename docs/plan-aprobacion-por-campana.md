@@ -81,6 +81,13 @@ Legado: el copy aprobado sin campaña aparece en «Sin campaña» y no va a prod
 una y aprobarlo de nuevo. Las campañas existentes quedan `INTERNA` sin responsable: alguien que
 administre tiene que nombrarlo antes de que su copy avance.
 
+**Aviso al iniciar sesión** (`novedades.ts`, `components/AvisoDeNovedad.tsx`, migración
+`20261013000001_novedades_vistas`): el cambio se explica en un modal la primera vez que cada persona
+entra después del deploy, con una versión para quien administra (nombrar responsables) y otra para
+el equipo. Lo visto se guarda en `User.novedadesVistas`. La misma entrada queda en la pantalla
+Novedades, el registro de cambios, enlazada desde el pie de la barra lateral. **La `fecha` de la
+entrada tiene que ser la del deploy**: a quien se dio de alta ese día o después no se le muestra.
+
 **Criterios de aceptación:** las tres compuertas de tipos, `verify:isolation` con los casos nuevos
 (aprobar, asignar responsable y responder una revisión con ids ajenos) y el recorrido completo a mano
 en el entorno local: generar → guardar → aprobar o enviar al cliente → responder → producir.

@@ -64,6 +64,10 @@ model User {
   /// válido si existe la Membership correspondiente; el middleware lo verifica
   /// en cada request y nunca confía en este campo por sí solo.
   workspaceId           String?
+  /// Ids de `novedades.ts` (frontend) que esta persona ya vio. En el servidor y
+  /// no en el navegador: el localStorage se borra cada vez que vence la sesión,
+  /// y el aviso volvería a aparecer cada 24 h.
+  novedadesVistas       String[]          @default([])
   client                Client?           @relation(fields: [clientId], references: [id])
   workspace             Workspace?        @relation(fields: [workspaceId], references: [id])
   memberships           Membership[]

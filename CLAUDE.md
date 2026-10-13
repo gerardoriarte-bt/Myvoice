@@ -200,6 +200,14 @@ happens. Screen names are read with `screenName(id)` rather than written by hand
 the *active* workspace, refreshed via `authApi.me()` on mount and swapped by
 `POST /auth/switch-workspace`.
 
+**`novedades.ts` is the changelog users see**, and the only place it is written. Every change a
+user would notice gets an entry (date = the day it reaches production; internal work does not).
+Entries with `aviso` also open a modal once per person at login — only for users created before
+that date, and «seen» lives in `User.novedadesVistas` on the server, because the browser's
+storage is wiped on every expired session. The «Novedades» screen is reachable only from a small
+link in the sidebar footer: it is deliberately not a stage of the process. An entry's `id` never
+changes once published.
+
 `services/api.ts` wraps every call; a 401 clears localStorage and dispatches a
 `vt:session-expired` event rather than hard-reloading.
 

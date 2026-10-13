@@ -54,6 +54,8 @@ export const authApi = {
   }),
   /** Refresca la sesión sin volver a loguearse (rol y workspaces al día). */
   me: () => apiRequest('/auth/me'),
+  marcarNovedadVista: (id: string) =>
+    apiRequest(`/auth/novedades/${encodeURIComponent(id)}/vista`, { method: 'POST' }) as Promise<{ novedadesVistas: string[] }>,
   switchWorkspace: (workspaceId: string) => apiRequest('/auth/switch-workspace', {
     method: 'POST',
     body: JSON.stringify({ workspaceId }),

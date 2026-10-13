@@ -23,6 +23,7 @@ import {
   History,
   LayoutGrid,
   Library,
+  Megaphone,
   Settings,
   Sparkles,
   Users,
@@ -38,7 +39,8 @@ export type ScreenId =
   | 'produccion'
   | 'users'
   | 'settings'
-  | 'help';
+  | 'help'
+  | 'novedades';
 
 /**
  * Cinco etapas, no cuatro: cuando entra la pieza, «producir» dejaba de
@@ -146,6 +148,18 @@ export const SCREENS: Record<ScreenId, ScreenDef> = {
     name: 'Guía',
     description: 'Cómo funciona el motor y qué hace cada pantalla.',
     icon: BookOpen,
+    stage: 'administrar',
+    adminOnly: false,
+  },
+  /**
+   * Fuera de NAV_STAGES a propósito: no es un paso del proceso. Se llega por un
+   * enlace chico al pie de la barra lateral. El registro vive en `novedades.ts`.
+   */
+  novedades: {
+    id: 'novedades',
+    name: 'Novedades',
+    description: 'Lo que cambió en My Voice, de lo más reciente a lo más viejo.',
+    icon: Megaphone,
     stage: 'administrar',
     adminOnly: false,
   },

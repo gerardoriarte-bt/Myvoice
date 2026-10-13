@@ -58,6 +58,7 @@ router.post('/auth/login', authController.login);
 router.post('/auth/google', authController.googleLogin);
 router.get('/auth/me', ...authed, authController.me);
 router.post('/auth/switch-workspace', ...authed, authController.switchWorkspace);
+router.post('/auth/novedades/:id/vista', ...authed, authController.marcarNovedadVista);
 
 // --------------------------------------------------------------- workspaces
 router.get('/workspaces', ...authed, workspaceController.listMyWorkspaces);

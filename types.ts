@@ -93,7 +93,10 @@ export interface User {
   workspaceName?: string | null;
   /** Todos los workspaces donde tiene membresía. Alimenta el selector. */
   workspaces?: WorkspaceSummary[];
-  createdAt?: number;
+  /** ISO. Decide si una novedad le corresponde: a quien llega después, no. */
+  createdAt?: string;
+  /** Ids de `novedades.ts` que ya vio. Vive en el servidor, no en el navegador. */
+  novedadesVistas?: string[];
 }
 
 /** Miembro de un workspace, tal como lo devuelve GET /workspace/members. */

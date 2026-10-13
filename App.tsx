@@ -18,6 +18,9 @@ import { VOICES, GOALS } from './constants';
 import HomePage from './components/HomePage';
 import AISettings from './components/AISettings';
 import HelpGuide from './components/HelpGuide';
+import Novedades from './components/Novedades';
+import AvisoDeNovedad from './components/AvisoDeNovedad';
+import { Novedad, novedadPendiente } from './novedades';
 import { generationApi, clientApi, libraryApi, authApi, workspaceApi, refineApi, reviewApi } from './services/api';
 
 import CollaborationHub from './components/CollaborationHub';
@@ -116,6 +119,10 @@ const App: React.FC = () => {
   const [dnaProfiles, setDnaProfiles] = React.useState<ContentDNAProfile[]>([]);
   const [users, setUsers] = React.useState<WorkspaceMember[]>([]);
   const [currentUser, setCurrentUser] = React.useState<User | null>(null);
+  /** Cerrado con Escape o afuera: no cuenta como visto, vuelve en la próxima sesión. */
+  const [avisoCerradoEnSesion, setAvisoCerradoEnSesion] = React.useState(false);
+  /** Abierto a mano desde Novedades, aunque ya se haya visto. */
+  const [avisoReabierto, setAvisoReabierto] = React.useState<Novedad | null>(null);
   /**
    * La marca activa. Es UNA para toda la app y vive en el encabezado: antes
    * cada pantalla tenía su propio selector y cambiar en una no se arrastraba a
@@ -605,7 +612,29 @@ const App: React.FC = () => {
     : undefined;
   const marcaDeLoGenerado = clients.find(c => c.id === (lastParams?.clientId || activeClientId));
 
-  const pantallaConMarca = !['clients', 'users', 'settings', 'help', 'analytics'].includes(activeTab);
+  const pantallaConMarca = !['clients', 'users', 'settings', 'help', 'analytics', 'novedades'].includes(activeTab);
+
+  /*
+   * La novedad a avisar al entrar. Se espera a que la sesión venga del
+   * servidor (`novedadesVistas` definido): con el usuario viejo del
+   * localStorage, alguien que ya la vio la vería de nuevo por un instante.
+   */
+  const pendiente =
+    currentUser?.novedadesVistas !== undefined
+      ? novedadPendiente(currentUser.novedadesVistas, currentUser.createdAt)
+      : null;
+  const avisoVisible = avisoReabierto ?? (avisoCerradoEnSesion ? null : pendiente);
+
+  const marcarAvisoVisto = (novedad: Novedad, irA?: ScreenId) => {
+    setAvisoReabierto(null);
+    if (irA) setActiveTab(irA);
+    if (!currentUser || currentUser.novedadesVistas?.includes(novedad.id)) return;
+    const actualizado = { ...currentUser, novedadesVistas: [...(currentUser.novedadesVistas ?? []), novedad.id] };
+    setCurrentUser(actualizado);
+    localStorage.setItem('vt_user', JSON.stringify(actualizado));
+    // Si falla, vuelve a aparecer en la próxima sesión: mejor eso que perderlo.
+    authApi.marcarNovedadVista(novedad.id).catch(() => {});
+  };
 
   if (reviewToken) {
     return (
@@ -632,6 +661,17 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen flex" style={{ background: '#F5F5F7' }}>
       <NotificationSystem notifications={notifications} onDismiss={dismissNotification} />
+      {avisoVisible && (
+        <AvisoDeNovedad
+          novedad={avisoVisible}
+          administra={isAdmin}
+          onVista={irA => marcarAvisoVisto(avisoVisible, irA)}
+          onCerrar={() => {
+            setAvisoReabierto(null);
+            setAvisoCerradoEnSesion(true);
+          }}
+        />
+      )}
 
       {/* SIDEBAR — Apple macOS style */}
       <aside className="apple-sidebar w-[216px] fixed top-0 bottom-0 left-0 flex flex-col z-50">
@@ -730,6 +770,16 @@ const App: React.FC = () => {
             </button>
           </div>
           <div className="px-4 py-3 border-t border-[rgba(0,0,0,0.05)] flex flex-col items-center gap-1.5">
+            {/* Discreto a propósito: el registro está a mano, pero no es un paso del proceso. */}
+            <button
+              onClick={() => setActiveTab('novedades')}
+              className={`mb-1 text-[10.5px] hover:text-[#1D1D1F] hover:underline ${
+                activeTab === 'novedades' ? 'text-[#1D1D1F] font-medium' : 'text-[#86868B]'
+              }`}
+            >
+              {SCREENS.novedades.name}
+              {pendiente && <span className="ml-1 inline-block h-1.5 w-1.5 rounded-full bg-indigo-500 align-middle" />}
+            </button>
             <span className="text-[9px] uppercase tracking-[0.12em] text-[#86868B] font-medium">Powered by</span>
             <img src="/LobuenoLogo.png" alt="LoBueno" className="h-[14px] w-auto opacity-50" />
           </div>
@@ -1074,6 +1124,9 @@ const App: React.FC = () => {
             <div className="apple-card p-8">
               <HelpGuide />
             </div>
+          )}
+          {activeTab === 'novedades' && (
+            <Novedades vistas={currentUser.novedadesVistas ?? []} onVerAviso={setAvisoReabierto} />
           )}
         </main>
       </div>

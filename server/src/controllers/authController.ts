@@ -47,7 +47,14 @@ const listWorkspacesOf = async (userId: string) => {
 };
 
 /** Sesión completa: token con el workspace activo + los workspaces disponibles. */
-const buildSession = async (user: { id: string; name: string; email: string; workspaceId: string | null }) => {
+const buildSession = async (user: {
+  id: string;
+  name: string;
+  email: string;
+  workspaceId: string | null;
+  createdAt: Date;
+  novedadesVistas: string[];
+}) => {
   const workspaces = await listWorkspacesOf(user.id);
 
   const active =
@@ -67,6 +74,10 @@ const buildSession = async (user: { id: string; name: string; email: string; wor
       workspaceId: active?.id ?? null,
       workspaceName: active?.name ?? null,
       workspaces,
+      // El frontend decide qué novedad mostrar: la que no vio y que es
+      // posterior a su alta (a quien llega después, «ahora cambió» no le dice nada).
+      createdAt: user.createdAt.toISOString(),
+      novedadesVistas: user.novedadesVistas,
     },
   };
 };
@@ -264,5 +275,27 @@ export const switchWorkspace = async (req: AuthRequest, res: Response) => {
   } catch (error) {
     console.error('switchWorkspace error:', error);
     res.status(500).json({ error: 'Error al cambiar de workspace' });
+  }
+};
+
+/**
+ * Marca una novedad como vista. El id viene de `novedades.ts` en el frontend y
+ * el servidor no lo valida contra una lista: solo su forma, para que no se
+ * guarde cualquier cosa en la fila del usuario.
+ */
+export const marcarNovedadVista = async (req: AuthRequest, res: Response) => {
+  const { id } = req.params;
+  if (!/^[a-z0-9-]{1,64}$/.test(id)) return res.status(400).json({ error: 'Id de novedad inválido' });
+  try {
+    const user = await prisma.user.findUnique({ where: { id: req.auth!.userId }, select: { novedadesVistas: true } });
+    if (!user) return res.status(401).json({ error: 'Usuario no encontrado' });
+    const novedadesVistas = user.novedadesVistas.includes(id) ? user.novedadesVistas : [...user.novedadesVistas, id];
+    if (novedadesVistas !== user.novedadesVistas) {
+      await prisma.user.update({ where: { id: req.auth!.userId }, data: { novedadesVistas } });
+    }
+    res.json({ novedadesVistas });
+  } catch (error) {
+    console.error('marcarNovedadVista error:', error);
+    res.status(500).json({ error: 'No se pudo guardar la novedad como vista' });
   }
 };
