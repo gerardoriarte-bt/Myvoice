@@ -26,6 +26,8 @@ interface Props {
   pieza: Pieza;
   miembros: { id: string; name: string; etiqueta?: string }[];
   mostrarMarca?: boolean;
+  /** Cómo se nombra la marca en «Lo mío»: «Terpel CRM · de Terpel». */
+  nombreDeMarca?: string;
   onAbrir: (id: string) => void;
   onCambio: (pieza: Pieza) => void;
   onError: (mensaje: string) => void;
@@ -56,7 +58,7 @@ const desde = (fecha: string): string => {
   return `hace ${dias} días`;
 };
 
-export default function TarjetaPieza({ pieza, miembros, mostrarMarca, onAbrir, onCambio, onError }: Props) {
+export default function TarjetaPieza({ pieza, miembros, mostrarMarca, nombreDeMarca, onAbrir, onCambio, onError }: Props) {
   const publicables = pieza.slots.filter(s => !s.esInstruccion);
   const color = COLORES_ESTADO[pieza.estado];
   // El snapshot gana sobre el enlace: es nuestro, no depende de permisos
@@ -213,7 +215,7 @@ export default function TarjetaPieza({ pieza, miembros, mostrarMarca, onAbrir, o
 
           <h4 className="text-[11px] leading-snug text-apple-text">{pieza.titulo}</h4>
           {mostrarMarca && pieza.client && (
-            <p className="-mt-1.5 text-[10px] text-apple-secondary">{pieza.client.name}</p>
+            <p className="-mt-1.5 text-[10px] text-apple-secondary">{nombreDeMarca ?? pieza.client.name}</p>
           )}
 
           {/* El copy es lo que el diseñador tiene que leer, así que va sobre

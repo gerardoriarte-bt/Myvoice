@@ -18,6 +18,7 @@ import { VOICES, GOALS } from './constants';
 import HomePage from './components/HomePage';
 import AISettings from './components/AISettings';
 import HelpGuide from './components/HelpGuide';
+import SelectorDeMarca from './components/SelectorDeMarca';
 import Novedades from './components/Novedades';
 import AvisoDeNovedad from './components/AvisoDeNovedad';
 import { Novedad, novedadPendiente } from './novedades';
@@ -538,6 +539,22 @@ const App: React.FC = () => {
     }
   }, [variations, lastParams, addNotification]);
 
+  /**
+   * Después de crear, editar o borrar una marca se vuelve a pedir la lista: el
+   * nombre repetido y los conteos los calcula el servidor sobre todas las
+   * marcas, y la respuesta de una sola no los trae (docs/plan-marcas-relacionadas.md).
+   */
+  const recargarMarcas = async () => {
+    const lista = await clientApi.list();
+    setClients(
+      (lista as any[]).map(c => ({
+        ...c,
+        logo: c.logoUrl || c.logo || '',
+        createdAt: typeof c.createdAt === 'string' ? new Date(c.createdAt).getTime() : c.createdAt,
+      }))
+    );
+  };
+
   const handleSaveDNAProfile = async (profile: Omit<ContentDNAProfile, 'id' | 'createdAt'>) => {
     try {
       // La marca del brief es la del formulario. Antes se pisaba con la marca
@@ -798,19 +815,15 @@ const App: React.FC = () => {
             */}
             {pantallaConMarca && clients.length > 0 && (
               <>
-                <label className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1.5">
                   <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-[#86868B]">Marca</span>
-                  <select
-                    aria-label="Marca activa"
-                    value={activeClientId}
-                    onChange={e => setActiveClientId(e.target.value)}
-                    className="rounded-md border border-[rgba(0,0,0,0.12)] bg-white px-2 py-1 text-[13px] font-semibold text-[#1D1D1F] outline-none focus-visible:ring-1 focus-visible:ring-[#1D1D1F]"
-                  >
-                    {clients.map(c => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
-                    ))}
-                  </select>
-                </label>
+                  <SelectorDeMarca
+                    marcas={clients}
+                    activa={activeClientId}
+                    onElegir={setActiveClientId}
+                    onRevisarRepetidos={isAdmin ? () => setActiveTab('clients') : undefined}
+                  />
+                </div>
                 <span className="text-[#C7C7CC]">/</span>
               </>
             )}
@@ -947,27 +960,32 @@ const App: React.FC = () => {
               }}
               onAdd={async c => {
                 try {
-                  const newClient = await clientApi.create(c);
-                  setClients(prev => [...prev, newClient]);
+                  await clientApi.create(c);
+                  await recargarMarcas();
                   addNotification('Marca registrada con éxito', 'success');
                 } catch (err) {
-                  addNotification('Error al registrar marca', 'error');
+                  addNotification(err instanceof Error ? err.message : 'Error al registrar marca', 'error');
                 }
               }} 
               onUpdate={async (id, u) => {
                 try {
                   const updated = await clientApi.update(id, u);
-                  setClients(prev => prev.map(c => c.id === id ? updated : c));
+                  // El nombre y la madre cambian lo que se calcula sobre todas las
+                  // marcas; el resto (que se edita tecla a tecla) se aplica solo.
+                  if ('name' in u || 'marcaMadreId' in u) await recargarMarcas();
+                  else setClients(prev => prev.map(c => (c.id === id ? { ...c, ...updated, logo: updated.logoUrl || c.logo, createdAt: c.createdAt } : c)));
                   addNotification('Marca actualizada', 'success');
                 } catch (err) {
-                  addNotification('Error al actualizar marca', 'error');
+                  // El motivo del servidor importa acá: «ya es parte de otra marca»
+                  // dice qué hacer; «Error al actualizar» no.
+                  addNotification(err instanceof Error ? err.message : 'Error al actualizar marca', 'error');
                 }
               }} 
               onRemove={async id => {
                 if (window.confirm('¿Eliminar esta marca y todo su ADN asociado?')) {
                   try {
                     await clientApi.delete(id);
-                    setClients(prev => prev.filter(c => c.id !== id));
+                    await recargarMarcas();
                     addNotification('Marca eliminada', 'success');
                   } catch (err) {
                     addNotification('Error al eliminar marca', 'error');
