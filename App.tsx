@@ -1005,7 +1005,7 @@ const App: React.FC = () => {
                   setRecarga(n => n + 1);
                   addNotification('Marcas unidas: todo quedó en la que elegiste', 'success');
                 } catch (err) {
-                  addNotification(err instanceof Error ? err.message : 'No se pudieron unir las marcas', 'error');
+                  addNotification(err instanceof Error ? err.message : 'No se pudieron fusionar las marcas', 'error');
                   throw err;
                 }
               }}

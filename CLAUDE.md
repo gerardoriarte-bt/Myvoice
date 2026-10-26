@@ -216,6 +216,9 @@ the *active* workspace, refreshed via `authApi.me()` on mount and swapped by
 replaced the header's native `<select>`. `GET /clients` computes `nombreRepetidoCon` (normalized
 name, same workspace only) and `conteos` on read; the normalizer lives in
 `server/src/lib/nombreDeMarca.ts` with a copy in `marcas.ts` — the API cannot import `shared/`.
+The screen says **«submarca»** and **«Fusionar»** while the code keeps `complementaria` and `unir`
+(2026-10-26): «unir la submarca con Terpel» read as the irreversible merge. Marcas shows each family
+as a block with «Agregar submarca», and a brand's detail has a «Familia» card, apart from the ADN.
 
 **`novedades.ts` is the changelog users see**, and the only place it is written. Every change a
 user would notice gets an entry (date = the day it reaches production; internal work does not).

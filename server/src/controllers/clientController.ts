@@ -119,12 +119,12 @@ const validarMadre = async (tenant: TenantContext, marcaId: string | null, madre
   if (marcaId && madreId === marcaId) throw new TenantError('Una marca no puede ser parte de sí misma', 400);
   const madre = await assertClientInWorkspace(tenant, madreId);
   if (madre.marcaMadreId)
-    throw new TenantError(`«${madre.name}» ya es parte de otra marca: las complementarias no tienen complementarias`, 400);
+    throw new TenantError(`«${madre.name}» ya es submarca de otra: una submarca no tiene submarcas`, 400);
   if (marcaId) {
     const hijas = await prisma.client.count({ where: { marcaMadreId: marcaId } });
     if (hijas > 0)
       throw new TenantError(
-        `Esta marca tiene ${hijas === 1 ? 'una complementaria' : `${hijas} complementarias`}, así que no puede ser parte de otra`,
+        `Esta marca tiene ${hijas === 1 ? 'una submarca' : `${hijas} submarcas`}, así que no puede ser submarca de otra`,
         400
       );
   }
@@ -434,6 +434,6 @@ export const unirConOtra = async (req: AuthRequest, res: Response) => {
   try {
     res.json(await unirMarcas(req.tenant!, req.params.id, req.body?.destinoId));
   } catch (error) {
-    handleTenantError(error, res, 'Error al unir las marcas');
+    handleTenantError(error, res, 'Error al fusionar las marcas');
   }
 };

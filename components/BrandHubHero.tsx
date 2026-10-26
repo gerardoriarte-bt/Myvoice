@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft, Briefcase, Layers, BookmarkCheck, Activity } from 'lucide-react';
+import { ArrowLeft, Briefcase, ChevronRight, Layers, BookmarkCheck, Activity } from 'lucide-react';
 import { Client, ContentDNAProfile, SavedVariation } from '../types';
 
 interface Props {
@@ -8,9 +8,12 @@ interface Props {
   approvedCount: number;
   generationCount: number;
   onBack: () => void;
+  /** Si es submarca, la marca de la que cuelga: el encabezado dice «Terpel › Terpel CRM». */
+  madre?: Client;
+  onAbrirMadre?: () => void;
 }
 
-const BrandHubHero: React.FC<Props> = ({ client, profilesCount, approvedCount, generationCount, onBack }) => {
+const BrandHubHero: React.FC<Props> = ({ client, profilesCount, approvedCount, generationCount, onBack, madre, onAbrirMadre }) => {
   return (
     <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
       <div className="px-7 py-6 flex flex-col md:flex-row md:items-center gap-5">
@@ -19,7 +22,7 @@ const BrandHubHero: React.FC<Props> = ({ client, profilesCount, approvedCount, g
           className="absolute md:relative -mt-12 md:mt-0 inline-flex items-center gap-1.5 text-[11px] font-medium text-gray-500 hover:text-gray-900 transition-colors"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
-          <span className="hidden md:inline">Clientes</span>
+          <span className="hidden md:inline">Marcas</span>
         </button>
 
         <div className="w-16 h-16 rounded-xl bg-gray-50 border border-gray-100 p-1.5 flex items-center justify-center overflow-hidden shrink-0">
@@ -36,8 +39,16 @@ const BrandHubHero: React.FC<Props> = ({ client, profilesCount, approvedCount, g
               {client.industry}
             </span>
           </div>
-          <h2 className="text-[24px] font-medium text-gray-900 tracking-tight leading-tight truncate">
-            {client.name}
+          <h2 className="flex items-center gap-1.5 text-[24px] font-medium text-gray-900 tracking-tight leading-tight min-w-0">
+            {madre && (
+              <>
+                <button onClick={onAbrirMadre} className="shrink-0 text-gray-400 hover:text-gray-900 transition-colors">
+                  {madre.name}
+                </button>
+                <ChevronRight className="h-5 w-5 shrink-0 text-gray-300" />
+              </>
+            )}
+            <span className="truncate">{client.name}</span>
           </h2>
           {client.valueProposition && (
             <p className="text-[12px] text-gray-500 mt-1 leading-relaxed line-clamp-2">{client.valueProposition}</p>

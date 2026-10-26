@@ -60,10 +60,10 @@ export const distincion = (marca: Client): string => {
     partes.push(c.campanas === 1 ? '1 campaña' : `${c.campanas} campañas`);
     partes.push(
       c.complementarias === 0
-        ? 'sin complementarias'
+        ? 'sin submarcas'
         : c.complementarias === 1
-          ? '1 complementaria'
-          : `${c.complementarias} complementarias`
+          ? '1 submarca'
+          : `${c.complementarias} submarcas`
     );
   }
   if (marca.createdAt) {
