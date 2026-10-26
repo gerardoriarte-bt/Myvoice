@@ -52,10 +52,10 @@ export const NOVEDADES: Novedad[] = [
     fecha: '2026-10-26',
     titulo: 'Marcas relacionadas, y el nombre repetido se nota',
     cambios: [
-      'Una marca puede ser parte de otra: «Terpel CRM» aparece debajo de Terpel en el selector y en Marcas. Solo ordena; cada marca sigue con su ADN y sus campañas.',
-      'Si dos marcas se llaman igual, el selector lo avisa y dice qué distingue a cada una. Se resuelve en Marcas, renombrando una o haciéndola parte de la otra.',
+      'Una marca puede tener submarcas: «Terpel CRM» aparece debajo de Terpel en el selector y en Marcas, donde cada familia va en su propio bloque. Se agregan con «+ Submarca». Solo ordena; cada marca sigue con su ADN y sus campañas.',
+      'Si dos marcas se llaman igual, el selector lo avisa y dice qué distingue a cada una. Se resuelve en Marcas, renombrando una o haciéndola submarca de la otra.',
       'Al crear una marca con un nombre que ya existe, la herramienta lo avisa antes de guardar.',
-      'Si dos marcas eran la misma, se pueden unir desde Marcas: todo pasa a la que elegís y la otra se borra.',
+      'Si dos marcas eran la misma, se pueden fusionar desde Marcas: todo pasa a la que elegís y la otra se borra.',
     ],
   },
   {

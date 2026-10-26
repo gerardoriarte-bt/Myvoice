@@ -41,8 +41,8 @@ export const unirMarcas = async (
   origenId: string,
   destinoId: string
 ): Promise<ResultadoUnion> => {
-  if (!destinoId || typeof destinoId !== 'string') throw new TenantError('Falta con qué marca se une', 400);
-  if (origenId === destinoId) throw new TenantError('Una marca no se une consigo misma', 400);
+  if (!destinoId || typeof destinoId !== 'string') throw new TenantError('Falta con qué marca se fusiona', 400);
+  if (origenId === destinoId) throw new TenantError('Una marca no se fusiona consigo misma', 400);
   // Las dos del workspace; si una es ajena, 404 y no se toca nada.
   const origen = await assertClientInWorkspace(tenant, origenId);
   const destino = await assertClientInWorkspace(tenant, destinoId);
@@ -52,7 +52,7 @@ export const unirMarcas = async (
   // las complementarias del origen.
   if (hijasDelOrigen > 0 && destino.marcaMadreId && destino.marcaMadreId !== origen.id)
     throw new TenantError(
-      `«${destino.name}» es complementaria de otra marca y «${origen.name}» tiene complementarias: no pueden pasar a ella. Un solo nivel.`,
+      `«${destino.name}» es submarca de otra y «${origen.name}» tiene submarcas: no pueden pasar a ella. Un solo nivel.`,
       400
     );
 
