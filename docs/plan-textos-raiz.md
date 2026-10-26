@@ -1,5 +1,9 @@
 # Textos raíz: primero se aprueban las ideas, después se adaptan a cada medio
 
+> **Ampliado por el [PRD](./v2/prd-proceso-de-campana.md) y el [spec](./v2/spec-proceso-de-campana.md) del
+> proceso de campaña (v2)**, que suman media planning y el catálogo de medios. Este plan queda como
+> el diagnóstico y las decisiones de origen; la referencia para construir son esos dos documentos.
+
 Origen: el feedback de Buentipo del 2026-10-26, en dos láminas. La primera, «Prompt My Voice –
 Ejemplo Terpel», es un **manual de oficio**: cómo se escribe un buen copy, con «[MARCA]» como
 comodín. La segunda, «Feedback – My Voice», lista lo que falta: que deje de ser genérico, dos

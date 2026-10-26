@@ -308,6 +308,9 @@ can go first, and the audit spend does not count toward the quota yet.
 `docs/despliegue-h1.md` is the single sheet for the H1 deploy — the whole ordered sequence,
 including the three steps that surprise an operator. `docs/runbook-tenancy.md` and
 `docs/runbook-mejoras-h1.md` remain the detail behind each step.
+`docs/v2/prd-proceso-de-campana.md` and `docs/v2/spec-proceso-de-campana.md` (2026-10-26): the campaign
+process (v2), a separate flow behind `Workspace.procesoCampana` — root texts, toolkit, media planning and a
+data-driven catalog of 60+ media formats. All schema changes additive; v1 keeps working untouched.
 `docs/plan-textos-raiz.md` (2026-10-26): Buentipo's feedback — the engine proposes 5–10 root texts,
 the team and then the brand approve them (the campaign toolkit), and each medium only adapts them, one
 medium and a requested quantity at a time. Phase 1 puts the universal writing craft into the engine first.
