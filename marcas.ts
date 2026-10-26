@@ -73,6 +73,14 @@ export const distincion = (marca: Client): string => {
   return partes.join(' · ');
 };
 
+/**
+ * El texto de una marca en un selector de «Es parte de». Con un nombre
+ * repetido, dos «Terpel» idénticas obligan a adivinar en cuál se cuelga la
+ * complementaria: se agrega lo que las distingue.
+ */
+export const opcionDeMadre = (marca: Client): string =>
+  tieneNombreRepetido(marca) ? `${marca.name} · ${distincion(marca)}` : marca.name;
+
 /** Las marcas que pueden ser madre de `marca`: del workspace, sueltas o madres, y no ella. */
 export const madresPosibles = (marca: Client | null, marcas: Client[]): Client[] =>
   marcas.filter(m => m.id !== marca?.id && !m.marcaMadreId);
