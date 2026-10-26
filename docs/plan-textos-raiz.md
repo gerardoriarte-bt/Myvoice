@@ -22,6 +22,9 @@ mismos describen como «un ajuste mayor en la aprobación y procesos con la marc
 5. **La generación por medio es única:** se pide **un medio y una cantidad**, por ejemplo
    «10 ads de carrusel de Meta», y se generan solo esas adaptaciones. Cada unidad trae todas sus
    partes: en ese caso, el caption, el texto en imagen y la descripción del post.
+6. **La IA ayuda a completar el ADN, y hay un mínimo para generar.** Con un ADN incompleto el
+   motor rellena los huecos con lugares comunes: se peca por incompleto. Por debajo del mínimo no
+   se generan raíces; el porcentaje se determina midiendo, no a ojo.
 
 ## Diagnóstico: por qué sale genérico
 
@@ -57,7 +60,30 @@ sin criterio de relevancia (`promptBuilder.ts:58`, ver H2.D).
 
 ## Nivel 1 · Qué ve el usuario
 
-Se dibuja en `design/MyVoice_Engine.pen`, en una sección «— Textos raíz». Son cinco momentos.
+Se dibuja en `design/MyVoice_Engine.pen`, en una sección «— Textos raíz». Son seis momentos.
+
+### 0. El ADN, completo y con ayuda
+
+El ADN de una marca muestra **qué tan completo está, en un porcentaje con peso**, no en campos
+llenos: hoy la tarjeta dice «ADN 3/5» y cuenta igual una propuesta de valor de una palabra que una
+bien escrita. Cada sección dice si está **completa, débil o vacía**, y por qué («la propuesta de
+valor no dice contra quién compite»).
+
+**La IA ayuda a llenarlo**, desde cuatro fuentes:
+
+| Fuente | Qué propone |
+|---|---|
+| El manual de marca (PDF) | Voz, propuesta de valor, reglas, keywords, prohibiciones. Ya existe para cinco campos (`brandExtractionService.ts`); se amplía a las secciones nuevas y deja de cortar el manual en 18.000 caracteres. |
+| El copy aprobado de la marca | Tratamiento, tics, longitud de frase, lo que la marca nunca dice. El voice fingerprint ya mira esto. |
+| La web o redes de la marca (una URL) | Productos, audiencias visibles, assets y nombres de programas con su escritura exacta. |
+| Una entrevista guiada con Planning | Para lo que no está escrito en ningún lado: tensión de la audiencia, insight, qué frena la compra. La IA pregunta, una sección por vez, y redacta la respuesta. |
+
+**Lo que propone la IA queda como propuesta** hasta que una persona lo confirma o lo corrige. Se ve
+distinto («propuesto por IA · sin confirmar») y **no cuenta para el mínimo**: si contara, la IA se
+aprobaría a sí misma, y un ADN escrito por la IA sin revisar es genérico por construcción.
+
+**Por debajo del mínimo no se generan raíces.** La campaña muestra qué falta y lleva a completarlo.
+Entre el mínimo y el ADN completo se genera, con un aviso de qué secciones están débiles.
 
 ### 1. El brief completo
 
@@ -139,6 +165,11 @@ problema es más del motor o de los datos.
   Reporta, por regla, cuántos textos la rompen.
 - Cuesta crédito de IA: no corre en CI. Se corre antes y después de cada fase y el resultado se
   anota en este plan.
+- **Calibrar el mínimo del ADN.** El mismo set se genera con el ADN recortado a propósito: todo,
+  sin audiencias, sin propuesta de valor, sin reglas, solo nombre y rubro. Se mide cuánto empeora
+  cada recorte. Eso dice **qué secciones pesan más** (los pesos del porcentaje) y **dónde se cae
+  la calidad** (el mínimo). Es la única forma de que el número no sea una opinión. Se repite
+  cuando exista el ADN 2.0, porque sus secciones nuevas también hay que pesarlas.
 
 ### Fase 1 · El manual de oficio en el motor
 
@@ -177,8 +208,29 @@ subir las de presupuesto ni prohibiciones.
   contexto, y el revisor las verifica.
 - **Assets de marca intocables**: nombres de programas, premios y slogans permanentes, con su
   escritura exacta.
-- **Quién llenó qué**: cada sección del ADN guarda autor y fecha, y Marcas muestra qué tan completo
-  está. Planning es una función del equipo (`MiembroFuncion`), no un rol nuevo.
+- **Quién llenó qué**: cada sección del ADN guarda autor, fecha y origen (`PERSONA` |
+  `IA_PROPUESTA` | `IA_CONFIRMADA`). Planning es una función del equipo (`MiembroFuncion`), no un
+  rol nuevo.
+- **El porcentaje con peso**: `services/completitudAdn.ts`, el único lugar que lo calcula, para que
+  Marcas, la campaña y el bloqueo no den tres números distintos. Cada sección suma según su peso
+  (calibrado en la fase 0) y según su estado: vacía 0, débil la mitad, completa todo. «Débil» no es
+  un contador de caracteres: lo decide una evaluación barata con un modelo chico, contra una
+  rúbrica por sección («¿la propuesta de valor dice qué resuelve y contra qué?»), guardada con la
+  sección y recalculada solo cuando la sección cambia. Lo propuesto por la IA y sin confirmar
+  cuenta 0.
+- **Secciones críticas además del porcentaje.** Un 80 % sin propuesta de valor no sirve. El
+  mínimo es doble: el porcentaje **y** las secciones que la fase 0 muestre como imprescindibles
+  (la hipótesis: propuesta de valor, tratamiento, al menos una audiencia y las prohibiciones).
+- **El bloqueo vive en el servidor**: `POST /campanas/:id/raices` responde 409 con lo que falta si
+  la marca no llega al mínimo; la pantalla lo muestra antes, pero no es la que decide. Mientras no
+  exista el flujo de raíces, Generar muestra el aviso sin bloquear, para no cortar el trabajo de
+  hoy.
+- **La ayuda de la IA**: `services/asistenteAdn.ts`, con cuatro entradas. La extracción del PDF
+  (`brandExtractionService.ts`) se amplía a las secciones nuevas y lee el manual entero por
+  fragmentos en vez de cortarlo en 18.000 caracteres. El copy aprobado reusa el voice fingerprint.
+  La URL se lee una vez y se guarda el texto, no se vuelve a consultar en cada generación. La
+  entrevista es una conversación por sección: la IA pregunta, Planning responde, la IA redacta la
+  sección y Planning la confirma. Todo lo que devuelve entra como `IA_PROPUESTA`.
 
 ### Fase 3 · Brief completo
 
@@ -241,6 +293,10 @@ también. Las fases 2 a 5 se diseñan en el `.pen` antes de codificarse, y la 4 
 juntas: un toolkit aprobado que no se puede adaptar no sirve para nada.
 
 ## Preguntas abiertas
+
+- **El porcentaje mínimo** no se fija en este plan: sale de la calibración de la fase 0. Lo que sí
+  se decide acá es que existe, que es doble (porcentaje y secciones críticas) y que lo propuesto
+  por la IA sin confirmar no cuenta.
 
 - **La estructura de The Brief (Brand kit)**: sus secciones y cómo describe cada audiencia. Sin
   eso, la fase 2 diseña audiencias a ciegas.
