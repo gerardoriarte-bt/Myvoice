@@ -222,7 +222,7 @@ jobs:
           node - <<'EOF'
           const fs = require('fs');
           const path = require('path');
-          const archivos = ['CLAUDE.md', ...fs.readdirSync('docs').filter(f => f.endsWith('.md')).map(f => `docs/${f}`)];
+          const archivos = ['CLAUDE.md', ...fs.readdirSync('docs', { recursive: true }).filter(f => f.endsWith('.md')).map(f => `docs/${f}`)];
           const rotos = [];
           for (const archivo of archivos) {
             const texto = fs.readFileSync(archivo, 'utf8');
