@@ -49,7 +49,7 @@ export interface Novedad {
 export const NOVEDADES: Novedad[] = [
   {
     id: 'marcas-relacionadas',
-    fecha: '2026-10-14',
+    fecha: '2026-10-26',
     titulo: 'Marcas relacionadas, y el nombre repetido se nota',
     cambios: [
       'Una marca puede ser parte de otra: «Terpel CRM» aparece debajo de Terpel en el selector y en Marcas. Solo ordena; cada marca sigue con su ADN y sus campañas.',
