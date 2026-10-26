@@ -308,6 +308,9 @@ can go first, and the audit spend does not count toward the quota yet.
 `docs/despliegue-h1.md` is the single sheet for the H1 deploy — the whole ordered sequence,
 including the three steps that surprise an operator. `docs/runbook-tenancy.md` and
 `docs/runbook-mejoras-h1.md` remain the detail behind each step.
+`docs/plan-textos-raiz.md` (2026-10-26): Buentipo's feedback — the engine proposes 5–10 root texts,
+the team and then the brand approve them (the campaign toolkit), and each medium only adapts them, one
+medium and a requested quantity at a time. Phase 1 puts the universal writing craft into the engine first.
 `docs/plan-marcas-relacionadas.md` (2026-10-13): a brand can be declared part of another (one level,
 ordering only, nothing inherited) and two brands with the same normalized name are flagged until
 one is renamed or merged; two deliveries, «Unir» is the second.
