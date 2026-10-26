@@ -287,6 +287,9 @@ const App: React.FC = () => {
     setNotifications(prev => prev.filter(n => n.id !== id));
   };
 
+  /** Sube para volver a cargar todo: después de unir marcas, los briefs y el copy cambiaron de marca. */
+  const [recarga, setRecarga] = React.useState(0);
+
   React.useEffect(() => {
     if (!isAuthenticated) return;
 
@@ -358,7 +361,7 @@ const App: React.FC = () => {
 
     if (storedGoals) setCustomGoals(JSON.parse(storedGoals));
     else setCustomGoals(GOALS.map((g, i) => ({ id: `g${i}`, name: g })));
-  }, [isAuthenticated]);
+  }, [isAuthenticated, recarga]);
 
   React.useEffect(() => { if (isAuthenticated) localStorage.setItem('vt_custom_voices', JSON.stringify(customVoices)); }, [customVoices, isAuthenticated]);
   React.useEffect(() => { if (isAuthenticated) localStorage.setItem('vt_custom_goals', JSON.stringify(customGoals)); }, [customGoals, isAuthenticated]);
@@ -993,6 +996,19 @@ const App: React.FC = () => {
                 }
               }}
               savedVariations={savedVariations}
+              onUnir={async (origenId, destinoId) => {
+                try {
+                  await clientApi.unir(origenId, destinoId);
+                  // Quien tenía elegida la que se borró pasa a la que queda. Y se
+                  // recarga todo: briefs y copy de la que se borró ahora son de la otra.
+                  setActiveClientId(prev => (prev === origenId ? destinoId : prev));
+                  setRecarga(n => n + 1);
+                  addNotification('Marcas unidas: todo quedó en la que elegiste', 'success');
+                } catch (err) {
+                  addNotification(err instanceof Error ? err.message : 'No se pudieron unir las marcas', 'error');
+                  throw err;
+                }
+              }}
               onAbrirMarca={setActiveClientId}
               onSaveProfile={handleSaveDNAProfile}
               onUpdateProfile={handleUpdateDNAProfile}

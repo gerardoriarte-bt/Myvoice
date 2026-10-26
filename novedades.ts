@@ -55,6 +55,7 @@ export const NOVEDADES: Novedad[] = [
       'Una marca puede ser parte de otra: «Terpel CRM» aparece debajo de Terpel en el selector y en Marcas. Solo ordena; cada marca sigue con su ADN y sus campañas.',
       'Si dos marcas se llaman igual, el selector lo avisa y dice qué distingue a cada una. Se resuelve en Marcas, renombrando una o haciéndola parte de la otra.',
       'Al crear una marca con un nombre que ya existe, la herramienta lo avisa antes de guardar.',
+      'Si dos marcas eran la misma, se pueden unir desde Marcas: todo pasa a la que elegís y la otra se borra.',
     ],
   },
   {
