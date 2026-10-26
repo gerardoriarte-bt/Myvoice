@@ -9,7 +9,7 @@ import VoiceFingerprintCard from './VoiceFingerprintCard';
 import BrandHubHero from './BrandHubHero';
 import { clientApi, analyticsApi } from '../services/api';
 import { Copy, CornerDownRight } from 'lucide-react';
-import { distincion, familias, madreDe, madresPosibles, normalizarNombre, tieneNombreRepetido } from '../marcas';
+import { distincion, familias, madreDe, madresPosibles, normalizarNombre, opcionDeMadre, tieneNombreRepetido } from '../marcas';
 
 interface ClientManagerProps {
   clients: Client[];
@@ -476,7 +476,7 @@ const ClientManager: React.FC<ClientManagerProps> = ({
                       >
                         <option value="">Ninguna: es una marca madre</option>
                         {madresPosibles(null, clients).map(m => (
-                          <option key={m.id} value={m.id}>{m.name}</option>
+                          <option key={m.id} value={m.id}>{opcionDeMadre(m)}</option>
                         ))}
                       </select>
                       <p className="mt-1 text-[11px] text-gray-500">Ordena el selector y esta pantalla. No comparte ADN, campañas ni aprobaciones.</p>
@@ -726,7 +726,7 @@ const ClientManager: React.FC<ClientManagerProps> = ({
                                   >
                                     <option value="">Elegí la marca madre…</option>
                                     {madresPosibles(client, clients).map(m => (
-                                      <option key={m.id} value={m.id}>{m.name}{tieneNombreRepetido(m) ? ` · ${distincion(m)}` : ''}</option>
+                                      <option key={m.id} value={m.id}>{opcionDeMadre(m)}</option>
                                     ))}
                                   </select>
                                 )}
@@ -868,7 +868,7 @@ const ClientManager: React.FC<ClientManagerProps> = ({
                                   >
                                     <option value="">Ninguna: es una marca madre</option>
                                     {madresPosibles(client, clients).map(m => (
-                                      <option key={m.id} value={m.id}>{m.name}</option>
+                                      <option key={m.id} value={m.id}>{opcionDeMadre(m)}</option>
                                     ))}
                                   </select>
                                   <p className="mt-1 text-[10.5px] text-gray-500">Solo ordena el selector y Marcas: no comparte ADN, campañas ni aprobaciones.</p>
