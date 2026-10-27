@@ -428,6 +428,14 @@ escribe el brief y pide raíces. Un manager puede todo en su workspace. Recursos
 
 Se dibujan en el `.pen` (sección «— Proceso de campaña») antes de codificarse. Lista inicial:
 
+**Todas las pantallas de una campaña comparten un solo recorrido lineal**, en el mismo lugar y con
+la misma forma: la fila de etapas (ADN → Brief → Textos raíz → Toolkit → Plan de medios →
+Adaptaciones → Producción), cada una hecha, actual, en paralelo o bloqueada con su razón; y debajo
+la barra «Ahora», con qué hacer, los sub-pasos de la etapa y, siempre a la derecha, el único botón
+que lleva a la etapa siguiente (apagado, con lo que falta). El trabajo dentro de la etapa
+(escribir, aprobar, editar) vive en el contenido; avanzar de etapa, solo en esa barra. Es un
+componente (`components/v2/Recorrido.tsx`) que recibe el estado calculado en el servidor.
+
 1. **ADN 2.0** en Marcas: secciones con estado y motivo, porcentaje, propuestas de la IA, asistente.
 2. **Campaña v2**: cabecera con las etapas (brief · raíces · toolkit · plan · adaptaciones) y en
    cuál está.
