@@ -113,7 +113,7 @@ Los roles de acceso siguen siendo los de hoy (OWNER, ADMIN, MEMBER). Lo que camb
 | Función | Qué hace en v2 | Nueva |
 |---|---|---|
 | **Planning** | Completa y confirma el ADN de marca, con ayuda de la IA. Define las audiencias. | Sí |
-| **Medios** (media planner) | Arma el plan de medios: qué formatos, cuántas unidades, para cuándo. | Sí |
+| **Medios** (Planning de medios) | Arma el plan **en su propia herramienta** (medios, formatos, cantidades, fechas) y lo trae a My Voice. | Sí |
 | Copy (creativo) | Escribe el brief creativo (concepto, racional, manifiesto), pide y depura raíces. | No |
 | Responsable de la campaña | Aprueba raíces, manda el toolkit a la marca, aprueba adaptaciones. | No |
 | Diseño | Produce las piezas desde las adaptaciones aprobadas (sin cambios). | No |
@@ -134,8 +134,10 @@ Los roles de acceso siguen siendo los de hoy (OWNER, ADMIN, MEMBER). Lo que camb
    👍 o 👎, siempre con un motivo corto. Se pueden pedir más tandas.
 4. **Toolkit.** El responsable aprueba las raíces que van y manda el toolkit a la marca. La marca
    aprueba o rechaza cada raíz con comentario. Las rechazadas vuelven al equipo.
-5. **Plan de medios** (puede hacerse en paralelo con 3 y 4). Medios agrega líneas: formato del
-   catálogo, cantidad, fecha y, si quiere, qué raíces usa cada línea.
+5. **Plan de medios** (puede hacerse en paralelo con 3 y 4). **Llega de la herramienta de
+   Planning**, que es donde se eligen medios y formatos; por ahora se importa una planilla. My Voice
+   no edita medios ni cantidades: une cada línea a un frente (sola, si el plan trae una audiencia y
+   un objetivo que coinciden) y muestra qué va a escribir. En redes sociales escribe el caption.
 6. **Adaptaciones.** Con el toolkit aprobado, cada línea del plan se genera: «10 ads de carrusel
    de Meta» produce 10 unidades, cada una con todas sus partes (caption, texto en imagen,
    descripción) y la raíz de la que sale.
@@ -197,9 +199,11 @@ Prioridad: **P0** sin esto no hay v2 · **P1** necesario para el uso real · **P
 | CAT-3 | Los 14 canales de hoy se migran al catálogo con sus límites actuales. | P1 |
 | CAT-4 | Un formato editado no altera las unidades ya generadas: cada unidad guarda la versión del formato. | P0 |
 | CAT-5 | Quién mantiene el catálogo: LoBueno (global); un workspace puede ocultar formatos que no usa. | P1 |
-| PM-1 | Plan de medios por campaña: líneas con **frente**, formato, cantidad, fecha y responsable. Una línea adapta las raíces aprobadas de su frente (o una selección de ellas). | P0 |
+| PM-1 | El plan de medios **se importa** de la herramienta de Planning: líneas con medio, formato, cantidad, fecha y, si existen, audiencia y objetivo. My Voice no edita esos datos; cada línea se une a un **frente** y adapta sus raíces aprobadas. | P0 |
 | PM-2 | El plan se puede armar en paralelo con raíces y toolkit; generar exige toolkit aprobado. | P0 |
-| PM-3 | Importar un plan de medios desde una planilla. | P1 |
+| PM-3 | Importación por planilla exportada de la herramienta de Planning (P0, simulación de la integración); integración directa después (P2). Una nueva versión del plan muestra las diferencias con la anterior. | P0 |
+| PM-5 | Unir líneas a frentes: automática cuando audiencia y objetivo coinciden; si no, el equipo elige. Una audiencia que no está en el ADN no se crea en el plan. | P0 |
+| PM-6 | Qué escribe cada formato: en redes sociales, el **caption** (el texto en imagen o en pantalla lo resuelve Diseño); en los medios principales, las partes del formato (guion, titular y bajada, títulos y descripciones). | P0 |
 | PM-4 | Ver el avance del plan: por línea, unidades generadas, aprobadas y en producción. | P1 |
 
 ### Adaptación, control y aprendizaje
@@ -258,9 +262,9 @@ adaptación de ese piloto se hace todavía en v1. R3 se despliega entera.
 1. **La lista de los ~60 medios**, con sus formatos y las partes de cada uno. Es el insumo de
    CAT-2 y define si el modelo de partes alcanza (por ejemplo, formatos con tiempos, como audio
    y video).
-2. **Media planning**: ¿quién lo hace hoy y con qué herramienta? ¿El plan incluye fechas,
-   presupuesto o segmentación, o solo formato y cantidad? ¿Llega en una planilla que hay que
-   importar?
+2. **Media planning**: lo hace Planning en otra herramienta (respuesta del 2026-10-27); mientras
+   tanto se simula con una planilla. Falta: cuál es la herramienta, si exporta o tiene API, y qué
+   columnas trae (¿audiencia y objetivo?).
 3. **The Brief (Brand kit)**: secciones y cómo describe cada audiencia (ADN-1).
 4. **El nombre** del proceso para el usuario. «Proceso de campaña» es provisional.
 5. **¿Plan de medios antes o después del toolkit?** El PRD permite las dos cosas; si siempre es

@@ -255,8 +255,13 @@ model LineaDePlan {
   id          String @id @default(uuid())
   projectId   String
   workspaceId String
-  frenteId    String         // la línea adapta las raíces aprobadas de este frente
-  formatoId   String
+  frenteId    String?        // null hasta unirla; la línea adapta las raíces aprobadas de este frente
+  importacionId String       // de qué versión del plan importado viene
+  medioPlan   String         // tal como vino de la herramienta de Planning
+  formatoPlan String
+  audienciaPlan String?      // si el plan la trae; sirve para unir la línea sola
+  objetivoPlan  String?
+  formatoId   String         // formato del catálogo resuelto a partir de medioPlan + formatoPlan
   cantidad    Int
   fecha       DateTime?
   responsableId String?
@@ -279,6 +284,13 @@ model Unidad {
 }
 ```
 
+- **El plan no se escribe en My Voice: se importa** (`PlanImportado { id, projectId, version,
+  archivo, filas Json, importadoPorId, importadoEn }`). Medio, formato, cantidad y fecha llegan de
+  la herramienta de Planning y no se editan; lo único que My Voice agrega es `frenteId`. Una línea
+  se une sola si `audienciaPlan` coincide con una audiencia del frente (por nombre normalizado) y
+  `objetivoPlan` con su etapa; si no, queda sin frente y no se puede generar. Reimportar crea una
+  versión nueva y conserva las uniones de las líneas que no cambiaron.
+- En formatos de **redes sociales** la única parte que escribe My Voice es el `caption`.
 - **Las partes de una unidad son `SavedVariation`**, con `unidadId`, `parteClave` y
   `textoRaizId` nuevos (nullable). Así Copy, Producción y la creación de piezas siguen funcionando
   sin una segunda tabla de textos. `platform` guarda el `formatoId` (es `String`, no el enum);
