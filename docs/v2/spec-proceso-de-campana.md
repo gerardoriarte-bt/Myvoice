@@ -100,7 +100,7 @@ model FuenteDeMarca {       // lo leído una vez: texto del manual entero, de la
 
 ### 4.2 Funciones nuevas
 
-`enum FuncionEquipo` suma `PLANNING` y `MEDIOS` (aditivo, `ALTER TYPE … ADD VALUE`).
+`enum FuncionEquipo` suma `PLANNING` y `PLANNER` (aditivo, `ALTER TYPE … ADD VALUE`).
 
 ### 4.3 Campaña v2 (R2)
 
@@ -187,7 +187,7 @@ model Medio {
   id             String @id         // 'meta', 'google', 'programatica', 'radio', …
   nombre         String
   clase          ClaseDeMedio       // DIGITAL | TRADICIONAL | PROPIO (email, web de la marca)
-  compradoPor    String?            // quién lo compra: «Medios · Buentipo»
+  compradoPor    String?            // quién lo compra: «Buentipo»
   reglasUrl      String?            // especificaciones oficiales del medio
   tiposDeFormato String[]           // agrupa sus formatos: Google → Búsqueda, Display, YouTube…
   estado         EstadoDeMedio      // BORRADOR | ACTIVO | OCULTO
@@ -248,8 +248,9 @@ model FormatoOculto {        // CAT-5: un workspace esconde lo que no usa
   lleva varias (Google Ads, slides de carrusel); donde era «variaciones de lo mismo», queda en 1.
   Esa diferencia se revisa a mano por formato: es la decisión de producto más delicada de la
   migración.
-- **¿Quién edita?** Los usuarios **Planner** (decidido 2026-10-27): agregan medios, formatos y cargan
-  planillas. Es una función de usuario, no un rol de workspace, porque el catálogo es global.
+- **¿Quién edita?** Quien tenga la función **Planner** (`FuncionEquipo.PLANNER`, decidido
+  2026-10-27): agrega medios y formatos y carga planillas. Es la misma función que envía el plan de
+  medios desde Planning (antes se llamaba «Medios»).
 
 - **Medio → formato → tres cosas distintas** (2026-10-27). Un formato separa **medidas** (tamaño o
   duración, para Diseño), **textos** (`ParteDeFormato`: lo que escribe la IA, con su largo máximo) y
@@ -471,12 +472,12 @@ Todo bajo `/api/v2`, con `requireWorkspace` + `exigirProcesoCampana`, salvo lo m
 | `POST /campanas/:id/raices` | Copy o responsable | Nueva tanda |
 | `POST /raices/:id/voto` | Copy o responsable | 👍/👎 + motivo |
 | `POST /campanas/:id/toolkit` | responsable | Aprueba raíces y crea la sesión `TOOLKIT` |
-| `GET/PUT /campanas/:id/plan` | Medios o responsable | Plan y líneas |
-| `POST /lineas/:id/generar` | Medios o responsable | Genera la línea (exige toolkit aprobado) |
+| `GET/PUT /campanas/:id/plan` | Planner o responsable | Plan y líneas |
+| `POST /lineas/:id/generar` | Planner o responsable | Genera la línea (exige toolkit aprobado) |
 | `POST /unidades/aprobar` | responsable | Aprobación en lote (solo unidades sin problemas) |
 | `POST /unidades/:id/regenerar` | responsable | Una unidad o `{ parte }` |
 | `GET /catalogo` | miembro | Formatos activos y no ocultos |
-| `POST /admin/catalogo/importar` | admin de plataforma | Importación (en seco con `?apply=0`) |
+| `POST /admin/catalogo/importar` | Planner | Importación (en seco con `?apply=0`) |
 
 El portal público (`/review/public/:token`) atiende `TOOLKIT` en el mismo controlador que hoy,
 delegando en `toolkitService.ts` como hoy delega en `revisionDePiezas.ts`.
@@ -485,7 +486,7 @@ delegando en `toolkitService.ts` como hoy delega en `revisionDePiezas.ts`.
 
 `v2/campana/permisosCampana.ts` decide, igual que `permisosPieza.ts`, y la pantalla recibe
 `puedo` precalculado. Reglas: aprobar raíces, mandar el toolkit y aprobar unidades es del
-**responsable de la campaña**; Planning edita el ADN; Medios edita el plan y genera líneas; Copy
+**responsable de la campaña**; Planning edita el ADN; Planner edita el plan, genera líneas y mantiene el catálogo; Copy
 escribe el brief y pide raíces. Un manager puede todo en su workspace. Recursos de otro workspace:
 404, como siempre.
 
@@ -539,9 +540,9 @@ monta un componente raíz (`components/v2/ProcesoDeCampana.tsx`) con su propio e
 
 | Entrega | Migración |
 |---|---|
-| R1 | `SeccionAdn`, `AudienciaDeMarca`, `FuenteDeMarca`, `Client.tratamiento`, `FuncionEquipo` + `PLANNING`, `MEDIOS` · script de copia de columnas → secciones |
+| R1 | `SeccionAdn`, `AudienciaDeMarca`, `FuenteDeMarca`, `Client.tratamiento`, `FuncionEquipo` + `PLANNING`, `PLANNER` · script de copia de columnas → secciones |
 | R2 | `Workspace.procesoCampana`, `Project.proceso`, `BriefDeCampana`, `TextoRaiz`, `RondaRevision` + `TOOLKIT`, `ReviewSessionItem.textoRaizId` + `CHECK` de tres |
-| R3 | `Medio`, `Formato`, `FormatoVersion`, `ParteDeFormato`, `FormatoOculto`, `User.esPlanner`, `PlanDeMedios`, `LineaDePlan`, `Unidad`, `SavedVariation.unidadId/parteClave/textoRaizId` · script de los 14 canales |
+| R3 | `Medio`, `Formato`, `FormatoVersion`, `ParteDeFormato`, `FormatoOculto`, `PlanDeMedios`, `LineaDePlan`, `Unidad`, `SavedVariation.unidadId/parteClave/textoRaizId` · script de los 14 canales |
 
 `ADD VALUE` de enum va en su propia migración antes de usarse (Postgres no deja usar un valor nuevo
 en la misma transacción), como ya se hizo con `CON_EL_CLIENTE`.

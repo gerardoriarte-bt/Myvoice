@@ -66,7 +66,7 @@ anterior para saber qué cambió (§ 6).
 |---|---|---|
 | `projectId` | Sí | A qué campaña pertenece. Debe ser una campaña v2 del mismo workspace. |
 | `version` | Sí | Número creciente. My Voice rechaza una versión menor o igual a la última. |
-| `enviadoPor` | Sí | Quién lo envió: alguien con la función **Medios** o el **responsable** de la campaña (puede ser el ejecutivo de cuentas). Queda en el historial. |
+| `enviadoPor` | Sí | Quién lo envió: un **Planner** o el **responsable** de la campaña (puede ser el ejecutivo de cuentas). Queda en el historial. |
 | `enviadoEn` | Sí | Cuándo. |
 | `notas` | No | Texto libre que se muestra arriba del plan. |
 
@@ -153,7 +153,7 @@ Se rechaza la versión entera, con la lista de errores por línea, si:
   tenancy);
 - `version` no es mayor que la última;
 - un `formatoId` no existe, está oculto para el workspace o es de un medio en borrador;
-- quien envía no tiene la función Medios ni es el responsable de la campaña;
+- quien envía no tiene la función Planner ni es el responsable de la campaña;
 - un `frenteId` no es un frente del brief de esa campaña;
 - falta `piezas` en un formato que lo pide, o está fuera de su rango;
 - `unidades` < 1, o falta `destino` en un formato que lo pide;
@@ -164,7 +164,7 @@ Un plan nunca trae audiencias ni frentes nuevos: si falta un frente, se agrega p
 ## 9. Mientras Planning no existe
 
 - **Planilla**: una fila por línea con las columnas de § 4.2, más `version` en el nombre del
-  archivo o en una celda. La sube el responsable o alguien con función Medios.
+  archivo o en una celda. La sube el responsable o un Planner.
 - Como la planilla no tiene ids, `lineaId` se arma con `formato + frente + fechaSalida`
   y se le avisa a quien sube que cambiar esas columnas crea una línea nueva.
 - `formatoId` se escribe con el id del catálogo; la pantalla de importación ofrece la lista para
@@ -174,7 +174,7 @@ Un plan nunca trae audiencias ni frentes nuevos: si falta un frente, se agrega p
 
 1. **Planning elige el frente**, y el brief existe antes: My Voice es la fuente de verdad de la
    marca (ADN, audiencias, brief). Planning no crea frentes ni audiencias.
-2. **Envían** la función Medios o el responsable de la campaña (puede ser el ejecutivo de cuentas).
+2. **Envían** un Planner o el responsable de la campaña (puede ser el ejecutivo de cuentas).
 3. **Planning no ve las raíces.** Qué raíz usa cada unidad se decide en el proceso de campaña.
 4. **Carruseles**: Planning manda cuántas láminas (`piezas`); si es un texto por lámina o un
    relato repartido se decide en el proceso de campaña, por línea (§ 5.1).
