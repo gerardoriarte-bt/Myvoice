@@ -169,6 +169,14 @@ campaña v2 no aparece en Generar de v1.
 - La sesión `TOOLKIT` además muestra el concepto, el racional y el manifiesto del brief (solo
   lectura). Todo lo que se publica detrás del token es de una sola marca: el servidor rechaza una
   sesión que mezcle campañas de marcas distintas, como hoy.
+- Las raíces se muestran **agrupadas por frente**, con la etapa dicha en palabras de la marca
+  («para que nos recuerden», «para que actúen»), no con el nombre del funnel. Van solo las
+  aprobadas por el equipo que el responsable dejó marcadas; una aprobada puede quedarse afuera.
+- Se envía cuando todas las raíces tienen decisión. Una aprobación de la marca pasa la raíz a
+  `APROBADA_MARCA`; un rechazo exige comentario, la pasa a `RECHAZADA_MARCA` y la devuelve al
+  frente, donde el comentario entra como ejemplo negativo de la tanda siguiente.
+- **Un frente agregado después de que la marca aprobó el toolkit va en una ronda `TOOLKIT` propia**,
+  solo con las raíces de ese frente (propuesta; falta confirmarlo).
 
 ### 4.5 Catálogo de medios (R3)
 
