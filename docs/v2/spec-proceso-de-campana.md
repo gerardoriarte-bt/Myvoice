@@ -257,9 +257,9 @@ model LineaDePlan {
   workspaceId String
   lineaExternaId String      // `lineaId` estable que manda Planning (contrato § 4.2)
   planVersion  Int           // versión del plan que la trajo por última vez
-  frenteId    String?        // null = SIN_FRENTE (llegó con audiencia + etapa sin frente en el brief)
-  audienciaId String?        // solo cuando llega sin frente
-  etapa       FunnelStage?
+  frenteId    String         // un frente que ya existe en el brief: Planning no crea frentes
+  piezas      Int?           // láminas por unidad en formatos de varias piezas (carrusel)
+  reparto     Reparto?       // POR_PIEZA | RELATO_REPARTIDO: decisión creativa, se elige aquí, no en Planning
   formatoId   String         // del catálogo compartido; Planning elige de la misma lista
   fechaCopy   DateTime?
   destino     String?        // URL o destino del CTA, si el formato lo pide
@@ -268,7 +268,7 @@ model LineaDePlan {
   cantidad    Int            // `unidades` del contrato: copys distintos, no frecuencia
   fecha       DateTime?
   responsableId String?
-  raices      String[]        // ids de TextoRaiz del frente; vacío = todas las aprobadas del frente
+  raices      String[]        // elegidas en el proceso de campaña (Planning no ve raíces); vacío = todas las aprobadas del frente
   estado      EstadoLinea     // PENDIENTE | GENERANDO | EN_CONTROL | APROBADA | EN_PRODUCCION
   orden       Int
 }
@@ -292,7 +292,10 @@ model Unidad {
   version, origen: PLANNING | PLANILLA, enviadoPorId, enviadoEn, filas Json }` guarda cada versión
   tal como llegó; las líneas se actualizan comparando por `lineaExternaId` (contrato § 6). El
   catálogo de formatos es el mismo para los dos lados, así que no hay que resolver nombres.
-- En formatos de **redes sociales** la única parte que escribe My Voice es el `caption`.
+- En formatos de **redes sociales** la única parte que escribe My Voice es el `caption`, salvo el
+  **carrusel**: caption más una parte `lamina` repetida `piezas` veces. Con `RELATO_REPARTIDO` el
+  escritor produce un texto y lo divide en láminas que se leen en orden; con `POR_PIEZA`, cada
+  lámina se sostiene sola. Las repeticiones vienen de la línea, no del formato.
 - **Las partes de una unidad son `SavedVariation`**, con `unidadId`, `parteClave` y
   `textoRaizId` nuevos (nullable). Así Copy, Producción y la creación de piezas siguen funcionando
   sin una segunda tabla de textos. `platform` guarda el `formatoId` (es `String`, no el enum);

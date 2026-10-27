@@ -203,8 +203,8 @@ Prioridad: **P0** sin esto no hay v2 · **P1** necesario para el uso real · **P
 | PM-1 | El plan de medios **llega de Planning** según el [contrato](./contrato-plan-de-medios.md): cada línea con un formato del catálogo compartido, su **frente**, cuántos copys distintos pide y sus fechas. El proceso de campaña no edita esos datos: escribe y devuelve el estado por línea. | P0 |
 | PM-2 | El plan se puede armar en paralelo con raíces y toolkit; generar exige toolkit aprobado. | P0 |
 | PM-3 | Mientras Planning no existe, el plan se carga con una planilla de las mismas columnas que el contrato. Cada versión nueva se compara con la anterior por línea y muestra qué cambió. | P0 |
-| PM-5 | Una línea que llega sin frente (audiencia + etapa que el brief no tiene) queda detenida y avisa al responsable, que agrega el frente al brief o la reasigna. Planning no crea frentes ni audiencias. | P0 |
-| PM-6 | Qué escribe cada formato: en redes sociales, el **caption** (el texto en imagen o en pantalla lo resuelve Diseño); en los medios principales, las partes del formato (guion, titular y bajada, títulos y descripciones). | P0 |
+| PM-5 | Planning elige un frente que **ya existe** en el brief: My Voice es la fuente de verdad de la marca (ADN, audiencias, brief) y el brief va antes que Planning. Un plan con un frente que no existe se rechaza. Envían la función Medios o el responsable de la campaña. | P0 |
+| PM-6 | Qué escribe cada formato: en redes sociales, el **caption** (el texto en imagen o en pantalla lo resuelve Diseño); en el **carrusel**, el caption y el texto de cada lámina, tantas como pida Planning, con un texto por lámina o un relato repartido (decisión creativa, por línea); en los medios principales, las partes del formato (guion, titular y bajada, títulos y descripciones). | P0 |
 | PM-4 | Ver el avance del plan: por línea, unidades generadas, aprobadas y en producción. | P1 |
 
 ### Adaptación, control y aprendizaje
