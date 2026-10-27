@@ -13,7 +13,10 @@ se refieren a sus requisitos)
    revisión, Producción, cuota y `aiClient.ts`. Lo que separa es un interruptor por workspace y un
    espacio propio de rutas, servicios y pantallas.
 3. **Los medios son datos.** v2 no lee `server/src/channels/specs/`; lee el catálogo.
-4. **Un solo lugar decide cada cosa.** Completitud del ADN (`completitudAdn.ts`), permisos de
+4. **La IA sugiere, el equipo decide** (PRD, sección 3). Ningún servicio de v2 guarda un valor de
+   marca o de campaña generado por la IA sin que una persona lo acepte, y el motor usa el brief
+   literal. Cada campo creativo guarda su origen, como las secciones del ADN.
+5. **Un solo lugar decide cada cosa.** Completitud del ADN (`completitudAdn.ts`), permisos de
    campaña (`permisosCampana.ts`), catálogo (`catalogoMedios.ts`), como hoy `permisosPieza.ts`.
 
 ## 2. Dónde vive el código
@@ -101,6 +104,12 @@ La campaña sigue siendo `Project`. v2 suma:
 model BriefDeCampana {      // 1:1 con Project; v1 sigue usando ContentDNAProfile
   projectId     String @id
   concepto      String
+  mensajeClave  String
+  campoSemantico Json         // { territorio: string, afuera: string }
+  tono          String
+  ctaPrincipal  String
+  angulos       Json          // [{ nombre, premisa, registro }], 2–3
+  origenes      Json          // { campo: PERSONA | IA_CONFIRMADA }, para saber qué vino de una sugerencia
   racional      String?
   manifiesto    String?
   keyVisual     String?       // texto; BR-2 suma imagen
@@ -271,19 +280,30 @@ model Unidad {
   reglas, solo nombre y rubro) para calibrar pesos y mínimo (ADN-5).
 - Gasta crédito: **no corre en CI**. Se corre a mano antes y después de cada entrega.
 
-### 5.3 Raíces (R2)
+### 5.3 Sugerencias del brief (R2)
+
+- `POST /campanas/:id/brief/sugerencias` con `{ campo, cantidad }` devuelve propuestas **sin
+  guardarlas**. La pantalla las muestra al lado del campo con «Usar» y «Descartar»; «Usar» copia el
+  valor al campo, que el equipo puede editar antes de guardar, y el origen queda `IA_CONFIRMADA`.
+- Es el director de v1 reconvertido: recibe el ADN y lo que el brief ya tiene, y propone **solo el
+  campo pedido**. Nunca devuelve una espina entera.
+
+### 5.4 Raíces (R2)
 
 ```
-completitud ≥ mínimo ─► director (espina, desde BriefDeCampana) ─► escritor de raíces ─► revisor ─► fixer
+completitud ≥ mínimo ─► brief completo (BR-3) ─► escritor de raíces ─► revisor ─► fixer
 ```
 
-- Una llamada de director y una de escritura por tanda. Las raíces rechazadas de tandas anteriores
+- **Sin director.** La espina de v1 (concepto, mensaje, tono, CTA, ángulos) en v2 es el brief que
+  cargó el equipo, pasado literal. Pedir raíces con un campo de dirección vacío responde 409 con lo
+  que falta.
+- Una llamada de escritura por tanda. Las raíces rechazadas de tandas anteriores
   entran con su motivo como ejemplos negativos; las aprobadas de otras campañas de la marca, como
   positivos (AP-1).
 - El escritor recibe: oficio, ADN (secciones confirmadas), audiencia elegida con sus descriptores,
   brief completo, assets literales.
 
-### 5.4 Adaptación (R3)
+### 5.5 Adaptación (R3)
 
 ```
 línea del plan ─► reparto de unidades entre raíces ─► escritura por lote ─► validación por parte ─► revisor ─► fixer ─► control
@@ -294,14 +314,15 @@ línea del plan ─► reparto de unidades entre raíces ─► escritura por lo
 - **Lotes de hasta 10 unidades por llamada**; una línea de 30 son 3 llamadas en paralelo bajo el
   semáforo existente. Sin director: la espina es el toolkit.
 - Reparto: round-robin entre las raíces de la línea; las unidades de una misma raíz reciben
-  entradas distintas (pregunta, dato, beneficio, escena) para no repetirse.
+  entradas distintas (dato, beneficio, escena) para no repetirse. Las entradas son recursos de
+  redacción dentro de la raíz aprobada, no decisiones nuevas: el ángulo es el de la raíz.
 - El revisor suma `root-drift` (se aleja de la raíz) y `new-promise` (promete algo que la raíz no
   dice).
 - Control (`controlService.ts`): límites por parte contra la versión del formato, assets y gancho
   literales, marcas del revisor. Una unidad con problemas queda `CON_PROBLEMAS` y no se puede
   aprobar en lote.
 
-### 5.5 Costo y cuota
+### 5.6 Costo y cuota
 
 Cada etapa registra su uso con `pricing.ts`, con `etapa` nueva (`raices`, `adaptacion`,
 `asistente-adn`, `evaluacion-adn`) y cuenta en `UsagePeriod` como v1. La evaluación de secciones
@@ -349,6 +370,7 @@ Todo bajo `/api/v2`, con `requireWorkspace` + `exigirProcesoCampana`, salvo lo m
 | `CRUD /marcas/:id/audiencias` | Planning o manager | Audiencias |
 | `POST /campanas` | manager | Crea campaña v2 (409 si el ADN no es apto) |
 | `PUT /campanas/:id/brief` | Copy o responsable | Brief |
+| `POST /campanas/:id/brief/sugerencias` | Copy o responsable | Propuestas para un campo, sin guardar |
 | `POST /campanas/:id/raices` | Copy o responsable | Nueva tanda |
 | `POST /raices/:id/voto` | Copy o responsable | 👍/👎 + motivo |
 | `POST /campanas/:id/toolkit` | responsable | Aprueba raíces y crea la sesión `TOOLKIT` |
@@ -377,7 +399,8 @@ Se dibujan en el `.pen` (sección «— Proceso de campaña») antes de codifica
 1. **ADN 2.0** en Marcas: secciones con estado y motivo, porcentaje, propuestas de la IA, asistente.
 2. **Campaña v2**: cabecera con las etapas (brief · raíces · toolkit · plan · adaptaciones) y en
    cuál está.
-3. **Brief**.
+3. **Brief**: los campos de dirección (concepto, mensaje, campo semántico, tono, CTA, ángulos) con
+   «Sugerir» al lado, y el resto del brief.
 4. **Raíces**: tarjetas con 👍/👎 y motivo, tandas, edición.
 5. **Toolkit en el portal** (vista de la marca).
 6. **Plan de medios**: líneas, selector de formato del catálogo con búsqueda (60+ formatos),

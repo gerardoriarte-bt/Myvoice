@@ -45,7 +45,34 @@ código (`server/src/channels/specs/`, 14 archivos) y un valor de un enum duplic
 servidor. Sumar 60 así es inviable, y el plan de medios necesita decir «10 de este formato y 4 de
 este otro», algo que el flujo actual no tiene dónde guardar.
 
-## 3. Por qué un proceso separado
+## 3. Principio: la IA sugiere, el equipo decide
+
+Decisión del usuario (2026-10-27): **la IA no toma decisiones de marca ni de campaña.** Apoya y
+sugiere; una persona del equipo acepta, edita o descarta. Hoy el motor viola esto en silencio: su
+«espina» inventa el concepto cuando el brief no lo trae, y siempre decide el mensaje clave, el tono
+de la campaña, el CTA principal y los tres ángulos (`directorService.ts`). Nadie los aprueba; llegan
+a los canales como si fueran del equipo.
+
+En v2, **todo lo que define la campaña es un campo que carga el equipo**:
+
+| Qué | Quién decide | Qué hace la IA |
+|---|---|---|
+| ADN de marca (todas las secciones) | Planning | Propone desde el manual, el copy aprobado, la web o una entrevista. Queda «sin confirmar» hasta que alguien lo confirma. |
+| Concepto | Creativo | Puede sugerir opciones a partir del brief; el equipo elige o escribe el suyo. |
+| Mensaje clave | Creativo | Sugiere. |
+| **Campo semántico** (el territorio de imágenes del concepto y lo que queda afuera) | Creativo | Sugiere a partir del concepto. |
+| Tono de la campaña | Creativo | Sugiere, dentro de la voz de la marca. |
+| CTA principal | Creativo | Sugiere. |
+| Ángulos (2–3, con su premisa) | Creativo | Sugiere; el equipo elige, edita o escribe. |
+| Racional, manifiesto, key visual, assets | Creativo | No escribe; puede revisar ortografía. |
+| Audiencia, funnel, requerimiento | Responsable | Nada. |
+| Textos raíz | El responsable, después la marca | **Propone**: es su trabajo, y nada pasa sin aprobación. |
+| Adaptaciones | El responsable | **Propone** dentro de una raíz aprobada. |
+
+Una sugerencia nunca se guarda sola: aparece al lado del campo, con «Usar» y «Descartar». Lo que el
+motor recibe es siempre lo que el equipo dejó cargado, y lo usa literal.
+
+## 4. Por qué un proceso separado
 
 - **Cambia la unidad de trabajo.** Hoy es «una generación»; en v2 es **la campaña**, que avanza
   por etapas con dueños distintos. No es una pantalla más del flujo de hoy.
@@ -54,7 +81,7 @@ este otro», algo que el flujo actual no tiene dónde guardar.
 - **Los medios pasan a ser datos.** Un catálogo editable de medios y formatos sirve a v2 desde el
   día uno; v1 sigue con sus 14 canales en código hasta que se retire.
 
-## 4. Objetivos
+## 5. Objetivos
 
 | # | Objetivo | Métrica | Meta inicial |
 |---|---|---|---|
@@ -68,7 +95,7 @@ este otro», algo que el flujo actual no tiene dónde guardar.
 Las metas se ajustan con la línea base (fase 0 del spec). O1 es la que manda: si no mejora, el
 resto es proceso alrededor de copy genérico.
 
-## 5. No objetivos
+## 6. No objetivos
 
 - **Variación libre por medio.** En v2 el medio solo adapta las raíces aprobadas.
 - **Que la IA escriba el racional o el manifiesto.** Los escribe el equipo creativo; el motor los
@@ -78,7 +105,7 @@ resto es proceso alrededor de copy genérico.
 - **Migrar campañas en curso a v2.** Terminan en v1.
 - **Retirar v1** antes de que v2 cubra los medios que se usan.
 
-## 6. Personas y roles
+## 7. Personas y roles
 
 Los roles de acceso siguen siendo los de hoy (OWNER, ADMIN, MEMBER). Lo que cambia son las
 **funciones** del equipo, que ya existen (`MiembroFuncion`: copy, diseño, aprobación) y suman dos:
@@ -92,12 +119,14 @@ Los roles de acceso siguen siendo los de hoy (OWNER, ADMIN, MEMBER). Lo que camb
 | Diseño | Produce las piezas desde las adaptaciones aprobadas (sin cambios). | No |
 | **Marca** (cliente) | Aprueba el toolkit en el portal, sin cuenta. | No |
 
-## 7. Recorrido
+## 8. Recorrido
 
 1. **Marca lista.** El ADN supera el mínimo de completitud. Si no, la campaña v2 no se puede
    crear: se muestra qué falta y se ofrece la ayuda de la IA.
-2. **Brief.** Copy carga concepto, racional, manifiesto, key visual, assets intocables, la
-   audiencia (elegida entre las de la marca), la etapa del funnel y el requerimiento.
+2. **Brief.** El equipo carga concepto, mensaje clave, campo semántico, tono, CTA principal,
+   ángulos, racional, manifiesto, key visual, assets intocables, la audiencia (elegida entre las de
+   la marca), la etapa del funnel y el requerimiento. En los campos creativos puede pedir una
+   sugerencia a la IA; nada queda puesto sin que alguien lo acepte.
 3. **Textos raíz.** El motor propone 5–10. Cada uno: titular, bajada, idea de desarrollo y ángulo.
    👍 o 👎, siempre con un motivo corto. Se pueden pedir más tandas.
 4. **Toolkit.** El responsable aprueba las raíces que van y manda el toolkit a la marca. La marca
@@ -111,7 +140,7 @@ Los roles de acceso siguen siendo los de hoy (OWNER, ADMIN, MEMBER). Lo que camb
    problemas; el responsable aprueba en lote o abre una unidad para corregirla.
 8. **Producción.** Las unidades aprobadas siguen al tablero de Producción como el copy de hoy.
 
-## 8. Requisitos funcionales
+## 9. Requisitos funcionales
 
 Prioridad: **P0** sin esto no hay v2 · **P1** necesario para el uso real · **P2** después.
 
@@ -143,6 +172,9 @@ Prioridad: **P0** sin esto no hay v2 · **P1** necesario para el uso real · **P
 | Id | Requisito | P |
 |---|---|---|
 | BR-1 | Brief con concepto, racional, manifiesto, key visual (texto), assets de campaña, audiencia elegida, funnel obligatorio y requerimiento. | P0 |
+| BR-3 | Campos de dirección que hoy inventa el motor, ahora del equipo: **mensaje clave, campo semántico, tono de campaña, CTA principal y ángulos**. Obligatorios para pedir raíces. | P0 |
+| BR-4 | «Sugerir» en cada campo creativo: la IA propone uno o varios valores al lado del campo, con «Usar» y «Descartar». Nunca se guarda sola. | P1 |
+| BR-5 | El motor usa el brief **literal**: no reformula, no completa campos vacíos, no agrega decisiones. | P0 |
 | BR-2 | Key visual como imagen que el motor puede leer. | P2 |
 | RZ-1 | El motor propone 5–10 raíces: titular, bajada, idea de desarrollo y ángulo. | P0 |
 | RZ-2 | 👍 y 👎 con motivo obligatorio; los rechazos alimentan la tanda siguiente. | P0 |
@@ -180,7 +212,7 @@ Prioridad: **P0** sin esto no hay v2 · **P1** necesario para el uso real · **P
 | CT-4 | Las unidades aprobadas siguen a Producción como el copy de hoy. | P0 |
 | AP-1 | Los motivos de 👍 y 👎 (raíces y adaptaciones) quedan guardados y alimentan los ejemplos del motor. | P1 |
 
-## 9. Requisitos no funcionales
+## 10. Requisitos no funcionales
 
 - **Convivencia.** v1 no cambia de comportamiento, salvo la mejora del motor (OF-1 a OF-4), que
   beneficia a las dos. v2 se enciende por workspace.
@@ -193,20 +225,20 @@ Prioridad: **P0** sin esto no hay v2 · **P1** necesario para el uso real · **P
 - **Diseño primero.** Las pantallas de v2 se dibujan en `design/MyVoice_Engine.pen` antes de
   codificarse.
 
-## 10. Entregas
+## 11. Entregas
 
 | Entrega | Contenido | Para quién se nota |
 |---|---|---|
 | **R0 · Motor** | OF-1 a OF-5, más la calibración del mínimo del ADN. | v1 mejora ya; nadie ve pantallas nuevas. |
 | **R1 · ADN 2.0** | ADN-1 a ADN-8. | Planning en Marcas (v1 y v2). En v1, el mínimo solo avisa. |
-| **R2 · Raíces y toolkit** | BR-1, RZ-*, TK-1 y TK-2. | Primeras campañas v2, con un workspace piloto. |
+| **R2 · Raíces y toolkit** | BR-1, BR-3 a BR-5, RZ-*, TK-1 y TK-2. | Primeras campañas v2, con un workspace piloto. |
 | **R3 · Medios** | CAT-*, PM-*, AD-*, CT-*. | El proceso completo; se cargan los 60 medios. |
 | **R4 · Aprendizaje y retiro** | AP-1, P2 pendientes; decidir el retiro de v1. | — |
 
 R2 sin R3 no sirve para producir: el piloto de R2 valida raíces y toolkit con la marca, y la
 adaptación de ese piloto se hace todavía en v1. R3 se despliega entera.
 
-## 11. Riesgos
+## 12. Riesgos
 
 | Riesgo | Mitigación |
 |---|---|
@@ -217,7 +249,7 @@ adaptación de ese piloto se hace todavía en v1. R3 se despliega entera.
 | Dos procesos a la vez confunden al equipo. | v2 por workspace, con piloto; v1 marca «flujo anterior» cuando v2 esté completo. |
 | La marca no quiere aprobar un toolkit. | Se valida en el piloto de R2 antes de construir R3. |
 
-## 12. Preguntas abiertas
+## 13. Preguntas abiertas
 
 1. **La lista de los ~60 medios**, con sus formatos y las partes de cada uno. Es el insumo de
    CAT-2 y define si el modelo de partes alcanza (por ejemplo, formatos con tiempos, como audio
