@@ -153,6 +153,10 @@ model TextoRaiz {
 }
 ```
 
+- **La etapa del funnel es del frente, no de la tanda.** Se elige en el brief y la pantalla de
+  raíces la muestra fija. Un frente con raíces no cambia de audiencia ni de etapa (se escribieron
+  para esas); para complementar la campaña se agrega un frente nuevo, desde el brief o desde Raíces.
+
 `Project.proceso ProcesoCampana @default(V1)` (`V1 | V2`) distingue una campaña de otra; una
 campaña v2 no aparece en Generar de v1.
 
