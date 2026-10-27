@@ -467,6 +467,23 @@ que lleva a la etapa siguiente (apagado, con lo que falta). El trabajo dentro de
 (escribir, aprobar, editar) vive en el contenido; avanzar de etapa, solo en esa barra. Es un
 componente (`components/v2/Recorrido.tsx`) que recibe el estado calculado en el servidor.
 
+**Vocabulario de pantalla** (2026-10-27). Las pantallas usan las palabras del equipo, nunca las del
+modelo. Se mantienen: ADN, brief, frente, campo semántico, texto raíz (siempre completo, nunca
+«raíz» sola), toolkit, plan de medios, adaptaciones, caption, lámina. Se traducen:
+
+| En el modelo y el código | En pantalla |
+|---|---|
+| motor, escritor, director | la IA |
+| unidad | el formato y su número: «Carrusel 3 de 6»; en totales, «textos» |
+| tanda | «Pedir más textos raíz», «Primeros · Nuevos», «esta vez» |
+| asset literal | «frase que no se cambia» |
+| sección crítica | imprescindible |
+| marca apta | marca lista |
+| completitud | qué tan completo está el ADN |
+| hallazgo, control, revisor, fixer | lo que hay que corregir, marcado en su lugar; «ya se corrigió: …» |
+| ids (`R2·1`) | no se muestran |
+| v1 / v2 | «Generar» / «proceso de campaña» |
+
 1. **ADN 2.0** en Marcas: secciones con estado y motivo, porcentaje, propuestas de la IA, asistente.
 2. **Campaña v2**: cabecera con las etapas (brief · raíces · toolkit · plan · adaptaciones) y en
    cuál está.
