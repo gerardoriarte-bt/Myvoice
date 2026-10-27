@@ -255,14 +255,17 @@ model LineaDePlan {
   id          String @id @default(uuid())
   projectId   String
   workspaceId String
-  frenteId    String?        // null hasta unirla; la línea adapta las raíces aprobadas de este frente
-  importacionId String       // de qué versión del plan importado viene
-  medioPlan   String         // tal como vino de la herramienta de Planning
-  formatoPlan String
-  audienciaPlan String?      // si el plan la trae; sirve para unir la línea sola
-  objetivoPlan  String?
-  formatoId   String         // formato del catálogo resuelto a partir de medioPlan + formatoPlan
-  cantidad    Int
+  lineaExternaId String      // `lineaId` estable que manda Planning (contrato § 4.2)
+  planVersion  Int           // versión del plan que la trajo por última vez
+  frenteId    String?        // null = SIN_FRENTE (llegó con audiencia + etapa sin frente en el brief)
+  audienciaId String?        // solo cuando llega sin frente
+  etapa       FunnelStage?
+  formatoId   String         // del catálogo compartido; Planning elige de la misma lista
+  fechaCopy   DateTime?
+  destino     String?        // URL o destino del CTA, si el formato lo pide
+  indicaciones String?
+  fueraDelPlan Boolean @default(false)
+  cantidad    Int            // `unidades` del contrato: copys distintos, no frecuencia
   fecha       DateTime?
   responsableId String?
   raices      String[]        // ids de TextoRaiz del frente; vacío = todas las aprobadas del frente
@@ -284,12 +287,11 @@ model Unidad {
 }
 ```
 
-- **El plan no se escribe en My Voice: se importa** (`PlanImportado { id, projectId, version,
-  archivo, filas Json, importadoPorId, importadoEn }`). Medio, formato, cantidad y fecha llegan de
-  la herramienta de Planning y no se editan; lo único que My Voice agrega es `frenteId`. Una línea
-  se une sola si `audienciaPlan` coincide con una audiencia del frente (por nombre normalizado) y
-  `objetivoPlan` con su etapa; si no, queda sin frente y no se puede generar. Reimportar crea una
-  versión nueva y conserva las uniones de las líneas que no cambiaron.
+- **El plan no se escribe en el proceso de campaña: llega de Planning**, un módulo de My Voice por
+  construir, según el [contrato](./contrato-plan-de-medios.md). `PlanEnviado { id, projectId,
+  version, origen: PLANNING | PLANILLA, enviadoPorId, enviadoEn, filas Json }` guarda cada versión
+  tal como llegó; las líneas se actualizan comparando por `lineaExternaId` (contrato § 6). El
+  catálogo de formatos es el mismo para los dos lados, así que no hay que resolver nombres.
 - En formatos de **redes sociales** la única parte que escribe My Voice es el `caption`.
 - **Las partes de una unidad son `SavedVariation`**, con `unidadId`, `parteClave` y
   `textoRaizId` nuevos (nullable). Así Copy, Producción y la creación de piezas siguen funcionando
