@@ -59,6 +59,12 @@ const SpineHero: React.FC<Props> = ({ spine, client }) => {
           <SpineSlot icon={<Mic className="w-3.5 h-3.5" />} label="Tono" value={spine.tone} />
           <SpineSlot icon={<MousePointerClick className="w-3.5 h-3.5" />} label="Hero CTA" value={spine.heroCTA} />
         </div>
+        {/* El territorio de imágenes que comparten todos los canales (manual de oficio). Las espinas viejas no lo tienen. */}
+        {spine.campoSemantico && (
+          <div className="pt-3">
+            <SpineSlot icon={<Layers className="w-3.5 h-3.5" />} label="Campo semántico" value={spine.campoSemantico} />
+          </div>
+        )}
       </div>
 
       <div className="bg-ink/20 backdrop-blur-sm px-7 py-5 border-t border-white/10">
