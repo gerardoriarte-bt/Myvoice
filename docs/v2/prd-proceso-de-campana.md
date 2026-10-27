@@ -200,10 +200,10 @@ Prioridad: **P0** sin esto no hay v2 · **P1** necesario para el uso real · **P
 | CAT-3 | Los 14 canales de hoy se migran al catálogo con sus límites actuales. | P1 |
 | CAT-4 | Un formato editado no altera las unidades ya generadas: cada unidad guarda la versión del formato. | P0 |
 | CAT-5 | Quién mantiene el catálogo: LoBueno (global); un workspace puede ocultar formatos que no usa. | P1 |
-| PM-1 | El plan de medios **llega de Planning** según el [contrato](./contrato-plan-de-medios.md): líneas con medio, formato, cantidad, fecha y, si existen, audiencia y objetivo. My Voice no edita esos datos; cada línea se une a un **frente** y adapta sus raíces aprobadas. | P0 |
+| PM-1 | El plan de medios **llega de Planning** según el [contrato](./contrato-plan-de-medios.md): cada línea con un formato del catálogo compartido, su **frente**, cuántos copys distintos pide y sus fechas. El proceso de campaña no edita esos datos: escribe y devuelve el estado por línea. | P0 |
 | PM-2 | El plan se puede armar en paralelo con raíces y toolkit; generar exige toolkit aprobado. | P0 |
 | PM-3 | Mientras Planning no existe, el plan se carga con una planilla de las mismas columnas que el contrato. Cada versión nueva se compara con la anterior por línea y muestra qué cambió. | P0 |
-| PM-5 | Unir líneas a frentes: automática cuando audiencia y objetivo coinciden; si no, el equipo elige. Una audiencia que no está en el ADN no se crea en el plan. | P0 |
+| PM-5 | Una línea que llega sin frente (audiencia + etapa que el brief no tiene) queda detenida y avisa al responsable, que agrega el frente al brief o la reasigna. Planning no crea frentes ni audiencias. | P0 |
 | PM-6 | Qué escribe cada formato: en redes sociales, el **caption** (el texto en imagen o en pantalla lo resuelve Diseño); en los medios principales, las partes del formato (guion, titular y bajada, títulos y descripciones). | P0 |
 | PM-4 | Ver el avance del plan: por línea, unidades generadas, aprobadas y en producción. | P1 |
 
