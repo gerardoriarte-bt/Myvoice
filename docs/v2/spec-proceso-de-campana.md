@@ -376,9 +376,14 @@ línea del plan ─► reparto de unidades entre raíces ─► escritura por lo
   aprobar igual (la decisión es suya y queda registrada).
 - **Regenerar una parte** (AD-4) reescribe solo esa parte con el resto de la unidad como contexto:
   la lámina 3 se regenera sabiendo qué dicen las otras cuatro y el caption.
-- La pantalla se recorre como raíces: a la izquierda las líneas del plan (cada una con su avance,
-  el mismo que ve Planning), en el centro las unidades de la línea abierta, y la barra «Ahora» lleva
-  a Producción las que ya están aprobadas sin esperar a las demás.
+- **La pantalla revisa de a uno, en orden** (decisión del usuario, 2026-10-27: «lo de unidades no se
+  comprende»). La palabra «unidad» es del modelo, nunca de la pantalla: cada texto se nombra por su
+  formato y su número («Carrusel 3 de 6»). Se muestra como se va a ver (texto del post y láminas en
+  orden) con una acción principal, **«Aprobar y seguir»**, que abre el siguiente; al terminar un
+  formato sigue el próximo de la lista de revisión, y al terminar todo, la barra «Ahora» lleva a
+  Producción. Lo que hay que corregir se marca en la parte exacta con su arreglo al lado («Acortar»,
+  «editar a mano»), y mientras quede algo el botón se apaga y dice qué falta. No hay aprobación en
+  lote ni filtros en la primera versión.
 
 ### 5.6 Costo y cuota
 

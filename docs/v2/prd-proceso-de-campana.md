@@ -217,7 +217,7 @@ Prioridad: **P0** sin esto no hay v2 · **P1** necesario para el uso real · **P
 | AD-4 | Regenerar una unidad sola, o una parte de una unidad. | P1 |
 | CT-1 | Contador contra el límite en cada parte, también al editar. | P0 |
 | CT-2 | Control automático (límites, literales, revisor) antes de llegar al responsable. | P0 |
-| CT-3 | El responsable aprueba en lote o unidad por unidad; las adaptaciones no van a otra ronda de la marca. | P0 |
+| CT-3 | El responsable revisa **de a uno, en orden**: ve cada texto como se va a ver, lo aprueba y sigue con el siguiente («Aprobar y seguir»); lo que hay que corregir se marca en la parte exacta. Las adaptaciones no van a otra ronda de la marca. La pantalla nombra cada texto por su formato («Carrusel 3 de 6»), nunca «unidad». | P0 |
 | CT-4 | Las unidades aprobadas siguen a Producción como el copy de hoy. | P0 |
 | AP-1 | Los motivos de 👍 y 👎 (raíces y adaptaciones) quedan guardados y alimentan los ejemplos del motor. | P1 |
 
