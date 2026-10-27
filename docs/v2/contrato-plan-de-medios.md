@@ -46,7 +46,7 @@ espera al toolkit es la generación (PM-2).
 |---|---|
 | La campaña v2 (`projectId`), su marca y su responsable | Un plan es siempre de una campaña de una sola marca. |
 | Los **frentes** del brief (audiencia × etapa) | Cada línea elige uno al armarse. Si Planning necesita uno que no existe, se lo pide al responsable, que lo agrega al brief. |
-| El **catálogo de formatos** (medio → formato → partes) | Planning elige de la misma lista con la que My Voice escribe. Un formato que no está en el catálogo no se puede escribir. |
+| El **catálogo de medios y formatos** (medio → formato → medidas, textos y archivo; solo medios activos) | Planning elige de la misma lista con la que My Voice escribe. Un formato que no está en el catálogo no se puede escribir. |
 
 El catálogo es **uno solo y compartido**: no hay una lista de medios de Planning y otra de My Voice.
 Así no hace falta «resolver» un formato escrito a mano, y sumar un formato (CAT-2) lo habilita en

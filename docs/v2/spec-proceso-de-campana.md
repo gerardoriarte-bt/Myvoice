@@ -184,20 +184,29 @@ Global, sin `workspaceId`: no contiene datos de clientes.
 
 ```prisma
 model Medio {
-  id      String @id          // 'meta', 'google', 'radio', …
-  nombre  String
-  grupo   String              // social | performance | engagement | audio | video | ooh | …
-  activo  Boolean @default(true)
+  id             String @id         // 'meta', 'google', 'programatica', 'radio', …
+  nombre         String
+  clase          ClaseDeMedio       // DIGITAL | TRADICIONAL | PROPIO (email, web de la marca)
+  compradoPor    String?            // quién lo compra: «Medios · Buentipo»
+  reglasUrl      String?            // especificaciones oficiales del medio
+  tiposDeFormato String[]           // agrupa sus formatos: Google → Búsqueda, Display, YouTube…
+  estado         EstadoDeMedio      // BORRADOR | ACTIVO | OCULTO
+  formatos       Formato[]
 }
 
 model Formato {
   id          String @id      // 'meta-carrusel-ads'
   medioId     String
-  nombre      String          // 'Carrusel de Meta (ads)'
+  nombre      String          // 'Carrusel de Instagram'
+  tipoEnMedio String?         // uno de Medio.tiposDeFormato: 'Display', 'YouTube'
   descripcion String
   guia        String          // táctica del formato para el prompt
-  pieza       Json?           // { tipo: 'grafica'|'video'|'audio', medidas: [...], duracionSeg? }
-  version     Int             // sube con cada cambio de partes o límites
+  medidas     Json?           // [{ nombre: 'Vertical', ancho: 1080, alto: 1350, proporcion: '4:5' }],
+                              // duracionSeg, zonaSegura: para Diseño, no para la IA
+  archivo     Json?           // { tipos: ['JPG','PNG'], pesoMaxKb, duracionMinSeg?, duracionMaxSeg?,
+                              //   otras: '…' }: lo que pide el medio; lo usa la auditoría de piezas
+  piezas      Json?           // { min: 2, max: 10, repartoPorDefecto } solo en formatos de varias piezas
+  version     Int             // sube con cualquier cambio: textos, medidas o archivo
   activo      Boolean @default(true)
   partes      ParteDeFormato[]
 }
@@ -231,8 +240,8 @@ model FormatoOculto {        // CAT-5: un workspace esconde lo que no usa
   `formatoVersion` y se valida contra esa versión (CAT-4).
 - **Importación** (CAT-2): `npm run catalogo:importar -- archivo.csv` (en seco por defecto,
   `-- --apply` escribe, como los demás scripts), y la misma lógica detrás de una pantalla de
-  administración. Una fila por parte: `medio, formato, parte, tipo, unidad, min, max, repeticiones,
-  guía`. Valida antes de escribir: unidades conocidas, `min ≤ max`, claves únicas por formato,
+  administración. Una fila por formato: `medio, tipo en el medio, formato, medidas, textos (parte ·
+  unidad · min · max · repeticiones), archivo, guía`. Valida antes de escribir: unidades conocidas, `min ≤ max`, claves únicas por formato,
   al menos una parte `PUBLICABLE` o `INSTRUCCION`.
 - **Migración de v1** (CAT-3): un script convierte los 14 `ChannelSpec` al catálogo. `count` de un
   slot deja de ser «cuántas variaciones» y pasa a `repeticiones` solo donde el formato realmente
@@ -242,15 +251,31 @@ model FormatoOculto {        // CAT-5: un workspace esconde lo que no usa
 - **¿Quién edita?** Solo un usuario con `esAdminDePlataforma` (columna nueva en `User`, para el
   equipo de LoBueno). No es un rol de workspace.
 
+- **Medio → formato → tres cosas distintas** (2026-10-27). Un formato separa **medidas** (tamaño o
+  duración, para Diseño), **textos** (`ParteDeFormato`: lo que escribe la IA, con su largo máximo) y
+  **archivo** (tipo, peso y reglas que pide el medio para subir la pieza). Solo los textos entran al
+  prompt; medidas y archivo los leen Diseño y la auditoría de piezas de Producción. Mezclarlos
+  («Caption 150 · JPG 1080×1080») fue lo que hizo confusa la primera lista.
+- **El catálogo se ordena por medio**, no por tipo de canal: Google o programática traen decenas de
+  formatos, y se agrupan por `tipoEnMedio` dentro del medio.
+- **Agregar un medio** es un recorrido de tres pasos: el medio, sus formatos (empezando vacío, desde
+  un estándar como IAB, copiando de otro medio o desde planilla) y revisar y activar. Un medio queda
+  en `BORRADOR` hasta que **todos** sus formatos dicen qué textos llevan; medidas y archivo pueden
+  completarse después. Planning no ve un medio en borrador.
+- **Importación**: una fila por formato, con el medio en la primera columna; si el medio no existe se
+  crea en borrador. Medidas, textos y archivo van en columnas separadas.
+
 - **Las pantallas del catálogo están diseñadas con supuestos** (2026-10-27) y marcadas así en el
-  `.pen` (separador «— Catálogo de formatos · SUPUESTOS», rótulo ámbar «SUPUESTO» y una franja en
-  cada pantalla): lista de formatos, detalle de un formato con su historial de versiones, y carga
-  desde planilla con revisión previa. **Se retoman cuando se defina Planning.** Firme: catálogo
-  único y compartido, un formato dice qué escribe la IA y con qué límites, cambiarlo crea una
-  versión y lo ya escrito no cambia, lo que tiene errores no se carga. Por decidir: la lista real de
-  medios, qué formatos tienen varias piezas además del carrusel, el rango de láminas y el reparto
-  por defecto, si en reels e historias el texto en pantalla lo escribe la IA o Diseño, si los
-  formatos se cargan aquí o los da de alta Planning, y quién puede cargarlos.
+  `.pen` (separador «— Catálogo de medios y formatos · SUPUESTOS», rótulo ámbar «SUPUESTO» y una
+  franja en cada pantalla): medios y sus formatos, detalle de un formato (medidas, textos, láminas,
+  archivo, guía e historial), agregar un medio con sus formatos, y carga desde planilla con revisión
+  previa. **Se retoman cuando se defina Planning.** Firme: catálogo único y compartido ordenado por
+  medio, cada formato separa medidas, textos y archivo, un formato dice qué escribe la IA y con qué
+  límites, cambiarlo crea una versión y lo ya escrito no cambia, lo que tiene errores no se carga.
+  Por decidir: la lista real de medios, qué formatos tienen varias piezas además del carrusel, el
+  rango de láminas y el reparto por defecto, si en reels e historias el texto en pantalla lo escribe
+  la IA o Diseño, si los formatos se cargan aquí o los da de alta Planning, quién puede agregar
+  medios y qué estándares se ofrecen para empezar.
 
 ### 4.6 Plan de medios y adaptaciones (R3)
 

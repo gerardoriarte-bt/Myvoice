@@ -195,7 +195,8 @@ Prioridad: **P0** sin esto no hay v2 · **P1** necesario para el uso real · **P
 
 | Id | Requisito | P |
 |---|---|---|
-| CAT-1 | Los medios y formatos son **datos**: medio → formato → partes, cada parte con tipo, unidad, límites y guía. | P0 |
+| CAT-1 | Los medios y formatos son **datos**: medio → formato. Cada formato separa **medidas** (para Diseño), **textos** con su largo (lo que escribe la IA) y **especificaciones de archivo** (lo que pide el medio). El catálogo se ordena por medio. | P0 |
+| CAT-6 | Se agrega un **medio nuevo con todos sus formatos** de una vez (vacío, desde un estándar, copiando otro medio o desde planilla). Queda en borrador hasta que cada formato dice qué textos lleva. | P0 |
 | CAT-2 | Se cargan los ~60 medios nuevos por importación (planilla), sin despliegue. | P0 |
 | CAT-3 | Los 14 canales de hoy se migran al catálogo con sus límites actuales. | P1 |
 | CAT-4 | Un formato editado no altera las unidades ya generadas: cada unidad guarda la versión del formato. | P0 |
