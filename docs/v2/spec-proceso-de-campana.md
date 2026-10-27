@@ -370,6 +370,15 @@ línea del plan ─► reparto de unidades entre raíces ─► escritura por lo
 - Control (`controlService.ts`): límites por parte contra la versión del formato, assets y gancho
   literales, marcas del revisor. Una unidad con problemas queda `CON_PROBLEMAS` y no se puede
   aprobar en lote.
+- **Qué bloquea y qué no.** Un límite pasado o un asset alterado bloquean la aprobación, también
+  la individual: se resuelven regenerando esa parte, editándola o regenerando la unidad. Las marcas
+  de oficio del revisor que el fixer no pudo corregir se muestran, pero el responsable puede
+  aprobar igual (la decisión es suya y queda registrada).
+- **Regenerar una parte** (AD-4) reescribe solo esa parte con el resto de la unidad como contexto:
+  la lámina 3 se regenera sabiendo qué dicen las otras cuatro y el caption.
+- La pantalla se recorre como raíces: a la izquierda las líneas del plan (cada una con su avance,
+  el mismo que ve Planning), en el centro las unidades de la línea abierta, y la barra «Ahora» lleva
+  a Producción las que ya están aprobadas sin esperar a las demás.
 
 ### 5.6 Costo y cuota
 
