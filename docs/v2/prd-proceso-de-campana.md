@@ -108,7 +108,8 @@ resto es proceso alrededor de copy genérico.
 ## 7. Personas y roles
 
 Los roles de acceso siguen siendo los de hoy (OWNER, ADMIN, MEMBER). Lo que cambia son las
-**funciones** del equipo, que ya existen (`MiembroFuncion`: copy, diseño, aprobación) y suman dos:
+**funciones** del equipo, que ya existen (`MiembroFuncion`: copy, diseño, aprobación) y suman dos.
+Quién hace qué en cada etapa, paso a paso: [mapa-del-proceso.md](./mapa-del-proceso.md).
 
 | Función | Qué hace en v2 | Nueva |
 |---|---|---|
