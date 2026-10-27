@@ -242,6 +242,16 @@ model FormatoOculto {        // CAT-5: un workspace esconde lo que no usa
 - **¿Quién edita?** Solo un usuario con `esAdminDePlataforma` (columna nueva en `User`, para el
   equipo de LoBueno). No es un rol de workspace.
 
+- **Las pantallas del catálogo están diseñadas con supuestos** (2026-10-27) y marcadas así en el
+  `.pen` (separador «— Catálogo de formatos · SUPUESTOS», rótulo ámbar «SUPUESTO» y una franja en
+  cada pantalla): lista de formatos, detalle de un formato con su historial de versiones, y carga
+  desde planilla con revisión previa. **Se retoman cuando se defina Planning.** Firme: catálogo
+  único y compartido, un formato dice qué escribe la IA y con qué límites, cambiarlo crea una
+  versión y lo ya escrito no cambia, lo que tiene errores no se carga. Por decidir: la lista real de
+  medios, qué formatos tienen varias piezas además del carrusel, el rango de láminas y el reparto
+  por defecto, si en reels e historias el texto en pantalla lo escribe la IA o Diseño, si los
+  formatos se cargan aquí o los da de alta Planning, y quién puede cargarlos.
+
 ### 4.6 Plan de medios y adaptaciones (R3)
 
 ```prisma
