@@ -276,7 +276,6 @@ export interface CampaignSpine {
   keyMessage: string;
   tone: string;
   heroCTA: string;
-  campoSemantico?: string;
   angles: { name: string; premise: string; register: string }[];
 }
 

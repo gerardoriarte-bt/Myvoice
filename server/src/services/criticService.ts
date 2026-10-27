@@ -50,7 +50,6 @@ ${voseoBlock}
 - Concepto de campaña: "${brief.spine.concept}"
 - Tono: ${brief.spine.tone}
 - Mensaje clave: ${brief.spine.keyMessage}
-- Campo semántico: ${brief.spine.campoSemantico || "—"}
 - Brief (la promoción, sus premios y su mecánica: lo que NO se adorna ni se renombra): ${brief.campaign.theme || "—"}
 - Prohibiciones: ${brief.campaign.prohibitions || "—"}
 
@@ -82,7 +81,7 @@ Para cada variación devolvé:
    "filler"                → relleno o frase de stock que no tiene que ver con esta promoción
    "lazy-question"         → pregunta usada para arrancar, sin ser un gancho real
    "manifesto"             → frase filosófica o aspiracional, lejos de la acción de ahora
-   "semantic-mix"          → mezcla imágenes de un campo distinto al campo semántico de la campaña
+   "semantic-mix"          → mezcla imágenes de campos distintos (velocidad en una campaña de resistencia)
    "asset-altered"         → cambia, mezcla o diluye el concepto, un slogan o el nombre de un premio, o adorna un beneficio
    "decorative"            → suena bonito pero no empuja la venta ni el concepto
   Vacío si está limpio.

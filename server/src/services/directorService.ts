@@ -86,8 +86,6 @@ REGLAS DE LOS 3 ÁNGULOS:
 4. El "register" debe ser CONCRETO: ritmo, persona gramatical, tipo de frase. NO "tono cercano y profesional".
 5. Ningún ángulo es un manifiesto: cada premisa termina en algo que el público hace o gana AHORA.
 
-CAMPO SEMÁNTICO: declará el territorio de imágenes y palabras del concepto (si el concepto es grandeza: escala, altura, peso, impacto) y lo que queda AFUERA (velocidad, si es una campaña de resistencia). Todos los canales escriben dentro de ese campo.
-
 REGLAS DE FILTRO antes de devolver:
 - Si concept / keyMessage / tone podrían aplicar a otra marca del mismo rubro → reformular hasta que sea inconfundiblemente de "${params.clientName || "esta marca"}".
 - Si el equipo proveyó concept, va TEXTUAL en la respuesta.
@@ -99,7 +97,6 @@ REGLAS DE FILTRO antes de devolver:
   "keyMessage": "string — qué se lleva el público, 1 línea",
   "tone": "string — registro específico para ESTA campaña (no la voz global)",
   "heroCTA": "string — CTA principal en la voz nativa de la marca",
-  "campoSemantico": "string — palabras e imágenes del territorio del concepto, y lo que NO entra",
   "angles": [
     { "name": "string", "premise": "string — hipótesis narrativa concreta", "register": "string — ritmo/persona/tipo de frase específicos" },
     { "name": "string", "premise": "string", "register": "string" },

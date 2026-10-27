@@ -26,7 +26,7 @@ const REESCRIBIR_POR_OFICIO: Record<string, string> = {
   filler: "Tiene relleno o una frase de stock ajena a esta promoción. Sacala y decí algo del tema de la campaña.",
   "lazy-question": "Arranca con una pregunta que no es gancho. Afirmá el beneficio.",
   manifesto: "Es un manifiesto filosófico. Bajalo a tierra: qué hace o gana el público ahora.",
-  "semantic-mix": "Mezcla imágenes de otro campo. Quedate dentro del campo semántico de la campaña.",
+  "semantic-mix": "Mezcla imágenes de campos distintos. Quedate en el territorio del concepto.",
   "asset-altered": "Altera el concepto, un slogan, un premio o adorna un beneficio. Usalos literales, como dice el brief.",
   decorative: "Suena bonito pero no vende. Cambialo por algo que empuje la acción o el concepto.",
 };
@@ -136,7 +136,6 @@ ${MANUAL_DE_OFICIO}
 - Voz: ${brief.brand.voice || "—"}
 - Concepto de campaña: "${brief.spine.concept}"
 - Tono: ${brief.spine.tone}
-- Campo semántico: ${brief.spine.campoSemantico || "—"}
 - Brief (premios y mecánica, literales): ${brief.campaign.theme || "—"}
 - Prohibiciones: ${brief.campaign.prohibitions || "—"} (también paráfrasis cercanas)
 - Canal: ${spec.id}

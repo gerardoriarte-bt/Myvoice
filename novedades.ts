@@ -55,7 +55,7 @@ export const NOVEDADES: Novedad[] = [
       'Todas las marcas se escriben con las reglas de oficio de Buentipo: afirmar en vez de dudar, sin grasa, sin relleno, sin manifiestos, y el titular construye el concepto.',
       'El motor ya no abre con «¿Sabías que…?» ni usa «de inmediato», y no repite la marca en el titular de una pieza que lleva el logo.',
       'Lo genérico ya no solo se marca: se reescribe antes de llegar a vos.',
-      'Las marcas del editor se leen en castellano («Relleno», «Manifiesto», «Bonito pero no vende»), y la espina de la campaña muestra su campo semántico.',
+      'Las marcas del editor se leen en castellano («Relleno», «Manifiesto», «Bonito pero no vende»).',
     ],
   },
   {

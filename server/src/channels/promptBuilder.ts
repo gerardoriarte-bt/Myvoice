@@ -123,7 +123,7 @@ ${funnelBlock}
 - Mensaje clave: ${brief.spine.keyMessage}
 - Tono específico de la campaña: ${brief.spine.tone}
 - Hero CTA: ${brief.spine.heroCTA}
-${brief.spine.campoSemantico ? `- Campo semántico (escribí DENTRO de este territorio): ${brief.spine.campoSemantico}\n` : ""}- Ángulos definidos por el director:
+- Ángulos definidos por el director:
 ${brief.spine.angles.map(a => `  • ${a.name}: ${a.premise} (registro: ${a.register})`).join("\n")}
 
 ## ADN DE MARCA

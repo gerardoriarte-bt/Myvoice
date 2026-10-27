@@ -121,8 +121,6 @@ export interface CampaignSpine {
   keyMessage: string;
   tone: string;
   heroCTA: string;
-  /** Territorio de imágenes del concepto y lo que queda afuera (manual de oficio). Opcional: las espinas viejas no lo tienen. */
-  campoSemantico?: string;
   angles: { name: string; premise: string; register: string }[];
 }
 

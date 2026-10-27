@@ -95,6 +95,10 @@ rules run in `validators.ts` (`oficioHits`: «¿sabías que…?», «de inmediat
 headline of a piece that carries the logo…), and the critic has six craft flags. The fixer rewrites hard
 violations **and** craft flags, including `generic` — before 2026-10-27 «generic» was only displayed. Brand
 specifics (voice, prohibitions) stack on top of the manual, never replace it. `verify:calidad` measures it.
+**The AI suggests, the team decides**: the engine must not add strategic decisions of its own (a semantic
+field, a concept, a tone). Those become brief fields the team fills, with an optional «Sugerir» — see
+`docs/v2/prd-proceso-de-campana.md`. Today's spine still invents concept (when empty), key message, tone,
+hero CTA and angles: that is the debt v2 pays.
 
 `generateCopyWithOpenAI` and `streamGenerateCopyWithOpenAI` are two wrappers over the same
 `runGeneration`; the streaming one emits SSE `StreamEvent`s and is what the UI uses. A channel
