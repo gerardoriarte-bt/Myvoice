@@ -262,6 +262,8 @@ export interface CopyVariation {
   budgetUnit?: 'char' | 'word';
   budgetOk?: boolean;
   prohibitionsHit?: string[];
+  /** Faltas al manual de oficio detectadas sin IA (server/src/services/oficio.ts). */
+  oficioHits?: string[];
   score?: number;
   scoreRationale?: string;
   writerScore?: number;

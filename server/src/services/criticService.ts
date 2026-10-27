@@ -28,6 +28,7 @@ const buildCriticPrompt = (
       let line = `- id: ${v.id}\n  slot: ${v.slot || "(default)"} #${v.variationIndex ?? "?"} | tipo: ${v.type}\n  content: "${v.content.replace(/"/g, '\\"')}"\n  writer-score: ${v.score ?? "?"}\n  budget: ${v.charCount} ${v.budgetUnit === "word" ? "pal" : "car"} (límite: ${v.budget ?? "—"})`;
       if (v.prohibitionsHit && v.prohibitionsHit.length) line += `\n  prohibitions hit: ${v.prohibitionsHit.join(", ")}`;
       if (v.tuteoHits && v.tuteoHits.length) line += `\n  tuteo detectado (VIOLACIÓN): ${v.tuteoHits.join(" | ")}`;
+      if (v.oficioHits && v.oficioHits.length) line += `\n  manual de oficio (VIOLACIÓN): ${v.oficioHits.join(" | ")}`;
       return line;
     })
     .join("\n\n");
@@ -49,6 +50,7 @@ ${voseoBlock}
 - Concepto de campaña: "${brief.spine.concept}"
 - Tono: ${brief.spine.tone}
 - Mensaje clave: ${brief.spine.keyMessage}
+- Brief (la promoción, sus premios y su mecánica: lo que NO se adorna ni se renombra): ${brief.campaign.theme || "—"}
 - Prohibiciones: ${brief.campaign.prohibitions || "—"}
 
 ## CANAL
@@ -62,7 +64,7 @@ Para cada variación devolvé:
 - "id": el id literal recibido.
 - "score": 1-10. Rúbrica:
    • 5 pts máximo: ¿inconfundiblemente "${brief.brand.name}"? Si podría ser otra marca del rubro, restá puntos. Si suena a "agencia escribiendo para cliente", máx 2 pts en este renglón.
-   • 3 pts máximo: ¿cumple budget del slot, respeta prohibiciones (incluyendo paráfrasis) Y usa voseo colombiano correcto (si aplica)? Si falla alguno, máx 1 pt en este renglón.
+   • 3 pts máximo: ¿cumple budget del slot, respeta prohibiciones (incluyendo paráfrasis), el manual de oficio Y usa voseo colombiano correcto (si aplica)? Si falla alguno, máx 1 pt en este renglón.
    • 2 pts máximo: ¿aporta una idea distinta a las otras variaciones del mismo slot, o es redundante?
 - "scoreRationale": 1 línea CONCRETA. Cita un detalle específico (palabra, frase, recurso). NO digas "buen tono" o "claro y conciso".
 - "editorFlags": array de strings con problemas detectados. Tags válidas:
@@ -75,6 +77,13 @@ Para cada variación devolvé:
    "weak-cta"              → CTA blando o genérico
    "agency-speak"          → suena a copy de agencia / corporate
    "tuteo-violation"       → usa tuteo (tú/eres/tienes/puedes…) en copy colombiano — debe ser voseo
+   Manual de oficio:
+   "filler"                → relleno o frase de stock que no tiene que ver con esta promoción
+   "lazy-question"         → pregunta usada para arrancar, sin ser un gancho real
+   "manifesto"             → frase filosófica o aspiracional, lejos de la acción de ahora
+   "semantic-mix"          → mezcla imágenes de campos distintos (velocidad en una campaña de resistencia)
+   "asset-altered"         → cambia, mezcla o diluye el concepto, un slogan o el nombre de un premio, o adorna un beneficio
+   "decorative"            → suena bonito pero no empuja la venta ni el concepto
   Vacío si está limpio.
 
 REGLA: si una variación es buena, decilo (8-10). No infles, pero tampoco castigues por castigar.

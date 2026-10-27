@@ -18,6 +18,8 @@
     "recrypt:keys": "tsx scripts/recryptWorkspaceKeys.ts",
     "migrar:archivos": "tsx scripts/migrarArchivosAS3.ts",
     "verify:isolation": "tsx scripts/verifyIsolation.ts",
+    "verify:calidad": "tsx scripts/verifyCalidad.ts",
+    "calidad:caso": "tsx scripts/calidadCaso.ts",
     "verify:resiliencia": "AI_BACKOFF_BASE_MS=10 AI_TIMEOUT_CANAL_MS=4000 AI_TIMEOUT_GENERACION_MS=30000 tsx scripts/verifyResiliencia.ts"
   },
   "dependencies": {

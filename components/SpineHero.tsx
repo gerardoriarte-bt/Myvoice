@@ -59,6 +59,7 @@ const SpineHero: React.FC<Props> = ({ spine, client }) => {
           <SpineSlot icon={<Mic className="w-3.5 h-3.5" />} label="Tono" value={spine.tone} />
           <SpineSlot icon={<MousePointerClick className="w-3.5 h-3.5" />} label="Hero CTA" value={spine.heroCTA} />
         </div>
+
       </div>
 
       <div className="bg-ink/20 backdrop-blur-sm px-7 py-5 border-t border-white/10">

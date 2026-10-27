@@ -2,6 +2,7 @@ import { FunnelStage } from "../types.js";
 import { ChannelBrief, ChannelSpec, SlotSpec } from "./types.js";
 import { renderFingerprintForPrompt } from "../services/voiceFingerprintService.js";
 import { VOSEO_CO_RULES } from "../services/localeRules.js";
+import { MANUAL_DE_OFICIO } from "../services/oficio.js";
 
 const FUNNEL_HINT: Record<FunnelStage, string> = {
   [FunnelStage.AWARENESS]:
@@ -96,6 +97,8 @@ TEST OBLIGATORIO antes de devolver cada variación: ¿Esto suena a alguien de "$
 
 Si una variación rompe un límite de caracteres/palabras, cuenta de nuevo y acorta. Si usa una palabra prohibida, reescribe.
 
+${MANUAL_DE_OFICIO}
+
 Respondes SOLO en JSON válido. Sin texto fuera del JSON.
 `.trim();
 };
@@ -143,13 +146,14 @@ ${renderExamples(brief)}${renderNegativeExamples(brief)}
 Aplican a TODOS los canales. El detalle de slots y límites llega en el bloque del canal.
 1. **Límites de caracteres/palabras** del slot. Cuenta ANTES de devolver. Si te pasas, acorta.
 2. **Prohibiciones**: las palabras listadas y sus paráfrasis cercanas (zona semántica) están prohibidas.
-3. **Concepto creativo**: literal en slots cortos según la regla declarada en el canal; expansión coherente en slots largos.
-4. **Tono y guías de voz** de la marca.
-5. **Ángulo asignado** a cada variación.
+3. **Concepto creativo y assets**: literal en slots cortos según la regla declarada en el canal; expansión coherente en slots largos. Nombres de campaña, slogans y premios, sin tocar.
+4. **Manual de oficio**: asertivo, sin grasa, sin relleno, sin manifiestos, un solo campo semántico.
+5. **Tono y guías de voz** de la marca.
+6. **Ángulo asignado** a cada variación.
 
 ## SCORING (rúbrica 1-10) por variación
-- 5 pts — ¿Inconfundiblemente "${brief.brand.name}"? Si podría ser otra marca del rubro, resta puntos.
-- 3 pts — ¿Cumple presupuesto de slot Y respeta prohibiciones? Si no, máx 5 puntos en esta variación.
+- 5 pts — ¿Inconfundiblemente "${brief.brand.name}" y ladrillo del concepto? Si podría ser otra marca del rubro, resta puntos.
+- 3 pts — ¿Cumple presupuesto de slot, respeta prohibiciones Y el manual de oficio? Si no, máx 5 puntos en esta variación.
 - 2 pts — ¿Aporta una idea distinta a las otras variaciones del mismo slot?
 
 Devolver score + scoreRationale CONCRETO (1 línea, citando un detalle específico — no "buen tono").
