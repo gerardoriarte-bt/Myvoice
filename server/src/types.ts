@@ -107,6 +107,8 @@ export interface CopyVariation {
   budgetOk?: boolean;
   prohibitionsHit?: string[];
   tuteoHits?: string[];        // e.g. ["tienes → tenés", "eres → sos"]
+  /** Faltas al manual de oficio que se detectan sin IA (services/oficio.ts). */
+  oficioHits?: string[];
   score?: number;
   scoreRationale?: string;
   writerScore?: number;
@@ -119,6 +121,8 @@ export interface CampaignSpine {
   keyMessage: string;
   tone: string;
   heroCTA: string;
+  /** Territorio de imágenes del concepto y lo que queda afuera (manual de oficio). Opcional: las espinas viejas no lo tienen. */
+  campoSemantico?: string;
   angles: { name: string; premise: string; register: string }[];
 }
 

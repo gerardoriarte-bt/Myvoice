@@ -2,6 +2,7 @@ import type OpenAI from "openai";
 import { CampaignSpine, CopyParameters, FunnelStage } from "../types.js";
 import { UsageEntry, extractUsage } from "./pricing.js";
 import { buildLocaleRulesBlock, resolveMarketLocale } from "./localeRules.js";
+import { MANUAL_DE_OFICIO } from "./oficio.js";
 import {
   jsonObjectFormat,
   stripJsonFence,
@@ -13,13 +14,13 @@ import {
 
 const FUNNEL_GUIDANCE: Record<FunnelStage, string> = {
   [FunnelStage.AWARENESS]:
-    "Awareness (TOFU) — el público todavía NO conoce la marca o el problema. Los ángulos deben EDUCAR o REVELAR. Evitar CTAs de compra directa; preferir 'descubre', 'mira esto', '¿sabías que…?'. Tono curioso, casi periodístico.",
+    "Awareness (TOFU) — el público todavía NO conoce la marca o el problema. Los ángulos REVELAN algo concreto, afirmando: un dato, una escena, un insight del tema. Sin CTA de compra directa. Nada de preguntas de relleno ni de «¿sabías que…?»: el manual de oficio lo prohíbe.",
   [FunnelStage.CONSIDERATION]:
-    "Consideración (MOFU) — el público conoce el problema y compara opciones. Los ángulos deben DIFERENCIAR vs. competidores y reforzar prueba (testimonios, datos). CTAs intermedios: 'compara', 'simula', 'pruébalo gratis'.",
+    "Consideración (MOFU) — el público conoce el problema y compara opciones. Los ángulos DIFERENCIAN con una prueba concreta (dato, testimonio, demostración). CTA intermedio y específico de esta oferta, no una fórmula de stock.",
   [FunnelStage.CONVERSION]:
-    "Conversión (BOFU) — el público está listo para decidir. Los ángulos deben EMPUJAR la decisión: urgencia real, manejo de objeción final, garantía. CTAs de cierre: 'compra ahora', 'aprovecha', 'reserva'.",
+    "Conversión (BOFU) — el público está listo para decidir. Los ángulos EMPUJAN la decisión: urgencia real (no inventada), la objeción final resuelta, la garantía. CTA de cierre con la acción exacta de esta campaña, no «aprovecha» a secas.",
   [FunnelStage.RETENTION]:
-    "Retención (post-compra) — el cliente ya compró. Los ángulos deben REFORZAR la decisión, premiar fidelidad, abrir cross-sell. CTAs blandos: 'descubre lo nuevo', 'gracias por confiar'."
+    "Retención (post-compra) — el cliente ya compró. Los ángulos REFUERZAN la decisión, premian la fidelidad o abren un cross-sell concreto. Sin agradecimientos de fórmula: el premio o el beneficio, dicho directo."
 };
 
 const buildDirectorSystemPrompt = (params: CopyParameters) => `
@@ -28,6 +29,9 @@ Tu trabajo NO es escribir copy: es decidir el anclaje creativo que mantendrá un
 ${buildLocaleRulesBlock(resolveMarketLocale(params))}
 
 TEST OBLIGATORIO antes de responder: ¿esta espina aplicaría a cualquier marca del mismo rubro, o se siente inconfundiblemente de ESTA marca? Si es lo primero, reformula hasta que sea lo segundo.
+
+Tu espina la escriben después varios redactores bajo este manual; el concepto, el mensaje y el CTA que decidas también lo cumplen:
+${MANUAL_DE_OFICIO}
 
 Respondes SOLO en JSON válido. Sin texto fuera del JSON. Sin comentarios.
 `.trim();
@@ -80,6 +84,9 @@ REGLAS DE LOS 3 ÁNGULOS:
 2. Cada uno declara su propia PREMISA NARRATIVA (no el mismo gancho disfrazado).
 3. Los nombres pueden alejarse de Beneficio/Curiosidad/Urgencia si otra etiqueta describe mejor (ej: "Confesión", "Comparación honesta", "Antes/después").
 4. El "register" debe ser CONCRETO: ritmo, persona gramatical, tipo de frase. NO "tono cercano y profesional".
+5. Ningún ángulo es un manifiesto: cada premisa termina en algo que el público hace o gana AHORA.
+
+CAMPO SEMÁNTICO: declará el territorio de imágenes y palabras del concepto (si el concepto es grandeza: escala, altura, peso, impacto) y lo que queda AFUERA (velocidad, si es una campaña de resistencia). Todos los canales escriben dentro de ese campo.
 
 REGLAS DE FILTRO antes de devolver:
 - Si concept / keyMessage / tone podrían aplicar a otra marca del mismo rubro → reformular hasta que sea inconfundiblemente de "${params.clientName || "esta marca"}".
@@ -92,6 +99,7 @@ REGLAS DE FILTRO antes de devolver:
   "keyMessage": "string — qué se lleva el público, 1 línea",
   "tone": "string — registro específico para ESTA campaña (no la voz global)",
   "heroCTA": "string — CTA principal en la voz nativa de la marca",
+  "campoSemantico": "string — palabras e imágenes del territorio del concepto, y lo que NO entra",
   "angles": [
     { "name": "string", "premise": "string — hipótesis narrativa concreta", "register": "string — ritmo/persona/tipo de frase específicos" },
     { "name": "string", "premise": "string", "register": "string" },

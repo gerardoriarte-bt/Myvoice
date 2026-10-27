@@ -2,6 +2,7 @@ import type OpenAI from "openai";
 import { CopyVariation } from "../types.js";
 import { ChannelBrief, ChannelSpec } from "../channels/types.js";
 import { validateVariation } from "../channels/validators.js";
+import { MANUAL_DE_OFICIO } from "./oficio.js";
 import { UsageEntry, extractUsage } from "./pricing.js";
 import {
   jsonObjectFormat,
@@ -12,10 +13,30 @@ import {
   chatCompletionConRetry,
 } from "./aiClient.js";
 
+/**
+ * Las marcas del revisor que piden reescribir, con lo que el fixer tiene que
+ * hacer. Hasta el 2026-10-27 «generic» solo se mostraba y el texto genérico
+ * llegaba igual: era la queja principal de Buentipo. Las de matiz (tono, CTA
+ * débil, redundante) siguen solo como aviso.
+ */
+const REESCRIBIR_POR_OFICIO: Record<string, string> = {
+  generic: "Es genérico: podría firmarlo otra marca del rubro. Anclalo en algo que solo esta marca y este concepto pueden decir.",
+  "agency-speak": "Suena a agencia o a comunicado corporativo. Decilo como lo diría la marca, directo.",
+  "concept-drift": "Va por un lado y el concepto por otro. Hacé que el texto construya el concepto.",
+  filler: "Tiene relleno o una frase de stock ajena a esta promoción. Sacala y decí algo del tema de la campaña.",
+  "lazy-question": "Arranca con una pregunta que no es gancho. Afirmá el beneficio.",
+  manifesto: "Es un manifiesto filosófico. Bajalo a tierra: qué hace o gana el público ahora.",
+  "semantic-mix": "Mezcla imágenes de otro campo. Quedate dentro del campo semántico de la campaña.",
+  "asset-altered": "Altera el concepto, un slogan, un premio o adorna un beneficio. Usalos literales, como dice el brief.",
+  decorative: "Suena bonito pero no vende. Cambialo por algo que empuje la acción o el concepto.",
+};
+
 const isBroken = (v: CopyVariation): boolean => {
   if (v.budgetOk === false) return true;
   if (v.prohibitionsHit && v.prohibitionsHit.length > 0) return true;
   if (v.tuteoHits && v.tuteoHits.length > 0) return true;
+  if (v.oficioHits && v.oficioHits.length > 0) return true;
+  if (v.editorFlags?.some(f => f in REESCRIBIR_POR_OFICIO)) return true;
   if (v.editorFlags?.includes("prohibition-paraphrase")) return true;
   if (v.editorFlags?.includes("budget-violation")) return true;
   if (v.editorFlags?.includes("tuteo-violation")) return true;
@@ -73,6 +94,10 @@ const describeIssues = (brief: ChannelBrief, spec: ChannelSpec, v: CopyVariation
   if (!v.tuteoHits?.length && v.editorFlags?.includes("tuteo-violation")) {
     issues.push(`El editor detectó tuteo implícito o paráfrasis de tuteo — reescribir en voseo colombiano.`);
   }
+  for (const falta of v.oficioHits ?? []) issues.push(`Manual de oficio: ${falta}.`);
+  for (const flag of v.editorFlags ?? []) {
+    if (REESCRIBIR_POR_OFICIO[flag]) issues.push(REESCRIBIR_POR_OFICIO[flag]);
+  }
   return issues;
 };
 
@@ -102,13 +127,17 @@ ${issues.map(i => `  · ${i}`).join("\n")}`;
     .join("\n\n");
 
   return `
-Eres editor de copy. Estas variaciones rompen reglas duras y hay que reescribirlas SIN cambiar su intent.
+Eres editor de copy. Estas variaciones rompen reglas duras o el manual de oficio y hay que reescribirlas SIN cambiar su ángulo ni el concepto.
 ${voseoBlock}
+${MANUAL_DE_OFICIO}
+
 ## MARCA Y CAMPAÑA
 - Marca: "${brief.brand.name}"
 - Voz: ${brief.brand.voice || "—"}
 - Concepto de campaña: "${brief.spine.concept}"
 - Tono: ${brief.spine.tone}
+- Campo semántico: ${brief.spine.campoSemantico || "—"}
+- Brief (premios y mecánica, literales): ${brief.campaign.theme || "—"}
 - Prohibiciones: ${brief.campaign.prohibitions || "—"} (también paráfrasis cercanas)
 - Canal: ${spec.id}
 
@@ -120,8 +149,9 @@ Reescribí CADA variación cumpliendo TODAS estas condiciones:
 1. Respetá el budget del slot indicado en cada una — contá antes de devolver.
 2. NO uses las palabras prohibidas ni paráfrasis cercanas.
 3. Mantené el ángulo/tipo de cada variación y la lógica del concepto de campaña.
-4. Mantené el intent original (qué decía, qué efecto buscaba).
-5. Sigue sonando inconfundiblemente como "${brief.brand.name}".
+4. Mantené el efecto que buscaba; si el problema es de oficio (genérico, relleno, manifiesto…), cambiá la frase, no el ángulo.
+5. Cumplí el manual de oficio.
+6. Sigue sonando inconfundiblemente como "${brief.brand.name}".
 
 Devolvé una entrada por cada id recibido, con el id LITERAL.
 
@@ -195,7 +225,12 @@ export const runAutoFix = async (
       // than being dropped — the editor flags stay on it for the UI to surface.
       if (!newContent) return v;
       const fixed: CopyVariation = { ...v, content: newContent, autofixed: true };
-      return validateVariation(fixed, spec, brief.campaign.prohibitions);
+      // Con el voseo y el contexto: sin ellos, las marcas de tuteo viejas
+      // quedaban pegadas a un texto ya corregido.
+      return validateVariation(fixed, spec, brief.campaign.prohibitions, brief.checkVoseo, {
+        marca: brief.brand.name,
+        concepto: brief.spine.concept,
+      });
     });
   } catch (error) {
     console.warn(`AutoFix falló para canal ${spec.id}:`, error);
