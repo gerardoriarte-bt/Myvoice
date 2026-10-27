@@ -74,6 +74,7 @@ model AudienciaDeMarca {
   descriptores Json          // estructura de The Brief: quién es, qué le importa, qué la frena, cómo habla…
   origen      OrigenSeccion
   orden       Int
+  archivada   Boolean @default(false)   // una usada en campañas no se borra: se archiva
 }
 
 model FuenteDeMarca {       // lo leído una vez: texto del manual entero, de la URL
@@ -85,6 +86,11 @@ model FuenteDeMarca {       // lo leído una vez: texto del manual entero, de la
 }
 ```
 
+- **Las audiencias son una lista fija de la marca**, no un campo de la campaña: se definen y
+  confirman una vez en el ADN, y cada brief elige una o varias (`audienciaIds`). Ni el brief ni el
+  motor crean audiencias; si falta una, se agrega en el ADN y queda para las campañas siguientes.
+  `TextoRaiz` y las unidades guardan los descriptores con que se escribieron, para que editar una
+  audiencia no cambie lo ya aprobado.
 - `Client` suma `tratamiento Tratamiento?` (`TU | USTED | VOS`). Las columnas de hoy
   (`valueProposition`, `brandVoiceGuidelines`, `brandKeywords`, `brandProhibitions`, `voice`) **no
   se borran**: un script copia su contenido a `SeccionAdn` con `origen = PERSONA`, y mientras v1
@@ -114,7 +120,7 @@ model BriefDeCampana {      // 1:1 con Project; v1 sigue usando ContentDNAProfil
   manifiesto    String?
   keyVisual     String?       // texto; BR-2 suma imagen
   assets        Json          // [{ texto, tipo: 'slogan'|'premio'|'mecanica', literal: true }]
-  audienciaId   String
+  audienciaIds  String[]     // ≥ 1, de la lista fija de la marca (AudienciaDeMarca, mismo clientId)
   funnel        FunnelStage
   requerimiento String
 }
@@ -128,6 +134,8 @@ model TextoRaiz {
   bajada      String
   desarrollo  String
   angulo      String
+  audienciaId String         // una sola: la raíz le habla a una audiencia del brief
+  audiencia   Json           // copia de los descriptores al escribirla (no cambia si se edita el ADN)
   estado      EstadoRaiz     // PROPUESTA | APROBADA_EQUIPO | RECHAZADA_EQUIPO | CON_LA_MARCA | APROBADA_MARCA | RECHAZADA_MARCA
   motivo      String?        // obligatorio en 👍 y 👎 (RZ-2)
   editadaPorId String?
@@ -300,7 +308,7 @@ completitud ≥ mínimo ─► brief completo (BR-3) ─► escritor de raíces 
 - Una llamada de escritura por tanda. Las raíces rechazadas de tandas anteriores
   entran con su motivo como ejemplos negativos; las aprobadas de otras campañas de la marca, como
   positivos (AP-1).
-- El escritor recibe: oficio, ADN (secciones confirmadas), audiencia elegida con sus descriptores,
+- El escritor recibe: oficio, ADN (secciones confirmadas), audiencias elegidas con sus descriptores tal como están en el ADN,
   brief completo, assets literales.
 
 ### 5.5 Adaptación (R3)

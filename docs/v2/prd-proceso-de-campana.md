@@ -65,7 +65,7 @@ En v2, **todo lo que define la campaña es un campo que carga el equipo**:
 | CTA principal | Creativo | Sugiere. |
 | Ángulos (2–3, con su premisa) | Creativo | Sugiere; el equipo elige, edita o escribe. |
 | Racional, manifiesto, key visual, assets | Creativo | No escribe; puede revisar ortografía. |
-| Audiencia, funnel, requerimiento | Responsable | Nada. |
+| Audiencias de la campaña, funnel, requerimiento | Responsable | Nada: las audiencias se eligen de la lista fija del ADN. |
 | Textos raíz | El responsable, después la marca | **Propone**: es su trabajo, y nada pasa sin aprobación. |
 | Adaptaciones | El responsable | **Propone** dentro de una raíz aprobada. |
 
@@ -124,10 +124,11 @@ Los roles de acceso siguen siendo los de hoy (OWNER, ADMIN, MEMBER). Lo que camb
 1. **Marca lista.** El ADN supera el mínimo de completitud. Si no, la campaña v2 no se puede
    crear: se muestra qué falta y se ofrece la ayuda de la IA.
 2. **Brief.** El equipo carga concepto, mensaje clave, campo semántico, tono, CTA principal,
-   ángulos, racional, manifiesto, key visual, assets intocables, la audiencia (elegida entre las de
-   la marca), la etapa del funnel y el requerimiento. En los campos creativos puede pedir una
+   ángulos, racional, manifiesto, key visual, assets intocables, las audiencias (una o varias, de la lista
+   fija del ADN), la etapa del funnel y el requerimiento. En los campos creativos puede pedir una
    sugerencia a la IA; nada queda puesto sin que alguien lo acepte.
-3. **Textos raíz.** El motor propone 5–10. Cada uno: titular, bajada, idea de desarrollo y ángulo.
+3. **Textos raíz.** El motor propone 5–10. Cada uno es **para una audiencia** del brief: titular,
+   bajada, idea de desarrollo, ángulo y a quién le habla.
    👍 o 👎, siempre con un motivo corto. Se pueden pedir más tandas.
 4. **Toolkit.** El responsable aprueba las raíces que van y manda el toolkit a la marca. La marca
    aprueba o rechaza cada raíz con comentario. Las rechazadas vuelven al equipo.
@@ -158,7 +159,7 @@ Prioridad: **P0** sin esto no hay v2 · **P1** necesario para el uso real · **P
 
 | Id | Requisito | P |
 |---|---|---|
-| ADN-1 | Secciones estructuradas siguiendo The Brief (Brand kit), incluidas **audiencias** con descriptores. | P0 |
+| ADN-1 | Secciones estructuradas siguiendo The Brief (Brand kit), incluidas las **audiencias**: una lista fija de la marca, con descriptores, que todas las campañas reutilizan. | P0 |
 | ADN-2 | **Tratamiento** declarado (tú, usted o vos); deja de adivinarse. | P0 |
 | ADN-3 | **Reglas de estilo** duras de la marca y **assets** intocables con su escritura exacta. | P0 |
 | ADN-4 | **Completitud con peso**: cada sección vacía, débil o completa, con el motivo; un porcentaje único. | P0 |
@@ -171,12 +172,12 @@ Prioridad: **P0** sin esto no hay v2 · **P1** necesario para el uso real · **P
 
 | Id | Requisito | P |
 |---|---|---|
-| BR-1 | Brief con concepto, racional, manifiesto, key visual (texto), assets de campaña, audiencia elegida, funnel obligatorio y requerimiento. | P0 |
+| BR-1 | Brief con concepto, racional, manifiesto, key visual (texto), assets de campaña, una o varias audiencias de la lista del ADN, funnel obligatorio y requerimiento. | P0 |
 | BR-3 | Campos de dirección que hoy inventa el motor, ahora del equipo: **mensaje clave, campo semántico, tono de campaña, CTA principal y ángulos**. Obligatorios para pedir raíces. | P0 |
 | BR-4 | «Sugerir» en cada campo creativo: la IA propone uno o varios valores al lado del campo, con «Usar» y «Descartar». Nunca se guarda sola. | P1 |
 | BR-5 | El motor usa el brief **literal**: no reformula, no completa campos vacíos, no agrega decisiones. | P0 |
 | BR-2 | Key visual como imagen que el motor puede leer. | P2 |
-| RZ-1 | El motor propone 5–10 raíces: titular, bajada, idea de desarrollo y ángulo. | P0 |
+| RZ-1 | El motor propone 5–10 raíces: titular, bajada, idea de desarrollo y ángulo. **Cada raíz es para una sola audiencia** de las elegidas en el brief, y lo dice. | P0 |
 | RZ-2 | 👍 y 👎 con motivo obligatorio; los rechazos alimentan la tanda siguiente. | P0 |
 | RZ-3 | Pedir otra tanda, con o sin una indicación («más cortas», «menos emotivas»). | P1 |
 | RZ-4 | Editar una raíz a mano antes de aprobarla. | P1 |
