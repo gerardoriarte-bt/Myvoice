@@ -196,11 +196,11 @@ Prioridad: **P0** sin esto no hay v2 · **P1** necesario para el uso real · **P
 | Id | Requisito | P |
 |---|---|---|
 | CAT-1 | Los medios y formatos son **datos**: medio → formato. Cada formato separa **medidas** (para Diseño), **textos** con su largo (lo que escribe la IA) y **especificaciones de archivo** (lo que pide el medio). El catálogo se ordena por medio. | P0 |
-| CAT-6 | Se agrega un **medio nuevo con todos sus formatos** de una vez (vacío, desde un estándar, copiando otro medio o desde planilla). Queda en borrador hasta que cada formato dice qué textos lleva. | P0 |
+| CAT-6 | Se agrega un **medio nuevo con todos sus formatos** de una vez (de a uno, copiando de otro medio o desde planilla). Queda en borrador hasta que cada formato dice qué textos lleva, y en borrador no se puede usar en un plan. | P0 |
 | CAT-2 | Se cargan los ~60 medios nuevos por importación (planilla), sin despliegue. | P0 |
 | CAT-3 | Los 14 canales de hoy se migran al catálogo con sus límites actuales. | P1 |
 | CAT-4 | Un formato editado no altera las unidades ya generadas: cada unidad guarda la versión del formato. | P0 |
-| CAT-5 | Quién mantiene el catálogo: LoBueno (global); un workspace puede ocultar formatos que no usa. | P1 |
+| CAT-5 | Quién mantiene el catálogo: los usuarios **Planner** (global); un workspace puede ocultar formatos que no usa. | P1 |
 | PM-1 | El plan de medios **llega de Planning** según el [contrato](./contrato-plan-de-medios.md): cada línea con un formato del catálogo compartido, su **frente**, cuántos copys distintos pide y sus fechas. El proceso de campaña no edita esos datos: escribe y devuelve el estado por línea. | P0 |
 | PM-2 | El plan se puede armar en paralelo con raíces y toolkit; generar exige toolkit aprobado. | P0 |
 | PM-3 | Mientras Planning no existe, el plan se carga con una planilla de las mismas columnas que el contrato. Cada versión nueva se compara con la anterior por línea y muestra qué cambió. | P0 |

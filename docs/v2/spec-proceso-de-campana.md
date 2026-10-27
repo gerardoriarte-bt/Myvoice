@@ -248,8 +248,8 @@ model FormatoOculto {        // CAT-5: un workspace esconde lo que no usa
   lleva varias (Google Ads, slides de carrusel); donde era «variaciones de lo mismo», queda en 1.
   Esa diferencia se revisa a mano por formato: es la decisión de producto más delicada de la
   migración.
-- **¿Quién edita?** Solo un usuario con `esAdminDePlataforma` (columna nueva en `User`, para el
-  equipo de LoBueno). No es un rol de workspace.
+- **¿Quién edita?** Los usuarios **Planner** (decidido 2026-10-27): agregan medios, formatos y cargan
+  planillas. Es una función de usuario, no un rol de workspace, porque el catálogo es global.
 
 - **Medio → formato → tres cosas distintas** (2026-10-27). Un formato separa **medidas** (tamaño o
   duración, para Diseño), **textos** (`ParteDeFormato`: lo que escribe la IA, con su largo máximo) y
@@ -258,10 +258,10 @@ model FormatoOculto {        // CAT-5: un workspace esconde lo que no usa
   («Caption 150 · JPG 1080×1080») fue lo que hizo confusa la primera lista.
 - **El catálogo se ordena por medio**, no por tipo de canal: Google o programática traen decenas de
   formatos, y se agrupan por `tipoEnMedio` dentro del medio.
-- **Agregar un medio** es un recorrido de tres pasos: el medio, sus formatos (empezando vacío, desde
-  un estándar como IAB, copiando de otro medio o desde planilla) y revisar y activar. Un medio queda
+- **Agregar un medio** es un recorrido de tres pasos: el medio, sus formatos (de a uno, copiando de otro
+  medio o desde planilla) y revisar y activar. Un medio queda
   en `BORRADOR` hasta que **todos** sus formatos dicen qué textos llevan; medidas y archivo pueden
-  completarse después. Planning no ve un medio en borrador.
+  completarse después. **Un medio en borrador no se puede usar en un plan** (decidido 2026-10-27).
 - **Importación**: una fila por formato, con el medio en la primera columna; si el medio no existe se
   crea en borrador. Medidas, textos y archivo van en columnas separadas.
 
@@ -274,8 +274,7 @@ model FormatoOculto {        // CAT-5: un workspace esconde lo que no usa
   límites, cambiarlo crea una versión y lo ya escrito no cambia, lo que tiene errores no se carga.
   Por decidir: la lista real de medios, qué formatos tienen varias piezas además del carrusel, el
   rango de láminas y el reparto por defecto, si en reels e historias el texto en pantalla lo escribe
-  la IA o Diseño, si los formatos se cargan aquí o los da de alta Planning, quién puede agregar
-  medios y qué estándares se ofrecen para empezar.
+  la IA o Diseño, si los formatos se cargan aquí o los da de alta Planning.
 
 ### 4.6 Plan de medios y adaptaciones (R3)
 
@@ -542,7 +541,7 @@ monta un componente raíz (`components/v2/ProcesoDeCampana.tsx`) con su propio e
 |---|---|
 | R1 | `SeccionAdn`, `AudienciaDeMarca`, `FuenteDeMarca`, `Client.tratamiento`, `FuncionEquipo` + `PLANNING`, `MEDIOS` · script de copia de columnas → secciones |
 | R2 | `Workspace.procesoCampana`, `Project.proceso`, `BriefDeCampana`, `TextoRaiz`, `RondaRevision` + `TOOLKIT`, `ReviewSessionItem.textoRaizId` + `CHECK` de tres |
-| R3 | `Medio`, `Formato`, `FormatoVersion`, `ParteDeFormato`, `FormatoOculto`, `User.esAdminDePlataforma`, `PlanDeMedios`, `LineaDePlan`, `Unidad`, `SavedVariation.unidadId/parteClave/textoRaizId` · script de los 14 canales |
+| R3 | `Medio`, `Formato`, `FormatoVersion`, `ParteDeFormato`, `FormatoOculto`, `User.esPlanner`, `PlanDeMedios`, `LineaDePlan`, `Unidad`, `SavedVariation.unidadId/parteClave/textoRaizId` · script de los 14 canales |
 
 `ADD VALUE` de enum va en su propia migración antes de usarse (Postgres no deja usar un valor nuevo
 en la misma transacción), como ya se hizo con `CON_EL_CLIENTE`.

@@ -152,7 +152,7 @@ Se rechaza la versión entera, con la lista de errores por línea, si:
 - la campaña no es v2, es de otro workspace o el usuario no puede verla (404, como el resto de la
   tenancy);
 - `version` no es mayor que la última;
-- un `formatoId` no existe o está oculto para el workspace;
+- un `formatoId` no existe, está oculto para el workspace o es de un medio en borrador;
 - quien envía no tiene la función Medios ni es el responsable de la campaña;
 - un `frenteId` no es un frente del brief de esa campaña;
 - falta `piezas` en un formato que lo pide, o está fuera de su rango;
