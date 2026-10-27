@@ -13,7 +13,7 @@ con el actual sin tocarlo:
 
 ```
 ADN de marca ─► Brief ─► Textos raíz ─► Toolkit ─────────────┐
-(≥ mínimo)                (5–10)        (equipo → marca)      ▼
+(≥ mínimo)             (por frente)     (equipo → marca)      ▼
                                        Plan de medios ─► Adaptaciones ─► Control ─► Producción
                                        (medio · formato · cantidad)
 ```
@@ -62,10 +62,10 @@ En v2, **todo lo que define la campaña es un campo que carga el equipo**:
 | Mensaje clave | Creativo | Sugiere. |
 | **Campo semántico** (el territorio de imágenes del concepto y lo que queda afuera) | Creativo | Sugiere a partir del concepto. |
 | Tono de la campaña | Creativo | Sugiere, dentro de la voz de la marca. |
-| CTA principal | Creativo | Sugiere. |
+| CTA principal (de la campaña; un frente puede cambiarlo) | Creativo | Sugiere. |
 | Ángulos (2–3, con su premisa) | Creativo | Sugiere; el equipo elige, edita o escribe. |
 | Racional, manifiesto, key visual, assets | Creativo | No escribe; puede revisar ortografía. |
-| Audiencias de la campaña, funnel, requerimiento | Responsable | Nada: las audiencias se eligen de la lista fija del ADN. |
+| **Frentes** (audiencia × etapa del funnel, y cuántas raíces pide cada uno), requerimiento | Responsable | Nada: las audiencias se eligen de la lista fija del ADN. |
 | Textos raíz | El responsable, después la marca | **Propone**: es su trabajo, y nada pasa sin aprobación. |
 | Adaptaciones | El responsable | **Propone** dentro de una raíz aprobada. |
 
@@ -124,11 +124,13 @@ Los roles de acceso siguen siendo los de hoy (OWNER, ADMIN, MEMBER). Lo que camb
 1. **Marca lista.** El ADN supera el mínimo de completitud. Si no, la campaña v2 no se puede
    crear: se muestra qué falta y se ofrece la ayuda de la IA.
 2. **Brief.** El equipo carga concepto, mensaje clave, campo semántico, tono, CTA principal,
-   ángulos, racional, manifiesto, key visual, assets intocables, las audiencias (una o varias, de la lista
-   fija del ADN), la etapa del funnel y el requerimiento. En los campos creativos puede pedir una
+   ángulos, racional, manifiesto, key visual, assets intocables, los **frentes** y el requerimiento. Un frente es una
+   audiencia de la lista fija del ADN en una etapa del funnel («Familias · Conversión»), con cuántas
+   raíces pide y, si hace falta, su propio CTA. El equipo marca solo los frentes que la campaña
+   cubre, no la matriz completa. En los campos creativos puede pedir una
    sugerencia a la IA; nada queda puesto sin que alguien lo acepte.
-3. **Textos raíz.** El motor propone 5–10. Cada uno es **para una audiencia** del brief: titular,
-   bajada, idea de desarrollo, ángulo y a quién le habla.
+3. **Textos raíz.** El motor propone, **por frente**, las que el equipo pidió. Cada una es para la
+   audiencia y la etapa de su frente: titular, bajada, idea de desarrollo y ángulo.
    👍 o 👎, siempre con un motivo corto. Se pueden pedir más tandas.
 4. **Toolkit.** El responsable aprueba las raíces que van y manda el toolkit a la marca. La marca
    aprueba o rechaza cada raíz con comentario. Las rechazadas vuelven al equipo.
@@ -172,16 +174,17 @@ Prioridad: **P0** sin esto no hay v2 · **P1** necesario para el uso real · **P
 
 | Id | Requisito | P |
 |---|---|---|
-| BR-1 | Brief con concepto, racional, manifiesto, key visual (texto), assets de campaña, una o varias audiencias de la lista del ADN, funnel obligatorio y requerimiento. | P0 |
+| BR-1 | Brief con concepto, racional, manifiesto, key visual (texto), assets de campaña y requerimiento. | P0 |
+| BR-6 | **Frentes**: uno o más pares audiencia (de la lista del ADN) × etapa del funnel, sin repetir. Cada uno define cuántas raíces pide (lo decide el equipo) y puede cambiar el CTA principal. | P0 |
 | BR-3 | Campos de dirección que hoy inventa el motor, ahora del equipo: **mensaje clave, campo semántico, tono de campaña, CTA principal y ángulos**. Obligatorios para pedir raíces. | P0 |
 | BR-4 | «Sugerir» en cada campo creativo: la IA propone uno o varios valores al lado del campo, con «Usar» y «Descartar». Nunca se guarda sola. | P1 |
 | BR-5 | El motor usa el brief **literal**: no reformula, no completa campos vacíos, no agrega decisiones. | P0 |
 | BR-2 | Key visual como imagen que el motor puede leer. | P2 |
-| RZ-1 | El motor propone 5–10 raíces: titular, bajada, idea de desarrollo y ángulo. **Cada raíz es para una sola audiencia** de las elegidas en el brief, y lo dice. | P0 |
+| RZ-1 | El motor propone raíces **por frente**, tantas como pidió el equipo: titular, bajada, idea de desarrollo y ángulo. Cada raíz es de un solo frente (una audiencia, una etapa) y lo dice. | P0 |
 | RZ-2 | 👍 y 👎 con motivo obligatorio; los rechazos alimentan la tanda siguiente. | P0 |
 | RZ-3 | Pedir otra tanda, con o sin una indicación («más cortas», «menos emotivas»). | P1 |
 | RZ-4 | Editar una raíz a mano antes de aprobarla. | P1 |
-| TK-1 | El responsable aprueba raíces y manda el toolkit (concepto, racional, manifiesto, raíces) a la marca por el portal. | P0 |
+| TK-1 | El responsable aprueba raíces y manda el toolkit (concepto, racional, manifiesto, raíces agrupadas por frente) a la marca por el portal. | P0 |
 | TK-2 | La marca aprueba o rechaza cada raíz; un rechazo exige comentario. | P0 |
 | TK-3 | El toolkit aprobado se puede descargar o compartir como documento. | P2 |
 
@@ -194,7 +197,7 @@ Prioridad: **P0** sin esto no hay v2 · **P1** necesario para el uso real · **P
 | CAT-3 | Los 14 canales de hoy se migran al catálogo con sus límites actuales. | P1 |
 | CAT-4 | Un formato editado no altera las unidades ya generadas: cada unidad guarda la versión del formato. | P0 |
 | CAT-5 | Quién mantiene el catálogo: LoBueno (global); un workspace puede ocultar formatos que no usa. | P1 |
-| PM-1 | Plan de medios por campaña: líneas con formato, cantidad, fecha, responsable y raíces asignadas (opcional). | P0 |
+| PM-1 | Plan de medios por campaña: líneas con **frente**, formato, cantidad, fecha y responsable. Una línea adapta las raíces aprobadas de su frente (o una selección de ellas). | P0 |
 | PM-2 | El plan se puede armar en paralelo con raíces y toolkit; generar exige toolkit aprobado. | P0 |
 | PM-3 | Importar un plan de medios desde una planilla. | P1 |
 | PM-4 | Ver el avance del plan: por línea, unidades generadas, aprobadas y en producción. | P1 |
@@ -205,7 +208,7 @@ Prioridad: **P0** sin esto no hay v2 · **P1** necesario para el uso real · **P
 |---|---|---|
 | AD-1 | Cada línea del plan genera **N unidades** de su formato; cada unidad trae **todas sus partes** y su raíz. | P0 |
 | AD-2 | El medio **solo adapta**: gancho y assets literales, sin ideas ni promesas nuevas. | P0 |
-| AD-3 | Las unidades se reparten entre las raíces de la línea y se diferencian por la entrada, no por la idea. | P1 |
+| AD-3 | Las unidades se reparten entre las raíces del frente de la línea y se diferencian por la entrada, no por la idea. | P1 |
 | AD-4 | Regenerar una unidad sola, o una parte de una unidad. | P1 |
 | CT-1 | Contador contra el límite en cada parte, también al editar. | P0 |
 | CT-2 | Control automático (límites, literales, revisor) antes de llegar al responsable. | P0 |
@@ -222,7 +225,7 @@ Prioridad: **P0** sin esto no hay v2 · **P1** necesario para el uso real · **P
   catálogo es global y no contiene datos de clientes.
 - **Costo.** Una tanda de adaptaciones es una llamada de escritura por lote, no una por canal.
   El consumo de v2 cuenta en la cuota como el de v1.
-- **Tiempo.** Raíces en menos de 60 s; una línea de 10 unidades en menos de 90 s.
+- **Tiempo.** Las raíces de un frente en menos de 60 s (los frentes corren en paralelo); una línea de 10 unidades en menos de 90 s.
 - **Diseño primero.** Las pantallas de v2 se dibujan en `design/MyVoice_Engine.pen` antes de
   codificarse.
 

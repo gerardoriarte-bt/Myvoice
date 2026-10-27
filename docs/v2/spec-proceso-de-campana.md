@@ -87,7 +87,7 @@ model FuenteDeMarca {       // lo leído una vez: texto del manual entero, de la
 ```
 
 - **Las audiencias son una lista fija de la marca**, no un campo de la campaña: se definen y
-  confirman una vez en el ADN, y cada brief elige una o varias (`audienciaIds`). Ni el brief ni el
+  confirman una vez en el ADN, y cada frente del brief usa una de ellas. Ni el brief ni el
   motor crean audiencias; si falta una, se agrega en el ADN y queda para las campañas siguientes.
   `TextoRaiz` y las unidades guardan los descriptores con que se escribieron, para que editar una
   audiencia no cambie lo ya aprobado.
@@ -113,16 +113,26 @@ model BriefDeCampana {      // 1:1 con Project; v1 sigue usando ContentDNAProfil
   mensajeClave  String
   campoSemantico Json         // { territorio: string, afuera: string }
   tono          String
-  ctaPrincipal  String
+  ctaPrincipal  String       // de la campaña; FrenteDeCampana.cta lo reemplaza en un frente
   angulos       Json          // [{ nombre, premisa, registro }], 2–3
   origenes      Json          // { campo: PERSONA | IA_CONFIRMADA }, para saber qué vino de una sugerencia
   racional      String?
   manifiesto    String?
   keyVisual     String?       // texto; BR-2 suma imagen
   assets        Json          // [{ texto, tipo: 'slogan'|'premio'|'mecanica', literal: true }]
-  audienciaIds  String[]     // ≥ 1, de la lista fija de la marca (AudienciaDeMarca, mismo clientId)
-  funnel        FunnelStage
   requerimiento String
+  frentes       FrenteDeCampana[]   // ≥ 1
+}
+
+model FrenteDeCampana {     // audiencia × etapa: la unidad de las raíces y del plan de medios
+  id            String @id @default(uuid())
+  projectId     String
+  audienciaId   String        // de la lista fija de la marca (AudienciaDeMarca, mismo clientId)
+  funnel        FunnelStage
+  cantidadRaices Int          // la decide el equipo, por frente
+  cta           String?       // null = el CTA principal de la campaña
+  orden         Int
+  @@unique([projectId, audienciaId, funnel])
 }
 
 model TextoRaiz {
@@ -134,7 +144,7 @@ model TextoRaiz {
   bajada      String
   desarrollo  String
   angulo      String
-  audienciaId String         // una sola: la raíz le habla a una audiencia del brief
+  frenteId    String         // una raíz es de un solo frente: una audiencia, una etapa
   audiencia   Json           // copia de los descriptores al escribirla (no cambia si se edita el ADN)
   estado      EstadoRaiz     // PROPUESTA | APROBADA_EQUIPO | RECHAZADA_EQUIPO | CON_LA_MARCA | APROBADA_MARCA | RECHAZADA_MARCA
   motivo      String?        // obligatorio en 👍 y 👎 (RZ-2)
@@ -233,11 +243,12 @@ model LineaDePlan {
   id          String @id @default(uuid())
   projectId   String
   workspaceId String
+  frenteId    String         // la línea adapta las raíces aprobadas de este frente
   formatoId   String
   cantidad    Int
   fecha       DateTime?
   responsableId String?
-  raices      String[]        // ids de TextoRaiz; vacío = todas las aprobadas por la marca
+  raices      String[]        // ids de TextoRaiz del frente; vacío = todas las aprobadas del frente
   estado      EstadoLinea     // PENDIENTE | GENERANDO | EN_CONTROL | APROBADA | EN_PRODUCCION
   orden       Int
 }
@@ -305,10 +316,11 @@ completitud ≥ mínimo ─► brief completo (BR-3) ─► escritor de raíces 
 - **Sin director.** La espina de v1 (concepto, mensaje, tono, CTA, ángulos) en v2 es el brief que
   cargó el equipo, pasado literal. Pedir raíces con un campo de dirección vacío responde 409 con lo
   que falta.
-- Una llamada de escritura por tanda. Las raíces rechazadas de tandas anteriores
+- Una llamada de escritura por frente y por tanda. Las raíces rechazadas de tandas anteriores
   entran con su motivo como ejemplos negativos; las aprobadas de otras campañas de la marca, como
   positivos (AP-1).
-- El escritor recibe: oficio, ADN (secciones confirmadas), audiencias elegidas con sus descriptores tal como están en el ADN,
+- **Una llamada por frente**: el escritor recibe oficio, ADN (secciones confirmadas), la audiencia
+  del frente con sus descriptores tal como están en el ADN, su etapa del funnel, el CTA que le toca,
   brief completo, assets literales.
 
 ### 5.5 Adaptación (R3)
