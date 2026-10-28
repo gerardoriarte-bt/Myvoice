@@ -48,6 +48,16 @@ export interface Novedad {
 
 export const NOVEDADES: Novedad[] = [
   {
+    id: 'adn-de-la-marca-manda',
+    fecha: '2026-10-28',
+    titulo: 'El copy respeta siempre el ADN de la marca',
+    cambios: [
+      'Al generar, la voz, la propuesta de valor y las guías de la marca ahora tienen prioridad sobre las del brief, como estaba pensado. Antes, si el brief traía las suyas, se usaban esas.',
+      'Las prohibiciones y palabras clave de la marca se suman siempre a las del brief. Antes, si el brief tenía las suyas, las de la marca no llegaban al motor.',
+      'El motor vuelve a aprender del copy aprobado de la marca: lo usa como ejemplo al escribir.',
+    ],
+  },
+  {
     id: 'marcas-relacionadas',
     fecha: '2026-10-26',
     titulo: 'Marcas relacionadas, y el nombre repetido se nota',
