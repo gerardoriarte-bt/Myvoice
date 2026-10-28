@@ -12,7 +12,7 @@ siguen valiendo con los nombres nuevos; este documento manda donde difieran.
                 ───                                         ────────
   Biblioteca de medios  ──── formatos y campos de texto ───►  escribe dentro de esos largos
   Cuadro de materiales  ──── qué escribir, por línea ──────►  adaptaciones
-  Cuadro de materiales  ◄─── audiencias y frentes ─────────  ADN y brief
+  Cuadro de materiales  ◄─── estado del copy por línea ────  adaptaciones
   Líneas                ◄─── copy aprobado por formato ────  aprobación del responsable
   Piezas                ──── estado de aprobación ─────────►  medición
 ```
@@ -29,7 +29,7 @@ My Voice **hereda** de cada formato solo lo que necesita para escribir:
 |---|---|
 | `formatoId`, `version` | Qué formato y con qué versión se escribió (lo ya escrito no cambia si el formato cambia). |
 | `medio`, `nombre`, `tipoEnMedio` | Mostrarlo en pantalla. |
-| `camposDeTexto[]`: `clave`, `etiqueta`, `ubicacion` (`EN_PIEZA` \| `PLATAFORMA`), `unidad` (caracteres, palabras, segundos), `min`, `max`, `repeticiones`, `obligatorio`, `ctasPermitidos?` | Qué escribe la IA y con qué límites. |
+| `camposDeTexto[]`: `clave`, `etiqueta`, `ubicacion` (`EN_PIEZA` \| `PLATAFORMA`), `unidad` (caracteres, palabras, segundos), `max`, `min?`, `repeticiones`, `obligatorio`, `ctasPermitidos?` | Qué escribe la IA y con qué límites. **`max` bloquea**: pasarse impide aprobar. `min` es orientación. Una línea no cambia el largo del formato. |
 | `piezas` (`min`, `max`) | Formatos de varias piezas, como el carrusel. |
 | `guia` | Cómo se escribe bien ese formato (entra al prompt). |
 
@@ -46,8 +46,8 @@ Una **versión completa** cada vez, comparada por `lineaId` con la anterior
 | `campanaId`, `version`, `enviadoPor`, `enviadoEn` | Sí | De qué campaña, qué versión y quién la envió (Planning o el responsable). |
 | `lineaId` | Sí | Id estable entre versiones. |
 | `formatoId` | Sí | Formato de la biblioteca. |
-| `frenteId` | Sí | Frente del brief: decide audiencia, etapa y textos raíz que se adaptan. |
-| `cantidad` | Sí | Cuántos copys **distintos** (no inserciones ni frecuencia). |
+| `etapa` | Sí | Etapa del embudo de la línea: decide qué textos raíz se adaptan. |
+| `variaciones` | Sí | Cuántos copys **distintos** (no inserciones ni frecuencia). |
 | `piezas` | Según formato | Láminas de un carrusel. |
 | `fechaSalida`, `fechaCopy` | Sí / No | Ordena el trabajo. |
 | `referencia` | No | Texto libre, si la línea es de una referencia distinta a la de la campaña. |
@@ -58,7 +58,7 @@ Una **versión completa** cada vez, comparada por `lineaId` con la anterior
 | Dato | Para qué |
 |---|---|
 | Marca, campaña, responsable | Abrir la campaña del lado de CDM. |
-| Audiencias del ADN y frentes de la campaña | Elegir el frente de cada línea. CDM no crea audiencias; quién crea frentes está abierto (pregunta 6b). |
+| Audiencias elegidas en la campaña | Mostrarlas en el cuadro. No cambian por línea: cada línea se escribe para todas. |
 | Referencia de la campaña | Mostrarla en el cuadro. |
 | Estado de My Voice por campaña y por línea | El «espera a» y la navegación cruzada ([flujo.md](./flujo.md), § 4). |
 | **Copy aprobado por línea** | Qué texto va en qué formato: cada campo con su texto, separado en copy en pieza y copy de plataforma, con la versión del formato. |

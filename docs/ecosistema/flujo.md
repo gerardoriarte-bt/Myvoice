@@ -15,7 +15,7 @@ flowchart LR
   end
   B[Planning mantiene la biblioteca<br/>y los paquetes · CDM]
   subgraph MV[My Voice]
-    M2[2 · Copy escribe el brief<br/>frentes y referencia]
+    M2[2 · Copy escribe el brief<br/>y elige audiencias del ADN]
     M2 --> M3[3 · IA escribe textos raíz<br/>Copy los depura]
     M3 --> M4[4 · Responsable manda el toolkit]
     M4 --> M5[5 · Cliente aprueba el toolkit]
@@ -33,7 +33,7 @@ flowchart LR
   S --> B
   M1 -- sigue por My Voice --> M2
   M1 -- sigue por CDM --> C6
-  M2 -. frentes .-> C6
+  C6 -. etapas .-> M3
   B -. biblioteca .-> C6
   C6 -. qué escribir .-> M7
   M8 -. qué texto va en qué formato .-> C9
@@ -54,12 +54,12 @@ paso 7 espera al toolkit aprobado y al cuadro.
 | — | Parte común | Estrategia (con la IA) | Completa y confirma el ADN; define las audiencias. Mínimo 75 % para crear campañas. | Fuentes de la marca | ADN, audiencias | — |
 | — | CDM | Planning | Mantiene la biblioteca de medios y los paquetes de la marca. | Specs de los medios | Formatos activos | — |
 | 1 | Parte común | Responsable | Crea la campaña, anota la referencia y **elige cómo sigue**: My Voice o CDM. | ADN apto | Campaña | Copy o Planning |
-| 2 | My Voice | Copy | Escribe el brief, elige audiencias del ADN y arma o completa los frentes. | ADN | Brief, frentes | IA; CDM lee los frentes |
-| 3 | My Voice | IA → Copy | La IA escribe textos raíz por frente; Copy aprueba, rechaza con motivo o edita. | Brief | Textos raíz | Responsable |
+| 2 | My Voice | Copy | Escribe el brief y elige las audiencias del ADN para toda la campaña. | ADN | Brief | IA |
+| 3 | My Voice | IA → Copy | La IA escribe textos raíz por etapa (las que trae el cuadro); Copy aprueba, rechaza con motivo o edita. | Brief, etapas del cuadro | Textos raíz | Responsable |
 | 4 | My Voice | Responsable | Elige qué textos raíz van y manda el toolkit. | Textos raíz | Toolkit | Cliente |
-| 5 | My Voice | Cliente | Aprueba el toolkit en el portal. Un rechazo vuelve a ese frente. | Toolkit | Toolkit aprobado | Paso 7 |
-| 6 | CDM | Planning | Arma el cuadro de materiales: formato, frente, cuántos copys, fechas. | Frentes, biblioteca | Cuadro | My Voice |
-| 7 | My Voice | IA | Escribe el copy de cada formato (en pieza y de plataforma) desde los textos raíz del frente, dentro de los largos de cada campo. | Toolkit aprobado, cuadro | Adaptaciones | Responsable |
+| 5 | My Voice | Cliente | Aprueba el toolkit en el portal. Un rechazo vuelve a esa etapa. | Toolkit | Toolkit aprobado | Paso 7 |
+| 6 | CDM | Planning | Arma el cuadro de materiales, de 10 a 200 líneas: medio, formato, etapa, variaciones, fechas. | Biblioteca | Cuadro | My Voice |
+| 7 | My Voice | IA | Escribe el copy de cada formato (en pieza y de plataforma) desde los textos raíz de la etapa de la línea, para todas las audiencias de la campaña, sin pasarse del largo de cada campo. | Toolkit aprobado, cuadro | Adaptaciones | Responsable |
 | 8 | My Voice | Responsable | Revisa de a uno: aprobar y seguir, pedir otra versión, editar. Lo que no cabe no se aprueba. | Adaptaciones | Copy aprobado por formato | CDM |
 | 9 | My Voice · Producción | Diseño | Produce la pieza con el copy aprobado (después, en el Adaptador). | Copy aprobado, specs | Pieza | Responsable |
 | 10 | My Voice · Producción | Responsable, cliente | Aprueban la pieza; el cliente da la URL final. CDM ve el estado. | Pieza | Pieza aprobada | My Voice mide |
@@ -94,12 +94,12 @@ Principios:
 | Evento | Se avisa a | Lleva a |
 |---|---|---|
 | ADN bajo el mínimo al crear una campaña | Estrategia | My Voice · ADN, en la primera sección que falta |
-| Textos raíz listos para depurar | Copy | My Voice · Textos raíz, en el frente |
+| Textos raíz listos para depurar | Copy | My Voice · Textos raíz, en la etapa |
 | Textos raíz listos para el toolkit | Responsable | My Voice · Toolkit |
 | Toolkit enviado | Cliente | Portal del toolkit |
 | Toolkit aprobado | Responsable, Planning | My Voice · Adaptaciones / CDM · Cuadro |
-| Toolkit rechazado | Copy, responsable | My Voice · Textos raíz, en el frente rechazado |
-| Frente nuevo o cambiado en el brief | Planning | CDM · Cuadro, en las líneas de ese frente |
+| Toolkit rechazado | Copy, responsable | My Voice · Textos raíz, en la etapa rechazada |
+| Etapa nueva en el cuadro | Copy, responsable | My Voice · Textos raíz, en la etapa nueva |
 | Cuadro recibido o cambiado | Responsable | My Voice · Adaptaciones, con lo que cambió |
 | Copy listo para aprobar | Responsable | My Voice · Adaptaciones, en el primero pendiente |
 | Copy aprobado de una línea | Diseño, Planning | My Voice · Producción / CDM · Línea |

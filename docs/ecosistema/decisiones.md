@@ -30,6 +30,19 @@ nueva que diga qué cambió y por qué.
    Probablemente se mude al Adaptador cuando exista. CDM muestra el estado de las piezas, no las
    aprueba.
 
+## 2026-10-28 · Qué manda CDM y para quién se escribe
+
+9. **CDM manda el encargo completo**: por línea, medio, formato (con sus campos de texto y su largo),
+   **etapa del embudo**, cuántas variaciones y fechas. Pueden ser 10 o 200 líneas. Es lo que My Voice
+   necesita para generar. La etapa **sale del cuadro**, no del brief.
+10. **Las audiencias se eligen del ADN en la campaña, y cada línea se escribe para todas.** Es una
+    decisión estratégica de la campaña, no de cada línea. Por eso desaparece el **frente**
+    (audiencia × etapa): los textos raíz se organizan **por etapa**, y las etapas que hacen falta son
+    las que trae el cuadro. Lo que `docs/v2` dice de frentes queda reemplazado por esto.
+11. **El formato fija el largo máximo.** Una propuesta puede ser más corta, nunca más larga: pasarse
+    bloquea la aprobación. Si un texto corto está bien o no, lo decide quien revisa; el mínimo, si un
+    formato lo trae, es orientación y no bloquea.
+
 ## Antes (2026-10-27), siguen vigentes con los nombres nuevos
 
 - La marca, su ADN y sus audiencias son la fuente de verdad (ahora en la parte común, decisión 7).
@@ -48,6 +61,6 @@ nueva que diga qué cambió y por qué.
 | 3 | ¿Avisos y cola compartidos (un servicio) o cada herramienta manda los suyos? | La regla de «un aviso lleva directo a la acción» funciona igual, pero cambia cuánto se construye. |
 | 4 | ¿Cómo se identifica la misma marca en las dos herramientas? | Sin eso, el contrato no puede unir datos. |
 | 5 | ¿CDM es otra app, otro repo, o vive dentro de My Voice con su propio espacio? | Define despliegue, login y si se comparte base. |
-| 6b | Si la campaña sigue primero por CDM, ¿quién arma los frentes? Propuesta: el frente (audiencia del ADN × etapa) es dato de la campaña, en la parte común; CDM o My Voice pueden agregarlo, y el brief lo completa con cuántos textos raíz y CTA. | Antes solo el brief creaba frentes; con la decisión 7 el cuadro puede llegar primero. |
-| 6 | ¿La etapa de una línea sale del frente o del objetivo del medio, como propone el plan del Adaptador? | Hoy el frente la define; si el objetivo del medio la cambia, hay dos fuentes para lo mismo. |
+| 8 | ¿Cómo se revisan 200 líneas? Propuesta: generar por tandas según fecha de salida, revisar agrupado por etapa y formato, y **aprobar por muestra** (una de cada grupo; el resto queda aprobado si pasa todos los controles; lo que se pasa del largo o tiene problemas se revisa siempre de a uno). | Revisar de a uno, como está diseñado, sirve para 10 líneas, no para 200. |
+| 9 | Si la campaña sigue directo a My Voice, sin cuadro todavía, ¿para qué etapas se escriben los textos raíz? Propuesta: el brief puede marcar etapas previstas, y el cuadro las confirma o agrega. | Con la decisión 9 la etapa sale del cuadro, pero la decisión 7 permite empezar por My Voice. |
 | 7 | ¿Versión de marca fijada por campaña? | Si el ADN cambia, las campañas activas no deberían romperse. |

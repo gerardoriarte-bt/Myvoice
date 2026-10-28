@@ -20,14 +20,15 @@ Estados: **diseñada** · **ajustar** (diseñada, pero una decisión nueva la ca
 |---|---|---|---|---|
 | ADN | ADN 2.0 | Confirmar sección / Completar con IA | ajustar: «Planning» → «Estrategia» | § v2 · ADN 2.0 |
 | ADN | Campaña nueva con ADN bajo el mínimo | Completar el ADN | diseñada | § v2 · Campaña nueva con ADN bajo el mínimo |
-| Brief | Brief de campaña | Pedir textos raíz | ajustar: falta el campo **referencia** | § v2 · Brief de campaña |
-| Textos raíz | Textos raíz de un frente | Aprobar / rechazar con motivo | diseñada | § v2 · Textos raíz |
-| Textos raíz | Frente sin textos raíz | Escribir textos raíz | diseñada | § v2 · Textos raíz · frente sin raíces |
+| Brief | Brief de campaña | Pedir textos raíz | ajustar: falta **referencia**; los frentes salen y quedan las audiencias elegidas | § v2 · Brief de campaña |
+| Textos raíz | Textos raíz de una etapa | Aprobar / rechazar con motivo | ajustar: por etapa, no por frente | § v2 · Textos raíz |
+| Textos raíz | Etapa sin textos raíz | Escribir textos raíz | ajustar: ídem | § v2 · Textos raíz · frente sin raíces |
 | Toolkit | Armar y mandar | Mandar el toolkit | diseñada | § v2 · Toolkit · armar y mandar |
 | Toolkit | Lo que ve el cliente (portal) | Aprobar / rechazar con comentario | diseñada | § v2 · Toolkit · lo que ve la marca |
 | Cuadro | Cuadro recibido de CDM | Revisar lo que se va a escribir | ajustar: era «Plan de medios · importado»; pasa a cuadro de CDM | § v2 · Plan de medios · importado |
 | Cuadro | **Cuadro manual** (marca sin CDM) | Agregar línea | por diseñar | — |
-| Adaptaciones | Revisión de a uno | Aprobar y seguir | ajustar: separar **copy en pieza** y **copy de plataforma** | § v2 · Adaptaciones de una línea |
+| Adaptaciones | Revisión de a uno | Aprobar y seguir | ajustar: separar **copy en pieza** y **copy de plataforma** |
+| Adaptaciones | **Revisión agrupada** (cuadros de 200 líneas): por etapa y formato, aprobar por muestra | Aprobar el grupo | por diseñar | § v2 · Adaptaciones de una línea |
 | Adaptaciones | Algo que corregir | Acortar | diseñada | § v2 · Adaptaciones · algo que corregir |
 | Entrega | **Qué texto va en qué formato** (lo que se informa a CDM) | Enviar a CDM / Descargar | por diseñar | — |
 | Producción | Tablero de piezas, auditoría y aprobación | Aceptar / devolver | en producción (H2) | secciones de Producción del `.pen` |

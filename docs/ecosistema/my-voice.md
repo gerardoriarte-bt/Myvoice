@@ -22,8 +22,8 @@ por pasos, y cada paso sirve solo.
 |---|---|---|---|
 | 1 | **Manual de oficio en el motor** (PR #43) | El copy de todos los canales, sin cambiar pantallas. | No |
 | 2 | **ADN 2.0** en Marcas: secciones con estado, audiencias como lista fija, la IA propone y Estrategia confirma | El motor escribe con un ADN más rico. Bajo el mínimo, avisa. | No |
-| 3 | **Brief del equipo**: concepto, campo semántico, mensaje, tono, CTA, frentes y referencia; «Sugerir» opcional | El motor deja de inventar decisiones de campaña. | No |
-| 4 | **Textos raíz y toolkit** antes de los canales | Cada canal adapta ideas aprobadas en vez de escribir por su cuenta. | No |
+| 3 | **Brief del equipo**: audiencias elegidas del ADN, concepto, campo semántico, mensaje, tono, CTA y referencia; «Sugerir» opcional | El motor deja de inventar decisiones de campaña. | No |
+| 4 | **Textos raíz por etapa y toolkit** antes de los canales; revisión agrupada para cuadros grandes | Cada canal adapta ideas aprobadas en vez de escribir por su cuenta. | No |
 | 5 | **Los formatos con la forma de la biblioteca**: los 14 canales pasan a formatos con campos de texto (en pieza y de plataforma), largos y versión; el cuadro manual reemplaza la elección de canales | Lo que se escribe hoy queda igual a lo que se escribirá con CDM. | No (biblioteca propia) |
 | 6 | **Heredar de CDM**: la biblioteca y el cuadro llegan de CDM cuando la marca lo usa; My Voice informa el copy aprobado por línea | Planning arma una vez; My Voice escribe exactamente eso. | Sí |
 | 7 | **Medición**: el estado y el rendimiento de las piezas vuelven al aprendizaje de la marca | La próxima campaña parte de lo que funcionó. | Sí |
@@ -39,5 +39,9 @@ dónde vienen la biblioteca y el cuadro.
 - **PM-6 se invierte**: My Voice escribe también el **copy en pieza** (titular, bajada, botón), no
   solo el copy de plataforma, porque cada formato de la biblioteca trae sus campos.
 - Se agrega la **referencia** a la campaña, como texto libre.
+- **Sin frentes**: las audiencias son de toda la campaña y la etapa la trae cada línea del cuadro;
+  los textos raíz se organizan por etapa (decisiones 9 y 10).
+- **Revisión a escala**: con 200 líneas no se revisa de a uno; ver la pregunta 8 de
+  [decisiones.md](./decisiones.md).
 - My Voice **informa qué texto va en qué formato** (a CDM y a Diseño) y **Producción se queda en My
   Voice** (decisión 8); probablemente se mude al Adaptador.

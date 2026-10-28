@@ -7,21 +7,20 @@ Estado: vigente · 2026-10-28 · Términos: [glosario.md](./glosario.md)
 | Dato | Dueño | Lo lee |
 |---|---|---|
 | La marca (identidad, qué herramientas usa) | **Parte común** (Super Admin) | CDM y My Voice |
-| ADN y audiencias de la marca | **Parte común** (Estrategia) | CDM (audiencias, para los frentes) y My Voice (para escribir) |
-| La campaña, su referencia y sus frentes | **Parte común** | CDM y My Voice |
+| ADN y audiencias de la marca | **Parte común** (Estrategia) | My Voice (para escribir) |
+| La campaña, su referencia y sus audiencias elegidas | **Parte común** | CDM y My Voice |
 | Brief (concepto, campo semántico, mensaje, tono, CTA) | My Voice | — |
 | Textos raíz y toolkit | My Voice | Nadie más. No salen de My Voice. |
 | Biblioteca de medios (medio → formato → medidas, campos de texto, archivo) | CDM | My Voice (los campos de texto y sus largos) |
 | Paquetes de formatos de la marca | CDM | — |
-| Cuadro de materiales | CDM | My Voice (qué escribir) |
+| Cuadro de materiales: medio, formato, etapa, variaciones, fechas | CDM | My Voice (qué escribir) |
 | Media plan y presupuesto | Sheets de Planning, fuera de las dos | Nadie |
 | Copy aprobado: qué texto va en qué formato | My Voice | CDM (y después el Adaptador) |
 | Producción y aprobación de piezas | My Voice (Producción), hasta que exista el Adaptador | CDM (el estado, para seguimiento) |
 | Medición del rendimiento del copy | My Voice | — |
 
 Regla: ninguna herramienta redefine un dato de la otra. Si My Voice necesita un formato que no
-existe, lo pide en CDM; si CDM necesita un frente que no existe, por ahora lo pide en el brief (ver la pregunta 6b de
-[decisiones.md](./decisiones.md)).
+existe, lo pide en CDM.
 
 Marca, ADN y campaña se crean una vez en la parte común; después **el usuario elige cómo sigue la
 campaña**: por CDM, armando el cuadro, o directo a My Voice, con el brief. La otra herramienta se

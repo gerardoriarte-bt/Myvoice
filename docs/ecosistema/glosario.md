@@ -19,7 +19,7 @@ está aquí, todavía no tiene nombre acordado: se agrega antes de usarlo en una
 |---|---|
 | **Estrategia** | Función en My Voice: completa y confirma el ADN y define las audiencias de la marca. Antes se llamó «Planning» en `docs/v2`. |
 | **Planning** | Función en CDM: mantiene la biblioteca de medios y arma el cuadro de materiales. Antes se llamó «Medios» y después «Planner» en `docs/v2`. A cada persona de esta función se le puede decir *planner*. |
-| **Copy** | Función en My Voice: escribe el brief creativo, arma los frentes y depura los textos raíz. |
+| **Copy** | Función en My Voice: escribe el brief creativo y depura los textos raíz. |
 | **Responsable de la campaña** | La persona que aprueba en nombre del equipo. Puede ser alguien de Planning o el **ejecutivo de cuentas**. Una campaña tiene uno solo. |
 | **Ejecutivo de cuentas** | La relación con el cliente. Puede ser el responsable de la campaña. |
 | **Diseño** | Produce las piezas. |
@@ -33,23 +33,24 @@ está aquí, todavía no tiene nombre acordado: se agrega antes de usarlo en una
 | **Parte común** | Lo transversal a las dos herramientas: marca, ADN, audiencias y campaña. Se crea una vez. | — |
 | **Marca** | Una sola, la misma en las dos herramientas. Cada herramienta la extiende con lo suyo. | — |
 | **ADN** | Lo que la marca es y cómo habla: secciones, tono, vocabulario, reglas. Vive en la parte común. | «Voz de marca», que es una parte del ADN. |
-| **Audiencia** | Un público de la marca. **Se define en el ADN** (lista fija) y **se selecciona en la campaña**. | La segmentación de pauta: en CDM se llama **segmentación**, nunca «audiencia». |
+| **Audiencia** | Un público de la marca. **Se define en el ADN** (lista fija) y **se selecciona en la campaña**; todas las líneas se escriben para las audiencias de la campaña. | La segmentación de pauta: en CDM se llama **segmentación**, nunca «audiencia». |
 | **Segmentación** | Cómo se compra la pauta en un medio (edad, intereses, zona). Es de CDM y no entra a My Voice. | Audiencia. |
 | **Campaña** | Una sola campaña, vista desde las dos herramientas: en My Voice tiene su brief; en CDM, su cuadro de materiales. | — |
 | **Referencia** | **Campo libre** de la campaña para el corte creativo que cada equipo considere: producto, línea, colección («Male», «Collection»…). No tiene reglas. | — |
-| **Etapa** | Etapa del funnel: awareness, consideración, conversión, retención. | — |
-| **Frente** | Audiencia × etapa dentro de una campaña. Cada texto raíz y cada línea del cuadro pertenecen a uno. | — |
-| **Brief** | La dirección de la campaña: concepto, campo semántico, mensaje, tono, CTA y frentes. Vive en My Voice. | — |
+| **Etapa** | Etapa del embudo: awareness, consideración, conversión, retención. **La define cada línea del cuadro, en CDM.** Los textos raíz se organizan por etapa. | — |
+| **Brief** | La dirección creativa de la campaña: concepto, campo semántico, mensaje, tono y CTA. Vive en My Voice. No decide etapas. | — |
 
 ## Copy
 
 | Término | Significa |
 |---|---|
-| **Texto raíz** | Una idea de copy para un frente, antes de adaptarla a un formato. Vive solo en My Voice. |
+| **Texto raíz** | Una idea de copy para una etapa de la campaña, antes de adaptarla a un formato. Vive solo en My Voice. |
 | **Toolkit** | Los textos raíz aprobados por el equipo y enviados al cliente. Lo aprueba el cliente en My Voice. |
 | **Copy en pieza** | El texto que va dentro de la pieza: titular, bajada, botón. |
 | **Copy de plataforma** | El texto que acompaña la pieza en el medio: caption, texto principal, descripción. |
-| **Adaptación** | El copy de un formato escrito desde los textos raíz del frente. |
+| **Adaptación** | Una variación del copy de una línea, escrita desde los textos raíz de su etapa. |
+| **Variación** | Cada copy distinto que pide una línea. El cuadro dice cuántas. |
+| **Largo máximo** | Lo fija el formato. Un texto puede ser más corto, nunca más largo. |
 
 ## Medios
 
@@ -60,7 +61,7 @@ está aquí, todavía no tiene nombre acordado: se agrega antes de usarlo en una
 | **Formato** | Lo que se produce en un medio: carrusel, banner 300×250, cuña de 30 s. Tiene **medidas**, **campos de texto** y **especificaciones de archivo**, separados. | Pieza. |
 | **Campo de texto** | Un texto que pide el formato, con su largo máximo: headline 40, texto principal 125. Es lo único de la biblioteca que My Voice usa para escribir. | — |
 | **Paquete de formatos** | Los formatos que una marca usa habitualmente. | — |
-| **Cuadro de materiales** | Lo que hay que producir en una campaña: cada línea con su formato, su frente, cuántos copys y sus fechas. Vive en CDM. | El media plan con presupuesto, que se queda en los Sheets de Planning. |
+| **Cuadro de materiales** | El encargo de una campaña, de 10 a 200 líneas: cada una con medio, formato, etapa, cuántas variaciones y fechas. Vive en CDM. | El media plan con presupuesto, que se queda en los Sheets de Planning. |
 | **Línea** | Una fila del cuadro de materiales. | — |
 | **Pieza** | Lo que se publica: el formato producido, con su copy. | Formato. |
 
@@ -75,3 +76,4 @@ está aquí, todavía no tiene nombre acordado: se agrega antes de usarlo en una
 | plan de medios (lo que llega a My Voice) | cuadro de materiales |
 | unidad | el formato y su número: «Carrusel 3 de 6» |
 | audiencia (para pauta) | segmentación |
+| frente | etapa (las audiencias son de toda la campaña) |
