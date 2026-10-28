@@ -78,6 +78,7 @@ donde aparece la propuesta de la IA.
 
 | Función | Diseño | Front | Back |
 |---|---|---|---|
+| Mapa del código y dependencias entre módulos (`npm run mapa`) | — | ✓ | ✓ |
 | Fronteras de módulos y regla de imports en CI | — | ○ | ○ |
 | Módulos encendidos por marca | — | ○ | ○ |
 | Contrato CDM ↔ My Voice en código | — | — | ○ |

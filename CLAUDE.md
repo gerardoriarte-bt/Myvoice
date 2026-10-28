@@ -18,6 +18,7 @@ Two separate npm projects. Root = frontend, `server/` = API.
 
 ```bash
 # Frontend (root)
+npm run mapa           # code map (Graphify, local, no AI) → docs/ecosistema/tecnico/dependencias-entre-modulos.md; run before each session log
 npm run dev            # Vite on :3000, proxies /api → localhost:3001
 npm run build          # Vite production build — does NOT typecheck
 npm run preview

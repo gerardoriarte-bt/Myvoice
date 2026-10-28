@@ -1,7 +1,19 @@
 # Bitácora de sesiones
 
 Una entrada por día de trabajo, con fecha en el nombre (`AAAA-MM-DD.md`). Se escribe al cerrar la
-sesión, no después. Las bitácoras anteriores a esta carpeta están en `docs/bitacora-*.md`.
+sesión, no después.
+
+## Al cerrar cada sesión
+
+1. **`npm run mapa`**: regenera el mapa del código y
+   [../tecnico/dependencias-entre-modulos.md](../tecnico/dependencias-entre-modulos.md). Es local, sin IA
+   y tarda unos segundos.
+2. Si cambiaron los números de «hay que invertir» o «pasan por el contrato», se actualiza
+   [../tecnico/spec-plataforma.md](../tecnico/spec-plataforma.md) § 2.1.
+3. Se actualiza [../seguimiento.md](../seguimiento.md) con lo que cambió de estado.
+4. Se escribe la entrada del día con la plantilla.
+
+Las bitácoras anteriores a esta carpeta están en `docs/bitacora-*.md`.
 
 ## Plantilla
 
@@ -20,6 +32,9 @@ Módulos: parte común · My Voice · CDM   (los que se tocaron)
 
 ## Evals corridas
 - E-x: resultado, o «ninguna».
+
+## Mapa del código
+- Commit medido · hay que invertir N (antes M) · pasan por el contrato N (antes M) · qué cambió.
 
 ## Lo que cambió de lo anterior
 - …
