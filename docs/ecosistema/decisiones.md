@@ -59,6 +59,20 @@ nueva que diga qué cambió y por qué.
     - Lo que exige primero: **rutas y un marco común en el frontend** (hoy no hay enrutador y
       `App.tsx` concentra el estado). Es lo primero que se diseña.
 
+## 2026-10-28 · Dónde se construye lo nuevo
+
+13. **Lo nuevo se construye en otra zona del mismo repositorio, sin sobreescribir el My Voice que se usa
+    todos los días.**
+    - Carpetas nuevas: `server/src/comun/`, `server/src/myvoice/` (lo nuevo), `server/src/cdm/` y
+      `src/plataforma/`. Lo de hoy queda donde está y sigue en producción.
+    - Una **marca piloto** ve el marco nuevo, detrás del interruptor por marca; las demás, la app de hoy.
+    - **Se reemplaza de a una pantalla**: la vieja redirige a la nueva y se borra en el PR siguiente.
+      Nunca hay dos versiones vivas de la misma pantalla para la misma marca.
+    - **Ramas cortas sobre `main`**: cada PR deja `main` desplegable. Se deja de usar una rama larga de
+      v2 en una copia aparte del repositorio.
+    - Lo que mejora a los usuarios de hoy (manual de oficio, ADN 2.0) puede entrar antes que el marco.
+    - Detalle: [tecnico/spec-plataforma.md](./tecnico/spec-plataforma.md) § 7.
+
 ## Antes (2026-10-27), siguen vigentes con los nombres nuevos
 
 - La marca, su ADN y sus audiencias son la fuente de verdad (ahora en la parte común, decisión 7).

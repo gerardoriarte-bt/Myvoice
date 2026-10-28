@@ -61,7 +61,7 @@ estado de «pendiente», se deriva de lo que falta en cada módulo. Cada módulo
 `FuncionEquipo` suma `ESTRATEGIA` y `PLANNING` (aditivo). El responsable sigue siendo por campaña
 (`Project.responsableId`).
 
-## 7. Cómo se construye sin tocar lo que se usa todos los días (propuesta)
+## 7. Cómo se construye sin tocar lo que se usa todos los días (decisión 13)
 
 - **Mismo repositorio, otra zona**: lo nuevo nace en `comun/`, `myvoice/` (nuevo), `cdm/` y
   `src/plataforma/`. Lo de hoy queda donde está y sigue en producción.
