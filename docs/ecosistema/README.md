@@ -16,14 +16,21 @@ contrato.
 
 | Documento | Para qué |
 |---|---|
-| [glosario.md](./glosario.md) | **El lenguaje común.** Una palabra, un significado, en las dos herramientas. Se lee primero. |
-| [ecosistema.md](./ecosistema.md) | Qué es dueño de qué, y cómo funciona cada herramienta sola. |
-| [flujo.md](./flujo.md) | El recorrido de una campaña: quién hace qué, en qué herramienta, dónde se aprueba y qué se notifica. |
-| [contrato-cdm-my-voice.md](./contrato-cdm-my-voice.md) | Lo que una herramienta le manda a la otra. |
-| [my-voice.md](./my-voice.md) | Qué cambia en My Voice y en qué orden. |
-| [cdm.md](./cdm.md) | Qué hay que construir en CDM. |
-| [pantallas.md](./pantallas.md) | El inventario de flujos, pantallas y acciones de cada herramienta, con su estado de diseño. |
-| [decisiones.md](./decisiones.md) | Registro de decisiones con fecha. Lo decidido no se discute de nuevo sin una razón nueva. |
+| [glosario.md](./glosario.md) | **El lenguaje común.** Una palabra, un significado. Se lee primero. |
+| [ecosistema.md](./ecosistema.md) | Qué es dueño de qué, y cómo funciona cada módulo solo. |
+| [flujo.md](./flujo.md) | El recorrido de una campaña: quién, dónde, qué se aprueba y qué se avisa. |
+| [contrato-cdm-my-voice.md](./contrato-cdm-my-voice.md) | Lo que un módulo le manda al otro. |
+| [decisiones.md](./decisiones.md) | Registro de decisiones con fecha y preguntas abiertas. |
+| [seguimiento.md](./seguimiento.md) | **Cada función con su estado de diseño, front y back.** |
+| [pantallas.md](./pantallas.md) | Inventario de pantallas con su frame en el `.pen`. |
+
+| Carpeta | Contiene |
+|---|---|
+| [producto/](./producto/) | PRD: [plataforma](./producto/prd-plataforma.md) · [My Voice](./producto/prd-my-voice.md) · [CDM](./producto/prd-cdm.md) |
+| [tecnico/](./tecnico/) | Specs: [plataforma](./tecnico/spec-plataforma.md) · [My Voice](./tecnico/spec-my-voice.md) · [CDM](./tecnico/spec-cdm.md) |
+| [datos/](./datos/arquitectura-de-datos.md) | Arquitectura de la base: tablas por módulo, relaciones, ids que cruzan, migraciones. |
+| [evals/](./evals/README.md) | Qué medimos, cómo y si gasta crédito. |
+| [bitacora/](./bitacora/README.md) | Una entrada por sesión de trabajo. |
 
 ## El marco común
 
