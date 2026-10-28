@@ -57,6 +57,7 @@ Estados: **diseñada** · **ajustar** (diseñada, pero una decisión nueva la ca
 
 | Flujo | Qué | Estado | Frame en el `.pen` |
 |---|---|---|---|
+| IA | Dónde ayuda la IA en cada etapa y quién decide (refleja [producto/prd-ia.md](./producto/prd-ia.md)) | diseñada | § IA en la plataforma — dónde ayuda y quién decide |
 | Seguimiento | Cada función en diseño, front y back (refleja [seguimiento.md](./seguimiento.md)) | diseñada | § Seguimiento · flujo de usuario y funciones (diseño · front · back) |
 | Mapa | Quién hace qué en cada herramienta | ajustar: hoy muestra solo My Voice | § v2 · Mapa del proceso: quién hace qué |
 | Contrato | Lo que viaja | ajustar: «Planning → proceso de campaña» pasa a CDM ↔ My Voice | § v2 · Contrato Planning → proceso de campaña |

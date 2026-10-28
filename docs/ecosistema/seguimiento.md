@@ -54,6 +54,26 @@ Cada función con su estado en las tres pistas. Se actualiza en el mismo PR que 
 | Planning | Estado por línea | ○ | ○ | ○ | CD-8 |
 | Planning | Portafolio | ○ | ○ | ○ | CD-9 |
 
+## IA
+
+Detalle y prioridad de cada uso en [producto/prd-ia.md](./producto/prd-ia.md). Diseño = la pantalla
+donde aparece la propuesta de la IA.
+
+| Id | Uso de la IA | Diseño | Front | Back | P |
+|---|---|---|---|---|---|
+| IA-1 | Propone el ADN | ✓ | ○ | ○ | P0 |
+| IA-4 | Campaña desde el brief del cliente | ○ | ○ | ○ | P0 |
+| IA-7 | Leer especificaciones y proponer formatos | ○ | ○ | ○ | P0 |
+| IA-10 | Cuadro borrador desde el media plan | ○ | ○ | ○ | P0 |
+| IA-12 | «Sugerir» en el brief | ✓ | ○ | ○ | P0 |
+| IA-14 | Textos raíz por etapa | ✓ | ○ | ○ | P0 |
+| IA-16 | Copy por formato, revisor y corrector | ● | ● | ● | P0 |
+| IA-17 | «Acortar» | ✓ | ○ | ○ | P0 |
+| IA-18 | Revisión por muestra | ○ | ○ | ○ | P0 |
+| IA-19 | Auditoría de piezas | ● | ● | ● | P0 |
+| IA-21 | Rechazos → reglas propuestas para el ADN | ○ | ○ | ○ | P1 |
+| IA-2, 3, 5, 9, 11, 13, 15 | Resto de P1 | ○ | ○ | ○ | P1 |
+
 ## Base técnica
 
 | Función | Diseño | Front | Back |

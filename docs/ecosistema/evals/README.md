@@ -21,6 +21,10 @@ sesión ([../bitacora/](../bitacora/README.md)).
 | E-9 | **Escala**: un cuadro de 200 líneas se genera en tiempo y costo dentro del presupuesto | Corrida con un cuadro sintético; tiempo total, costo, fallos por línea | Antes de encender CDM en una marca | Sí | Por hacer |
 | E-10 | **Se entiende sin explicación**: encontrar a quién espera una campaña, aprobar un grupo, armar un cuadro | Prueba con 3 a 5 personas del equipo, tareas cronometradas sobre el prototipo o el piloto | Al cerrar el diseño de cada flujo | No | Por hacer |
 
+Usos de la IA nuevos con eval pendiente (ver [../producto/prd-ia.md](../producto/prd-ia.md) § 4):
+IA-7 (campos y largos correctos contra especificaciones oficiales), IA-10 (contra cuadros reales de
+Planning) e IA-18 (problemas que quedan fuera de la muestra).
+
 ## 2. Reglas
 
 - Una eval que **no se corrió** no cuenta como verde. La bitácora dice cuáles se corrieron y con qué

@@ -26,7 +26,7 @@ contrato.
 
 | Carpeta | Contiene |
 |---|---|
-| [producto/](./producto/) | PRD: [plataforma](./producto/prd-plataforma.md) · [My Voice](./producto/prd-my-voice.md) · [CDM](./producto/prd-cdm.md) |
+| [producto/](./producto/) | PRD: [plataforma](./producto/prd-plataforma.md) · [My Voice](./producto/prd-my-voice.md) · [CDM](./producto/prd-cdm.md) · [la IA en toda la plataforma](./producto/prd-ia.md) |
 | [tecnico/](./tecnico/) | Specs: [plataforma](./tecnico/spec-plataforma.md) · [My Voice](./tecnico/spec-my-voice.md) · [CDM](./tecnico/spec-cdm.md) |
 | [datos/](./datos/arquitectura-de-datos.md) | Arquitectura de la base: tablas por módulo, relaciones, ids que cruzan, migraciones. |
 | [evals/](./evals/README.md) | Qué medimos, cómo y si gasta crédito. |
