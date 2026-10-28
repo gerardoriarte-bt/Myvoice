@@ -28,6 +28,7 @@ Cada función con su estado en las tres pistas. Se actualiza en el mismo PR que 
 | Usuario | Función | Diseño | Front | Back | Requisito |
 |---|---|---|---|---|---|
 | Copy | Generar por canales | ● | ● | ● | (v1) |
+| — | El ADN manda en la generación | — | — | ● | decisión 14 (2026-10-28) |
 | — | Manual de oficio en el motor | — | — | ✓ | MV-1 (PR #43, sin mergear) |
 | Copy | Brief del equipo | ◐ | ○ | ○ | MV-2 |
 | Copy | Textos raíz por etapa | ◐ | ○ | ○ | MV-3 |
@@ -80,8 +81,8 @@ donde aparece la propuesta de la IA.
 | Función | Diseño | Front | Back |
 |---|---|---|---|
 | Mapa del código y dependencias entre módulos (`npm run mapa`) | — | ✓ | ✓ |
-| Limpieza antes de partir (spec-plataforma § 2.2, paso 1) | — | ✓ | — |
-| Contrato de la generación en `server/src/contrato/` (§ 2.2, paso 2) | — | ✓ | ✓ |
+| Limpieza antes de partir (spec-plataforma § 2.2, paso 1) | — | ● | — |
+| Contrato de la generación en `server/src/contrato/` (§ 2.2, paso 2) | — | ● | ● |
 | Fronteras de módulos y regla de imports en CI | — | ○ | ○ |
 | Módulos encendidos por marca | — | ○ | ○ |
 | Contrato CDM ↔ My Voice en código | — | — | ○ |
