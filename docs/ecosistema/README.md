@@ -25,6 +25,12 @@ contrato.
 | [pantallas.md](./pantallas.md) | El inventario de flujos, pantallas y acciones de cada herramienta, con su estado de diseño. |
 | [decisiones.md](./decisiones.md) | Registro de decisiones con fecha. Lo decidido no se discute de nuevo sin una razón nueva. |
 
+## El marco común
+
+Una barra igual en toda la plataforma: **módulo** (Marca · My Voice · CDM), **marca activa**, buscar,
+**Mi cola** y **avisos**. Cada módulo tiene su menú, con su color (parte común, My Voice verde azulado,
+CDM azul). Diseñado en el `.pen` bajo «— Marco común de la plataforma» ([pantallas.md](./pantallas.md)).
+
 ## Reglas de trabajo
 
 1. **Diseño primero.** Los flujos, pantallas y acciones se dibujan en el `.pen` antes de codificar;
