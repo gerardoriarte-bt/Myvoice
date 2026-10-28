@@ -9,7 +9,7 @@ está aquí, todavía no tiene nombre acordado: se agrega antes de usarlo en una
 
 | Término | Significa | No confundir con |
 |---|---|---|
-| **CDM** | La herramienta de Planning: biblioteca de medios, campaña en medios, cuadro de materiales y aprobación de piezas. | El «módulo Planning» de los documentos anteriores: **es el CDM**. |
+| **CDM** | La herramienta de Planning: biblioteca de medios, paquetes de formatos y cuadro de materiales. | El «módulo Planning» de los documentos anteriores: **es el CDM**. |
 | **My Voice** | La herramienta de la marca y el copy: ADN, brief, textos raíz, toolkit y copy por formato. | — |
 | **Adaptador** | Herramienta futura (fase 3 o 4) que convierte un master en las piezas de cada formato. Hoy no se construye. | El tablero de Producción de My Voice. |
 
@@ -23,15 +23,16 @@ está aquí, todavía no tiene nombre acordado: se agrega antes de usarlo en una
 | **Responsable de la campaña** | La persona que aprueba en nombre del equipo. Puede ser alguien de Planning o el **ejecutivo de cuentas**. Una campaña tiene uno solo. |
 | **Ejecutivo de cuentas** | La relación con el cliente. Puede ser el responsable de la campaña. |
 | **Diseño** | Produce las piezas. |
-| **Cliente** | La marca, del lado del cliente. Aprueba el toolkit en My Voice y las piezas en CDM. |
+| **Cliente** | La marca, del lado del cliente. Aprueba el toolkit y las piezas, los dos en My Voice. |
 | **Super Admin** | Crea la marca y decide qué herramientas usa. |
 
 ## Marca y campaña
 
 | Término | Significa | No confundir con |
 |---|---|---|
+| **Parte común** | Lo transversal a las dos herramientas: marca, ADN, audiencias y campaña. Se crea una vez. | — |
 | **Marca** | Una sola, la misma en las dos herramientas. Cada herramienta la extiende con lo suyo. | — |
-| **ADN** | Lo que la marca es y cómo habla: secciones, tono, vocabulario, reglas. Vive en My Voice. | «Voz de marca», que es una parte del ADN. |
+| **ADN** | Lo que la marca es y cómo habla: secciones, tono, vocabulario, reglas. Vive en la parte común. | «Voz de marca», que es una parte del ADN. |
 | **Audiencia** | Un público de la marca. **Se define en el ADN** (lista fija) y **se selecciona en la campaña**. | La segmentación de pauta: en CDM se llama **segmentación**, nunca «audiencia». |
 | **Segmentación** | Cómo se compra la pauta en un medio (edad, intereses, zona). Es de CDM y no entra a My Voice. | Audiencia. |
 | **Campaña** | Una sola campaña, vista desde las dos herramientas: en My Voice tiene su brief; en CDM, su cuadro de materiales. | — |

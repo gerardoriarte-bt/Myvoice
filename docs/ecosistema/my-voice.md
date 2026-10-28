@@ -5,9 +5,10 @@ Detalle técnico: [../v2/spec-proceso-de-campana.md](../v2/spec-proceso-de-campa
 
 ## 1. Qué es dueño de qué
 
-ADN y audiencias, brief (frentes y referencia), textos raíz, toolkit, copy por formato y medición del
-copy. Aprueba en My Voice: el ADN (Estrategia), los textos raíz y las adaptaciones (responsable) y el
-toolkit (cliente).
+Brief, textos raíz, toolkit, copy por formato, **Producción** (piezas, auditoría y aprobación, hasta
+que exista el Adaptador) y medición del copy. Marca, ADN y campaña son de la parte común. Aprueba en
+My Voice: los textos raíz y las adaptaciones (responsable), el toolkit (cliente) y las piezas
+(responsable y cliente).
 
 Los textos raíz y el toolkit son **solo de My Voice**: no viajan a CDM. Son la garantía de calidad
 del copy antes de escribir cada formato (decisión 2026-10-28).
@@ -38,6 +39,5 @@ dónde vienen la biblioteca y el cuadro.
 - **PM-6 se invierte**: My Voice escribe también el **copy en pieza** (titular, bajada, botón), no
   solo el copy de plataforma, porque cada formato de la biblioteca trae sus campos.
 - Se agrega la **referencia** a la campaña, como texto libre.
-- El paso de Producción de My Voice termina en **informar qué texto va en qué formato** cuando la
-  marca usa CDM. Qué pasa con el tablero de Producción actual está abierto
-  ([decisiones.md](./decisiones.md)).
+- My Voice **informa qué texto va en qué formato** (a CDM y a Diseño) y **Producción se queda en My
+  Voice** (decisión 8); probablemente se mude al Adaptador.

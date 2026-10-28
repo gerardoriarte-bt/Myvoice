@@ -7,6 +7,13 @@ actualiza cada vez que se diseña o se cambia una pantalla.
 
 Estados: **diseñada** · **ajustar** (diseñada, pero una decisión nueva la cambia) · **por diseñar**.
 
+## Parte común
+
+| Flujo | Pantalla | Acción principal | Estado | Frame en el `.pen` |
+|---|---|---|---|---|
+| Marca | Crear marca y elegir herramientas | Crear marca | por diseñar | — |
+| Campaña | Crear campaña y **elegir cómo sigue** (My Voice o CDM) | Seguir en My Voice / Seguir en CDM | por diseñar | — |
+
 ## My Voice
 
 | Flujo | Pantalla | Acción principal | Estado | Frame en el `.pen` |
@@ -23,6 +30,7 @@ Estados: **diseñada** · **ajustar** (diseñada, pero una decisión nueva la ca
 | Adaptaciones | Revisión de a uno | Aprobar y seguir | ajustar: separar **copy en pieza** y **copy de plataforma** | § v2 · Adaptaciones de una línea |
 | Adaptaciones | Algo que corregir | Acortar | diseñada | § v2 · Adaptaciones · algo que corregir |
 | Entrega | **Qué texto va en qué formato** (lo que se informa a CDM) | Enviar a CDM / Descargar | por diseñar | — |
+| Producción | Tablero de piezas, auditoría y aprobación | Aceptar / devolver | en producción (H2) | secciones de Producción del `.pen` |
 
 ## CDM
 
@@ -35,8 +43,7 @@ Estados: **diseñada** · **ajustar** (diseñada, pero una decisión nueva la ca
 | Marca | Equipo y paquetes de formatos | Guardar paquete | por diseñar | — |
 | Campaña | Campaña en CDM (desde My Voice) | Armar el cuadro | por diseñar | — |
 | Cuadro | Armar y enviar el cuadro | Enviar versión | por diseñar | — |
-| Piezas | Línea con su copy aprobado | Subir pieza | por diseñar | — |
-| Piezas | Aprobación de la pieza | Aprobar / devolver | por diseñar | — |
+| Estado | Línea con su copy aprobado y el estado de sus piezas | Ver en My Voice | por diseñar | — |
 | Seguimiento | Portafolio con «espera a» | Abrir campaña | por diseñar | — |
 | Seguimiento | Mi cola | Ir a la acción | por diseñar | — |
 

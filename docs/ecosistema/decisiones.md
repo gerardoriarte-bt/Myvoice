@@ -21,9 +21,18 @@ nueva que diga qué cambió y por qué.
 6. **CDM y My Voice funcionan juntos y por separado**, y se itera de forma alterna: mejorar My Voice,
    construir CDM. Se sigue en esta carpeta, aparte de `docs/v2`.
 
+## 2026-10-28 · Dónde nace la campaña y dónde queda Producción
+
+7. **Marca, ADN y campaña son transversales.** Se crean una vez, en una parte común a las dos
+   herramientas, y **el usuario decide cómo sigue la campaña**: por CDM (armar el cuadro primero) o
+   directo a My Voice (brief y textos raíz). Ninguna de las dos es la puerta obligatoria.
+8. **Producción se queda en My Voice** (tablero de piezas, auditoría y aprobación del cliente).
+   Probablemente se mude al Adaptador cuando exista. CDM muestra el estado de las piezas, no las
+   aprueba.
+
 ## Antes (2026-10-27), siguen vigentes con los nombres nuevos
 
-- My Voice es la fuente de verdad de la marca: ADN, audiencias y brief existen antes del cuadro.
+- La marca, su ADN y sus audiencias son la fuente de verdad (ahora en la parte común, decisión 7).
 - Planning no ve los textos raíz.
 - El cuadro trae cuántos copys distintos, no frecuencia ni presupuesto.
 - Carruseles: el cuadro dice cuántas láminas; un texto por lámina o un relato repartido se decide en
@@ -36,10 +45,9 @@ nueva que diga qué cambió y por qué.
 
 | # | Pregunta | Por qué importa |
 |---|---|---|
-| 1 | ¿Dónde nace la campaña: en My Voice (el brief va primero) o en CDM? | Define quién crea el id y qué pantalla se abre primero. El plan del Adaptador la crea en CDM; nuestras decisiones del 27 oct ponen el brief antes del cuadro. |
-| 2 | ¿Qué pasa con el tablero de Producción de My Voice (piezas, auditoría, aprobación del cliente) cuando la marca usa CDM? | Hoy está en producción y se superpone con «Piezas» de CDM. |
 | 3 | ¿Avisos y cola compartidos (un servicio) o cada herramienta manda los suyos? | La regla de «un aviso lleva directo a la acción» funciona igual, pero cambia cuánto se construye. |
 | 4 | ¿Cómo se identifica la misma marca en las dos herramientas? | Sin eso, el contrato no puede unir datos. |
 | 5 | ¿CDM es otra app, otro repo, o vive dentro de My Voice con su propio espacio? | Define despliegue, login y si se comparte base. |
+| 6b | Si la campaña sigue primero por CDM, ¿quién arma los frentes? Propuesta: el frente (audiencia del ADN × etapa) es dato de la campaña, en la parte común; CDM o My Voice pueden agregarlo, y el brief lo completa con cuántos textos raíz y CTA. | Antes solo el brief creaba frentes; con la decisión 7 el cuadro puede llegar primero. |
 | 6 | ¿La etapa de una línea sale del frente o del objetivo del medio, como propone el plan del Adaptador? | Hoy el frente la define; si el objetivo del medio la cambia, hay dos fuentes para lo mismo. |
 | 7 | ¿Versión de marca fijada por campaña? | Si el ADN cambia, las campañas activas no deberían romperse. |

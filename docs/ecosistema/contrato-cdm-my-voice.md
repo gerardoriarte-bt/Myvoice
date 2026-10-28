@@ -58,7 +58,7 @@ Una **versión completa** cada vez, comparada por `lineaId` con la anterior
 | Dato | Para qué |
 |---|---|
 | Marca, campaña, responsable | Abrir la campaña del lado de CDM. |
-| Audiencias del ADN y frentes del brief | Elegir el frente de cada línea. CDM no crea audiencias ni frentes. |
+| Audiencias del ADN y frentes de la campaña | Elegir el frente de cada línea. CDM no crea audiencias; quién crea frentes está abierto (pregunta 6b). |
 | Referencia de la campaña | Mostrarla en el cuadro. |
 | Estado de My Voice por campaña y por línea | El «espera a» y la navegación cruzada ([flujo.md](./flujo.md), § 4). |
 | **Copy aprobado por línea** | Qué texto va en qué formato: cada campo con su texto, separado en copy en pieza y copy de plataforma, con la versión del formato. |
@@ -77,5 +77,5 @@ pantalla de adaptaciones es la misma con o sin CDM.
 - Cómo se identifica la misma marca y la misma campaña en las dos herramientas (id compartido o
   tabla de correspondencia).
 - Si CDM y My Voice se hablan por API, por eventos o comparten base.
-- Dónde nace la campaña: hoy se asume en My Voice (el brief va antes que el cuadro). Ver
-  [decisiones.md](./decisiones.md).
+- Marca, ADN y campaña nacen en la parte común (decisión 7); este contrato cubre solo lo que es de
+  cada herramienta. Si la campaña sigue primero por CDM, el cuadro puede existir antes que el brief.
