@@ -44,9 +44,8 @@ Marcado: **(hoy)** existe en producción · **(nuevo)** por construir · **(camb
 | `BriefDeCampana` | Concepto, campo semántico, mensaje, tono, CTA, etapas previstas, con origen de cada campo | nuevo |
 | `TextoRaiz` | Idea por etapa, con voto y motivo | nuevo |
 | `ReviewSession` (+ `Item`, `Submission`, `ItemFeedback`) | Portal sin cuenta: copy, piezas y **toolkit** | cambia: `RondaRevision` suma `TOOLKIT` |
-| `EncargoRecibido`, `LineaDeEncargo` | Copia por versión del cuadro (de CDM o manual) | nuevo |
+| `EncargoRecibido`, `LineaDeEncargo` | Copia por versión del cuadro de CDM | nuevo |
 | `FormatoUsado` | Snapshot de los campos de texto de un formato y su versión | nuevo |
-| `FormatoPropio` | Biblioteca propia (los 14 canales) para marcas sin CDM | nuevo |
 | `SavedVariation` | Copy aprobado y por aprobar | cambia: `lineaId`, `campoClave`, `ubicacion`, `textoRaizId`, `formatoUsadoId` |
 | `GenerationLog`, `UsagePeriod` | Costo y cuota por generación | hoy |
 | `NegativeFeedback`, `GenerationPreset` | Aprendizaje y preajustes de v1 | hoy |
@@ -103,8 +102,8 @@ que hace el contrato al recibir una versión.
 |---|---|---|
 | `clientId` (marca) | Parte común | Todos |
 | `projectId` (campaña) | Parte común | Todos |
-| `lineaId` | CDM (o My Voice en el cuadro manual) | My Voice para comparar versiones |
-| `formatoId` + `version` | CDM (o My Voice en la biblioteca propia) | My Voice en `FormatoUsado` |
+| `lineaId` | CDM | My Voice para comparar versiones |
+| `formatoId` + `version` | CDM | My Voice en `FormatoUsado` |
 
 ## 5. Migraciones
 

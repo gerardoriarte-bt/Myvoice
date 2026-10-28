@@ -72,6 +72,47 @@ puntos; hoy importa los archivos directo, mañana solo desde `contrato/`:
 quedan compartidos y el **orden y el menú** pasan a cada módulo (el marco común arma el menú con lo que
 cada módulo registra).
 
+### 2.2 Antes de partir las carpetas
+
+Lo que el mapa mostró que hay que corregir o alinear, en orden. Cada paso es un PR chico que deja `main`
+desplegable (decisión 13).
+
+| # | Qué | Por qué | Estado |
+|---|---|---|---|
+| 1 | **Limpieza**: se borran `services/geminiService.ts`, `components/Login.tsx`, `components/SettingsManager.tsx` y `components/ui/StatBlock.tsx` (nadie los importaba); se quita el `define` de `vite.config.ts` que inyectaba `GEMINI_API_KEY` en el front, la dependencia `@google/genai` y la instrucción de Gemini del README. | `geminiService` llamaba a la IA desde el navegador. Si alguien volvía a importarlo, la build publicaba la clave. Revisado el 2026-10-28: el bundle de producción **no** tiene ninguna clave (solo el texto de ejemplo `"AIza..."` de Ajustes de IA). Toda llamada a la IA queda en el servidor, por `aiClient.ts`. | ✓ (PR de limpieza) |
+| 2 | **Tipos compartidos en `shared/`**: una sola definición de los tipos que viajan entre front y back. | De los 14 tipos que existen en `types.ts` y en `server/src/types.ts`, **7 ya son distintos** (`Client`, `Project`, `SavedVariation`, `User`, `CopyParameters`, `CopyVariation`, `GenerationResponse`): el front espera `dnaProfileId` que el back no declara, el back acepta `marketLocale` y `negativeExamples` que el front no conoce. `contrato/` no puede nacer con dos versiones de cada cosa. | ✓ generación (PR de tipos) · ○ entidades |
+| 2b | **Lo que salió al unificar** la generación (ver abajo). | Las verificaciones de tipos encontraron dos diferencias reales y un comportamiento a decidir. | ✓ / decisión pendiente |
+| 3 | **Las 3 inversiones** de § 2.1: espacio por módulo en Marcas y `planLimits.ts` a la parte común. | La parte común no depende de un módulo. | ○ |
+| 4 | **Repartir `types.ts`** (661 líneas, el archivo más conectado del repo): lo común a `shared/`, lo de cada módulo a su carpeta. | Con un solo archivo de tipos, cualquier cambio toca a todos los módulos. | ○ |
+| 5 | **Enrutador y marco común** (§ 4). `App.tsx` tiene 1171 líneas y 111 conexiones. | Es el centro de todo el front; las pantallas nuevas no pueden sumarse ahí. | ○ |
+
+**El contrato de la generación (paso 2).** `server/src/contrato/generacion.ts` es la única definición
+de `FunnelStage`, `Platform`, `FeedbackExample`, `CopyParameters`, `CopyVariation`, `CampaignSpine`,
+`CoherenceReport`, `UsageReport` y `GenerationResponse`. Vive dentro de `server/src` porque la imagen
+del servidor solo copia `server/` (no puede leer `shared/`); la del front copia todo el repositorio. No
+importa nada, y un paso de CI lo verifica. Las copias de `User`, `Client`, `Project`, `SavedVariation`,
+`ContentDNAProfile`, `Role` y `BrandConfig` que tenía el servidor no las usaba nadie (usa los tipos de
+Prisma) y se borraron. Las entidades del front siguen siendo del front hasta que la parte común defina
+sus tipos en `contrato/`.
+
+Lo que encontraron las verificaciones al unificar:
+
+- **`usage`**: el servidor siempre manda todos los campos (`aggregateUsage`); el front los tenía
+  opcionales y la generación simulada armaba uno incompleto. Ahora son obligatorios.
+- **`platform`**: el servidor la armaba desde `ChannelSpec.id`, que era texto libre. `ChannelSpec.id`
+  pasa a ser `Platform`: el compilador garantiza que los 14 canales usan nombres de la lista (hoy
+  coincidían todos).
+- **Decisión pendiente — el front pisa el ADN.** `generateController` arma los parámetros desde el ADN
+  y el brief y los mezcla con lo que manda el navegador (`{ ...generationParams, ...params }`): el
+  front puede reemplazar prohibiciones, voz o propuesta de valor de la marca en una generación. Con
+  el ADN en la parte común como única fuente, lo coherente es que el front solo mande lo de la
+  generación (canales, etapa, brief elegido) y que el resto salga siempre del ADN. No se cambió: altera
+  el comportamiento y se decide aparte.
+
+Ya alineado y no se toca: no hay dependencias circulares; la única llamada a un modelo de IA es
+`chatCompletionConRetry` en `aiClient.ts`; la tenencia (`lib/tenancy.ts`) es el centro del back, como
+corresponde.
+
 **Cómo se mantiene.** Se corre `npm run mapa` al cerrar cada sesión, antes de la bitácora
 ([../bitacora/README.md](../bitacora/README.md)); si cambian los números de esta sección, se actualiza
 aquí y se dice en la bitácora. Cuando exista la regla de imports en CI, «hay que invertir» tiene que

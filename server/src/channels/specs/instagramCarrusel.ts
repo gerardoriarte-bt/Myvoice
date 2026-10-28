@@ -1,7 +1,8 @@
 import { ChannelSpec } from "../types.js";
+import { Platform } from "../../types.js";
 
 export const instagramCarrusel: ChannelSpec = {
-  id: "Instagram Carrusel",
+  id: Platform.INSTAGRAM_CARRUSEL,
   group: "social",
   description: "Carrusel de 5-7 slides con narrativa progresiva.",
   slots: [

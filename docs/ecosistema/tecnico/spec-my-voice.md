@@ -16,7 +16,7 @@ cambia** de aquel spec con las decisiones del ecosistema; donde se contradigan, 
 | Frentes | `FrenteDeCampana` (audiencia × etapa) | **No existen.** Audiencias de la campaña (`CampanaAudiencia`, parte común); etapa por línea |
 | Textos raíz | `TextoRaiz.frenteId` | `TextoRaiz.etapa` + snapshot de las audiencias de la campaña |
 | Catálogo | `Medio`, `Formato`, `ParteDeFormato` en My Voice | Biblioteca en **CDM**; My Voice guarda `FormatoUsado` (snapshot de los campos de texto con su versión) |
-| Plan de medios | `PlanDeMedios`, `LineaDePlan` con `frenteId` | `EncargoRecibido` y `LineaDeEncargo` con `etapa`, copia por versión del cuadro de CDM o cuadro manual |
+| Plan de medios | `PlanDeMedios`, `LineaDePlan` con `frenteId` | `EncargoRecibido` y `LineaDeEncargo` con `etapa`, copia por versión del cuadro de CDM (siempre de CDM, decisión 15) |
 | Partes del formato | `PUBLICABLE`, `INSTRUCCION`, `GUION` | Además, `ubicacion`: `EN_PIEZA` o `PLATAFORMA` (PM-6 se invierte) |
 | Largo | `min` y `max` validan | `max` bloquea; `min` orienta (decisión 11) |
 | Revisión | De a uno | De a uno **y** agrupada por etapa y formato, con aprobación por muestra |
@@ -24,23 +24,23 @@ cambia** de aquel spec con las decisiones del ecosistema; donde se contradigan, 
 ## 2. El encargo
 
 My Voice no lee las tablas de CDM. Cuando llega una versión del cuadro (por contrato), guarda una
-**copia**: `EncargoRecibido { campanaId, origen (CDM | MANUAL), version, recibidoEn }` y sus
+**copia**: `EncargoRecibido { campanaId, version, recibidoEn }` y sus
 `LineaDeEncargo { lineaId, formatoUsadoId, etapa, variaciones, piezas?, fechaSalida, fechaCopy?,
 referencia?, indicaciones? }`. Así lo escrito siempre sabe con qué versión del encargo y del formato se
-escribió, aunque CDM cambie después. Un **cuadro manual** (marca sin CDM) llena las mismas tablas con
-`origen = MANUAL`.
+escribió, aunque CDM cambie después. No hay cuadro manual: toda campaña arma su cuadro en CDM.
 
 Las reglas de cambio entre versiones (línea nueva, suben o bajan variaciones, cambia formato o etapa)
 son las de [../../v2/contrato-plan-de-medios.md](../../v2/contrato-plan-de-medios.md) § 6, comparando por
 `lineaId`.
 
-## 3. Biblioteca propia (sin CDM)
+## 3. Los 14 canales pasan a la biblioteca de CDM
 
-Los 14 `ChannelSpec` de `server/src/channels/specs/` se convierten en formatos con la **misma forma**
-que los de CDM (campos de texto con ubicación, unidad, máximo, repeticiones) y viven en
-`myvoice/biblioteca-propia`. Es la migración CAT-3 de `docs/v2`: el `count` de un slot pasa a
-`repeticiones` solo donde el formato lleva varios textos; donde eran variaciones de lo mismo, pasa a ser
-`variaciones` de la línea.
+Los 14 `ChannelSpec` de `server/src/channels/specs/` se cargan como **formatos de la biblioteca de CDM**
+(campos de texto con ubicación, unidad, máximo, repeticiones), con un script de carga en seco por
+defecto. No hay biblioteca propia en My Voice (decisión 15). Es la migración CAT-3 de `docs/v2`: el
+`count` de un slot pasa a `repeticiones` solo donde el formato lleva varios textos; donde eran
+variaciones de lo mismo, pasa a ser `variaciones` de la línea. Hasta que estén cargados, el motor sigue
+leyéndolos del código.
 
 ## 4. Escala
 

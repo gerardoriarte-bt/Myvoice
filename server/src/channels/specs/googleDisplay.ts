@@ -1,7 +1,8 @@
 import { ChannelSpec } from "../types.js";
+import { Platform } from "../../types.js";
 
 export const googleDisplay: ChannelSpec = {
-  id: "Google Display",
+  id: Platform.GOOGLE_DISPLAY,
   group: "performance",
   description: "Google Display Responsivo — 10 títulos cortos (≤30) + 4 títulos largos (≤90) + descripciones.",
   slots: [

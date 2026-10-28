@@ -30,7 +30,6 @@ Estados: **diseñada** · **ajustar** (diseñada, pero una decisión nueva la ca
 | Toolkit | Armar y mandar | Mandar el toolkit | diseñada | § v2 · Toolkit · armar y mandar |
 | Toolkit | Lo que ve el cliente (portal) | Aprobar / rechazar con comentario | diseñada | § v2 · Toolkit · lo que ve la marca |
 | Cuadro | Cuadro recibido de CDM | Revisar lo que se va a escribir | ajustar: era «Plan de medios · importado»; pasa a cuadro de CDM | § v2 · Plan de medios · importado |
-| Cuadro | **Cuadro manual** (marca sin CDM) | Agregar línea | por diseñar | — |
 | Adaptaciones | Revisión de a uno | Aprobar y seguir | ajustar: separar **copy en pieza** y **copy de plataforma** |
 | Adaptaciones | **Revisión agrupada** (cuadros de 200 líneas): por etapa y formato, aprobar por muestra | Aprobar el grupo | por diseñar | § v2 · Adaptaciones de una línea |
 | Adaptaciones | Algo que corregir | Acortar | diseñada | § v2 · Adaptaciones · algo que corregir |
@@ -49,6 +48,7 @@ Estados: **diseñada** · **ajustar** (diseñada, pero una decisión nueva la ca
 | Marca | Equipo y paquetes de formatos | Guardar paquete | por diseñar | — |
 | Campaña | Campaña en CDM (desde My Voice) | Armar el cuadro | por diseñar | — |
 | Cuadro | Armar y enviar el cuadro | Enviar versión | por diseñar | — |
+| Cuadro | **Cuadro rápido** (campaña chica, desde los paquetes de la marca) | Enviar | por diseñar | — |
 | Estado | Línea con su copy aprobado y el estado de sus piezas | Ver en My Voice | por diseñar | — |
 | Seguimiento | Portafolio con «espera a» | Abrir campaña | por diseñar | — |
 | Seguimiento | Mi cola | Ir a la acción | diseñada en la parte común (cruza los dos módulos) | § Marco · Mi cola y avisos… |

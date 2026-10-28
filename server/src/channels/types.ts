@@ -1,4 +1,4 @@
-import { CampaignSpine, CopyVariation, FunnelStage } from "../types.js";
+import { CampaignSpine, CopyVariation, FunnelStage, Platform } from "../types.js";
 
 export type SlotUnit = "char" | "word";
 export type ChannelGroup = "social" | "performance" | "engagement" | "audio";
@@ -64,7 +64,8 @@ export interface PiezaSpec {
 }
 
 export interface ChannelSpec {
-  id: string;            // matches Platform enum value, e.g., "Instagram Post"
+  /** El canal: tiene que ser un valor de Platform (el contrato con el front). */
+  id: Platform;
   group: ChannelGroup;
   description: string;   // short description used in director prompt context
   slots: SlotSpec[];

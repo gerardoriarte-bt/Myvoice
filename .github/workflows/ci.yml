@@ -79,6 +79,16 @@ jobs:
           rm sonda-ci.tsx
           echo "La sonda falló como corresponde."
 
+      # server/src/contrato/ lo compilan el front (bundler) y el server (NodeNext):
+      # un import resolvería distinto en cada lado. Solo tipos y enums, sin imports.
+      - name: El contrato no importa nada
+        run: |
+          if grep -nE "^\s*(import|export .* from)\b|require\(" server/src/contrato/*.ts; then
+            echo "::error::server/src/contrato/ no puede importar: lo compilan el front y el server con configuraciones distintas."
+            exit 1
+          fi
+          echo "El contrato no importa nada."
+
       - name: Build de producción
         run: npm run build
 

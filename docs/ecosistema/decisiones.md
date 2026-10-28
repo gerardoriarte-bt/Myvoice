@@ -73,6 +73,21 @@ nueva que diga qué cambió y por qué.
     - Lo que mejora a los usuarios de hoy (manual de oficio, ADN 2.0) puede entrar antes que el marco.
     - Detalle: [tecnico/spec-plataforma.md](./tecnico/spec-plataforma.md) § 7.
 
+## 2026-10-28 · El ADN manda y los medios vienen de CDM
+
+14. **El ADN manda en la generación.** El front solo decide qué canales y para qué etapa (y qué brief).
+    Todo lo demás sale del ADN de la marca y del brief, armado en el servidor. Hasta hoy el body del
+    front se mezclaba encima y pisaba lo de la marca: la voz y la propuesta de valor de la marca, sus
+    prohibiciones y keywords y los ejemplos de copy aprobado. Corregido en el PR «El ADN manda».
+15. **Los medios y formatos vienen siempre de CDM, aunque la campaña sea chica.** No hay biblioteca
+    propia en My Voice ni cuadro armado a mano dentro de My Voice: los 14 canales de hoy se cargan como
+    formatos de la biblioteca de CDM, y toda campaña define su cuadro en CDM, aunque sean tres líneas.
+    - Por qué: una sola fuente de medios y una trazabilidad clara de qué se encargó, dónde y cuándo.
+    - Consecuencia: **My Voice necesita CDM encendido** para escribir por formato. CDM sí funciona solo.
+    - Consecuencia: CDM necesita un **cuadro rápido** para campañas chicas, que se arme en minutos.
+    - Transición: los 14 canales siguen en código (`server/src/channels/specs/`) hasta que estén cargados
+      en la biblioteca de CDM; después el motor los lee de ahí.
+
 ## Antes (2026-10-27), siguen vigentes con los nombres nuevos
 
 - La marca, su ADN y sus audiencias son la fuente de verdad (ahora en la parte común, decisión 7).
@@ -89,5 +104,5 @@ nueva que diga qué cambió y por qué.
 | # | Pregunta | Por qué importa |
 |---|---|---|
 | 8 | ¿Cómo se revisan 200 líneas? Propuesta: generar por tandas según fecha de salida, revisar agrupado por etapa y formato, y **aprobar por muestra** (una de cada grupo; el resto queda aprobado si pasa todos los controles; lo que se pasa del largo o tiene problemas se revisa siempre de a uno). | Revisar de a uno, como está diseñado, sirve para 10 líneas, no para 200. |
-| 9 | Si la campaña sigue directo a My Voice, sin cuadro todavía, ¿para qué etapas se escriben los textos raíz? Propuesta: el brief puede marcar etapas previstas, y el cuadro las confirma o agrega. | Con la decisión 9 la etapa sale del cuadro, pero la decisión 7 permite empezar por My Voice. |
+| 9 | Si la campaña sigue directo a My Voice, sin cuadro todavía, ¿para qué etapas se escriben los textos raíz? Propuesta: el brief puede marcar etapas previstas, y el cuadro de CDM las confirma o agrega. Las adaptaciones esperan al cuadro (decisión 15). | Con la decisión 9 la etapa sale del cuadro, pero la decisión 7 permite empezar por My Voice. |
 | 7 | ¿Versión de marca fijada por campaña? | Si el ADN cambia, las campañas activas no deberían romperse. |

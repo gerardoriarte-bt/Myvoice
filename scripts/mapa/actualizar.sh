@@ -15,6 +15,10 @@ VERSION="0.9.97"
 
 export GRAPHIFY_BACKEND=none GRAPHIFY_QUERY_LOG_DISABLE=1
 
+# Se reconstruye desde cero: borrar código achica el grafo y Graphify se niega a
+# sobreescribir uno más chico. La caché de extracción se conserva.
+rm -f "$SALIDA/graphify-out/graph.json"
+
 uvx -q --python 3.12 --from "graphifyy[sql]==$VERSION" \
   graphify extract "$RAIZ" --code-only --out "$SALIDA" --force >/dev/null
 

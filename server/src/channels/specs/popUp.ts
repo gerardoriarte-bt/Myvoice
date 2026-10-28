@@ -1,7 +1,8 @@
 import { ChannelSpec } from "../types.js";
+import { Platform } from "../../types.js";
 
 export const popUp: ChannelSpec = {
-  id: "Pop up",
+  id: Platform.POP_UP,
   group: "engagement",
   description: "Pop-up on-site — título, cuerpo, CTA y microcopy de rechazo.",
   slots: [

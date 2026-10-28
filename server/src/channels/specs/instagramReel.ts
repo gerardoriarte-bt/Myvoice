@@ -1,7 +1,8 @@
 import { ChannelSpec } from "../types.js";
+import { Platform } from "../../types.js";
 
 export const instagramReel: ChannelSpec = {
-  id: "Instagram Reel",
+  id: Platform.INSTAGRAM_REEL,
   group: "social",
   description: "Video corto vertical — guion con hook verbal en los primeros 3s.",
   slots: [

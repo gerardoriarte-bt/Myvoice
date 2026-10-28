@@ -13,8 +13,10 @@ View your app in AI Studio: https://ai.studio/apps/drive/1hiDR6gSyNZc57BjIkFC2Ra
 **Prerequisites:**  Node.js
 
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+1. Install dependencies in both projects:
+   `npm install` and `cd server && npm install`
+2. Configure the API in `server/.env` (database, `JWT_SECRET`, `ENCRYPTION_KEY` and the AI provider
+   key). The AI is only called from the server: the browser never holds a provider key.
+3. Run the API (`cd server && npm run dev`, port 3001) and the app (`npm run dev`, port 3000).
+
+Commands, architecture and gotchas are in `CLAUDE.md`.
