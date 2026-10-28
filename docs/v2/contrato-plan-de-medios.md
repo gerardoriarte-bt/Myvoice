@@ -1,6 +1,11 @@
 # Contrato · Planning → My Voice (plan de medios)
 
 Estado: borrador para revisión · 2026-10-27
+
+> **Reemplazado (2026-10-28)** por [../ecosistema/contrato-cdm-my-voice.md](../ecosistema/contrato-cdm-my-voice.md):
+> el «módulo Planning» es el **CDM**, la función «Planner» se llama **Planning** y el plan de medios
+> que llega a My Voice es el **cuadro de materiales**. Las reglas de versiones (§ 6) y validaciones
+> (§ 8) siguen valiendo con esos nombres.
 Producto: [prd-proceso-de-campana.md](./prd-proceso-de-campana.md) (PM-1 a PM-6) ·
 Spec: [spec-proceso-de-campana.md](./spec-proceso-de-campana.md) (§ 4.5 y § 4.6)
 

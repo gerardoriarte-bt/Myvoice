@@ -1,6 +1,7 @@
 # Mapa del proceso de campaña · quién hace qué
 
-Estado: propuesta · 2026-10-27
+Estado: propuesta · 2026-10-27 · extendido a CDM + My Voice en
+[../ecosistema/flujo.md](../ecosistema/flujo.md) (2026-10-28)
 Producto: [prd-proceso-de-campana.md](./prd-proceso-de-campana.md) · Spec:
 [spec-proceso-de-campana.md](./spec-proceso-de-campana.md) · Plan de medios:
 [contrato-plan-de-medios.md](./contrato-plan-de-medios.md)

@@ -1,6 +1,10 @@
 # PRD · Proceso de campaña (v2)
 
 Estado: borrador para revisión · 2026-10-26
+
+> **2026-10-28:** el proceso ahora se piensa con dos herramientas, CDM y My Voice. El seguimiento
+> y el lenguaje común están en [../ecosistema/](../ecosistema/README.md); donde este PRD los
+> contradiga, gana esa carpeta.
 Spec técnico: [spec-proceso-de-campana.md](./spec-proceso-de-campana.md)
 Antecedente: [plan-textos-raiz.md](../plan-textos-raiz.md), que este documento amplía y reemplaza
 como referencia.

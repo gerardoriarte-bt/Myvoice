@@ -311,6 +311,10 @@ including the three steps that surprise an operator. `docs/runbook-tenancy.md` a
 `docs/v2/prd-proceso-de-campana.md` and `docs/v2/spec-proceso-de-campana.md` (2026-10-26): the campaign
 process (v2), a separate flow behind `Workspace.procesoCampana` — root texts, toolkit, media planning and a
 data-driven catalog of 60+ media formats. All schema changes additive; v1 keeps working untouched.
+`docs/ecosistema/` (2026-10-28): CDM (Planning: media library, materials grid, piece approval) and My
+Voice working together and apart — the shared glossary, who owns which data, the cross-tool flow with
+approvals and notifications, the CDM ↔ My Voice contract and the screen inventory. It wins over `docs/v2`
+where they disagree; the two are built alternately.
 `docs/v2/mapa-del-proceso.md` (2026-10-27): who does what at each stage — the seven users (Planning, Copy,
 responsable, Marca, Planner, IA, Diseño), the numbered path, what runs in parallel and the rules across it.
 `docs/plan-textos-raiz.md` (2026-10-26): Buentipo's feedback — the engine proposes 5–10 root texts,
