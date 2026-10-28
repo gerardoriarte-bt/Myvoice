@@ -308,6 +308,18 @@ can go first, and the audit spend does not count toward the quota yet.
 `docs/despliegue-h1.md` is the single sheet for the H1 deploy — the whole ordered sequence,
 including the three steps that surprise an operator. `docs/runbook-tenancy.md` and
 `docs/runbook-mejoras-h1.md` remain the detail behind each step.
+`docs/v2/prd-proceso-de-campana.md` and `docs/v2/spec-proceso-de-campana.md` (2026-10-26): the campaign
+process (v2), a separate flow behind `Workspace.procesoCampana` — root texts, toolkit, media planning and a
+data-driven catalog of 60+ media formats. All schema changes additive; v1 keeps working untouched.
+`docs/ecosistema/` (2026-10-28): CDM (Planning: media library, materials grid, piece approval) and My
+Voice working together and apart — the shared glossary, who owns which data, the cross-tool flow with
+approvals and notifications, the CDM ↔ My Voice contract and the screen inventory. It wins over `docs/v2`
+where they disagree; the two are built alternately.
+`docs/v2/mapa-del-proceso.md` (2026-10-27): who does what at each stage — the seven users (Planning, Copy,
+responsable, Marca, Planner, IA, Diseño), the numbered path, what runs in parallel and the rules across it.
+`docs/plan-textos-raiz.md` (2026-10-26): Buentipo's feedback — the engine proposes 5–10 root texts,
+the team and then the brand approve them (the campaign toolkit), and each medium only adapts them, one
+medium and a requested quantity at a time. Phase 1 puts the universal writing craft into the engine first.
 `docs/plan-marcas-relacionadas.md` (2026-10-13): a brand can be declared part of another (one level,
 ordering only, nothing inherited) and two brands with the same normalized name are flagged until
 one is renamed or merged; two deliveries, «Unir» is the second.
