@@ -56,3 +56,7 @@ video/
 
 # Artes que deja seed:capacitacion para subir en vivo
 server/capacitacion-artes
+
+# Mapa del código de Graphify (scripts/mapa/actualizar.sh): se regenera, no se versiona.
+# Lo que se versiona es docs/ecosistema/tecnico/dependencias-entre-modulos.md.
+.graphify/

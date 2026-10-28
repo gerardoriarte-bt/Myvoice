@@ -31,6 +31,52 @@ server/prisma/schema/   un archivo por módulo (comun.prisma, myvoice.prisma, cd
 `comun/` salvo lo que `contrato/` reexporta. Se chequea con una regla de imports en el job de tipos, con
 un archivo sonda que la viola a propósito (como la sonda que ya protege el gate del frontend).
 
+### 2.1 Lo que cruza de un módulo a otro hoy
+
+Medido con el mapa del código (Graphify, solo código y sin IA) el 2026-10-28 sobre `main` (`10684ee`).
+Cada archivo de hoy está asignado a su módulo en `scripts/mapa/modulos.json`; la lista completa, archivo
+por archivo, se regenera en [dependencias-entre-modulos.md](./dependencias-entre-modulos.md) con
+`npm run mapa`.
+
+| Desde \ Hacia | Parte común | My Voice | Compartido |
+|---|---|---|---|
+| **Plataforma** (`App.tsx`, `routes/`, arranque) | 12 | 19 | 14 |
+| **Parte común** | · | **3** | 30 |
+| **My Voice** | **30** | · | 84 |
+
+(Pares de archivos. CDM todavía no tiene código.)
+
+**Lo que hay que invertir antes de partir carpetas (3).** La parte común no puede depender de My Voice:
+
+| Hoy | Por qué rompe | Cómo se resuelve |
+|---|---|---|
+| `components/ClientManager.tsx` (Marcas) muestra `GenerationHistory` y `PromptPreview` | La pantalla de la marca, que es común, incrusta piezas de My Voice | **Inversión**: Marcas ofrece un espacio por módulo y My Voice registra ahí su historial y la vista del prompt. Con CDM encendido, CDM registra los paquetes de la marca en el mismo espacio. |
+| `controllers/workspaceController.ts` usa `PLANES_VALIDOS` de `lib/planLimits.ts` | Los planes y su cuota son del workspace, no de My Voice | **Mover** `planLimits.ts` a la parte común (junto con `usageService` cuando la cuota cuente también lo que gaste CDM). |
+
+**Lo que tiene que exponer `contrato/` (30 pares, 8 cosas).** My Voice lee la parte común en estos
+puntos; hoy importa los archivos directo, mañana solo desde `contrato/`:
+
+| Qué | Archivo de hoy | Lo usan |
+|---|---|---|
+| Guards de tenencia y `TenantContext` / `TenantError` | `lib/tenancy.ts` | 13 archivos de My Voice (7 controladores y 6 servicios) |
+| `AuthRequest` y `handleTenantError` | `middleware/auth.ts` | 7 controladores |
+| La clave de IA del workspace | `lib/workspaceSecret.ts` | generar, refinar, auditoría |
+| Avisos: `notificar`, `destinatariosDe`, `enviarEnSegundoPlano` | `services/notificacionService.ts` | revisión, piezas |
+| Correo de revisión completada | `services/notificationService.ts` | revisión |
+| El ADN para el prompt (`renderFingerprintForPrompt`) | `services/voiceFingerprintService.ts` | armado de prompts |
+| Nombre de la marca con su madre (`nombreConMadre`) | `marcas.ts` (front) | formulario de generación, Producción |
+| Destino de un aviso (`DestinoAviso`) | `components/Bandeja.tsx` (front) | Producción |
+
+**Ajuste de diseño que sale de medir.** `screens.ts` hoy es a la vez el catálogo de nombres de pantalla
+(lo usan 7 pantallas de los dos módulos) y el orden de las etapas. Se parte en dos: los **nombres**
+quedan compartidos y el **orden y el menú** pasan a cada módulo (el marco común arma el menú con lo que
+cada módulo registra).
+
+**Cómo se mantiene.** Se corre `npm run mapa` al cerrar cada sesión, antes de la bitácora
+([../bitacora/README.md](../bitacora/README.md)); si cambian los números de esta sección, se actualiza
+aquí y se dice en la bitácora. Cuando exista la regla de imports en CI, «hay que invertir» tiene que
+estar en 0 para mergear.
+
 ## 3. Módulos encendidos por marca
 
 `ModuloDeMarca { clientId, modulo (MY_VOICE | CDM | ADAPTADOR), encendido, desde }`. Lo cambia el Super

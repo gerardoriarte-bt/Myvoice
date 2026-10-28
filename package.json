@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "mapa": "bash scripts/mapa/actualizar.sh"
   },
   "dependencies": {
     "@google/genai": "^1.40.0",
