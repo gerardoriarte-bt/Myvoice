@@ -66,11 +66,11 @@ Una **versión completa** cada vez, comparada por `lineaId` con la anterior
 Si un copy aprobado cambia después, CDM recibe la versión nueva y marca la línea «A revisar»; nunca
 se reemplaza en silencio una pieza ya producida.
 
-## 4. Sin CDM
+## 4. Siempre desde CDM
 
-Si la marca no usa CDM, My Voice usa su biblioteca propia (los 14 canales de hoy, migrados a la misma
-forma de formato) y un cuadro armado a mano en la campaña, con los mismos campos de § 2.2. Así la
-pantalla de adaptaciones es la misma con o sin CDM.
+My Voice no tiene biblioteca ni cuadro propios (decisión 15): los formatos y el encargo llegan siempre
+por este contrato, aunque la campaña sea chica. Los 14 canales de hoy se cargan como formatos de la
+biblioteca de CDM; mientras tanto, el motor los sigue leyendo del código.
 
 ## 5. Abierto
 

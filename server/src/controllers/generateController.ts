@@ -72,6 +72,26 @@ const registrarGeneracion = async (datos: DatosGeneracion): Promise<void> => {
   }
 };
 
+/**
+ * Lo único que decide el front en una generación: qué canales y para qué etapa. Todo lo demás sale
+ * del ADN de la marca y del brief (`buildGenerationContext`).
+ *
+ * Hasta el 2026-10-28 se mezclaba el body entero encima (`{ ...generationParams, ...params }`). El
+ * formulario manda los campos del brief tal cual, así que pisaba lo que se arma desde la marca: la
+ * voz y la propuesta de valor de la marca (que tienen prioridad sobre las del brief), las
+ * prohibiciones y keywords de la marca (que se suman a las del brief) y los ejemplos de copy
+ * aprobado. El ADN manda (docs/ecosistema/decisiones.md, decisión 14).
+ */
+const deLaGeneracion = (params: unknown): { platforms: string[]; funnelStage?: string } => {
+  const p = (params ?? {}) as { platforms?: unknown; funnelStage?: unknown };
+  const platforms = Array.isArray(p.platforms)
+    ? p.platforms.filter((x): x is string => typeof x === 'string')
+    : [];
+  return typeof p.funnelStage === 'string' && p.funnelStage
+    ? { platforms, funnelStage: p.funnelStage }
+    : { platforms };
+};
+
 async function buildGenerationContext(dnaProfileId: string, tenant: TenantContext): Promise<{
   dnaProfile: any;
   client: any;
@@ -171,7 +191,7 @@ export const generateCopy = async (req: AuthRequest, res: Response) => {
 
     await assertQuotaAvailable(req.tenant!, client);
 
-    const mergedParams = { ...generationParams, ...params };
+    const mergedParams = { ...generationParams, ...deLaGeneracion(params) };
     const aiConfig = await resolveWorkspaceAIConfig(req.tenant!.workspaceId);
     const t0 = Date.now();
     const result = await generateCopyWithOpenAI(mergedParams, aiConfig);
@@ -220,7 +240,7 @@ export const generateCopyStream = async (req: AuthRequest, res: Response) => {
 
     await assertQuotaAvailable(req.tenant!, client);
 
-    const mergedParams = { ...generationParams, ...params };
+    const mergedParams = { ...generationParams, ...deLaGeneracion(params) };
 
     // Cabeceras SSE
     res.setHeader('Content-Type', 'text/event-stream');
@@ -292,8 +312,8 @@ export const generateCopyStream = async (req: AuthRequest, res: Response) => {
       tenant: req.tenant!,
       client,
       dnaProfileId: dnaProfile.id,
-      platforms: params?.platforms ?? [],
-      funnelStage: params?.funnelStage || null,
+      platforms: mergedParams.platforms,
+      funnelStage: mergedParams.funnelStage || null,
       spine: capturedSpine || null,
       outputJson: { variations: capturedVariations, coherence: capturedCoherence, usage: capturedUsage },
       usage: capturedUsage,
@@ -345,7 +365,7 @@ export const regenerateChannel = async (req: AuthRequest, res: Response) => {
     const writerModel = resolveModel(aiConfig, false);
     const miniModel = resolveModel(aiConfig, true);
 
-    const brief = buildBrief({ ...generationParams, ...params }, spine);
+    const brief = buildBrief({ ...generationParams, ...deLaGeneracion(params) }, spine);
     const usage: UsageEntry[] = [];
     const t0 = Date.now();
     const variations = await generateForChannel(spec, brief, aiClientInstance, writerModel, miniModel, usage);
@@ -368,7 +388,7 @@ export const regenerateChannel = async (req: AuthRequest, res: Response) => {
       client,
       dnaProfileId: ctx.dnaProfile.id,
       platforms: [platform],
-      funnelStage: params?.funnelStage || null,
+      funnelStage: deLaGeneracion(params).funnelStage || null,
       spine,
       outputJson: { variations, usage: usageTotal, regeneratedChannel: platform },
       usage: usageTotal,

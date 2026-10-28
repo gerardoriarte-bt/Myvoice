@@ -41,15 +41,17 @@ decir siempre dónde está la campaña y a quién le toca ([flujo.md](./flujo.md
 
 ## 3. Cada una funciona sola
 
-| | CDM solo | My Voice solo |
-|---|---|---|
-| Qué hace | Biblioteca de medios, cuadro de materiales, seguimiento de lo producido por fuera. El copy se escribe a mano por campo. | ADN, brief, textos raíz, toolkit y copy por formato con su **biblioteca propia** (los 14 canales de hoy) y un cuadro armado a mano. |
-| Qué se pierde | El copy generado con la voz de la marca y la entrega directa del copy. | Los formatos y el cuadro mantenidos por Planning. |
+**CDM funciona solo; My Voice necesita CDM** (decisión 15). Los medios y formatos vienen siempre de
+la biblioteca de CDM y toda campaña define su cuadro ahí, aunque sea chica: una sola fuente y una
+trazabilidad clara.
 
-El Super Admin decide por marca qué herramientas usa. My Voice detecta si la marca tiene CDM: si lo
-tiene, hereda la biblioteca y el cuadro; si no, usa los suyos. Lo que se escribe es igual en los dos
-casos, porque el cuadro manual y el que llega de CDM tienen la misma forma
-([contrato-cdm-my-voice.md](./contrato-cdm-my-voice.md)).
+| | CDM solo | My Voice (siempre con CDM) |
+|---|---|---|
+| Qué hace | Biblioteca de medios, cuadro de materiales, seguimiento de lo producido por fuera. El copy se escribe a mano por campo. | ADN, brief, textos raíz, toolkit, copy por formato y Producción, escribiendo lo que pide el cuadro de CDM con los formatos de su biblioteca. |
+| Qué se pierde sin el otro | El copy generado con la voz de la marca y la entrega directa del copy. | No aplica: sin CDM no hay formatos ni cuadro para escribir. |
+
+El Super Admin decide por marca qué módulos usa; si enciende My Voice, CDM va encendido. Mientras los 14
+canales de hoy no estén cargados en la biblioteca de CDM, siguen saliendo del código (transición).
 
 ## 4. Después: el Adaptador
 

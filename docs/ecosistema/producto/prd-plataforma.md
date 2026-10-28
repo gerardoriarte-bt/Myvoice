@@ -32,7 +32,7 @@ módulos que usa.
 | Id | Requisito | P |
 |---|---|---|
 | PL-1 | Una **barra común** en toda la plataforma: módulo, marca activa, buscar, Mi cola y avisos. | P0 |
-| PL-2 | **Crear marca** una vez y encender módulos (My Voice, CDM; Adaptador más adelante). Apagar un módulo oculta sus pantallas, no borra datos. | P0 |
+| PL-2 | **Crear marca** una vez y encender módulos (My Voice, CDM; Adaptador más adelante). My Voice necesita CDM encendido (decisión 15). Apagar un módulo oculta sus pantallas, no borra datos. | P0 |
 | PL-3 | **ADN y audiencias** en la parte común (ADN 2.0: secciones con estado, mínimo 75 % para crear campañas, la IA propone y Estrategia confirma). | P0 |
 | PL-4 | **Crear campaña** con nombre, referencia libre, responsable, fechas y audiencias del ADN (para todas sus líneas), y **elegir cómo sigue**: My Voice o CDM. La otra se suma cuando quiera. | P0 |
 | PL-5 | **Vista de campaña en las dos herramientas**: un carril por módulo con los mismos nombres de etapa, «espera a» con la persona y la herramienta, y un botón directo a esa acción. | P0 |

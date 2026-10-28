@@ -33,7 +33,6 @@ Cada función con su estado en las tres pistas. Se actualiza en el mismo PR que 
 | Copy | Textos raíz por etapa | ◐ | ○ | ○ | MV-3 |
 | Responsable | Armar y mandar el toolkit | ✓ | ○ | ○ | MV-4 |
 | Cliente | Aprobar el toolkit en el portal | ✓ | ○ | ○ | MV-4 |
-| Responsable | Cuadro manual (marca sin CDM) | ○ | ○ | ○ | MV-8 |
 | Responsable | Revisar el copy de a uno | ◐ | ○ | ○ | MV-5, MV-6 |
 | Responsable | Revisión agrupada (200 líneas) | ○ | ○ | ○ | MV-7 |
 | Responsable | Qué texto va en qué formato | ○ | ○ | ○ | MV-9 |
@@ -51,6 +50,8 @@ Cada función con su estado en las tres pistas. Se actualiza en el mismo PR que 
 | Planning | Cargar desde planilla | ◐ | ○ | ○ | CD-4 |
 | Planning | Paquetes de la marca | ○ | ○ | ○ | CD-6 |
 | Planning | Armar y enviar el cuadro | ○ | ○ | ○ | CD-7 |
+| Planning, responsable | Cuadro rápido para campañas chicas | ○ | ○ | ○ | CD-11 |
+| — | Los 14 canales cargados en la biblioteca | — | — | ○ | CD-12 |
 | Planning | Estado por línea | ○ | ○ | ○ | CD-8 |
 | Planning | Portafolio | ○ | ○ | ○ | CD-9 |
 

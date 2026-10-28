@@ -38,6 +38,8 @@ producción y aprobación de piezas se queda en My Voice (decisión 8).
 | CD-8 | **Estado por línea**: copy aprobado y estado de las piezas, leídos de My Voice. | P0 |
 | CD-9 | **Portafolio** de campañas con su etapa y «espera a». | P1 |
 | CD-10 | **Funciona solo**: sin My Voice, el copy se escribe a mano en cada campo, con los mismos largos. | P1 |
+| CD-11 | **Cuadro rápido** para campañas chicas: pocas líneas en minutos, desde los paquetes de la marca. Toda campaña con My Voice tiene su cuadro en CDM (decisión 15). | P0 |
+| CD-12 | **Los 14 canales de My Voice** cargados como formatos de la biblioteca, con sus campos y largos de hoy. | P0 |
 
 ## 5. No objetivos
 
@@ -47,8 +49,8 @@ producción y aprobación de piezas se queda en My Voice (decisión 8).
 
 ## 6. Orden propuesto
 
-1. Biblioteca (CD-1 a CD-5): es lo que también hereda My Voice.
-2. Cuadro con el contrato (CD-7).
+1. Biblioteca (CD-1 a CD-5) con los 14 canales cargados (CD-12): es lo que hereda My Voice.
+2. Cuadro con el contrato (CD-7) y cuadro rápido (CD-11).
 3. Estado por línea (CD-8).
 4. Paquetes y portafolio (CD-6, CD-9).
 

@@ -40,7 +40,7 @@ del copy antes de escribir cada formato (decisión 2).
 | MV-5 | **Copy por formato**: cada variación se escribe desde los textos raíz de la etapa de la línea, para todas las audiencias de la campaña, separando **copy en pieza** y **copy de plataforma**, sin pasarse del largo máximo de cada campo. | P0 |
 | MV-6 | **Largo**: pasarse del máximo bloquea la aprobación; ser más corto lo juzga quien revisa; el mínimo, si existe, orienta (decisión 11). | P0 |
 | MV-7 | **Revisión a escala**: generar por tandas según fecha de salida, revisar agrupado por etapa y formato, aprobar por muestra; lo que no cabe o tiene problemas, de a uno. | P0 |
-| MV-8 | **Hereda de CDM** la biblioteca (campos de texto y largos) y el cuadro cuando la marca lo usa; **sin CDM**, usa su biblioteca propia (los 14 canales) y un cuadro armado a mano con la misma forma. | P0 |
+| MV-8 | **Hereda de CDM** la biblioteca (campos de texto y largos) y el cuadro, **siempre**, aunque la campaña sea chica (decisión 15). Los 14 canales de hoy se cargan en la biblioteca de CDM. | P0 |
 | MV-9 | **Informa qué texto va en qué formato** por línea (a CDM y a Diseño). | P0 |
 | MV-10 | **Producción** se queda como está (tablero, auditoría, aprobación del cliente) y lee el copy aprobado por línea. | P0 |
 | MV-11 | **Medición**: el estado y el rendimiento de las piezas vuelven al aprendizaje de la marca. | P2 |
@@ -55,11 +55,11 @@ Los 14 canales de hoy reciben las mejoras por pasos; cada paso sirve solo.
 | 2 | ADN 2.0 (parte común) | PL-3 | No |
 | 3 | Brief del equipo | MV-2 | No |
 | 4 | Textos raíz por etapa y toolkit | MV-3, MV-4 | No |
-| 5 | Los 14 canales con la forma de la biblioteca y el cuadro manual | MV-5, MV-6, MV-8 (sin CDM) | No |
+| 5 | Los 14 canales cargados en la biblioteca de CDM, y el motor escribe desde ahí | MV-5, MV-6, MV-8 | Sí (biblioteca) |
 | 6 | Heredar de CDM e informar el copy por línea | MV-7, MV-8, MV-9 | Sí |
 | 7 | Medición | MV-11 | Sí |
 
-El paso 5 es el puente: cuando llegue el 6, solo cambia de dónde vienen la biblioteca y el cuadro.
+El paso 5 es el puente: el motor deja de leer los canales del código y lee la biblioteca de CDM. Por eso la biblioteca de CDM va antes que el cuadro (decisión 15).
 
 ## 6. No objetivos
 
