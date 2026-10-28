@@ -52,7 +52,7 @@ Cada función con su estado en las tres pistas. Se actualiza en el mismo PR que 
 | Planning | Paquetes de la marca | ○ | ○ | ○ | CD-6 |
 | Planning | Armar y enviar el cuadro | ○ | ○ | ○ | CD-7 |
 | Planning, responsable | Cuadro rápido para campañas chicas | ○ | ○ | ○ | CD-11 |
-| — | Los 14 canales cargados en la biblioteca | — | — | ○ | CD-12 |
+| Planning | Los 14 canales cargados en la biblioteca (carga con decisiones) | ✓ | ○ | ○ | CD-12 |
 | Planning | Estado por línea | ○ | ○ | ○ | CD-8 |
 | Planning | Portafolio | ○ | ○ | ○ | CD-9 |
 
