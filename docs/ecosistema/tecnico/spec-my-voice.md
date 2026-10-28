@@ -42,6 +42,27 @@ defecto. No hay biblioteca propia en My Voice (decisión 15). Es la migración C
 variaciones de lo mismo, pasa a ser `variaciones` de la línea. Hasta que estén cargados, el motor sigue
 leyéndolos del código.
 
+Lo que dice el código hoy (52 textos en los 14 canales) y cómo se carga (diseñado en el `.pen`, «— CDM ·
+Biblioteca con los 14 canales de My Voice»):
+
+- **Dónde va cada texto**: en la pieza (titular, texto en pantalla, guion), en la plataforma (caption,
+  asunto, títulos de Google) o **para Diseño** (no se publica). 7 textos no tienen largo máximo: 6 son
+  para Diseño (idea visual, elemento interactivo, estructura escena por escena, narrativa,
+  indicaciones de producción, indicación de animación) y los hashtags van en la plataforma.
+- **Qué es la cantidad** (`count` del slot):
+  - se decide sola cuando el slot tiene `varyByAngle` → **variaciones** (alternativas por ángulo);
+  - Google Ads y Google Display → **textos del formato** (10 títulos cortos, 4 largos, 4 descripciones);
+  - slides de desarrollo del carrusel → **láminas** (5);
+  - el resto queda **por decidir**: 6 canales (push, rich media, email, reel, pop up, WhatsApp). La carga
+    propone una respuesta cuando se puede deducir del formato (un push lleva un solo título) y deja sin
+    propuesta Email (header y botón) y Reel (texto en pantalla).
+- **El largo** de hoy pasa a ser el máximo; el mínimo de la cuña (55 palabras) queda como orientación
+  (decisión 11).
+- **Lo que My Voice no sabía no se inventa**: ningún canal tiene especificaciones de archivo; quedan
+  marcadas para que las complete Planning.
+- Primero se carga **en seco** (muestra qué formatos se crean) y después se confirma; hasta confirmar,
+  el motor sigue leyendo el código.
+
 ## 4. Escala
 
 - **Generación por tandas**: cola de trabajos por línea, ordenada por `fechaSalida`; el semáforo de 5 del
