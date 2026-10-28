@@ -2,7 +2,8 @@
 
 Estado: en construcción · desde 2026-10-28
 
-Esta carpeta sigue el trabajo de **dos herramientas que funcionan juntas y por separado**: el
+Esta carpeta sigue el trabajo de **dos módulos de una misma plataforma, que funcionan juntos y por
+separado** (decisión 12): el
 **CDM** (lo usa Planning) y **My Voice** (lo usan Estrategia, Copy y el responsable de la campaña).
 El **Adaptador de piezas** es una fase posterior (3 o 4) y aquí solo aparece como el próximo
 consumidor del copy.

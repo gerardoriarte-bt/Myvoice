@@ -43,6 +43,22 @@ nueva que diga qué cambió y por qué.
     bloquea la aprobación. Si un texto corto está bien o no, lo decide quien revisa; el mínimo, si un
     formato lo trae, es orientación y no bloquea.
 
+## 2026-10-28 · Una sola plataforma
+
+12. **Una plataforma con módulos separados**: un repositorio, una base, un login y un despliegue.
+    Módulos: **parte común** (marca, ADN, audiencias, campaña, usuarios y funciones, avisos y cola),
+    **My Voice** y **CDM**. Fronteras estrictas: cada módulo tiene su carpeta y sus tablas, no lee las
+    tablas de otro y le habla solo por el contrato; una regla de CI prohíbe importar código entre
+    módulos. «Funcionar por separado» se decide **por marca** (qué módulos tiene encendidos), no por
+    despliegue. El **Adaptador**, cuando llegue, va como servicio aparte que usa el login y la parte
+    común.
+    - Por qué: la marca transversal, la tenencia (ya probada con `verify:isolation`), las funciones y
+      los avisos existen una sola vez; avisos y cola únicos cumplen «un aviso lleva a la acción».
+    - Lo que se paga: un error de un módulo puede afectar al otro (se despliegan juntos); se mitiga
+      con el interruptor por marca y la CI.
+    - Lo que exige primero: **rutas y un marco común en el frontend** (hoy no hay enrutador y
+      `App.tsx` concentra el estado). Es lo primero que se diseña.
+
 ## Antes (2026-10-27), siguen vigentes con los nombres nuevos
 
 - La marca, su ADN y sus audiencias son la fuente de verdad (ahora en la parte común, decisión 7).
@@ -58,9 +74,6 @@ nueva que diga qué cambió y por qué.
 
 | # | Pregunta | Por qué importa |
 |---|---|---|
-| 3 | ¿Avisos y cola compartidos (un servicio) o cada herramienta manda los suyos? | La regla de «un aviso lleva directo a la acción» funciona igual, pero cambia cuánto se construye. |
-| 4 | ¿Cómo se identifica la misma marca en las dos herramientas? | Sin eso, el contrato no puede unir datos. |
-| 5 | ¿CDM es otra app, otro repo, o vive dentro de My Voice con su propio espacio? | Define despliegue, login y si se comparte base. |
 | 8 | ¿Cómo se revisan 200 líneas? Propuesta: generar por tandas según fecha de salida, revisar agrupado por etapa y formato, y **aprobar por muestra** (una de cada grupo; el resto queda aprobado si pasa todos los controles; lo que se pasa del largo o tiene problemas se revisa siempre de a uno). | Revisar de a uno, como está diseñado, sirve para 10 líneas, no para 200. |
 | 9 | Si la campaña sigue directo a My Voice, sin cuadro todavía, ¿para qué etapas se escriben los textos raíz? Propuesta: el brief puede marcar etapas previstas, y el cuadro las confirma o agrega. | Con la decisión 9 la etapa sale del cuadro, pero la decisión 7 permite empezar por My Voice. |
 | 7 | ¿Versión de marca fijada por campaña? | Si el ADN cambia, las campañas activas no deberían romperse. |
