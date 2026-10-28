@@ -48,6 +48,9 @@ Estados: **diseñada** · **ajustar** (diseñada, pero una decisión nueva la ca
 | Flujo | Pantalla | Acción principal | Estado | Frame en el `.pen` |
 |---|---|---|---|---|
 | Biblioteca | **Biblioteca organizable**: por medio, formato, tipo de archivo, largo de texto o fecha de creación | Agregar medio | diseñada | § Marco · CDM · Biblioteca de medios — una lista, cinco formas de ordenarla |
+| Biblioteca | **Los 14 canales de My Voice ya cargados**, por medio, con origen y estado | Decidir las pendientes | diseñada | § CDM · Biblioteca de medios · los 14 canales de My Voice ya cargados |
+| Biblioteca | **Cargar desde My Voice**: decidir dónde va cada texto y qué es su cantidad, cargar en seco y confirmar | Cargar en seco | diseñada | § CDM · Cargar desde My Voice · decidir antes de cargar |
+| Biblioteca | **Formato cargado desde My Voice** (Email): origen, campos, cantidades pendientes, archivo que falta | Guardar como versión nueva | diseñada | § CDM · Formato cargado desde My Voice · Email |
 | Biblioteca | Medios y sus formatos (primera versión) | Agregar medio | reemplazada por la biblioteca organizable | § Catálogo · medios y sus formatos (SUPUESTO) |
 | Biblioteca | Detalle de un formato | Guardar como versión nueva | ajustar: ídem | § Catálogo · detalle de un formato (SUPUESTO) |
 | Biblioteca | Agregar un medio con sus formatos | Revisar y activar | ajustar: ídem | § Catálogo · agregar un medio con sus formatos (SUPUESTO) |
