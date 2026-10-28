@@ -13,6 +13,12 @@ Cada función con su estado en las tres pistas. Se actualiza en el mismo PR que 
 |---|---|---|---|---|---|
 | Super Admin | Marcas y submarcas | ● | ● | ● | (v1) |
 | Super Admin | Nueva marca y elegir módulos | ✓ | ○ | ○ | PL-2 |
+| Super Admin | Marcas por familia | ✓ | ○ | ○ | PL-10 |
+| Super Admin | Nueva submarca que hereda de su madre | ✓ | ○ | ○ | PL-11 |
+| Estrategia | ADN de una submarca por capas | ✓ | ○ | ○ | PL-11 |
+| Estrategia | Cambiar el ADN de la madre: impacto y versión por campaña | ✓ | ○ | ○ | PL-12 |
+| Planning | Formatos de la marca (paquetes, heredados y propios) | ✓ | ○ | ○ | PL-13, CD-6 |
+| Super Admin | Equipo de la marca (heredado y propio) | ✓ | ○ | ○ | PL-14 |
 | Estrategia | ADN de hoy | ● | ● | ● | (v1) |
 | Estrategia | ADN 2.0: secciones, mínimo, la IA propone | ◐ | ○ | ○ | PL-3 |
 | Estrategia | Audiencias de la marca | ✓ | ○ | ○ | PL-3 |

@@ -32,6 +32,10 @@ está aquí, todavía no tiene nombre acordado: se agrega antes de usarlo en una
 |---|---|---|
 | **Parte común** | Lo transversal a las dos herramientas: marca, ADN, audiencias y campaña. Se crea una vez. | — |
 | **Marca** | Una sola, la misma en las dos herramientas. Cada herramienta la extiende con lo suyo. | — |
+| **Marca madre / submarca** | Una submarca (Terpel CRM) es parte de su madre (Terpel) y **hereda** de ella por capas: prohibiciones siempre, lo demás se suma o se define propio. Un solo nivel. | La relación de octubre, que solo ordenaba: desde la decisión 16 hereda. |
+| **Familia** | Una marca madre con sus submarcas. | — |
+| **Versión del ADN** | Cada cambio guardado en el ADN de una marca. Cada campaña fija la versión con que arrancó. | — |
+| **Formatos de la marca** | Sus paquetes: el recorte de la biblioteca con que trabaja. | La biblioteca completa. |
 | **ADN** | Lo que la marca es y cómo habla: secciones, tono, vocabulario, reglas. Vive en la parte común. | «Voz de marca», que es una parte del ADN. |
 | **Audiencia** | Un público de la marca. **Se define en el ADN** (lista fija) y **se selecciona en la campaña**; todas las líneas se escriben para las audiencias de la campaña. | La segmentación de pauta: en CDM se llama **segmentación**, nunca «audiencia». |
 | **Segmentación** | Cómo se compra la pauta en un medio (edad, intereses, zona). Es de CDM y no entra a My Voice. | Audiencia. |

@@ -88,6 +88,31 @@ nueva que diga qué cambió y por qué.
     - Transición: los 14 canales siguen en código (`server/src/channels/specs/`) hasta que estén cargados
       en la biblioteca de CDM; después el motor los lee de ahí.
 
+## 2026-10-28 · La marca primero, y la submarca hereda
+
+16. **La submarca hereda de su marca madre, por capas y en vivo, no por copia.** Reemplaza a «la
+    relación solo ordena» de `docs/plan-marcas-relacionadas.md` (2026-10-13), que era el alcance de
+    aquel arreglo y no una regla de fondo.
+    - **Prohibiciones y reglas de marca** (legales, logo, palabras vetadas): siempre heredadas; la
+      submarca puede sumar, nunca quitar.
+    - **Keywords, audiencias y paquetes de formatos**: heredados, y la submarca suma los propios.
+    - **Tono, propuesta de valor, público y voz**: por sección, «igual que la madre» o «propio».
+    - **Equipo**: quien trabaja la madre ve sus submarcas; se pueden sumar personas.
+    - **Campañas**: no se heredan; cada una es de una marca concreta.
+    - **Se ve el origen** en cada sección («de Terpel» o «propio»); lo heredado se edita en la madre.
+    - **Un cambio en la madre** llega a todas sus submarcas, con un aviso de a cuántas afecta.
+    - **Cada campaña fija la versión del ADN** con la que arrancó: las activas no cambian solas (cierra
+      la pregunta abierta 7).
+    - **La completitud cuenta lo heredado**: una submarca nueva solo completa lo propio.
+    - **Un solo nivel**: madre → submarca, como hoy.
+    - El motor recibe el ADN **resuelto** (madre + submarca) desde una sola función de la parte común.
+17. **Se construye en orden, empezando por la marca**: marca → ADN y audiencias → formatos de la marca
+    (paquetes) → campaña → CDM (biblioteca, cuadro) → My Voice. Los **paquetes de la marca** son el
+    filtro que mantiene usable una biblioteca de 60 a 80 medios: cada marca trabaja sobre su recorte.
+    Las 6 cantidades pendientes de la carga de los 14 canales esperan a la etapa de CDM.
+    - Por ahora **solo LoBueno crea marcas**; cada marca ya pertenece a un workspace, así que abrir
+      otras empresas después no obliga a rehacer nada.
+
 ## Antes (2026-10-27), siguen vigentes con los nombres nuevos
 
 - La marca, su ADN y sus audiencias son la fuente de verdad (ahora en la parte común, decisión 7).
@@ -105,4 +130,3 @@ nueva que diga qué cambió y por qué.
 |---|---|---|
 | 8 | ¿Cómo se revisan 200 líneas? Propuesta: generar por tandas según fecha de salida, revisar agrupado por etapa y formato, y **aprobar por muestra** (una de cada grupo; el resto queda aprobado si pasa todos los controles; lo que se pasa del largo o tiene problemas se revisa siempre de a uno). | Revisar de a uno, como está diseñado, sirve para 10 líneas, no para 200. |
 | 9 | Si la campaña sigue directo a My Voice, sin cuadro todavía, ¿para qué etapas se escriben los textos raíz? Propuesta: el brief puede marcar etapas previstas, y el cuadro de CDM las confirma o agrega. Las adaptaciones esperan al cuadro (decisión 15). | Con la decisión 9 la etapa sale del cuadro, pero la decisión 7 permite empezar por My Voice. |
-| 7 | ¿Versión de marca fijada por campaña? | Si el ADN cambia, las campañas activas no deberían romperse. |

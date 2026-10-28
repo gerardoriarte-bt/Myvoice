@@ -143,6 +143,21 @@ Un solo servicio en la parte común. `Notificacion` (ya existe) suma `modulo`, `
 estado de «pendiente», se deriva de lo que falta en cada módulo. Cada módulo expone, por contrato,
 «qué le falta a esta persona en esta campaña».
 
+## 5b. ADN por capas (decisión 16)
+
+- `SeccionAdn` suma `modo`: `HEREDA` (igual que la madre), `PROPIA` o `SUMA` (madre + propia). Las
+  prohibiciones y reglas de marca son siempre `SUMA` y la parte de la madre no se puede quitar.
+- **Una sola función resuelve el ADN**: `resolverAdn(clientId, version?)` en `comun/adn/`. Devuelve
+  madre + submarca según el modo de cada sección, con el origen de cada valor. La usan la pantalla, la
+  completitud y el motor (que hoy arma los parámetros en `buildGenerationContext`).
+- **Versiones**: cada cambio guardado en el ADN de una marca crea `AdnVersion { clientId, version }`.
+  La campaña guarda `Project.adnVersion` al arrancar y el motor resuelve con esa versión; pasar una
+  campaña activa a la versión nueva es una acción explícita (pantalla «Cambiar el ADN de la madre»).
+  Una versión de la submarca registra también la versión de la madre con que se resolvió.
+- **Completitud** sobre el ADN resuelto: lo heredado cuenta.
+- **Un solo nivel**: una marca con submarcas no puede ser submarca (como hoy en `Client.marcaMadreId`).
+- **Paquetes y equipo** se resuelven igual: los de la madre más los propios, calculados al leer.
+
 ## 6. Funciones
 
 `FuncionEquipo` suma `ESTRATEGIA` y `PLANNING` (aditivo). El responsable sigue siendo por campaña
