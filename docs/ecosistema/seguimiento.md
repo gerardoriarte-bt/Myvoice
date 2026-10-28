@@ -80,7 +80,7 @@ donde aparece la propuesta de la IA.
 |---|---|---|---|
 | Mapa del código y dependencias entre módulos (`npm run mapa`) | — | ✓ | ✓ |
 | Limpieza antes de partir (spec-plataforma § 2.2, paso 1) | — | ✓ | — |
-| Tipos compartidos en `shared/` (§ 2.2, paso 2) | — | ○ | ○ |
+| Contrato de la generación en `server/src/contrato/` (§ 2.2, paso 2) | — | ✓ | ✓ |
 | Fronteras de módulos y regla de imports en CI | — | ○ | ○ |
 | Módulos encendidos por marca | — | ○ | ○ |
 | Contrato CDM ↔ My Voice en código | — | — | ○ |

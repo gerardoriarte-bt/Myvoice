@@ -233,7 +233,10 @@ changes once published.
 `vt:session-expired` event rather than hard-reloading.
 
 `shared/lobuenoBrand.ts` is imported by both projects and must stay import-free — the two
-tsconfigs differ.
+tsconfigs differ. The generation contract (`server/src/contrato/generacion.ts`: `Platform`,
+`FunnelStage`, `CopyParameters`, `CopyVariation`, `GenerationResponse`…) is the single definition for
+both sides — the root `types.ts` and `server/src/types.ts` re-export it. It lives under `server/src`
+because the server image only copies `server/`; it must stay import-free too, and CI checks it.
 
 ## Gotchas
 

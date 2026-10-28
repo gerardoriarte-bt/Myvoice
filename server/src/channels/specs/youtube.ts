@@ -1,7 +1,8 @@
 import { ChannelSpec } from "../types.js";
+import { Platform } from "../../types.js";
 
 export const youtube: ChannelSpec = {
-  id: "YouTube",
+  id: Platform.YOUTUBE,
   group: "social",
   description: "YouTube — head line 30 char, long line 90 char, descripción 90 char.",
   slots: [

@@ -1,7 +1,8 @@
 import { ChannelSpec } from "../types.js";
+import { Platform } from "../../types.js";
 
 export const googleAds: ChannelSpec = {
-  id: "Google Ads",
+  id: Platform.GOOGLE_ADS,
   group: "performance",
   description: "Google Ads RSA — 10 títulos cortos (≤30) + 4 títulos largos (≤90) + descripciones.",
   slots: [

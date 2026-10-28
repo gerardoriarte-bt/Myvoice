@@ -1,10 +1,18 @@
+import { FunnelStage, Platform } from './server/src/contrato/generacion';
+import type { CopyParameters, CopyVariation, FeedbackExample } from './server/src/contrato/generacion';
+// Contrato de la generación: una sola definición, compartida con el servidor
+// (server/src/contrato/generacion.ts, sin imports). Ver spec-plataforma § 2.2.
+export { FunnelStage, Platform } from './server/src/contrato/generacion';
+export type {
+  FeedbackExample,
+  CopyParameters,
+  CopyVariation,
+  CampaignSpine,
+  CoherenceReport,
+  UsageReport,
+  GenerationResponse,
+} from './server/src/contrato/generacion';
 
-export enum FunnelStage {
-  AWARENESS = 'Awareness',
-  CONSIDERATION = 'Consideración',
-  CONVERSION = 'Conversión',
-  RETENTION = 'Retención'
-}
 
 export const FUNNEL_STAGE_DESCRIPTIONS: Record<FunnelStage, string> = {
   [FunnelStage.AWARENESS]: 'Dar a conocer la marca / problema',
@@ -12,23 +20,6 @@ export const FUNNEL_STAGE_DESCRIPTIONS: Record<FunnelStage, string> = {
   [FunnelStage.CONVERSION]: 'Cerrar la compra / acción',
   [FunnelStage.RETENTION]: 'Reforzar valor post-compra'
 };
-
-export enum Platform {
-  INSTAGRAM_POST = 'Instagram Post',
-  INSTAGRAM_HISTORIA = 'Instagram Historia',
-  INSTAGRAM_CARRUSEL = 'Instagram Carrusel',
-  INSTAGRAM_REEL = 'Instagram Reel',
-  TIKTOK = 'TikTok',
-  YOUTUBE = 'YouTube',
-  CUNA_RADIO = 'Cuña de Radio',
-  GOOGLE_ADS = 'Google Ads',
-  GOOGLE_DISPLAY = 'Google Display',
-  RICH_MEDIA = 'Rich Media',
-  POP_UP = 'Pop up',
-  PUSH = 'Push Notification',
-  EMAIL = 'Email',
-  WHATSAPP = 'WhatsApp'
-}
 
 export const PLATFORM_GROUPS: Record<string, Platform[]> = {
   Social: [
@@ -198,11 +189,6 @@ export interface Client {
   conteos?: { campanas: number; complementarias: number };
 }
 
-export interface FeedbackExample {
-  platform: string;
-  content: string;
-}
-
 export interface ContentDNAProfile {
   id: string;
   clientId: string;
@@ -220,68 +206,6 @@ export interface ContentDNAProfile {
   primaryCTA: string;
   feedbackExamples: FeedbackExample[]; // Nuevo campo de aprendizaje
   createdAt: number;
-}
-
-export interface CopyParameters {
-  voice: string;
-  goal: string;
-  campaignConcept?: string;
-  theme: string;
-  product: string;
-  targetAudience: string;
-  keywords: string;
-  prohibitions?: string;
-  brandVoiceGuidelines: string;
-  valueProposition: string;
-  primaryCTA: string;
-  funnelStage?: FunnelStage;
-  platforms: Platform[];
-  clientId: string;
-  /**
-   * Brief (perfil de ADN) elegido en el formulario. Sin esto el consumidor
-   * tiene que adivinar por clientId y termina tomando el primer brief de la
-   * marca, que no es necesariamente el que se seleccionó.
-   */
-  dnaProfileId?: string;
-  clientName?: string;
-  clientIndustry?: string;
-  feedbackExamples?: FeedbackExample[];
-}
-
-export interface CopyVariation {
-  id: string;
-  platform: Platform;
-  type: string; // angle: Beneficio | Curiosidad | Urgencia | channel-specific
-  slot?: string; // e.g. "shortTitle", "longTitle", "hook", "body", "subject"
-  /** Etiqueta legible del slot, resuelta en el servidor contra channels/registry.ts. */
-  slotLabel?: string;
-  variationIndex?: number;
-  content: string;
-  charCount: number;
-  budget?: number;
-  budgetUnit?: 'char' | 'word';
-  budgetOk?: boolean;
-  prohibitionsHit?: string[];
-  score?: number;
-  scoreRationale?: string;
-  writerScore?: number;
-  editorFlags?: string[];
-  autofixed?: boolean;
-}
-
-export interface CampaignSpine {
-  concept: string;
-  keyMessage: string;
-  tone: string;
-  heroCTA: string;
-  angles: { name: string; premise: string; register: string }[];
-}
-
-export interface CoherenceReport {
-  coherenceScore: number;
-  summary: string;
-  issues: { channels: string[]; problem: string; severity: 'low' | 'medium' | 'high' }[];
-  flags: string[];
 }
 
 /** Cómo se aprueba el copy de una campaña antes de producir. */
@@ -341,27 +265,6 @@ export interface SavedVariation extends CopyVariation {
 export interface BrandConfig {
   id: string;
   name: string;
-}
-
-export interface GenerationResponse {
-  variations: CopyVariation[];
-  spine?: CampaignSpine;
-  coherence?: CoherenceReport;
-  usage?: UsageReport;
-}
-
-export interface UsageReport {
-  promptTokens: number;
-  cachedTokens: number;
-  /** tokens written to cache on the first call of a generation */
-  cacheWriteTokens?: number;
-  completionTokens: number;
-  costUsd: number;
-  /** true when costUsd is estimated from a local price table, not reported by the provider */
-  costEstimated?: boolean;
-  /** cachedTokens / promptTokens, 0-1 */
-  cacheHitRate?: number;
-  byStage: Record<string, { tokens: number; costUsd: number }>;
 }
 
 export type ReviewDecision = 'APPROVED' | 'REJECTED';

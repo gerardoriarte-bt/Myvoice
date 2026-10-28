@@ -1,7 +1,8 @@
 import { ChannelSpec } from "../types.js";
+import { Platform } from "../../types.js";
 
 export const instagramPost: ChannelSpec = {
-  id: "Instagram Post",
+  id: Platform.INSTAGRAM_POST,
   group: "social",
   description: "Feed post — combinación de hook visual + caption.",
   slots: [
