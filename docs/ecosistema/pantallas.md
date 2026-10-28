@@ -14,6 +14,13 @@ Estados: **diseñada** · **ajustar** (diseñada, pero una decisión nueva la ca
 | Marco | Barra de la plataforma: módulo, marca, buscar, Mi cola, avisos | — | diseñada (componente) | ⚙ Componente · Barra de la plataforma |
 | Marca | Nueva marca y elegir módulos (Super Admin) | Crear marca y empezar el ADN | diseñada | § Marco · Nueva marca — se crea una vez y se eligen sus módulos |
 | Marca | Inicio de la marca: ADN, audiencias, formatos y campañas con «espera a» | Nueva campaña | diseñada | § Marco · Inicio de la marca — lo que es transversal y todas sus campañas |
+| Marca | **Recorrido de la marca**: los 6 pasos y las reglas de herencia | — | diseñada | § Marca · Recorrido completo — de crear la marca a su primera campaña |
+| Marca | Marcas por familia: madre con submarcas, ADN contando lo heredado | Nueva marca | diseñada | § Marca · Marcas por familia — cada madre con sus submarcas |
+| Marca | Nueva submarca: lo que trae de la madre | Crear y definir lo propio | diseñada | § Marca · Nueva submarca — parte de lo que ya tiene su madre |
+| ADN | ADN de una submarca, por capas | Guardar | diseñada | § Marca · ADN de una submarca — lo heredado y lo propio, por sección |
+| ADN | Cambiar el ADN de la madre: impacto y versión | Guardar versión nueva | diseñada | § Marca · Cambiar el ADN de la madre — a quién afecta antes de guardar |
+| Formatos | Formatos de la marca (paquetes) | Agregar formatos | diseñada | § Marca · Formatos de la marca — el recorte con el que trabaja cada marca |
+| Equipo | Equipo de la marca: heredado y propio | Invitar | diseñada | § Marca · Equipo de la marca — lo heredado de la madre y las personas propias |
 | Campaña | Nueva campaña y **elegir cómo sigue** (My Voice o CDM) | Crear y abrir el brief / el cuadro | diseñada | § Marco · Nueva campaña — se crea una vez y el equipo elige cómo sigue |
 | Campaña | Una campaña en las dos herramientas: carriles, «espera a», lo que pasó | Ir a la acción que espera | diseñada | § Marco · Una campaña en las dos herramientas — dónde va, qué falta y a quién espera |
 | Cola | Mi cola y avisos, de los dos módulos | Ir a la acción | diseñada | § Marco · Mi cola y avisos — lo que te toca, en las dos herramientas |

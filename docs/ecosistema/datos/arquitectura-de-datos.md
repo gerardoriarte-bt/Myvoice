@@ -29,9 +29,10 @@ Marcado: **(hoy)** existe en producción · **(nuevo)** por construir · **(camb
 | `User`, `Membership`, `WorkspaceInvite` | Personas y su acceso por workspace | hoy |
 | `Client` | **La marca** (con `marcaMadreId` para submarcas) | hoy |
 | `ModuloDeMarca` | Qué módulos tiene encendidos la marca | nuevo |
-| `SeccionAdn`, `FuenteDeMarca` | ADN 2.0 por secciones, con estado y origen | nuevo |
+| `SeccionAdn`, `FuenteDeMarca` | ADN 2.0 por secciones, con estado, origen y `modo` (`HEREDA`, `PROPIA`, `SUMA`) frente a la madre | nuevo |
+| `AdnVersion` | Cada versión guardada del ADN de una marca (y la versión de la madre con que se resolvió) | nuevo |
 | `AudienciaDeMarca` | Lista fija de audiencias de la marca | nuevo |
-| `Project` | **La campaña** (responsable, modo de aprobación) | cambia: `referencia`, `sigueEn`, fechas |
+| `Project` | **La campaña** (responsable, modo de aprobación) | cambia: `referencia`, `sigueEn`, fechas, `adnVersion` |
 | `CampanaAudiencia` | Audiencias del ADN elegidas para la campaña | nuevo |
 | `MiembroFuncion` | Funciones por persona y marca | cambia: enum suma `ESTRATEGIA`, `PLANNING` |
 | `Notificacion` | Avisos | cambia: `modulo`, `campanaId`, `destino` |
@@ -58,7 +59,7 @@ Marcado: **(hoy)** existe en producción · **(nuevo)** por construir · **(camb
 | `Medio` | Meta, Google, programática… con su clase y estado (borrador, activo, oculto) | nuevo |
 | `Formato`, `FormatoVersion` | El formato y cada versión con medidas, campos de texto y archivo | nuevo |
 | `CampoDeTexto` | Clave, ubicación (en pieza o plataforma), unidad, máximo, mínimo, repeticiones | nuevo |
-| `PaqueteDeFormatos`, `PaqueteFormato` | Formatos habituales de una marca | nuevo |
+| `PaqueteDeFormatos`, `PaqueteFormato` | Formatos habituales de una marca; una submarca ve los de su madre más los propios (calculado al leer) | nuevo |
 | `Cuadro`, `LineaDeCuadro` | El encargo por versión: formato, etapa, variaciones, fechas | nuevo |
 | `CargaDePlanilla` | Historial de cargas con su revisión | nuevo |
 
