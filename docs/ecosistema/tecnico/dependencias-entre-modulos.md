@@ -1,6 +1,6 @@
 # Dependencias entre módulos (generado)
 
-Generado el 2026-10-28 desde el commit `d77bb84` con `bash scripts/mapa/actualizar.sh`. **No se edita a mano**: se corrige `scripts/mapa/modulos.json` y se vuelve a generar.
+Generado el 2026-11-04 desde el commit `fb498ec` con `bash scripts/mapa/actualizar.sh`. **No se edita a mano**: se corrige `scripts/mapa/modulos.json` y se vuelve a generar.
 
 Cada fila es un archivo que usa algo de otro archivo de **otro módulo** (importa, llama o referencia un tipo). Módulos según la decisión 12; reglas en [spec-plataforma.md](./spec-plataforma.md) § 2.
 
@@ -8,25 +8,21 @@ Cada fila es un archivo que usa algo de otro archivo de **otro módulo** (import
 
 | Desde \ Hacia | Plataforma | Parte común | My Voice | CDM | Compartido |
 |---|---|---|---|---|---|
-| **Plataforma** | · | 12 | 19 | · | 14 |
-| **Parte común** | · | · | 3 | · | 30 |
-| **My Voice** | · | 30 | · | · | 131 |
+| **Plataforma** | · | 12 | 20 | · | 14 |
+| **Parte común** | · | · | · | · | 30 |
+| **My Voice** | · | 31 | · | · | 132 |
 | **CDM** | · | · | · | · | · |
 | **Compartido** | · | · | · | · | · |
 
-- **Hay que invertir**: 3 · **pasan por el contrato**: 30 · **permitidas**: 206
+- **Hay que invertir**: 0 · **pasan por el contrato**: 31 · **permitidas**: 208
 
-## Hay que invertir (3)
+## Hay que invertir (0)
 
 Rompen la regla: la parte común o la infraestructura dependen de un módulo, o un módulo depende de otro. Antes de partir las carpetas, cada una se resuelve moviendo el archivo de módulo, moviendo el tipo a `contrato/`, o invirtiendo la llamada (el módulo se registra en la parte común en vez de que la parte común lo importe).
 
-| Desde | Archivo | Hacia | Archivo | Qué usa |
-|---|---|---|---|---|
-| Parte común | `components/ClientManager.tsx` | My Voice | `components/GenerationHistory.tsx` | GenerationHistory(), GenerationHistory.tsx |
-| Parte común | `components/ClientManager.tsx` | My Voice | `components/PromptPreview.tsx` | PromptPreview(), PromptPreview.tsx |
-| Parte común | `server/src/controllers/workspaceController.ts` | My Voice | `server/src/lib/planLimits.ts` | PLANES_VALIDOS, planLimits.ts |
+Ninguna.
 
-## Pasan por el contrato (30)
+## Pasan por el contrato (31)
 
 Un módulo lee la parte común. Está bien, pero solo por `contrato/`: esta lista es lo que `contrato/` tiene que exponer.
 
@@ -61,16 +57,17 @@ Un módulo lee la parte común. Está bien, pero solo por `contrato/`: esta list
 | My Voice | `server/src/services/piezaService.ts` | Parte común | `server/src/lib/tenancy.ts` | TenantContext, TenantError, tenancy.ts |
 | My Voice | `server/src/services/piezaService.ts` | Parte común | `server/src/services/notificacionService.ts` | AvisoEscrito, EventoNotificable, destinatariosDe(), enviarEnSegundoPlano() |
 | My Voice | `server/src/services/revisionDePiezas.ts` | Parte común | `server/src/lib/tenancy.ts` | TenantContext, TenantError, canManage(), tenancy.ts |
+| My Voice | `server/src/services/usageService.ts` | Parte común | `server/src/lib/planLimits.ts` | planLimits.ts, resolvePlanLimits() |
 | My Voice | `server/src/services/usageService.ts` | Parte común | `server/src/lib/tenancy.ts` | TenantContext, TenantError, tenancy.ts |
 
-## Permitidas (206)
+## Permitidas (208)
 
 El arranque importa de todos, y todos usan la infraestructura compartida.
 
 | Desde | Hacia | Pares |
 |---|---|---|
 | Parte común | Compartido | 30 |
-| My Voice | Compartido | 131 |
+| My Voice | Compartido | 132 |
 | Plataforma | Compartido | 14 |
 | Plataforma | Parte común | 12 |
-| Plataforma | My Voice | 19 |
+| Plataforma | My Voice | 20 |

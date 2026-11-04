@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "fronteras": "python3 -I scripts/mapa/fronteras.py",
     "mapa": "bash scripts/mapa/actualizar.sh"
   },
   "dependencies": {

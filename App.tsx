@@ -6,7 +6,8 @@ import GenerationProgress from './components/GenerationProgress';
 import FailedChannelsPanel, { CanalFallido } from './components/FailedChannelsPanel';
 import { runMockGeneration } from './services/mockGeneration';
 import SavedManager from './components/SavedManager';
-import ClientManager from './components/ClientManager';
+import ClientManager, { EspaciosDeMarca } from './components/ClientManager';
+import PromptPreview from './components/PromptPreview';
 import UserManager from './components/UserManager';
 import UserHeader from './components/UserHeader';
 import NotificationSystem, { Notification, NotificationType } from './components/NotificationSystem';
@@ -77,6 +78,12 @@ const MOCK_DNA: ContentDNAProfile[] = [
     createdAt: Date.now()
   }
 ];
+
+/** Lo que My Voice muestra dentro de la marca: Marcas ofrece el espacio y la plataforma lo llena. */
+const ESPACIOS_DE_MARCA: EspaciosDeMarca = {
+  juntoAlBrief: (client, borrador) => <PromptPreview client={client} draft={borrador} />,
+  campanas: client => <GenerationHistory initialClientId={client.id} />,
+};
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = React.useState(false);
@@ -1010,6 +1017,7 @@ const App: React.FC = () => {
                 }
               }}
               onAbrirMarca={setActiveClientId}
+              espacios={ESPACIOS_DE_MARCA}
               onSaveProfile={handleSaveDNAProfile}
               onUpdateProfile={handleUpdateDNAProfile}
               onDeleteProfile={handleDeleteDNAProfile}

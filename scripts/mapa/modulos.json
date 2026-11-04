@@ -25,11 +25,11 @@
     "server/src/lib/dominios.ts": "comun",
     "server/src/lib/crypto.ts": "comun",
     "server/src/lib/workspaceSecret.ts": "comun",
+    "server/src/lib/planLimits.ts": "comun",
 
     "server/src/channels/": "myvoice",
     "server/src/controllers/": "myvoice",
     "server/src/services/": "myvoice",
-    "server/src/lib/planLimits.ts": "myvoice",
 
     "server/src/services/aiClient.ts": "compartido",
     "server/src/lib/prisma.ts": "compartido",
@@ -50,6 +50,7 @@
 
     "App.tsx": "plataforma",
     "index.tsx": "plataforma",
+    "index.css": "plataforma",
     "screens.ts": "compartido",
     "constants.ts": "compartido",
     "types.ts": "compartido",
@@ -77,11 +78,13 @@
     "components/AISettings.tsx": "comun",
     "components/VoiceFingerprintCard.tsx": "comun",
     "components/": "myvoice",
+    "etiquetasDelEditor.ts": "myvoice",
     "services/": "myvoice",
 
     "server/prisma/": "fuera",
     "server/scripts/": "fuera",
     "scripts/": "fuera",
+    "video/": "fuera",
     "shared/": "fuera",
     "vite.config.ts": "fuera",
     "package.json": "fuera",
