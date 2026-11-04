@@ -1,5 +1,5 @@
 import React from 'react';
-import { Bell, Check, PenLine, Stamp } from 'lucide-react';
+import { Bell, Check, PenLine, ShieldAlert, Stamp } from 'lucide-react';
 import { Notificacion } from '../types';
 import { notificacionesApi } from '../services/api';
 
@@ -30,16 +30,20 @@ interface Props {
   onIr: (destino: DestinoAviso) => void;
   /** Lleva al tablero sin pieza: es la salida de la bandeja vacía. */
   onIrAlTablero: () => void;
+  /** Lleva a la revisión del ADN de una marca (aviso ADN_POR_REVISAR, docs/plan-revision-adn.md). */
+  onIrAlAdn?: (clientId: string) => void;
 }
 
 const ICONO: Record<string, React.ComponentType<{ className?: string }>> = {
   ASIGNACION: PenLine,
   ENTREGA: Stamp,
+  ADN_POR_REVISAR: ShieldAlert,
 };
 
 const COLOR: Record<string, string> = {
   ASIGNACION: '#7C5CFF',
   ENTREGA: '#F59E0B',
+  ADN_POR_REVISAR: '#D97706',
 };
 
 const desde = (fecha: string): string => {
@@ -52,7 +56,7 @@ const desde = (fecha: string): string => {
   return dias === 1 ? 'ayer' : `hace ${dias} días`;
 };
 
-export default function Bandeja({ onIr, onIrAlTablero }: Props) {
+export default function Bandeja({ onIr, onIrAlTablero, onIrAlAdn }: Props) {
   const [abierta, setAbierta] = React.useState(false);
   const [avisos, setAvisos] = React.useState<Notificacion[]>([]);
   const [sinLeer, setSinLeer] = React.useState(0);
@@ -82,7 +86,8 @@ export default function Bandeja({ onIr, onIrAlTablero }: Props) {
 
   const abrir = async (aviso: Notificacion) => {
     setAbierta(false);
-    if (aviso.clientId) onIr({ clientId: aviso.clientId, piezaId: aviso.piezaId });
+    if (aviso.clientId && aviso.tipo === 'ADN_POR_REVISAR' && onIrAlAdn) onIrAlAdn(aviso.clientId);
+    else if (aviso.clientId) onIr({ clientId: aviso.clientId, piezaId: aviso.piezaId });
     if (aviso.leida) return;
     // Optimista: la campana baja al instante y si la llamada falla, el
     // siguiente pulso la devuelve a su número real.

@@ -97,6 +97,8 @@ const App: React.FC = () => {
    * pieza de un aviso viejo.
    */
   const [destinoProduccion, setDestinoProduccion] = React.useState<DestinoAviso | null>(null);
+  /** La marca cuyo ADN pidió revisar un aviso de la bandeja: Marcas abre su revisión. */
+  const [revisarAdnDe, setRevisarAdnDe] = React.useState<string | null>(null);
   const [reviewToken, setReviewToken] = React.useState(() => new URLSearchParams(window.location.search).get('review'));
   /**
    * Respuestas del cliente que todavía no se vieron. Antes contaba TODAS las
@@ -847,6 +849,10 @@ const App: React.FC = () => {
               setActiveTab('produccion');
             }}
             onIrAlTablero={() => setActiveTab('produccion')}
+            onIrAlAdn={clientId => {
+              setRevisarAdnDe(clientId);
+              setActiveTab('clients');
+            }}
           />
         </header>
 
@@ -1018,6 +1024,13 @@ const App: React.FC = () => {
               }}
               onAbrirMarca={setActiveClientId}
               espacios={ESPACIOS_DE_MARCA}
+              revisarAdnDe={revisarAdnDe}
+              onRevisionAbierta={() => setRevisarAdnDe(null)}
+              onAdnCorregido={() => recargarMarcas()}
+              onAdnConfirmado={() => {
+                recargarMarcas();
+                addNotification('ADN confirmado: sus submarcas ya lo heredan', 'success');
+              }}
               onSaveProfile={handleSaveDNAProfile}
               onUpdateProfile={handleUpdateDNAProfile}
               onDeleteProfile={handleDeleteDNAProfile}

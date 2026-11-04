@@ -216,6 +216,9 @@ async function main() {
     await expectDenied('GET /dna-profiles/:id/insights de A', `/dna-profiles/${A.dna.id}/insights`, B.token);
     await expectDenied('GET /clients/:id/adn de A', `/clients/${A.client.id}/adn`, B.token);
     await expectDenied('GET /clients/:id/adn?version de A', `/clients/${A.client.id}/adn?version=1`, B.token);
+    await expectDenied('GET /clients/:id/adn/revision de A', `/clients/${A.client.id}/adn/revision`, B.token);
+    await expectDenied('POST /clients/:id/adn/revision/:clave de A', `/clients/${A.client.id}/adn/revision/voz`, B.token, { method: 'POST', body: '{}' });
+    await expectDenied('POST /clients/:id/adn/confirmar de A', `/clients/${A.client.id}/adn/confirmar`, B.token, { method: 'POST' });
     await expectDenied('POST /saved en la marca de A', '/saved', B.token, {
       method: 'POST',
       body: JSON.stringify({
@@ -1317,6 +1320,7 @@ async function main() {
       body: JSON.stringify({ name: 'Marca B renombrada' }),
     });
     await expectAllowed('GET /clients/:id/adn propio', `/clients/${B.client.id}/adn`, B.token);
+    await expectAllowed('GET /clients/:id/adn/revision propio', `/clients/${B.client.id}/adn/revision`, B.token);
     await expectAllowed('PUT /saved/:id propio', `/saved/${B.variation.id}`, B.token, {
       method: 'PUT',
       body: JSON.stringify({ content: 'editado por su dueño' }),

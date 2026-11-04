@@ -89,6 +89,9 @@ const propiasDe = async (db: Db, clientId: string, version?: number | null): Pro
  * El ADN de una marca resuelto con el de su madre (decisión 16): la única función que lo arma. La
  * usan el motor (`parametrosDeGeneracion`) y `GET /clients/:id/adn`.
  *
+ * Una submarca hereda solo si el ADN de su madre está confirmado (`Client.adnConfirmadoEn`,
+ * docs/plan-revision-adn.md): sin eso resuelve solo lo propio, aunque ya tenga secciones.
+ *
  * Sin `version` resuelve lo vigente: las secciones de la marca y las de su madre, en vivo. Con
  * `version` resuelve la foto guardada: las secciones de esa versión y las de la versión de la madre
  * que quedó registrada con ella.
@@ -103,7 +106,11 @@ export const resolverAdn = async (
   const db = opciones.db ?? prisma;
   const client = await db.client.findUnique({
     where: { id: clientId },
-    select: { id: true, marcaMadreId: true, marcaMadre: { select: { id: true, name: true } } },
+    select: {
+      id: true,
+      marcaMadreId: true,
+      marcaMadre: { select: { id: true, name: true, adnConfirmadoEn: true } },
+    },
   });
   if (!client) throw new Error(`resolverAdn: no existe la marca ${clientId}`);
 
@@ -115,14 +122,16 @@ export const resolverAdn = async (
   if (!propias) throw new Error(`resolverAdn: no existe la marca ${clientId}`);
 
   const enVivo = propias.version == null || opciones.version == null;
-  const madreId = propias.fuente === 'columnas' ? null : enVivo ? client.marcaMadreId : propias.madreId;
+  // Una versión guardada registra la madre solo si estaba confirmada (`guardarAdnDesdeColumnas`).
+  const madreConfirmada = client.marcaMadre?.adnConfirmadoEn ? client.marcaMadreId : null;
+  const madreId = propias.fuente === 'columnas' ? null : enVivo ? madreConfirmada : propias.madreId;
   const deMadre = madreId
     ? await propiasDe(db, madreId, enVivo ? null : propias.versionMadre)
     : null;
   const marcaMadre =
     madreId && deMadre
       ? client.marcaMadre?.id === madreId
-        ? client.marcaMadre
+        ? { id: client.marcaMadre.id, name: client.marcaMadre.name }
         : await db.client.findUnique({ where: { id: madreId }, select: { id: true, name: true } })
       : null;
 

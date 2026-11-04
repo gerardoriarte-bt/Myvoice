@@ -17,7 +17,8 @@ import { prisma } from '../lib/prisma.js';
 import { claveGuiaDeMarca, storage } from '../lib/storage.js';
 import { guardarAdnDesdeColumnas } from '../comun/adn/guardarAdn.js';
 import { resolverAdn } from '../comun/adn/resolverAdn.js';
-import { COLUMNAS_ADN } from '../comun/adn/secciones.js';
+import { COLUMNAS_ADN, SECCIONES_ADN } from '../comun/adn/secciones.js';
+import { avisarAdnPorRevisar, confirmarAdn, estadoDeRevision, revisarSeccion } from '../comun/adn/revisionAdn.js';
 
 
 /**
@@ -77,10 +78,18 @@ export const getClients = async (req: AuthRequest, res: Response) => {
   try {
     const clients = await prisma.client.findMany({
       where: { workspaceId: req.tenant!.workspaceId },
-      include: { dnaProfiles: true },
+      include: { dnaProfiles: true, seccionesAdn: { select: { revisadaEn: true } } },
       orderBy: { createdAt: 'asc' },
     });
-    res.json(await Promise.all(conRelaciones(clients).map(conUrlDeGuia)));
+    // Una madre con submarcas y el ADN sin confirmar pide revisión (docs/plan-revision-adn.md).
+    const conRevision = conRelaciones(clients).map(({ seccionesAdn, ...m }) => ({
+      ...m,
+      adnPorRevisar:
+        m.conteos.complementarias > 0 && !m.adnConfirmadoEn
+          ? { revisadas: seccionesAdn.filter(s => s.revisadaEn).length, total: SECCIONES_ADN.length }
+          : null,
+    }));
+    res.json(await Promise.all(conRevision.map(conUrlDeGuia)));
   } catch (error) {
     handleTenantError(error, res, 'Error al obtener marcas');
   }
@@ -166,6 +175,9 @@ export const createClient = async (req: AuthRequest, res: Response) => {
       await guardarAdnDesdeColumnas(creada.id, { autorId: req.tenant!.userId, tx });
       return creada;
     });
+    // Su madre puede haber tenido recién su primera submarca: pide revisar su ADN.
+    if (client.marcaMadreId)
+      avisarAdnPorRevisar({ clientId: client.marcaMadreId }).catch(e => console.error('[adn] aviso:', e));
     res.status(201).json(client);
   } catch (error) {
     handleTenantError(error, res, 'Error al crear la marca');
@@ -197,6 +209,8 @@ export const updateClient = async (req: AuthRequest, res: Response) => {
         });
       return actualizada;
     });
+    if (marcaMadreId)
+      avisarAdnPorRevisar({ clientId: marcaMadreId }).catch(e => console.error('[adn] aviso:', e));
     res.json(await conUrlDeGuia(client));
   } catch (error) {
     handleTenantError(error, res, 'Error al actualizar la marca');
@@ -234,6 +248,36 @@ export const getAdnResuelto = async (req: AuthRequest, res: Response) => {
     res.json(await resolverAdn(id, { version }));
   } catch (error) {
     handleTenantError(error, res, 'Error al resolver el ADN');
+  }
+};
+
+/** La revisión del ADN antes de que lo hereden las submarcas (docs/plan-revision-adn.md). */
+export const getRevisionAdn = async (req: AuthRequest, res: Response) => {
+  try {
+    await assertClientInWorkspace(req.tenant!, req.params.id);
+    res.json(await estadoDeRevision(req.params.id));
+  } catch (error) {
+    handleTenantError(error, res, 'Error al leer la revisión del ADN');
+  }
+};
+
+/** «Está bien» (sin `texto`) o «Corregir» (con `texto`) una sección. */
+export const postRevisarSeccion = async (req: AuthRequest, res: Response) => {
+  try {
+    await assertClientInWorkspace(req.tenant!, req.params.id);
+    const texto = req.body && 'texto' in req.body ? req.body.texto : undefined;
+    res.json(await revisarSeccion(req.tenant!, req.params.id, req.params.clave, texto));
+  } catch (error) {
+    handleTenantError(error, res, 'Error al revisar la sección');
+  }
+};
+
+export const postConfirmarAdn = async (req: AuthRequest, res: Response) => {
+  try {
+    await assertClientInWorkspace(req.tenant!, req.params.id);
+    res.json(await confirmarAdn(req.tenant!, req.params.id));
+  } catch (error) {
+    handleTenantError(error, res, 'Error al confirmar el ADN');
   }
 };
 

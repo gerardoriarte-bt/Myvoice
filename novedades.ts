@@ -52,9 +52,10 @@ export const NOVEDADES: Novedad[] = [
     fecha: '2026-11-04',
     titulo: 'Las submarcas heredan el ADN de su madre',
     cambios: [
-      'Una submarca suma siempre las prohibiciones y keywords de su madre: no puede quitarlas.',
+      'Antes de heredar, alguien que administra revisa el ADN de la madre sección por sección y lo confirma. Marcas y la campana avisan cuál falta.',
+      'Con el ADN de la madre confirmado, la submarca suma sus prohibiciones y keywords: no puede quitarlas.',
       'Si una submarca no tiene voz, propuesta de valor o guías propias, el copy toma las de la madre. Con las suyas, mandan las suyas.',
-      'Un cambio en el ADN de la madre llega a todas sus submarcas.',
+      'Un cambio en el ADN confirmado de la madre llega a todas sus submarcas.',
       'Las campañas y aprobaciones siguen siendo de cada marca.',
     ],
   },
