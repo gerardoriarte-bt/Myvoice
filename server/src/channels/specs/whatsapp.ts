@@ -1,7 +1,8 @@
 import { ChannelSpec } from "../types.js";
+import { Platform } from "../../types.js";
 
 export const whatsapp: ChannelSpec = {
-  id: "WhatsApp",
+  id: Platform.WHATSAPP,
   group: "engagement",
   description: "Mensaje de WhatsApp — conversacional, *negritas* con asteriscos, máximo 2 emojis.",
   slots: [

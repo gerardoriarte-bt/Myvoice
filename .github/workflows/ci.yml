@@ -79,6 +79,16 @@ jobs:
           rm sonda-ci.tsx
           echo "La sonda falló como corresponde."
 
+      # server/src/contrato/ lo compilan el front (bundler) y el server (NodeNext):
+      # un import resolvería distinto en cada lado. Solo tipos y enums, sin imports.
+      - name: El contrato no importa nada
+        run: |
+          if grep -nE "^\s*(import|export .* from)\b|require\(" server/src/contrato/*.ts; then
+            echo "::error::server/src/contrato/ no puede importar: lo compilan el front y el server con configuraciones distintas."
+            exit 1
+          fi
+          echo "El contrato no importa nada."
+
       - name: Build de producción
         run: npm run build
 
@@ -222,7 +232,7 @@ jobs:
           node - <<'EOF'
           const fs = require('fs');
           const path = require('path');
-          const archivos = ['CLAUDE.md', ...fs.readdirSync('docs').filter(f => f.endsWith('.md')).map(f => `docs/${f}`)];
+          const archivos = ['CLAUDE.md', ...fs.readdirSync('docs', { recursive: true }).filter(f => f.endsWith('.md')).map(f => `docs/${f}`)];
           const rotos = [];
           for (const archivo of archivos) {
             const texto = fs.readFileSync(archivo, 'utf8');

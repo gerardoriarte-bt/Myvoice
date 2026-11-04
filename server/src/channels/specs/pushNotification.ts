@@ -1,7 +1,8 @@
 import { ChannelSpec } from "../types.js";
+import { Platform } from "../../types.js";
 
 export const pushNotification: ChannelSpec = {
-  id: "Push Notification",
+  id: Platform.PUSH,
   group: "engagement",
   description: "Push notification — Título 25 char, Texto 40 char.",
   slots: [

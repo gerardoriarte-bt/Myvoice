@@ -102,8 +102,8 @@ una pantalla, no una decoración aparte.
 
 **El isotipo es una onda de voz**: seis barras sobre una plaquita, en `components/ui/Isotipo.tsx`.
 Reemplaza a las tres capas apiladas que se dibujaban a mano en la portada, el menú lateral y el
-portal del cliente, cada una con su tamaño y su grosor de trazo. `components/Login.tsx` todavía
-las tiene, pero ya nada lo importa: es código muerto.
+portal del cliente, cada una con su tamaño y su grosor de trazo. (`components/Login.tsx`, que todavía
+las tenía y ya nadie importaba, se borró el 2026-10-28.)
 Nació en la propuesta de portada del `.pen` y se adoptó como marca.
 
 - **Un componente, dos tonos.** `oscuro` (plaquita `ink`, barras blancas) sobre fondos claros;

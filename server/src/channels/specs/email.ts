@@ -1,7 +1,8 @@
 import { ChannelSpec } from "../types.js";
+import { Platform } from "../../types.js";
 
 export const email: ChannelSpec = {
-  id: "Email",
+  id: Platform.EMAIL,
   group: "engagement",
   description: "Email marketing — asunto + preheader + header + cuerpo + CTA.",
   slots: [

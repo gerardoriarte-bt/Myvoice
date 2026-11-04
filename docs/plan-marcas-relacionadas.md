@@ -1,5 +1,9 @@
 # Marcas relacionadas: madre, complementarias y nombres repetidos
 
+> **2026-10-28:** «la relación solo ordena» queda reemplazado por la decisión 16 de
+> [ecosistema/decisiones.md](./ecosistema/decisiones.md): la submarca **hereda** de su madre por capas
+> (prohibiciones siempre, lo demás se suma o se define propio) y cada campaña fija su versión del ADN.
+
 Origen: el hotfix del 2026-10-13 (PR #33). Un usuario creó una campaña en Comfama y quedó en
 Terpel. La causa fue un bug del frontend, pero lo que dejó a la vista es otra cosa: en Buentipo
 hay **dos marcas que se llaman «Terpel»**, una «Terpel CRM» y una «Viveterpel», y el selector las

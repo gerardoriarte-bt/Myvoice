@@ -1,7 +1,8 @@
 import { ChannelSpec } from "../types.js";
+import { Platform } from "../../types.js";
 
 export const richMedia: ChannelSpec = {
-  id: "Rich Media",
+  id: Platform.RICH_MEDIA,
   group: "performance",
   description: "Banner Rich Media — Título 25 char, Texto 40 char.",
   slots: [

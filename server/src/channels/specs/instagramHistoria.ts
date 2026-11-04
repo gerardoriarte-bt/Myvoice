@@ -1,7 +1,8 @@
 import { ChannelSpec } from "../types.js";
+import { Platform } from "../../types.js";
 
 export const instagramHistoria: ChannelSpec = {
-  id: "Instagram Historia",
+  id: Platform.INSTAGRAM_HISTORIA,
   group: "social",
   description: "Story 9:16 — copy super corto + elemento interactivo.",
   slots: [

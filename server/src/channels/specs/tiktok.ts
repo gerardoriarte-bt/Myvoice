@@ -1,7 +1,8 @@
 import { ChannelSpec } from "../types.js";
+import { Platform } from "../../types.js";
 
 export const tiktok: ChannelSpec = {
-  id: "TikTok",
+  id: Platform.TIKTOK,
   group: "social",
   description: "Video TikTok — caption MAX 100 caracteres, hook verbal en 2s.",
   slots: [

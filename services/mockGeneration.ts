@@ -322,8 +322,11 @@ const mockUsage = (channelCount: number): UsageReport => {
   return {
     promptTokens,
     cachedTokens,
+    cacheWriteTokens: 0,
     completionTokens,
     costUsd,
+    costEstimated: true,
+    cacheHitRate: cachedTokens / promptTokens,
     byStage,
   };
 };

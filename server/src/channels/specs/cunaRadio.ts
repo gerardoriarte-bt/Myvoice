@@ -1,7 +1,8 @@
 import { ChannelSpec } from "../types.js";
+import { Platform } from "../../types.js";
 
 export const cunaRadio: ChannelSpec = {
-  id: "Cuña de Radio",
+  id: Platform.CUNA_RADIO,
   group: "audio",
   description: "Cuña de radio — guion entre 55 y 60 palabras (≈30 segundos).",
   slots: [
