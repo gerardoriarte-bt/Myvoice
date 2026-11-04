@@ -48,6 +48,17 @@ export interface Novedad {
 
 export const NOVEDADES: Novedad[] = [
   {
+    id: 'manual-de-oficio',
+    fecha: '2026-11-04',
+    titulo: 'El motor escribe con el manual de oficio',
+    cambios: [
+      'Todas las marcas se escriben con las reglas de oficio de Buentipo: afirmar en vez de dudar, sin grasa, sin relleno, sin manifiestos, y el titular construye el concepto.',
+      'El motor ya no abre con «¿Sabías que…?» ni usa «de inmediato», y no repite la marca en el titular de una pieza que lleva el logo.',
+      'Lo genérico ya no solo se marca: se reescribe antes de llegar a vos.',
+      'Las marcas del editor se leen en castellano («Relleno», «Manifiesto», «Bonito pero no vende»).',
+    ],
+  },
+  {
     id: 'adn-de-la-marca-manda',
     fecha: '2026-10-28',
     titulo: 'El copy respeta siempre el ADN de la marca',

@@ -200,13 +200,15 @@ export const generateForChannel = async (
     scoreRationale: typeof item.scoreRationale === "string" ? item.scoreRationale : undefined,
   }));
 
-  const validated = validateBatch(variations, spec, brief.campaign.prohibitions, brief.checkVoseo);
+  const validated = validateBatch(variations, spec, brief.campaign.prohibitions, brief.checkVoseo, {
+    marca: brief.brand.name,
+    concepto: brief.spine.concept,
+  });
   const critiqued = await runCritic(brief, spec, validated, client, miniModel, usage, opciones);
-  const needsFix = critiqued.some(v => Array.isArray(v.editorFlags) && v.editorFlags.length > 0);
-  const autofixed = needsFix
-    ? await runAutoFix(brief, spec, critiqued, client, miniModel, usage, opciones)
-    : critiqued;
-  return autofixed;
+  // runAutoFix filtra lo roto y no llama al modelo si no hay nada. Antes solo se
+  // llamaba con alguna marca del revisor, y una falta que solo ve el validador
+  // (límite, prohibición, manual de oficio) pasaba sin corregir.
+  return runAutoFix(brief, spec, critiqued, client, miniModel, usage, opciones);
 };
 
 export type StreamEvent =

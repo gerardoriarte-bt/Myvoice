@@ -42,6 +42,8 @@ server/.oraculo/
 
 # Reportes de corridas de backfill: evidencia de una base concreta, no código
 server/.backfills/
+# Casos y resultados de verify:calidad: ADN y copy de clientes reales.
+server/.calidad/
 
 # Archivo de diseño de Pencil: binario cifrado que crece con cada versión y que
 # git no puede difear ni fusionar. Vive en local; lo que el repo versiona es la
