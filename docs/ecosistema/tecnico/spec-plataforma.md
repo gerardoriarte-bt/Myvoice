@@ -41,8 +41,8 @@ por archivo, se regenera en [dependencias-entre-modulos.md](./dependencias-entre
 | Desde \ Hacia | Parte común | My Voice | Compartido |
 |---|---|---|---|
 | **Plataforma** (`App.tsx`, `routes/`, arranque) | 12 | 19 | 14 |
-| **Parte común** | · | **3** | 30 |
-| **My Voice** | **30** | · | 84 |
+| **Parte común** | · | **3** → 0 el 2026-11-04 | 30 |
+| **My Voice** | **30** → 31 el 2026-11-04 | · | 84 |
 
 (Pares de archivos. CDM todavía no tiene código.)
 
@@ -82,7 +82,7 @@ desplegable (decisión 13).
 | 1 | **Limpieza**: se borran `services/geminiService.ts`, `components/Login.tsx`, `components/SettingsManager.tsx` y `components/ui/StatBlock.tsx` (nadie los importaba); se quita el `define` de `vite.config.ts` que inyectaba `GEMINI_API_KEY` en el front, la dependencia `@google/genai` y la instrucción de Gemini del README. | `geminiService` llamaba a la IA desde el navegador. Si alguien volvía a importarlo, la build publicaba la clave. Revisado el 2026-10-28: el bundle de producción **no** tiene ninguna clave (solo el texto de ejemplo `"AIza..."` de Ajustes de IA). Toda llamada a la IA queda en el servidor, por `aiClient.ts`. | ✓ (PR de limpieza) |
 | 2 | **Tipos compartidos en `shared/`**: una sola definición de los tipos que viajan entre front y back. | De los 14 tipos que existen en `types.ts` y en `server/src/types.ts`, **7 ya son distintos** (`Client`, `Project`, `SavedVariation`, `User`, `CopyParameters`, `CopyVariation`, `GenerationResponse`): el front espera `dnaProfileId` que el back no declara, el back acepta `marketLocale` y `negativeExamples` que el front no conoce. `contrato/` no puede nacer con dos versiones de cada cosa. | ✓ generación (PR de tipos) · ○ entidades |
 | 2b | **Lo que salió al unificar** la generación (ver abajo). | Las verificaciones de tipos encontraron dos diferencias reales y un comportamiento a decidir. | ✓ / decisión pendiente |
-| 3 | **Las 3 inversiones** de § 2.1: espacio por módulo en Marcas y `planLimits.ts` a la parte común. | La parte común no depende de un módulo. | ○ |
+| 3 | **Las 3 inversiones** de § 2.1: espacio por módulo en Marcas y `planLimits.ts` a la parte común. Y la **regla en CI** (`npm run fronteras`). | La parte común no depende de un módulo. | ✓ (2026-11-04) |
 | 4 | **Repartir `types.ts`** (661 líneas, el archivo más conectado del repo): lo común a `shared/`, lo de cada módulo a su carpeta. | Con un solo archivo de tipos, cualquier cambio toca a todos los módulos. | ○ |
 | 5 | **Enrutador y marco común** (§ 4). `App.tsx` tiene 1171 líneas y 111 conexiones. | Es el centro de todo el front; las pantallas nuevas no pueden sumarse ahí. | ○ |
 
@@ -113,10 +113,22 @@ Ya alineado y no se toca: no hay dependencias circulares; la única llamada a un
 `chatCompletionConRetry` en `aiClient.ts`; la tenencia (`lib/tenancy.ts`) es el centro del back, como
 corresponde.
 
-**Cómo se mantiene.** Se corre `npm run mapa` al cerrar cada sesión, antes de la bitácora
-([../bitacora/README.md](../bitacora/README.md)); si cambian los números de esta sección, se actualiza
-aquí y se dice en la bitácora. Cuando exista la regla de imports en CI, «hay que invertir» tiene que
-estar en 0 para mergear.
+**Las 3 inversiones, resueltas el 2026-11-04.** Marcas (`ClientManager.tsx`) ya no importa nada de My
+Voice: ofrece `EspaciosDeMarca` (`juntoAlBrief`, `campanas`) y `App.tsx`, que es la plataforma, los llena
+con `PromptPreview` y `GenerationHistory`. Cuando CDM tenga paquetes de la marca, suma su espacio ahí.
+`planLimits.ts` no importaba nada: pasó a la parte común en `modulos.json` sin moverse de carpeta (se
+mueve cuando se partan las carpetas, paso 5). Con eso `usageService` lo lee por contrato: son 31.
+
+**Cómo se mantiene.** Dos piezas:
+
+- **La regla, en CI** (`npm run fronteras`, `scripts/mapa/fronteras.py`): lee los imports de cada
+  `.ts`/`.tsx` con `modulos.json` y la misma clasificación que el mapa, y falla si algo está en «hay que
+  invertir» o si un archivo no tiene módulo. No usa Graphify, para que CI no descargue nada; una sonda
+  comprueba en cada corrida que de verdad falla. Sobre `main` antes de las inversiones encontraba las
+  mismas 3 que el mapa.
+- **El mapa**, al cerrar cada sesión (`npm run mapa`, antes de la bitácora,
+  [../bitacora/README.md](../bitacora/README.md)): la medición completa, con llamadas y tipos. Si
+  cambian los números de esta sección, se actualiza aquí y se dice en la bitácora.
 
 ## 3. Módulos encendidos por marca
 

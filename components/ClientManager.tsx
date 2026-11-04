@@ -3,13 +3,26 @@ import { SCREENS } from '../screens';
 import { Check, Circle } from 'lucide-react';
 import { Client, ContentDNAProfile, BrandConfig, FeedbackExample, Platform, SavedVariation } from '../types';
 import TagInput from './TagInput';
-import PromptPreview from './PromptPreview';
-import GenerationHistory from './GenerationHistory';
 import VoiceFingerprintCard from './VoiceFingerprintCard';
 import BrandHubHero from './BrandHubHero';
 import { clientApi, analyticsApi } from '../services/api';
 import { Copy, CornerDownRight, Network, Plus } from 'lucide-react';
 import { distincion, familias, madreDe, madresPosibles, normalizarNombre, opcionDeMadre, tieneNombreRepetido } from '../marcas';
+
+/** El brief de una campaña mientras se edita en la marca. */
+export type BorradorDeBrief = Omit<ContentDNAProfile, 'id' | 'createdAt' | 'clientId'>;
+
+/**
+ * Lo que un módulo muestra dentro de la marca. Marcas es de la parte común y no importa ningún
+ * módulo: ofrece estos espacios y la plataforma (App.tsx) los llena. Hasta el 2026-11-04 Marcas
+ * incrustaba la vista del prompt y el historial de My Voice (spec-plataforma § 2.1).
+ */
+export interface EspaciosDeMarca {
+  /** Junto al formulario del brief, mientras se edita. */
+  juntoAlBrief?: (client: Client, borrador: BorradorDeBrief) => React.ReactNode;
+  /** La pestaña «Campañas» de la marca. */
+  campanas?: (client: Client) => React.ReactNode;
+}
 
 interface ClientManagerProps {
   clients: Client[];
@@ -31,6 +44,7 @@ interface ClientManagerProps {
   onDuplicateProfile: (profile: ContentDNAProfile) => void;
   /** Entrar a una marca la vuelve la marca activa de toda la app. */
   onAbrirMarca?: (clientId: string) => void;
+  espacios?: EspaciosDeMarca;
 }
 
 const ClientManager: React.FC<ClientManagerProps> = ({
@@ -51,6 +65,7 @@ const ClientManager: React.FC<ClientManagerProps> = ({
   onDeleteProfile,
   onDuplicateProfile,
   onAbrirMarca,
+  espacios = {},
 }) => {
   const [isAddingClient, setIsAddingClient] = React.useState(false);
   const [showGlobalSettings, setShowGlobalSettings] = React.useState(false);
@@ -77,7 +92,7 @@ const ClientManager: React.FC<ClientManagerProps> = ({
   const [editingCatalogItem, setEditingCatalogItem] = React.useState<{ type: 'voice' | 'goal', id: string, value: string } | null>(null);
 
   const [showDnaForm, setShowDnaForm] = React.useState(false);
-  const [dnaForm, setDnaForm] = React.useState<Omit<ContentDNAProfile, 'id' | 'createdAt' | 'clientId'>>({
+  const [dnaForm, setDnaForm] = React.useState<BorradorDeBrief>({
     name: '',
     campaignConcept: '',
     voice: voices[0]?.name || '',
@@ -1574,17 +1589,17 @@ const ClientManager: React.FC<ClientManagerProps> = ({
                           </div>
 
                           {/* PREVIEW STICKY */}
-                          <aside className="xl:col-span-4 xl:sticky xl:top-[80px] self-start">
-                            <div className="h-[calc(100vh-110px)] min-h-[500px]">
-                              <PromptPreview client={client} draft={dnaForm} />
-                            </div>
-                          </aside>
+                          {espacios.juntoAlBrief && (
+                            <aside className="xl:col-span-4 xl:sticky xl:top-[80px] self-start">
+                              <div className="h-[calc(100vh-110px)] min-h-[500px]">
+                                {espacios.juntoAlBrief(client, dnaForm)}
+                              </div>
+                            </aside>
+                          )}
                         </div>
                      )}
 
-                     {clientDetailView === 'campaigns' && !showDnaForm && (
-                       <GenerationHistory initialClientId={client.id} />
-                     )}
+                     {clientDetailView === 'campaigns' && !showDnaForm && espacios.campanas?.(client)}
                   </div>
                </div>
             </div>

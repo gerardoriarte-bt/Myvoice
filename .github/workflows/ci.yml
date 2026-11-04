@@ -89,6 +89,19 @@ jobs:
           fi
           echo "El contrato no importa nada."
 
+      # La parte común no depende de un módulo ni un módulo de otro (spec-plataforma § 2.1).
+      # Lee los imports con modulos.json, sin Graphify, y prueba con una sonda que de verdad falla.
+      - name: Fronteras entre módulos
+        run: |
+          python3 -I scripts/mapa/fronteras.py
+          echo "import GenerationHistory from './GenerationHistory';" >> components/UserManager.tsx
+          if python3 -I scripts/mapa/fronteras.py > /dev/null; then
+            echo "::error::La regla de fronteras no detectó la sonda (Marcas importando My Voice)."
+            exit 1
+          fi
+          git checkout -- components/UserManager.tsx
+          echo "La sonda falló como corresponde."
+
       - name: Build de producción
         run: npm run build
 
