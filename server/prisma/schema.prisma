@@ -173,6 +173,10 @@ model Client {
   campanas                  Project[]
   seccionesAdn              SeccionAdn[]
   versionesAdn              AdnVersion[]
+  /// Cuándo se confirmó el ADN de esta marca (docs/plan-revision-adn.md). Una submarca hereda de su
+  /// madre solo si la madre lo tiene: confirmar es lo que enciende la herencia de la familia.
+  adnConfirmadoEn           DateTime?
+  adnConfirmadoPorId        String?
 
   @@index([marcaMadreId])
 }
@@ -190,6 +194,10 @@ model SeccionAdn {
   contenido     Json
   /// Frente a la madre. En una marca sin madre no se mira.
   modo          ModoSeccionAdn @default(PROPIA)
+  /// Revisada en la revisión del ADN antes de heredar. Vuelve a NULL si cambia el texto de una madre
+  /// que todavía no confirmó.
+  revisadaEn    DateTime?
+  revisadaPorId String?
   autorId       String?
   actualizadaEn DateTime       @updatedAt
 

@@ -4,8 +4,10 @@
  *   npm run backfill:adn            → dry-run: muestra qué cambia, no escribe nada
  *   npm run backfill:adn -- --apply → escribe, en una sola transacción
  *
- * Corre DESPUÉS de la migración `20261104000000_adn_por_capas`. Hasta que corra, el motor lee las
- * columnas como antes y ninguna submarca hereda: la herencia empieza con este script.
+ * Corre DESPUÉS de la migración `20261104000000_adn_por_capas`. Ya no enciende la herencia: desde
+ * docs/plan-revision-adn.md una submarca hereda solo cuando alguien confirma el ADN de su madre en
+ * Marcas. Este script solo deja las secciones creadas; el reporte de lo que cambia para el motor
+ * lista lo de las familias con la madre ya confirmada.
  *
  * - Cada marca sin secciones recibe las suyas desde sus columnas y su versión 1 (`inicial`). Una
  *   marca que ya tiene secciones no se toca: el script es idempotente.

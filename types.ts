@@ -187,6 +187,24 @@ export interface Client {
   nombreRepetidoCon?: string[];
   /** Calculado por GET /clients: lo que distingue a una marca de otra con el mismo nombre. */
   conteos?: { campanas: number; complementarias: number };
+  /**
+   * Calculado por GET /clients: una madre con submarcas y el ADN sin confirmar pide revisión antes de
+   * que lo hereden (docs/plan-revision-adn.md). NULL si no pide.
+   */
+  adnPorRevisar?: { revisadas: number; total: number } | null;
+  adnConfirmadoEn?: string | null;
+}
+
+/** GET /clients/:id/adn/revision. */
+export interface RevisionDeAdn {
+  clientId: string;
+  marca: string;
+  requiere: boolean;
+  confirmadoEn: string | null;
+  submarcas: { id: string; name: string }[];
+  secciones: { clave: string; nombre: string; texto: string; comoHereda: string; revisada: boolean }[];
+  revisadas: number;
+  total: number;
 }
 
 export interface ContentDNAProfile {

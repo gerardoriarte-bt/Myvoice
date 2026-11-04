@@ -238,7 +238,12 @@ to mirror them into `SeccionAdn` and save an `AdnVersion` — cascading one to e
 mother changes. The v1 screen still edits the columns; a brand without sections (before
 `backfill:adn`) resolves from its columns with no inheritance. `Project.adnVersion` is NULL in v1
 (follows the current version); `GenerationLog.adnVersion` records which one was used. Campaigns,
-approvals and quota are still per brand.
+approvals and quota are still per brand. **A submarca inherits only once its mother's DNA is
+confirmed** (`Client.adnConfirmadoEn`, `docs/plan-revision-adn.md`): `comun/adn/revisionAdn.ts` drives
+the review (each of the 5 sections «está bien» or corrected — a correction writes the column — then
+confirm), Marcas shows an amber banner and a chip on the mother, and OWNER/ADMIN get one
+`ADN_POR_REVISAR` notice per mother (created at boot and when a brand gets its first submarca) that the
+Bandeja routes to Marcas instead of Producción.
 `marcas.ts` groups families and writes «Terpel CRM · de Terpel»; `components/SelectorDeMarca.tsx`
 replaced the header's native `<select>`. `GET /clients` computes `nombreRepetidoCon` (normalized
 name, same workspace only) and `conteos` on read; the normalizer lives in
@@ -287,7 +292,8 @@ because the server image only copies `server/`; it must stay import-free too, an
   `20260826000001_workspace_required` → `20260827000000_cost_quota_slot` → the two backfills
   (`backfill:telemetria`, `backfill:slots`). The `_workspace_required` one fails on purpose
   if orphan rows remain. Later, `20261104000000_adn_por_capas` (additive) → `npm run backfill:adn`
-  (review the dry-run's per-submarca list first: that is where inheritance starts). See `docs/runbook-tenancy.md` and `docs/runbook-mejoras-h1.md`.
+  → `20261104000001_revision_adn`. Inheritance no longer starts with the backfill: it starts when
+  someone confirms the mother's DNA in Marcas. See `docs/runbook-tenancy.md` and `docs/runbook-mejoras-h1.md`.
 - `GenerationLog.workspaceId` is nullable **for now**: the migration backfills every existing
   row but defers `SET NOT NULL` to a later one. A `NULL` there means "written by old code",
   not "no workspace".

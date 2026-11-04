@@ -173,6 +173,15 @@ export const clientApi = {
   /** Une `id` con `destinoId`: todo pasa al destino y `id` se borra. No se deshace. */
   unir: (id: string, destinoId: string) =>
     apiRequest(`/clients/${id}/unir`, { method: 'POST', body: JSON.stringify({ destinoId }) }),
+  /** La revisión del ADN antes de que lo hereden las submarcas (docs/plan-revision-adn.md). */
+  revisionAdn: (id: string) => apiRequest(`/clients/${id}/adn/revision`),
+  /** Sin `texto` es «Está bien»; con `texto`, «Corregir». */
+  revisarSeccionAdn: (id: string, clave: string, texto?: string) =>
+    apiRequest(`/clients/${id}/adn/revision/${clave}`, {
+      method: 'POST',
+      body: JSON.stringify(texto === undefined ? {} : { texto }),
+    }),
+  confirmarAdn: (id: string) => apiRequest(`/clients/${id}/adn/confirmar`, { method: 'POST' }),
   saveDNA: (data: any) => apiRequest('/dna-profiles', { method: 'POST', body: JSON.stringify(data) }),
   duplicateDNA: (id: string) => apiRequest(`/dna-profiles/${id}/duplicate`, { method: 'POST' }),
   updateDNA: (id: string, data: any) => apiRequest(`/dna-profiles/${id}`, { method: 'PUT', body: JSON.stringify(data) }),

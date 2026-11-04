@@ -189,6 +189,10 @@ estado de «pendiente», se deriva de lo que falta en cada módulo. Cada módulo
   vigente): fijarla sin la pantalla «Cambiar el ADN de la madre» dejaría la campaña atrapada en un ADN
   viejo. `GenerationLog.adnVersion` registra con cuál se generó. `resolverAdn` ya resuelve una versión
   guardada, con la versión de la madre que quedó registrada.
+- **La herencia la enciende una persona** ([../../plan-revision-adn.md](../../plan-revision-adn.md)): el
+  dry-run en producción mostró el ADN de Terpel con keywords y prohibiciones de otra marca. Una submarca
+  hereda solo si su madre tiene `adnConfirmadoEn`; confirmar exige revisar las 5 secciones en Marcas.
+  `backfill:adn` ya no enciende nada.
 - `GET /clients/:id/adn[?version=N]` devuelve lo mismo que recibe el motor (con guard y 404 ajeno,
   en `verify:isolation`). `npm run verify:adn` recorre el ciclo contra una base desechable y corre en CI.
 

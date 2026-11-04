@@ -51,8 +51,11 @@ const crearVersion = async (
  * puente con la pantalla de v1, que edita las columnas: se llama después de cada escritura del ADN
  * (crear o editar la marca, leer el manual, cambiarla de familia) y antes de borrarla.
  *
- * Si la marca tiene submarcas y su ADN cambió, cada submarca recibe una versión nueva con la versión
- * nueva de la madre (decisión 16: el cambio llega a todas, y se dice a cuántas).
+ * Si la marca tiene submarcas, su ADN está confirmado y cambió, cada submarca recibe una versión nueva
+ * con la versión nueva de la madre (decisión 16: el cambio llega a todas, y se dice a cuántas). Sin
+ * confirmar, las submarcas no heredan (docs/plan-revision-adn.md) y no hay a quién avisarle.
+ *
+ * Una sección cuyo texto cambia vuelve a quedar sin revisar: lo revisado era el texto anterior.
  *
  * `motivo` distinto de `adn` guarda versión aunque las secciones no cambien: cambió la madre o la
  * familia, y eso cambia lo que se resuelve.
@@ -68,6 +71,8 @@ export const guardarAdnDesdeColumnas = async (
       where: { id: clientId },
       select: {
         marcaMadreId: true,
+        adnConfirmadoEn: true,
+        marcaMadre: { select: { adnConfirmadoEn: true } },
         ...(Object.fromEntries(COLUMNAS_ADN.map(c => [c, true])) as Record<(typeof COLUMNAS_ADN)[number], true>),
       },
     });
@@ -84,16 +89,24 @@ export const guardarAdnDesdeColumnas = async (
 
     for (const def of SECCIONES_ADN) {
       const s = nuevas[def.clave]!;
+      const otroTexto = (actuales[def.clave]?.contenido.texto ?? '') !== s.contenido.texto;
       await tx.seccionAdn.upsert({
         where: { clientId_clave: { clientId, clave: def.clave } },
         create: { clientId, clave: def.clave, modo: s.modo, contenido: s.contenido, autorId },
-        update: { modo: s.modo, contenido: s.contenido, autorId },
+        update: {
+          modo: s.modo,
+          contenido: s.contenido,
+          autorId,
+          ...(otroTexto ? { revisadaEn: null, revisadaPorId: null } : {}),
+        },
       });
     }
-    const version = await crearVersion(tx, clientId, nuevas, client.marcaMadreId, motivo, autorId);
+    // La versión registra la madre solo si su ADN está confirmado: es de la que hereda.
+    const madreQueHereda = client.marcaMadre?.adnConfirmadoEn ? client.marcaMadreId : null;
+    const version = await crearVersion(tx, clientId, nuevas, madreQueHereda, motivo, autorId);
 
     let submarcasAfectadas = 0;
-    if (cambio) {
+    if (cambio && client.adnConfirmadoEn) {
       const submarcas = await tx.client.findMany({ where: { marcaMadreId: clientId }, select: { id: true } });
       for (const sub of submarcas) {
         // Una submarca sin secciones todavía resuelve desde sus columnas, sin herencia: no se le

@@ -1,6 +1,6 @@
 # Dependencias entre módulos (generado)
 
-Generado el 2026-11-04 desde el commit `d54ca03` con `bash scripts/mapa/actualizar.sh`. **No se edita a mano**: se corrige `scripts/mapa/modulos.json` y se vuelve a generar.
+Generado el 2026-11-04 desde el commit `6a9f6a7` con `bash scripts/mapa/actualizar.sh`. **No se edita a mano**: se corrige `scripts/mapa/modulos.json` y se vuelve a generar.
 
 Cada fila es un archivo que usa algo de otro archivo de **otro módulo** (importa, llama o referencia un tipo). Módulos según la decisión 12; reglas en [spec-plataforma.md](./spec-plataforma.md) § 2.
 
@@ -8,13 +8,13 @@ Cada fila es un archivo que usa algo de otro archivo de **otro módulo** (import
 
 | Desde \ Hacia | Plataforma | Parte común | My Voice | CDM | Compartido |
 |---|---|---|---|---|---|
-| **Plataforma** | · | 12 | 20 | · | 14 |
-| **Parte común** | · | · | · | · | 32 |
+| **Plataforma** | · | 13 | 20 | · | 14 |
+| **Parte común** | · | · | · | · | 35 |
 | **My Voice** | · | 32 | · | · | 132 |
 | **CDM** | · | · | · | · | · |
 | **Compartido** | · | · | · | · | · |
 
-- **Hay que invertir**: 0 · **pasan por el contrato**: 32 · **permitidas**: 210
+- **Hay que invertir**: 0 · **pasan por el contrato**: 32 · **permitidas**: 214
 
 ## Hay que invertir (0)
 
@@ -61,14 +61,14 @@ Un módulo lee la parte común. Está bien, pero solo por `contrato/`: esta list
 | My Voice | `server/src/services/usageService.ts` | Parte común | `server/src/lib/planLimits.ts` | planLimits.ts, resolvePlanLimits() |
 | My Voice | `server/src/services/usageService.ts` | Parte común | `server/src/lib/tenancy.ts` | TenantContext, TenantError, tenancy.ts |
 
-## Permitidas (210)
+## Permitidas (214)
 
 El arranque importa de todos, y todos usan la infraestructura compartida.
 
 | Desde | Hacia | Pares |
 |---|---|---|
-| Parte común | Compartido | 32 |
+| Parte común | Compartido | 35 |
 | My Voice | Compartido | 132 |
 | Plataforma | Compartido | 14 |
-| Plataforma | Parte común | 12 |
+| Plataforma | Parte común | 13 |
 | Plataforma | My Voice | 20 |

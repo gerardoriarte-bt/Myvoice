@@ -6,7 +6,8 @@ import TagInput from './TagInput';
 import VoiceFingerprintCard from './VoiceFingerprintCard';
 import BrandHubHero from './BrandHubHero';
 import { clientApi, analyticsApi } from '../services/api';
-import { Copy, CornerDownRight, Network, Plus } from 'lucide-react';
+import { Copy, CornerDownRight, Network, Plus, ShieldAlert, ArrowRight } from 'lucide-react';
+import RevisionDeAdn from './RevisionDeAdn';
 import { distincion, familias, madreDe, madresPosibles, normalizarNombre, opcionDeMadre, tieneNombreRepetido } from '../marcas';
 
 /** El brief de una campaña mientras se edita en la marca. */
@@ -45,6 +46,13 @@ interface ClientManagerProps {
   /** Entrar a una marca la vuelve la marca activa de toda la app. */
   onAbrirMarca?: (clientId: string) => void;
   espacios?: EspaciosDeMarca;
+  /** Abre la revisión del ADN de esta marca: lo pide un aviso de la bandeja (docs/plan-revision-adn.md). */
+  revisarAdnDe?: string | null;
+  onRevisionAbierta?: () => void;
+  /** Después de confirmar un ADN: recargar las marcas para que el aviso se vaya. */
+  onAdnConfirmado?: () => void;
+  /** Después de corregir una sección en la revisión: recargar para que el formulario muestre lo nuevo. */
+  onAdnCorregido?: () => void;
 }
 
 const ClientManager: React.FC<ClientManagerProps> = ({
@@ -66,6 +74,10 @@ const ClientManager: React.FC<ClientManagerProps> = ({
   onDuplicateProfile,
   onAbrirMarca,
   espacios = {},
+  revisarAdnDe,
+  onRevisionAbierta,
+  onAdnConfirmado,
+  onAdnCorregido,
 }) => {
   const [isAddingClient, setIsAddingClient] = React.useState(false);
   const [showGlobalSettings, setShowGlobalSettings] = React.useState(false);
@@ -345,6 +357,15 @@ const ClientManager: React.FC<ClientManagerProps> = ({
     setAnalyticsError(null);
   };
 
+  // Un aviso de la bandeja pide abrir la revisión del ADN de una marca.
+  React.useEffect(() => {
+    if (!revisarAdnDe || !clients.some(c => c.id === revisarAdnDe)) return;
+    enterHub(revisarAdnDe);
+    onRevisionAbierta?.();
+    window.scrollTo({ top: 0 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [revisarAdnDe, clients]);
+
   const exitHub = () => {
     setActiveClientHub(null);
     resetDnaForm();
@@ -407,6 +428,11 @@ const ClientManager: React.FC<ClientManagerProps> = ({
               {repetido && (
                 <span className="flex shrink-0 items-center gap-0.5 rounded border border-amber-200 bg-amber-50 px-1 text-[9.5px] font-semibold text-amber-700">
                   <Copy className="h-2.5 w-2.5" /> nombre repetido
+                </span>
+              )}
+              {client.adnPorRevisar && (
+                <span className="flex shrink-0 items-center gap-0.5 rounded border border-amber-200 bg-amber-50 px-1 text-[9.5px] font-semibold text-amber-700">
+                  <ShieldAlert className="h-2.5 w-2.5" /> ADN por revisar · {client.adnPorRevisar.revisadas} de {client.adnPorRevisar.total}
                 </span>
               )}
             </div>
@@ -673,7 +699,7 @@ const ClientManager: React.FC<ClientManagerProps> = ({
                           <option key={m.id} value={m.id}>{opcionDeMadre(m)}</option>
                         ))}
                       </select>
-                      <p className="mt-1 text-[11px] text-gray-500">Hereda el ADN de la madre: suma sus prohibiciones y keywords, y toma su voz, propuesta de valor y guías mientras no tenga propias. Las campañas y aprobaciones siguen siendo de cada marca.</p>
+                      <p className="mt-1 text-[11px] text-gray-500">Hereda el ADN de la madre una vez confirmado: suma sus prohibiciones y keywords, y toma su voz, propuesta de valor y guías mientras no tenga propias. Las campañas y aprobaciones siguen siendo de cada marca.</p>
                     </div>
                   </div>
                 </div>
@@ -708,7 +734,7 @@ const ClientManager: React.FC<ClientManagerProps> = ({
               <div>
                 <h3 className="text-[16px] font-semibold text-gray-900">Agregar una submarca a {madre.name}</h3>
                 <p className="mt-1 text-[12px] text-gray-500">
-                  La submarca aparece debajo de {madre.name} en el selector y en Marcas. Suma las prohibiciones y keywords de {madre.name} y toma su voz, propuesta de valor y guías mientras no tenga propias. Sus campañas y aprobaciones siguen siendo suyas.
+                  La submarca aparece debajo de {madre.name} en el selector y en Marcas. Cuando el ADN de {madre.name} esté confirmado, suma sus prohibiciones y keywords y toma su voz, propuesta de valor y guías mientras no tenga propias. Sus campañas y aprobaciones siguen siendo suyas.
                 </p>
               </div>
 
@@ -893,6 +919,30 @@ const ClientManager: React.FC<ClientManagerProps> = ({
               </div>
            </div>
 
+           {/* El aviso no se descarta: se va cuando se confirma el ADN de la madre (docs/plan-revision-adn.md). */}
+           {clients.filter(c => c.adnPorRevisar).map(m => {
+             const n = m.conteos?.complementarias ?? 0;
+             return (
+               <div key={`adn-${m.id}`} className="flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+                 <ShieldAlert className="h-4 w-4 shrink-0 text-amber-600" />
+                 <div className="min-w-0 flex-1">
+                   <p className="text-[12.5px] font-semibold text-gray-900">
+                     Revisá el ADN de {m.name} antes de que lo {n === 1 ? 'herede su submarca' : `hereden sus ${n} submarcas`}
+                   </p>
+                   <p className="text-[11.5px] leading-relaxed text-gray-700">
+                     Cuando lo confirmes, sus submarcas suman sus prohibiciones y keywords, y toman su voz, propuesta de valor y guías si no tienen propias. Hasta entonces nada cambia en el copy.
+                   </p>
+                 </div>
+                 <button
+                   onClick={() => enterHub(m.id)}
+                   className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-ink px-3 py-2 text-[12px] font-semibold text-white hover:bg-ink-hover"
+                 >
+                   Revisar el ADN <ArrowRight className="h-3.5 w-3.5" />
+                 </button>
+               </div>
+             );
+           })}
+
            {/* El aviso no se descarta: se va cuando los nombres dejan de ser iguales. */}
            {clients.some(tieneNombreRepetido) && (
              <div className="flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[12.5px] text-amber-900">
@@ -1072,7 +1122,7 @@ const ClientManager: React.FC<ClientManagerProps> = ({
                                )}
                              </>
                            )}
-                           <p className="text-[10.5px] text-gray-500">La submarca suma las prohibiciones y keywords de su madre y toma su voz, propuesta de valor y guías mientras no tenga propias. Campañas y aprobaciones siguen siendo de cada marca.</p>
+                           <p className="text-[10.5px] text-gray-500">Con el ADN de la madre confirmado, la submarca suma sus prohibiciones y keywords y toma su voz, propuesta de valor y guías mientras no tenga propias. Campañas y aprobaciones siguen siendo de cada marca.</p>
                          </div>
                        );
                      })()}
@@ -1237,6 +1287,9 @@ const ClientManager: React.FC<ClientManagerProps> = ({
 
                   {/* DETAIL RIGHT: WORKSPACE CAMPAÑAS / METRICAS */}
                   <div className="xl:col-span-9 space-y-6">
+                     {(client.conteos?.complementarias ?? 0) > 0 && (
+                       <RevisionDeAdn clientId={client.id} onConfirmado={() => onAdnConfirmado?.()} onCorregida={() => onAdnCorregido?.()} />
+                     )}
                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
                         <div>
                           <h4 className="text-[16px] font-medium text-gray-900">

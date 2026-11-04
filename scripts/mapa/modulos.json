@@ -77,6 +77,7 @@
     "components/SettingsManager.tsx": "comun",
     "components/AISettings.tsx": "comun",
     "components/VoiceFingerprintCard.tsx": "comun",
+    "components/RevisionDeAdn.tsx": "comun",
     "components/": "myvoice",
     "etiquetasDelEditor.ts": "myvoice",
     "services/": "myvoice",
