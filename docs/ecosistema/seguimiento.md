@@ -35,7 +35,7 @@ Cada función con su estado en las tres pistas. Se actualiza en el mismo PR que 
 |---|---|---|---|---|---|
 | Copy | Generar por canales | ● | ● | ● | (v1) |
 | — | El ADN manda en la generación | — | — | ● | decisión 14 (2026-10-28) |
-| — | Manual de oficio en el motor | — | — | ✓ | MV-1 (PR #43, mergeado el 2026-11-04; sin desplegar) |
+| — | Manual de oficio en el motor | — | — | ● | MV-1 (PR #43, desplegado el 2026-11-04) |
 | Copy | Brief del equipo | ◐ | ○ | ○ | MV-2 |
 | Copy | Textos raíz por etapa | ◐ | ○ | ○ | MV-3 |
 | Responsable | Armar y mandar el toolkit | ✓ | ○ | ○ | MV-4 |
