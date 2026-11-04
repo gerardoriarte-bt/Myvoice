@@ -219,6 +219,13 @@ generación por corrida, más el juez.
 - El juez no recibía el producto y marcaba «My Voice» como asset inventado (6 de 6 faltas de esa
   regla en la primera corrida). Corregido en el mismo PR; las cifras de arriba son con el juez
   corregido.
+- **Intento 1 para «desconectado», sin efecto.** Los textos marcados se iban a «coherencia entre
+  canales», «40 piezas» y «14 canales» (tema y keywords del caso), lejos del concepto («Como usted,
+  nadie»). Se ajustó el fixer para que lo genérico se ancle en el concepto y no en los datos del brief,
+  y se le pasó el mensaje clave. Tres corridas (110 textos): total 41, desconectado 7. Se revirtió.
+- Parte de «desconectado» puede ser del caso y no del motor: el tema del brief de LoBueno habla de
+  coherencia y el concepto, de voz única. Hace falta un segundo caso (uno real, con `calidad:caso`)
+  antes de seguir ajustando contra este.
 
 ### Fase 2 · ADN 2.0, llenado por Planning
 
