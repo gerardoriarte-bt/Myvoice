@@ -42,7 +42,7 @@ por archivo, se regenera en [dependencias-entre-modulos.md](./dependencias-entre
 |---|---|---|---|
 | **Plataforma** (`App.tsx`, `routes/`, arranque) | 12 | 19 | 14 |
 | **Parte común** | · | **3** → 0 el 2026-11-04 | 30 |
-| **My Voice** | **30** → 31 el 2026-11-04 | · | 84 |
+| **My Voice** | **30** → 32 el 2026-11-04 | · | 84 |
 
 (Pares de archivos. CDM todavía no tiene código.)
 
@@ -117,7 +117,9 @@ corresponde.
 Voice: ofrece `EspaciosDeMarca` (`juntoAlBrief`, `campanas`) y `App.tsx`, que es la plataforma, los llena
 con `PromptPreview` y `GenerationHistory`. Cuando CDM tenga paquetes de la marca, suma su espacio ahí.
 `planLimits.ts` no importaba nada: pasó a la parte común en `modulos.json` sin moverse de carpeta (se
-mueve cuando se partan las carpetas, paso 5). Con eso `usageService` lo lee por contrato: son 31.
+mueve cuando se partan las carpetas, paso 5). Con eso `usageService` lo lee por contrato: son 31. El
+mismo día el motor (`parametrosDeGeneracion`) pasa a leer `resolverAdn` de la parte común: son 32, y
+`contrato/` tiene que exponer también el ADN resuelto.
 
 **Cómo se mantiene.** Dos piezas:
 
@@ -169,6 +171,26 @@ estado de «pendiente», se deriva de lo que falta en cada módulo. Cada módulo
 - **Completitud** sobre el ADN resuelto: lo heredado cuenta.
 - **Un solo nivel**: una marca con submarcas no puede ser submarca (como hoy en `Client.marcaMadreId`).
 - **Paquetes y equipo** se resuelven igual: los de la madre más los propios, calculados al leer.
+
+**Lo construido el 2026-11-04** (back, sin pantalla nueva):
+
+- `server/src/comun/adn/`: `secciones.ts` (las 5 secciones que hoy son columnas de `Client` y sus modos:
+  prohibiciones y keywords siempre `SUMA`; voz, propuesta de valor y guías `HEREDA` o `PROPIA`),
+  `resolverAdn.ts` (la única función que arma el ADN, con el origen de cada valor) y `guardarAdn.ts`.
+- **La pantalla de v1 sigue editando las columnas.** Cada escritura del ADN (crear, editar, leer el
+  manual, borrar, fusionar) llama a `guardarAdnDesdeColumnas` en la misma transacción: copia las
+  columnas a `SeccionAdn`, guarda una `AdnVersion` si algo cambió y, si la marca es madre, una versión
+  nueva en cada submarca. Sin pantalla de modos, el modo sale del texto: con texto propio es `PROPIA`;
+  vacía en una submarca, `HEREDA`.
+- **Hasta `npm run backfill:adn -- --apply`** una marca no tiene secciones y se resuelve desde sus
+  columnas, sin herencia: el despliegue no cambia nada solo. El dry-run lista, por submarca, cada
+  sección que cambia para el motor.
+- **La versión por campaña no se fija todavía.** `Project.adnVersion` queda NULL en v1 (sigue la
+  vigente): fijarla sin la pantalla «Cambiar el ADN de la madre» dejaría la campaña atrapada en un ADN
+  viejo. `GenerationLog.adnVersion` registra con cuál se generó. `resolverAdn` ya resuelve una versión
+  guardada, con la versión de la madre que quedó registrada.
+- `GET /clients/:id/adn[?version=N]` devuelve lo mismo que recibe el motor (con guard y 404 ajeno,
+  en `verify:isolation`). `npm run verify:adn` recorre el ciclo contra una base desechable y corre en CI.
 
 ## 6. Funciones
 

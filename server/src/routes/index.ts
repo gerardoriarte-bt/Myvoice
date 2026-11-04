@@ -100,6 +100,7 @@ router.post('/copy/refine', ...inWorkspace, refineController.refineVariations);
 // ---------------------------------------------------------- marcas y briefs
 router.get('/clients', ...inWorkspace, clientController.getClients);
 router.post('/clients', ...asManager, clientController.createClient);
+router.get('/clients/:id/adn', ...inWorkspace, clientController.getAdnResuelto);
 router.put('/clients/:id', ...asManager, clientController.updateClient);
 router.delete('/clients/:id', ...asManager, clientController.deleteClient);
 router.post('/clients/:id/unir', ...asManager, clientController.unirConOtra);

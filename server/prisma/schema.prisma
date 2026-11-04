@@ -171,8 +171,58 @@ model Client {
   funciones                 MiembroFuncion[]
   notificaciones            Notificacion[]
   campanas                  Project[]
+  seccionesAdn              SeccionAdn[]
+  versionesAdn              AdnVersion[]
 
   @@index([marcaMadreId])
+}
+
+/// Una sección del ADN de una marca (decisión 16, spec-plataforma § 5b). Hoy las secciones son las
+/// columnas del ADN de `Client` (voz, propuesta de valor, guías, keywords, prohibiciones): la sección
+/// es la fuente y la columna, un espejo para la pantalla de v1. Las claves, y qué modos admite cada
+/// una, viven en `src/comun/adn/secciones.ts`. Lo que se hereda no se copia: se resuelve al leer.
+model SeccionAdn {
+  id            String         @id @default(uuid())
+  clientId      String
+  client        Client         @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  clave         String
+  /// Lo propio de esta marca, `{ texto }`. En `SUMA` es la parte que se agrega a la de la madre.
+  contenido     Json
+  /// Frente a la madre. En una marca sin madre no se mira.
+  modo          ModoSeccionAdn @default(PROPIA)
+  autorId       String?
+  actualizadaEn DateTime       @updatedAt
+
+  @@unique([clientId, clave])
+}
+
+/// HEREDA: igual que la madre. PROPIA: la de esta marca. SUMA: la de la madre más la propia.
+enum ModoSeccionAdn {
+  HEREDA
+  PROPIA
+  SUMA
+}
+
+/// Cada versión guardada del ADN de una marca: una foto de sus secciones propias y de la versión de
+/// la madre con que se resolvió. Un cambio en la madre crea una versión nueva en cada submarca.
+model AdnVersion {
+  id           String   @id @default(uuid())
+  clientId     String
+  client       Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  version      Int
+  /// La madre y su versión vigente al guardar. NULL = marca sin madre. Va el id porque la submarca
+  /// puede cambiar de familia y la versión sola no diría de qué madre era.
+  madreId      String?
+  versionMadre Int?
+  /// `{ [clave]: { modo, contenido } }`, igual que las filas de SeccionAdn en ese momento.
+  secciones    Json
+  /// Qué la creó: 'adn' (se editó esta marca), 'madre' (cambió la madre), 'familia' (cambió de
+  /// madre) o 'inicial' (el backfill).
+  motivo       String
+  autorId      String?
+  creadaEn     DateTime @default(now())
+
+  @@unique([clientId, version])
 }
 
 /// Una fila por generación. Además del rastro de auditoría, es la tabla de
@@ -215,6 +265,9 @@ model GenerationLog {
   durationMs       Int?
   /// UsageTotal.byStage tal cual lo produce services/pricing.ts.
   stageBreakdown   Json?
+  /// La versión del ADN de la marca con que se generó (AdnVersion.version). NULL = antes del ADN
+  /// por capas, o una marca a la que todavía no se le corrió `backfill:adn`.
+  adnVersion       Int?
 
   client    Client     @relation(fields: [clientId], references: [id])
   workspace Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
@@ -368,6 +421,9 @@ model Project {
   /// Quien aprueba (interna) o quien responde por la aprobación del cliente.
   /// Sin responsable el copy de la campaña no avanza.
   responsableId           String?
+  /// La versión del ADN con que trabaja la campaña. NULL = sigue la vigente (todas las de v1: fijarla
+  /// sin la pantalla para pasarla a la nueva dejaría la campaña atrapada en un ADN viejo).
+  adnVersion              Int?
   workspace               Workspace          @relation(fields: [workspaceId], references: [id])
   client                  Client?            @relation(fields: [clientId], references: [id], onDelete: SetNull)
   dnaProfile              ContentDNAProfile? @relation(fields: [dnaProfileId], references: [id], onDelete: SetNull)

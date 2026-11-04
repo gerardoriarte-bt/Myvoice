@@ -15,6 +15,9 @@ import { normalizarNombre } from '../lib/nombreDeMarca.js';
 import { unirMarcas } from '../services/unirMarcas.js';
 import { prisma } from '../lib/prisma.js';
 import { claveGuiaDeMarca, storage } from '../lib/storage.js';
+import { guardarAdnDesdeColumnas } from '../comun/adn/guardarAdn.js';
+import { resolverAdn } from '../comun/adn/resolverAdn.js';
+import { COLUMNAS_ADN } from '../comun/adn/secciones.js';
 
 
 /**
@@ -147,17 +150,21 @@ export const createClient = async (req: AuthRequest, res: Response) => {
   try {
     const marcaMadreId = madreDelBody(req.body);
     if (marcaMadreId) await validarMadre(req.tenant!, null, marcaMadreId);
-    const client = await prisma.client.create({
-      data: {
-        marcaMadreId: marcaMadreId ?? null,
-        workspaceId: req.tenant!.workspaceId,
-        name,
-        industry,
-        logoUrl: logoUrl || logo,
-        voice,
-        brandVoiceGuidelines,
-        valueProposition,
-      },
+    const client = await prisma.$transaction(async tx => {
+      const creada = await tx.client.create({
+        data: {
+          marcaMadreId: marcaMadreId ?? null,
+          workspaceId: req.tenant!.workspaceId,
+          name,
+          industry,
+          logoUrl: logoUrl || logo,
+          voice,
+          brandVoiceGuidelines,
+          valueProposition,
+        },
+      });
+      await guardarAdnDesdeColumnas(creada.id, { autorId: req.tenant!.userId, tx });
+      return creada;
     });
     res.status(201).json(client);
   } catch (error) {
@@ -178,7 +185,18 @@ export const updateClient = async (req: AuthRequest, res: Response) => {
     if (marcaMadreId) await validarMadre(req.tenant!, id, marcaMadreId);
     if (marcaMadreId !== undefined) data.marcaMadreId = marcaMadreId;
 
-    const client = await prisma.client.update({ where: { id }, data });
+    // Si cambia el ADN o la familia, las secciones y su versión cambian en la misma transacción.
+    const tocaAdn = marcaMadreId !== undefined || COLUMNAS_ADN.some(c => c in data);
+    const client = await prisma.$transaction(async tx => {
+      const actualizada = await tx.client.update({ where: { id }, data });
+      if (tocaAdn)
+        await guardarAdnDesdeColumnas(id, {
+          motivo: marcaMadreId !== undefined ? 'familia' : 'adn',
+          autorId: req.tenant!.userId,
+          tx,
+        });
+      return actualizada;
+    });
     res.json(await conUrlDeGuia(client));
   } catch (error) {
     handleTenantError(error, res, 'Error al actualizar la marca');
@@ -189,10 +207,33 @@ export const deleteClient = async (req: AuthRequest, res: Response) => {
   const { id } = req.params;
   try {
     await assertClientInWorkspace(req.tenant!, id);
-    await prisma.client.delete({ where: { id } });
+    await prisma.$transaction(async tx => {
+      // Sus submarcas quedan sueltas (onDelete: SetNull): dejan de heredar, y eso es una versión nueva.
+      const submarcas = await tx.client.findMany({ where: { marcaMadreId: id }, select: { id: true } });
+      await tx.client.delete({ where: { id } });
+      for (const sub of submarcas)
+        await guardarAdnDesdeColumnas(sub.id, { motivo: 'familia', autorId: req.tenant!.userId, tx });
+    });
     res.json({ message: 'Marca eliminada con éxito' });
   } catch (error) {
     handleTenantError(error, res, 'Error al eliminar la marca');
+  }
+};
+
+/**
+ * El ADN de la marca resuelto con el de su madre, con el origen de cada sección (decisión 16). Es lo
+ * mismo que recibe el motor. `?version=N` resuelve una versión guardada.
+ */
+export const getAdnResuelto = async (req: AuthRequest, res: Response) => {
+  const { id } = req.params;
+  try {
+    await assertClientInWorkspace(req.tenant!, id);
+    const version = req.query.version != null ? Number(req.query.version) : null;
+    if (version != null && (!Number.isInteger(version) || version < 1))
+      return res.status(400).json({ error: 'version tiene que ser un entero positivo' });
+    res.json(await resolverAdn(id, { version }));
+  } catch (error) {
+    handleTenantError(error, res, 'Error al resolver el ADN');
   }
 };
 
@@ -369,18 +410,22 @@ export const uploadBrandGuideline = async (
       serverAIConfig()
     );
 
-    const updated = await prisma.client.update({
-      where: { id },
-      data: {
-        brandGuidelinePdfUrl: clave,
-        brandGuidelineFileName: req.file.originalname,
-        brandGuidelineExtractedAt: new Date(),
-        voice: extracted.voice || client.voice,
-        valueProposition: extracted.valueProposition || client.valueProposition,
-        brandVoiceGuidelines: extracted.brandVoiceGuidelines || client.brandVoiceGuidelines,
-        brandKeywords: extracted.keywords || client.brandKeywords,
-        brandProhibitions: extracted.prohibitions || client.brandProhibitions,
-      },
+    const updated = await prisma.$transaction(async tx => {
+      const actualizada = await tx.client.update({
+        where: { id },
+        data: {
+          brandGuidelinePdfUrl: clave,
+          brandGuidelineFileName: req.file!.originalname,
+          brandGuidelineExtractedAt: new Date(),
+          voice: extracted.voice || client.voice,
+          valueProposition: extracted.valueProposition || client.valueProposition,
+          brandVoiceGuidelines: extracted.brandVoiceGuidelines || client.brandVoiceGuidelines,
+          brandKeywords: extracted.keywords || client.brandKeywords,
+          brandProhibitions: extracted.prohibitions || client.brandProhibitions,
+        },
+      });
+      await guardarAdnDesdeColumnas(id, { autorId: req.tenant!.userId, tx });
+      return actualizada;
     });
 
     res.json({ client: await conUrlDeGuia(updated), extracted });

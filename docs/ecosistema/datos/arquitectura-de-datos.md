@@ -29,10 +29,10 @@ Marcado: **(hoy)** existe en producción · **(nuevo)** por construir · **(camb
 | `User`, `Membership`, `WorkspaceInvite` | Personas y su acceso por workspace | hoy |
 | `Client` | **La marca** (con `marcaMadreId` para submarcas) | hoy |
 | `ModuloDeMarca` | Qué módulos tiene encendidos la marca | nuevo |
-| `SeccionAdn`, `FuenteDeMarca` | ADN 2.0 por secciones, con estado, origen y `modo` (`HEREDA`, `PROPIA`, `SUMA`) frente a la madre | nuevo |
-| `AdnVersion` | Cada versión guardada del ADN de una marca (y la versión de la madre con que se resolvió) | nuevo |
+| `SeccionAdn`, `FuenteDeMarca` | ADN 2.0 por secciones, con estado, origen y `modo` (`HEREDA`, `PROPIA`, `SUMA`) frente a la madre | `SeccionAdn` existe desde el 2026-11-04 con `clave`, `contenido`, `modo` (las 5 secciones de las columnas de hoy); estado, origen y evaluación llegan con el ADN 2.0 · `FuenteDeMarca` nuevo |
+| `AdnVersion` | Cada versión guardada del ADN de una marca (y la madre y su versión con que se resolvió) | existe desde el 2026-11-04 (`madreId`, `versionMadre`, `motivo`) |
 | `AudienciaDeMarca` | Lista fija de audiencias de la marca | nuevo |
-| `Project` | **La campaña** (responsable, modo de aprobación) | cambia: `referencia`, `sigueEn`, fechas, `adnVersion` |
+| `Project` | **La campaña** (responsable, modo de aprobación) | cambia: `referencia`, `sigueEn`, fechas · `adnVersion` existe desde el 2026-11-04 (NULL en v1 = sigue la vigente) |
 | `CampanaAudiencia` | Audiencias del ADN elegidas para la campaña | nuevo |
 | `MiembroFuncion` | Funciones por persona y marca | cambia: enum suma `ESTRATEGIA`, `PLANNING` |
 | `Notificacion` | Avisos | cambia: `modulo`, `campanaId`, `destino` |
