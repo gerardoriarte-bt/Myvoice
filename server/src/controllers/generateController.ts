@@ -32,6 +32,8 @@ interface DatosGeneracion {
   usage?: UsageTotal;
   aiConfig: WorkspaceAIConfig;
   durationMs: number;
+  /** La versión del ADN con que se generó (`parametrosDeGeneracion`). */
+  adnVersion: number | null;
 }
 
 /**
@@ -66,6 +68,7 @@ const registrarGeneracion = async (datos: DatosGeneracion): Promise<void> => {
         provider: datos.aiConfig.provider,
         durationMs: datos.durationMs,
         stageBreakdown: (datos.usage?.byStage ?? null) as any,
+        adnVersion: datos.adnVersion,
       },
     });
   } catch (e) {
@@ -97,6 +100,7 @@ async function buildGenerationContext(dnaProfileId: string, tenant: TenantContex
   dnaProfile: any;
   client: any;
   generationParams: any;
+  adnVersion: number | null;
 }> {
   // Una sola guarda cubre las tres verificaciones que antes estaban abiertas a
   // mano: que el brief exista, que su marca sea de este workspace, y que quien
@@ -104,9 +108,9 @@ async function buildGenerationContext(dnaProfileId: string, tenant: TenantContex
   const dnaProfile = await assertDnaProfileInWorkspace(tenant, dnaProfileId);
   const client = dnaProfile.client;
 
-  const generationParams = await parametrosDeGeneracion(dnaProfile, client);
+  const { params: generationParams, adnVersion } = await parametrosDeGeneracion(dnaProfile, client);
 
-  return { dnaProfile, client, generationParams };
+  return { dnaProfile, client, generationParams, adnVersion };
 }
 
 export const listGenerationHistory = async (req: AuthRequest, res: Response) => {
@@ -150,7 +154,7 @@ export const generateCopy = async (req: AuthRequest, res: Response) => {
   const { dnaProfileId, params } = req.body;
 
   try {
-    const { dnaProfile, client, generationParams } = await buildGenerationContext(dnaProfileId, req.tenant!);
+    const { dnaProfile, client, generationParams, adnVersion } = await buildGenerationContext(dnaProfileId, req.tenant!);
 
     await assertQuotaAvailable(req.tenant!, client);
 
@@ -181,6 +185,7 @@ export const generateCopy = async (req: AuthRequest, res: Response) => {
       usage: result.usage,
       aiConfig,
       durationMs,
+      adnVersion,
     });
 
     res.json(result);
@@ -199,7 +204,7 @@ export const generateCopyStream = async (req: AuthRequest, res: Response) => {
   let abortoCliente: AbortController | undefined;
 
   try {
-    const { dnaProfile, client, generationParams } = await buildGenerationContext(dnaProfileId, req.tenant!);
+    const { dnaProfile, client, generationParams, adnVersion } = await buildGenerationContext(dnaProfileId, req.tenant!);
 
     await assertQuotaAvailable(req.tenant!, client);
 
@@ -282,6 +287,7 @@ export const generateCopyStream = async (req: AuthRequest, res: Response) => {
       usage: capturedUsage,
       aiConfig,
       durationMs,
+      adnVersion,
     });
 
   } catch (error: any) {
@@ -357,6 +363,7 @@ export const regenerateChannel = async (req: AuthRequest, res: Response) => {
       usage: usageTotal,
       aiConfig,
       durationMs,
+      adnVersion: ctx.adnVersion,
     });
 
     res.json({ platform, variations, usage: usageTotal });

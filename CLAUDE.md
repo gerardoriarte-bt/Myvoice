@@ -35,9 +35,11 @@ npm run smoke          # one real generation against the live provider — costs
 npm run backfill:tenancy      # dry-run; `-- --apply` to write
 npm run backfill:telemetria   # fills cost/tokens on historical rows from outputJson
 npm run backfill:slots        # infers slot/slotLabel on saved copy (heuristic)
+npm run backfill:adn          # brand DNA columns → SeccionAdn + version 1; lists what changes for each submarca
 npm run recrypt:keys          # encrypts any aiApiKey still stored in plaintext
 npm run verify:isolation      # cross-tenant isolation suite; needs the API running
 npm run verify:resiliencia    # retry/backoff/timeout against a fake client; spends no API credit
+npm run verify:adn            # layered DNA end to end against a throwaway DATABASE_URL (CI runs it)
 npm run verify:calidad        # copy quality vs the writing manual, judged per rule — SPENDS CREDIT; `-- --plan` doesn't
 npm run calidad:caso -- <dnaProfileId>   # exports a real case to server/.calidad/ (gitignored: client data)
 ```
@@ -227,7 +229,16 @@ happens. Screen names are read with `screenName(id)` rather than written by hand
 the *active* workspace, refreshed via `authApi.me()` on mount and swapped by
 `POST /auth/switch-workspace`.
 
-**Related brands** (`Client.marcaMadreId`, one level, ordering only — nothing is inherited):
+**Related brands** (`Client.marcaMadreId`, one level). Since 2026-11-04 a submarca **inherits the
+brand DNA** (decision 16): `server/src/comun/adn/` holds the sections (`secciones.ts`: prohibitions and
+keywords always add up, voice / value proposition / guidelines inherit when empty), the single resolver
+(`resolverAdn`, which the engine reads through `parametrosDeGeneracion`) and `guardarAdnDesdeColumnas`,
+which every write of the DNA columns calls inside its transaction (create, update, PDF, delete, merge)
+to mirror them into `SeccionAdn` and save an `AdnVersion` — cascading one to each submarca when a
+mother changes. The v1 screen still edits the columns; a brand without sections (before
+`backfill:adn`) resolves from its columns with no inheritance. `Project.adnVersion` is NULL in v1
+(follows the current version); `GenerationLog.adnVersion` records which one was used. Campaigns,
+approvals and quota are still per brand.
 `marcas.ts` groups families and writes «Terpel CRM · de Terpel»; `components/SelectorDeMarca.tsx`
 replaced the header's native `<select>`. `GET /clients` computes `nombreRepetidoCon` (normalized
 name, same workspace only) and `conteos` on read; the normalizer lives in
@@ -275,7 +286,8 @@ because the server image only copies `server/`; it must stay import-free too, an
   `20260826000000_workspace_memberships` → `npm run backfill:tenancy -- --apply` →
   `20260826000001_workspace_required` → `20260827000000_cost_quota_slot` → the two backfills
   (`backfill:telemetria`, `backfill:slots`). The `_workspace_required` one fails on purpose
-  if orphan rows remain. See `docs/runbook-tenancy.md` and `docs/runbook-mejoras-h1.md`.
+  if orphan rows remain. Later, `20261104000000_adn_por_capas` (additive) → `npm run backfill:adn`
+  (review the dry-run's per-submarca list first: that is where inheritance starts). See `docs/runbook-tenancy.md` and `docs/runbook-mejoras-h1.md`.
 - `GenerationLog.workspaceId` is nullable **for now**: the migration backfills every existing
   row but defers `SET NOT NULL` to a later one. A `NULL` there means "written by old code",
   not "no workspace".

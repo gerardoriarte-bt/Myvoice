@@ -1,6 +1,6 @@
 # Dependencias entre módulos (generado)
 
-Generado el 2026-11-04 desde el commit `fb498ec` con `bash scripts/mapa/actualizar.sh`. **No se edita a mano**: se corrige `scripts/mapa/modulos.json` y se vuelve a generar.
+Generado el 2026-11-04 desde el commit `d54ca03` con `bash scripts/mapa/actualizar.sh`. **No se edita a mano**: se corrige `scripts/mapa/modulos.json` y se vuelve a generar.
 
 Cada fila es un archivo que usa algo de otro archivo de **otro módulo** (importa, llama o referencia un tipo). Módulos según la decisión 12; reglas en [spec-plataforma.md](./spec-plataforma.md) § 2.
 
@@ -9,12 +9,12 @@ Cada fila es un archivo que usa algo de otro archivo de **otro módulo** (import
 | Desde \ Hacia | Plataforma | Parte común | My Voice | CDM | Compartido |
 |---|---|---|---|---|---|
 | **Plataforma** | · | 12 | 20 | · | 14 |
-| **Parte común** | · | · | · | · | 30 |
-| **My Voice** | · | 31 | · | · | 132 |
+| **Parte común** | · | · | · | · | 32 |
+| **My Voice** | · | 32 | · | · | 132 |
 | **CDM** | · | · | · | · | · |
 | **Compartido** | · | · | · | · | · |
 
-- **Hay que invertir**: 0 · **pasan por el contrato**: 31 · **permitidas**: 208
+- **Hay que invertir**: 0 · **pasan por el contrato**: 32 · **permitidas**: 210
 
 ## Hay que invertir (0)
 
@@ -22,7 +22,7 @@ Rompen la regla: la parte común o la infraestructura dependen de un módulo, o 
 
 Ninguna.
 
-## Pasan por el contrato (31)
+## Pasan por el contrato (32)
 
 Un módulo lee la parte común. Está bien, pero solo por `contrato/`: esta lista es lo que `contrato/` tiene que exponer.
 
@@ -52,6 +52,7 @@ Un módulo lee la parte común. Está bien, pero solo por `contrato/`: esta list
 | My Voice | `server/src/controllers/savedController.ts` | Parte común | `server/src/middleware/auth.ts` | AuthRequest, auth.ts, handleTenantError() |
 | My Voice | `server/src/services/aprobacion.ts` | Parte común | `server/src/lib/tenancy.ts` | TenantContext, TenantError, assertDnaProfileInWorkspace(), assertProjectInWorkspace() |
 | My Voice | `server/src/services/auditoriaService.ts` | Parte común | `server/src/lib/workspaceSecret.ts` | decryptWorkspaceApiKey(), workspaceSecret.ts |
+| My Voice | `server/src/services/parametrosDeGeneracion.ts` | Parte común | `server/src/comun/adn/resolverAdn.ts` | resolverAdn(), resolverAdn.ts |
 | My Voice | `server/src/services/permisosPieza.ts` | Parte común | `server/src/lib/tenancy.ts` | TenantContext, TenantError, canManage(), tenancy.ts |
 | My Voice | `server/src/services/piezaArchivo.ts` | Parte común | `server/src/lib/tenancy.ts` | TenantError, tenancy.ts |
 | My Voice | `server/src/services/piezaService.ts` | Parte común | `server/src/lib/tenancy.ts` | TenantContext, TenantError, tenancy.ts |
@@ -60,13 +61,13 @@ Un módulo lee la parte común. Está bien, pero solo por `contrato/`: esta list
 | My Voice | `server/src/services/usageService.ts` | Parte común | `server/src/lib/planLimits.ts` | planLimits.ts, resolvePlanLimits() |
 | My Voice | `server/src/services/usageService.ts` | Parte común | `server/src/lib/tenancy.ts` | TenantContext, TenantError, tenancy.ts |
 
-## Permitidas (208)
+## Permitidas (210)
 
 El arranque importa de todos, y todos usan la infraestructura compartida.
 
 | Desde | Hacia | Pares |
 |---|---|---|
-| Parte común | Compartido | 30 |
+| Parte común | Compartido | 32 |
 | My Voice | Compartido | 132 |
 | Plataforma | Compartido | 14 |
 | Plataforma | Parte común | 12 |

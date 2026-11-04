@@ -21,7 +21,7 @@ async function main() {
   if (!id) throw new Error('Uso: npm run calidad:caso -- <dnaProfileId> [nombre]');
   const dnaProfile = await prisma.contentDNAProfile.findUnique({ where: { id }, include: { client: true } });
   if (!dnaProfile) throw new Error(`No existe el brief ${id}`);
-  const params = await parametrosDeGeneracion(dnaProfile, dnaProfile.client);
+  const { params } = await parametrosDeGeneracion(dnaProfile, dnaProfile.client);
   const nombre = nombreArg || `${dnaProfile.client.name}-${dnaProfile.name}`.toLowerCase().replace(/[^a-z0-9]+/g, '-');
   const dir = join(process.cwd(), '.calidad', 'casos');
   mkdirSync(dir, { recursive: true });

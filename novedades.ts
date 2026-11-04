@@ -48,6 +48,17 @@ export interface Novedad {
 
 export const NOVEDADES: Novedad[] = [
   {
+    id: 'submarca-hereda-adn',
+    fecha: '2026-11-04',
+    titulo: 'Las submarcas heredan el ADN de su madre',
+    cambios: [
+      'Una submarca suma siempre las prohibiciones y keywords de su madre: no puede quitarlas.',
+      'Si una submarca no tiene voz, propuesta de valor o guías propias, el copy toma las de la madre. Con las suyas, mandan las suyas.',
+      'Un cambio en el ADN de la madre llega a todas sus submarcas.',
+      'Las campañas y aprobaciones siguen siendo de cada marca.',
+    ],
+  },
+  {
     id: 'manual-de-oficio',
     fecha: '2026-11-04',
     titulo: 'El motor escribe con el manual de oficio',

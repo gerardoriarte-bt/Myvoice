@@ -673,7 +673,7 @@ const ClientManager: React.FC<ClientManagerProps> = ({
                           <option key={m.id} value={m.id}>{opcionDeMadre(m)}</option>
                         ))}
                       </select>
-                      <p className="mt-1 text-[11px] text-gray-500">Ordena el selector y esta pantalla. No comparte ADN, campañas ni aprobaciones.</p>
+                      <p className="mt-1 text-[11px] text-gray-500">Hereda el ADN de la madre: suma sus prohibiciones y keywords, y toma su voz, propuesta de valor y guías mientras no tenga propias. Las campañas y aprobaciones siguen siendo de cada marca.</p>
                     </div>
                   </div>
                 </div>
@@ -708,7 +708,7 @@ const ClientManager: React.FC<ClientManagerProps> = ({
               <div>
                 <h3 className="text-[16px] font-semibold text-gray-900">Agregar una submarca a {madre.name}</h3>
                 <p className="mt-1 text-[12px] text-gray-500">
-                  La submarca aparece debajo de {madre.name} en el selector y en Marcas. Solo ordena: conserva su propio ADN, sus campañas y sus aprobaciones.
+                  La submarca aparece debajo de {madre.name} en el selector y en Marcas. Suma las prohibiciones y keywords de {madre.name} y toma su voz, propuesta de valor y guías mientras no tenga propias. Sus campañas y aprobaciones siguen siendo suyas.
                 </p>
               </div>
 
@@ -1072,7 +1072,7 @@ const ClientManager: React.FC<ClientManagerProps> = ({
                                )}
                              </>
                            )}
-                           <p className="text-[10.5px] text-gray-500">Solo ordena el selector y Marcas: cada marca conserva su ADN, campañas y aprobaciones.</p>
+                           <p className="text-[10.5px] text-gray-500">La submarca suma las prohibiciones y keywords de su madre y toma su voz, propuesta de valor y guías mientras no tenga propias. Campañas y aprobaciones siguen siendo de cada marca.</p>
                          </div>
                        );
                      })()}

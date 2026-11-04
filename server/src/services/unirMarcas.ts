@@ -8,10 +8,15 @@
  * funciones del equipo, notificaciones—, así que olvidarse de mover una es
  * perder sus filas sin que nadie se entere. Por eso, antes de borrar el origen,
  * se cuenta que no le quede nada apuntando.
+ *
+ * El ADN del origen (SeccionAdn, AdnVersion) sí se borra con él, a propósito: el
+ * destino conserva el suyo. Lo que cambia es la familia, y cada marca que cambia
+ * de madre recibe una versión nueva de su ADN (decisión 16).
  */
 
 import { prisma } from '../lib/prisma.js';
 import { assertClientInWorkspace, TenantContext, TenantError } from '../lib/tenancy.js';
+import { guardarAdnDesdeColumnas } from '../comun/adn/guardarAdn.js';
 
 export interface ResultadoUnion {
   destinoId: string;
@@ -113,11 +118,17 @@ export const unirMarcas = async (
 
       // La familia: si el destino era complementaria del origen, queda suelto;
       // las otras complementarias del origen pasan al destino.
-      if (destino.marcaMadreId === origen.id)
+      const cambianDeMadre = (
+        await tx.client.findMany({ where: { marcaMadreId: origen.id, id: { not: destino.id } }, select: { id: true } })
+      ).map(c => c.id);
+      if (destino.marcaMadreId === origen.id) {
         await tx.client.update({ where: { id: destino.id }, data: { marcaMadreId: null } });
+        cambianDeMadre.push(destino.id);
+      }
       movidas.complementarias = (
         await tx.client.updateMany({ where: { marcaMadreId: origen.id }, data: { marcaMadreId: destino.id } })
       ).count;
+      for (const id of cambianDeMadre) await guardarAdnDesdeColumnas(id, { motivo: 'familia', tx });
 
       // Antes de borrar: nada puede seguir apuntando al origen, o el borrado se
       // llevaría filas en cascada.

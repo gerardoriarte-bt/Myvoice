@@ -226,6 +226,11 @@ jobs:
         run: API_URL=http://localhost:3001/api npm run verify:isolation
         working-directory: server
 
+      # El ADN por capas contra la misma base: herencia, versiones y familia (spec-plataforma § 5b).
+      - name: verify:adn
+        run: npm run verify:adn
+        working-directory: server
+
       - name: Logs de la API si algo falló
         if: failure()
         run: cat /tmp/api.log
