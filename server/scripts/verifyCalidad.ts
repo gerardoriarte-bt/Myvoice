@@ -130,6 +130,7 @@ const juzgar = async (
   variaciones: CopyVariation[],
   concepto: string,
   marca: string,
+  producto: string,
   config: ReturnType<typeof serverAIConfig>
 ): Promise<Veredicto[]> => {
   const cliente = createAIClient(config);
@@ -150,7 +151,7 @@ const juzgar = async (
         },
         {
           role: 'user',
-          content: `Marca: "${marca}". Concepto de campaña: "${concepto}".
+          content: `Marca: "${marca}". Producto que se anuncia: "${producto}". Concepto de campaña: "${concepto}".
 
 ## REGLAS (respondé por cada texto qué ids rompe; ninguno si está limpio)
 ${reglas}
@@ -225,11 +226,14 @@ async function main() {
       const variaciones = (r.variations || []).filter(v => v.content);
       const concepto = r.spine?.concept || '';
       const marca = params.clientName || '';
+      // Sin el producto, el juez toma su nombre como un asset inventado (2026-11-04: 6 de 6
+      // faltas de «asset-alterado» eran «My Voice», el producto que anuncia el caso de LoBueno).
+      const producto = params.product || '';
 
       const veredictos: Veredicto[] = [];
       for (const canal of canales) {
         const delCanal = variaciones.filter(v => v.platform === canal);
-        if (delCanal.length) veredictos.push(...(await juzgar(delCanal, concepto, marca, config)));
+        if (delCanal.length) veredictos.push(...(await juzgar(delCanal, concepto, marca, producto, config)));
       }
       const porId = new Map(veredictos.map(v => [v.id, v]));
       const porRegla: Record<string, number> = Object.fromEntries(REGLAS_DE_OFICIO.map(r => [r.id, 0]));

@@ -198,6 +198,28 @@ Sin datos nuevos ni pantallas nuevas.
 Criterio de aceptación: `verify:calidad` baja las infracciones del manual frente a la línea base, sin
 subir las de presupuesto ni prohibiciones.
 
+**Medición del 2026-11-04 (PR #43, `ea6dbea`): no lo cumple todavía.** Caso LoBueno, Instagram Post +
+Google Ads + Push, tres corridas por lado (108 textos cada uno), mismo juez (`claude-sonnet-4-6`). La
+línea base es el motor de `main` (`de21a0e`) medido con el mismo script. Costo: unos USD 0,16 de
+generación por corrida, más el juez.
+
+| Regla | Base | Con el manual |
+|---|---|---|
+| Genérico | 17 | 10 |
+| Pregunta floja | 6 | 2 |
+| Desconectado del concepto | 4 | 8 |
+| Altera un asset | 1 | 3 |
+| Grasa, acartonado, dubitativo, decorativo, sin ritmo | 13 | 18 |
+| **Total** | **41** | **41** |
+
+- Lo que el manual ataca de frente baja (genérico −7, pregunta floja −4); sube «desconectado del
+  concepto». Primera hipótesis: el fixer reescribe lo genérico sin mirar el concepto.
+- El ruido es grande: el total de una corrida va de 28 a 47 en los dos lados. Con un solo caso, una
+  diferencia menor a ~10 faltas no dice nada.
+- El juez no recibía el producto y marcaba «My Voice» como asset inventado (6 de 6 faltas de esa
+  regla en la primera corrida). Corregido en el mismo PR; las cifras de arriba son con el juez
+  corregido.
+
 ### Fase 2 · ADN 2.0, llenado por Planning
 
 - **Audiencias de marca**: modelo nuevo `AudienciaDeMarca` (`clientId`, nombre, descriptores:
