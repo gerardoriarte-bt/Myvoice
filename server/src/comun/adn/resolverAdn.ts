@@ -1,9 +1,14 @@
 import type { ModoSeccionAdn, Prisma } from '@prisma/client';
 import { prisma } from '../../lib/prisma.js';
 import {
+  AudienciaGuardada,
   ClaveAdn,
   COLUMNAS_ADN,
+  conClavesDeHoy,
+  ContenidoSeccion,
+  DescriptoresAudiencia,
   SECCIONES_ADN,
+  SECCIONES_CON_COLUMNA,
   SeccionesGuardadas,
   seccionesDesdeColumnas,
   sumar,
@@ -16,11 +21,18 @@ export type OrigenAdn = 'PROPIA' | 'MADRE' | 'SUMA' | 'VACIA';
 
 export interface SeccionResuelta {
   texto: string;
+  /** Lo que recibe el motor, completo: en así suena los ejemplos, en audiencias la lista. */
+  contenido: ContenidoSeccion;
   origen: OrigenAdn;
   modo: ModoSeccionAdn;
   propio: string;
   deMadre: string;
 }
+
+/** Una sección sin nada: ni texto, ni ejemplos, ni audiencias, ni reglas. */
+export const estaVacio = (c: ContenidoSeccion | undefined): boolean =>
+  !c ||
+  (!c.texto?.trim() && !c.ejemplos?.length && !c.audiencias?.length && !Object.keys(c.reglas ?? {}).length);
 
 export interface AdnResuelto {
   clientId: string;
@@ -43,13 +55,46 @@ interface Propias {
 
 const SELECT_COLUMNAS = Object.fromEntries(COLUMNAS_ADN.map(c => [c, true])) as Record<(typeof COLUMNAS_ADN)[number], true>;
 
+/**
+ * Las audiencias vigentes de una marca: las confirmadas y sin archivar. Una propuesta de la IA sin
+ * confirmar no llega al motor (ADN-7).
+ */
+export const audienciasVigentes = async (db: Db, clientId: string): Promise<AudienciaGuardada[]> => {
+  const filas = await db.audienciaDeMarca.findMany({
+    where: { clientId, archivada: false, origen: { not: 'IA_PROPUESTA' } },
+    orderBy: [{ orden: 'asc' }, { creadaEn: 'asc' }],
+  });
+  return filas.map(a => ({ id: a.id, nombre: a.nombre, descriptores: a.descriptores as unknown as DescriptoresAudiencia }));
+};
+
+/**
+ * Las secciones propias vigentes de una marca, tal como se guardan en una versión: las filas de
+ * `SeccionAdn`, lo de las columnas que todavía no tiene fila (el tratamiento de una marca anterior al
+ * ADN 2.0) y la lista de audiencias.
+ */
+export const fotoDeSecciones = async (db: Db, clientId: string, tieneMadre: boolean): Promise<SeccionesGuardadas> => {
+  const client = await db.client.findUnique({ where: { id: clientId }, select: SELECT_COLUMNAS });
+  const filas = await db.seccionAdn.findMany({ where: { clientId } });
+  const desdeColumnas = client ? seccionesDesdeColumnas(client, tieneMadre) : {};
+  const secciones: SeccionesGuardadas = {};
+  for (const def of SECCIONES_CON_COLUMNA) secciones[def.clave] = desdeColumnas[def.clave];
+  for (const f of filas) {
+    if (!SECCIONES_ADN.some(d => d.clave === f.clave)) continue;
+    secciones[f.clave as ClaveAdn] = { modo: f.modo, contenido: f.contenido as unknown as ContenidoSeccion };
+  }
+  const audiencias = await audienciasVigentes(db, clientId);
+  const modo = secciones.audiencias?.modo ?? (tieneMadre && audiencias.length === 0 ? 'HEREDA' : 'PROPIA');
+  secciones.audiencias = { modo, contenido: { texto: audiencias.map(a => a.nombre).join(' · '), audiencias } };
+  return secciones;
+};
+
 /** Las secciones propias de una marca: las vigentes, o las de una versión guardada. */
 const propiasDe = async (db: Db, clientId: string, version?: number | null): Promise<Propias | null> => {
   if (version != null) {
     const v = await db.adnVersion.findUnique({ where: { clientId_version: { clientId, version } } });
     if (!v) return null;
     return {
-      secciones: v.secciones as SeccionesGuardadas,
+      secciones: conClavesDeHoy(v.secciones as Record<string, never>),
       version: v.version,
       madreId: v.madreId,
       versionMadre: v.versionMadre,
@@ -58,11 +103,10 @@ const propiasDe = async (db: Db, clientId: string, version?: number | null): Pro
   }
   const client = await db.client.findUnique({
     where: { id: clientId },
-    select: { marcaMadreId: true, ...SELECT_COLUMNAS },
+    select: { marcaMadreId: true, _count: { select: { seccionesAdn: true } }, ...SELECT_COLUMNAS },
   });
   if (!client) return null;
-  const filas = await db.seccionAdn.findMany({ where: { clientId } });
-  if (filas.length === 0) {
+  if (client._count.seccionesAdn === 0) {
     return {
       secciones: seccionesDesdeColumnas(client, false),
       version: null,
@@ -72,12 +116,8 @@ const propiasDe = async (db: Db, clientId: string, version?: number | null): Pro
     };
   }
   const ultima = await db.adnVersion.findFirst({ where: { clientId }, orderBy: { version: 'desc' } });
-  const secciones: SeccionesGuardadas = {};
-  for (const f of filas) {
-    secciones[f.clave as ClaveAdn] = { modo: f.modo, contenido: f.contenido as { texto: string } };
-  }
   return {
-    secciones,
+    secciones: await fotoDeSecciones(db, clientId, Boolean(client.marcaMadreId)),
     version: ultima?.version ?? null,
     madreId: client.marcaMadreId,
     versionMadre: null,
@@ -139,20 +179,22 @@ export const resolverAdn = async (
   for (const def of SECCIONES_ADN) {
     const propia = propias.secciones[def.clave];
     const modo = propia?.modo ?? def.modos[0];
-    const propio = (propia?.contenido?.texto ?? '').trim();
+    const contenidoPropio: ContenidoSeccion = propia?.contenido ?? { texto: '' };
+    const propio = (contenidoPropio.texto ?? '').trim();
     // La madre es de un solo nivel: lo suyo es siempre propio, sea cual sea el modo guardado.
-    const madre = marcaMadre ? (deMadre?.secciones[def.clave]?.contenido?.texto ?? '').trim() : '';
+    const contenidoMadre: ContenidoSeccion | undefined = marcaMadre ? deMadre?.secciones[def.clave]?.contenido : undefined;
+    const madre = (contenidoMadre?.texto ?? '').trim();
 
-    let texto = propio;
-    let origen: OrigenAdn = propio ? 'PROPIA' : 'VACIA';
+    let contenido = contenidoPropio;
+    let origen: OrigenAdn = estaVacio(contenidoPropio) ? 'VACIA' : 'PROPIA';
     if (marcaMadre && modo === 'SUMA' && madre) {
-      texto = sumar(madre, propio);
+      contenido = { texto: sumar(madre, propio, def.separador) };
       origen = propio ? 'SUMA' : 'MADRE';
     } else if (marcaMadre && modo === 'HEREDA') {
-      texto = madre;
-      origen = madre ? 'MADRE' : 'VACIA';
+      contenido = contenidoMadre ?? { texto: '' };
+      origen = estaVacio(contenidoMadre) ? 'VACIA' : 'MADRE';
     }
-    secciones[def.clave] = { texto, origen, modo, propio, deMadre: madre };
+    secciones[def.clave] = { texto: (contenido.texto ?? '').trim(), contenido, origen, modo, propio, deMadre: madre };
   }
 
   return {

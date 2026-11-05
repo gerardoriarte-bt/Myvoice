@@ -172,6 +172,7 @@ model Client {
   notificaciones            Notificacion[]
   campanas                  Project[]
   seccionesAdn              SeccionAdn[]
+  audiencias                AudienciaDeMarca[]
   versionesAdn              AdnVersion[]
   /// Cuándo se confirmó el ADN de esta marca (docs/plan-revision-adn.md). Una submarca hereda de su
   /// madre solo si la madre lo tiene: confirmar es lo que enciende la herencia de la familia.
@@ -184,27 +185,64 @@ model Client {
   @@index([marcaMadreId])
 }
 
-/// Una sección del ADN de una marca (decisión 16, spec-plataforma § 5b). Hoy las secciones son las
-/// columnas del ADN de `Client` (voz, propuesta de valor, guías, keywords, prohibiciones): la sección
-/// es la fuente y la columna, un espejo para la pantalla de v1. Las claves, y qué modos admite cada
-/// una, viven en `src/comun/adn/secciones.ts`. Lo que se hereda no se copia: se resuelve al leer.
+/// Una sección del ADN de una marca (decisión 16, spec-plataforma § 5b; ADN 2.0, docs/plan-adn-2.md).
+/// Las que tienen columna en `Client` (voz, propuesta de valor, reglas de estilo, keywords,
+/// prohibiciones, tratamiento) la usan de espejo para la pantalla de v1; la sección es la fuente. Las
+/// claves, sus modos y la forma de su contenido viven en `src/comun/adn/secciones.ts`. Lo que se hereda
+/// no se copia: se resuelve al leer.
 model SeccionAdn {
-  id            String         @id @default(uuid())
-  clientId      String
-  client        Client         @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  clave         String
+  id              String         @id @default(uuid())
+  clientId        String
+  client          Client         @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  clave           String
   /// Lo propio de esta marca, `{ texto }`. En `SUMA` es la parte que se agrega a la de la madre.
-  contenido     Json
+  contenido       Json
   /// Frente a la madre. En una marca sin madre no se mira.
-  modo          ModoSeccionAdn @default(PROPIA)
+  modo            ModoSeccionAdn @default(PROPIA)
   /// Revisada en la revisión del ADN antes de heredar. Vuelve a NULL si cambia el texto de una madre
   /// que todavía no confirmó.
-  revisadaEn    DateTime?
-  revisadaPorId String?
-  autorId       String?
-  actualizadaEn DateTime       @updatedAt
+  revisadaEn      DateTime?
+  revisadaPorId   String?
+  /// De quién es el contenido vigente: PERSONA, o IA_CONFIRMADA si una persona aceptó lo que propuso la
+  /// IA. Nunca IA_PROPUESTA: lo propuesto espera en `propuesta` y no llega al motor (ADN-7).
+  origen          OrigenSeccion  @default(PERSONA)
+  /// Lo que propone la IA, con la misma forma que `contenido`. NULL = no hay nada que revisar.
+  propuesta       Json?
+  /// 'pdf' | 'copy-aprobado' | 'url' | 'entrevista'.
+  propuestaFuente String?
+  propuestaEn     DateTime?
+  autorId         String?
+  actualizadaEn   DateTime       @updatedAt
 
   @@unique([clientId, clave])
+}
+
+/// PERSONA: la escribió alguien. IA_PROPUESTA: la propuso la IA y nadie la confirmó (no cuenta para el
+/// mínimo ni llega al motor). IA_CONFIRMADA: la propuso la IA y una persona la aceptó.
+enum OrigenSeccion {
+  PERSONA
+  IA_PROPUESTA
+  IA_CONFIRMADA
+}
+
+/// Las audiencias de una marca: una lista fija que todas sus campañas reutilizan (ADN-1). Una submarca
+/// en «igual» usa la de su madre confirmada. Una audiencia usada no se borra: se archiva.
+model AudienciaDeMarca {
+  id            String        @id @default(uuid())
+  clientId      String
+  client        Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  nombre        String
+  /// `{ quienEs, queLeImporta, queLaFrena, comoHabla }`.
+  descriptores  Json
+  origen        OrigenSeccion @default(PERSONA)
+  fuente        String?
+  orden         Int           @default(0)
+  archivada     Boolean       @default(false)
+  autorId       String?
+  creadaEn      DateTime      @default(now())
+  actualizadaEn DateTime      @updatedAt
+
+  @@index([clientId])
 }
 
 /// Cómo le habla la marca a su público (feedback de pruebas del 2026-11-05, punto 2).

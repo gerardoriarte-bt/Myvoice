@@ -2,13 +2,13 @@ import type { Prisma } from '@prisma/client';
 import { prisma } from '../../lib/prisma.js';
 import { TenantContext, TenantError } from '../../lib/tenancy.js';
 import { guardarAdnDesdeColumnas } from './guardarAdn.js';
-import { ClaveAdn, COLUMNAS_ADN, SECCIONES_ADN, seccionesDesdeColumnas } from './secciones.js';
+import { ClaveAdn, COLUMNAS_ADN, SECCIONES_DE_REVISION, seccionesDesdeColumnas } from './secciones.js';
 
 /**
  * Revisar el ADN de una marca madre antes de que lo hereden sus submarcas (docs/plan-revision-adn.md).
  *
  * Una submarca hereda solo cuando el ADN de su madre está confirmado. Confirmar exige revisar las cinco
- * secciones: «está bien» o corregirla. Es lo que enciende la herencia de la familia.
+ * secciones de antes del ADN 2.0 (`SECCIONES_DE_REVISION`): «está bien» o corregirla. Es lo que enciende la herencia de la familia.
  */
 
 type Tx = Prisma.TransactionClient;
@@ -52,7 +52,7 @@ export const estadoDeRevision = async (clientId: string, db: Tx | typeof prisma 
   });
   const filas = await db.seccionAdn.findMany({ where: { clientId } });
   const desdeColumnas = seccionesDesdeColumnas(client, false);
-  const secciones = SECCIONES_ADN.map(def => {
+  const secciones = SECCIONES_DE_REVISION.map(def => {
     const fila = filas.find(f => f.clave === def.clave);
     return {
       clave: def.clave,
@@ -85,12 +85,12 @@ export const revisarSeccion = async (
   clave: string,
   texto?: string
 ): Promise<EstadoDeRevision> => {
-  const def = SECCIONES_ADN.find(s => s.clave === clave);
+  const def = SECCIONES_DE_REVISION.find(s => s.clave === clave);
   if (!def) throw new TenantError(`No existe la sección «${clave}»`, 400);
   if (texto !== undefined && typeof texto !== 'string') throw new TenantError('El texto tiene que ser texto', 400);
   return prisma.$transaction(async tx => {
     if (texto !== undefined) {
-      await tx.client.update({ where: { id: clientId }, data: { [def.columna]: texto.trim() } });
+      await tx.client.update({ where: { id: clientId }, data: { [def.columna!]: texto.trim() } });
     }
     await guardarAdnDesdeColumnas(clientId, { autorId: tenant.userId, tx });
     await tx.seccionAdn.update({
