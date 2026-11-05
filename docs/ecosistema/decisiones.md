@@ -116,6 +116,8 @@ nueva que diga qué cambió y por qué.
 
 ## 2026-11-05 · Implementación: el cierre de la campaña
 
+Las decisiones 20 a 22 se ajustaron el mismo día, después de revisar el mapa del flujo.
+
 18. **La campaña termina en Implementación, no en la pieza aprobada.** Cuando el cuadro, el copy y las
     piezas están aprobados, todo converge en un **espacio de implementación** donde el **trafficker**
     tiene por cada anuncio el copy, el destino con su UTM, el enlace a la pieza y quién aprobó qué. Ahí
@@ -136,8 +138,14 @@ nueva que diga qué cambió y por qué.
 20. **El destino y la UTM los pone Planning en la línea, cuando los tiene.** Son dos campos de la línea
     del cuadro, en CDM, que Planning **pega** (la UTM no se arma con una plantilla). Muchas veces la UTM
     se define al final, así que se pueden completar o cambiar **sin enviar una versión nueva del
-    cuadro**: no cambian qué se escribe. Mientras falten, el anuncio dice «Falta la UTM · Planning» y no
-    queda listo para montar.
+    cuadro**: no cambian qué se escribe. **La UTM no bloquea**: si falta, el anuncio avisa «Falta la UTM ·
+    Planning» y el trafficker igual puede montarlo; el reporte lo muestra. El destino sí es necesario.
+21. **Devolver lo decide el trafficker.** Si no tiene clara la información de un anuncio (destino,
+    copy, pieza, lo que sea), lo devuelve con una novedad escrita, antes o después de montarlo, y le
+    llega a quien la debe. No hay una lista de motivos que lo habilite: es su criterio. Cierra la pregunta 10,
+    abierta el mismo día.
+22. **El reporte de implementación se entrega como archivo** (Excel y PDF) por ahora. Verlo en el
+    portal del cliente queda para después. Cierra la pregunta 11, abierta el mismo día.
 
 ## Antes (2026-10-27), siguen vigentes con los nombres nuevos
 
@@ -156,5 +164,3 @@ nueva que diga qué cambió y por qué.
 |---|---|---|
 | 8 | ¿Cómo se revisan 200 líneas? Propuesta: generar por tandas según fecha de salida, revisar agrupado por etapa y formato, y **aprobar por muestra** (una de cada grupo; el resto queda aprobado si pasa todos los controles; lo que se pasa del largo o tiene problemas se revisa siempre de a uno). | Revisar de a uno, como está diseñado, sirve para 10 líneas, no para 200. |
 | 9 | Si la campaña sigue directo a My Voice, sin cuadro todavía, ¿para qué etapas se escriben los textos raíz? Propuesta: el brief puede marcar etapas previstas, y el cuadro de CDM las confirma o agrega. Las adaptaciones esperan al cuadro (decisión 15). | Con la decisión 9 la etapa sale del cuadro, pero la decisión 7 permite empezar por My Voice. |
-| 10 | ¿El trafficker puede devolver un anuncio ya montado (por ejemplo, la plataforma lo rechazó)? Propuesta: sí, vuelve a «con novedad» con el motivo y el reporte lo muestra como desviación. | El reporte tiene que reflejar lo que de verdad quedó al aire. |
-| 11 | ¿El cliente ve el reporte en su portal o lo recibe como archivo? Propuesta: archivo en la primera versión (Excel y PDF); el portal después. | Un enlace sin login con datos de pauta es otra superficie pública. |

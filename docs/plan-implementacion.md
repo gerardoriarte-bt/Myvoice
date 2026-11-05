@@ -1,6 +1,6 @@
 # Plan · Implementación: el espacio del trafficker
 
-Estado: en diseño · 2026-11-05 · Decisiones 18, 19 y 20 en
+Estado: en diseño · 2026-11-05 · Decisiones 18 a 22 en
 [ecosistema/decisiones.md](./ecosistema/decisiones.md) · Flujo:
 [ecosistema/flujo.md](./ecosistema/flujo.md) pasos 11–12 y § 5 · Requisitos: PL-15 a PL-18 en
 [ecosistema/producto/prd-plataforma.md](./ecosistema/producto/prd-plataforma.md)
@@ -42,9 +42,10 @@ plataforma: no queda registro de qué se montó, dónde ni cuándo.
 
    La acción principal es **«Marcar montado y seguir»**: plataforma, ID del anuncio y fecha real. La
    secundaria es «Devolver con novedad».
-2. **Anuncio con algo que falta.** Dice qué falta y quién lo debe («Falta la UTM · Planning»), con un
-   botón para avisarle. No se puede marcar montado.
-3. **Devolver con novedad.** Pide qué pasó (destino roto, texto que la plataforma no acepta, medida
+2. **Anuncio con algo que falta.** Dice qué falta y quién lo debe, con un botón para avisarle. Si es
+   el destino, no se puede marcar montado. Si es la UTM («Falta la UTM · Planning»), solo avisa.
+3. **Devolver con novedad.** Lo decide el trafficker cuando no tiene clara la información, antes o
+   después de montar. Pide qué pasó (destino roto, texto que la plataforma no acepta, medida
    incorrecta, otra cosa) y un texto obligatorio. Va a quien lo debe.
 4. **Reporte de implementación.** Muestra, por línea, lo planeado contra lo montado: fechas, IDs,
    novedades y el historial de aprobaciones. Las acciones son «Enviar al cliente» y «Descargar» (Excel y
@@ -58,18 +59,19 @@ plataforma: no queda registro de qué se montó, dónde ni cuándo.
 
 ### Reglas
 
-- **Listo para montar** exige cinco cosas: copy aprobado, pieza aprobada (por el cliente si la campaña
-  es con cliente), destino, UTM y fecha de salida.
+- **Listo para montar** exige cuatro cosas: copy aprobado, pieza aprobada (por el cliente si la campaña
+  es con cliente), destino y fecha de salida. La UTM no bloquea: si falta, se avisa y el reporte la
+  muestra como pendiente.
 - Si el copy, la pieza, el destino o la UTM cambian después de montado, el anuncio vuelve a «por
   montar» con lo que cambió y el trafficker recibe un aviso. El reporte lo cuenta como desviación.
 - El historial no se edita. Un rechazo queda registrado igual que una aprobación.
 - My Voice no monta los anuncios ni se conecta a las plataformas. El ID del anuncio se escribe a mano.
 
-### Por decidir con el diseño
+### Decidido al revisar el mapa (2026-11-05)
 
-- ¿Un anuncio ya montado se puede devolver (por ejemplo, porque la plataforma lo rechazó)? Es la
-  pregunta abierta 10.
-- ¿El reporte llega al cliente como archivo o en el portal? Es la pregunta abierta 11.
+- La UTM avisa y no bloquea (decisión 20).
+- Devolver lo decide el trafficker, antes o después de montar (decisión 21).
+- El reporte se entrega como archivo; el portal, después (decisión 22).
 
 ## Nivel 2 · Cómo se construye
 
@@ -125,8 +127,8 @@ Sirve para que el trafficker trabaje con lo que existe hoy.
   - un anuncio de otro workspace responde 404;
   - el paquete y el reporte no mezclan marcas.
 - Recorrido en local:
-  1. una pieza en «Lista» sin UTM muestra «Falta la UTM»;
-  2. se pega la UTM y el anuncio queda listo;
+  1. una pieza en «Lista» sin destino no se puede montar; sin UTM, solo avisa;
+  2. se pega el destino y el anuncio queda listo;
   3. se marca montado;
   4. el reporte muestra lo planeado contra lo montado, con las aprobaciones.
 - `seed:capacitacion` deja un anuncio en cada estado.

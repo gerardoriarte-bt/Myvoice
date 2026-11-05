@@ -73,7 +73,7 @@ espera a su pieza aprobada (My Voice) y a su destino y UTM (CDM).
 | 9 | My Voice · Producción | Diseño | Produce la pieza con el copy aprobado (después, en el Adaptador). | Copy aprobado, specs | Pieza | Responsable |
 | 10 | My Voice · Producción | Responsable, cliente | Aprueban la pieza. CDM ve el estado. | Pieza | Pieza aprobada | Trafficker |
 | — | CDM | Planning | Pega el destino y la UTM de cada línea cuando los tiene; puede ser al final, sin versión nueva del cuadro. | Cuadro | Destino y UTM | Trafficker |
-| 11 | Parte común · Implementación | Trafficker | Recibe cada anuncio listo para montar (copy, destino, UTM, pieza y quién aprobó). Lo monta y registra plataforma, ID del anuncio y fecha real, o lo devuelve con una novedad. | Anuncios listos | Anuncios montados | Responsable |
+| 11 | Parte común · Implementación | Trafficker | Recibe cada anuncio listo para montar (copy, destino, UTM, pieza y quién aprobó). Lo monta y registra plataforma, ID del anuncio y fecha real, o lo devuelve con una novedad si no tiene clara la información (lo decide él, antes o después de montar). | Anuncios listos | Anuncios montados | Responsable |
 | 12 | Parte común · Implementación | Responsable | Revisa el reporte de implementación (lo planeado contra lo montado, con novedades) y lo envía al cliente. | Anuncios montados | Reporte enviado | My Voice mide |
 
 ## 3. Bloqueos
@@ -85,7 +85,8 @@ espera a su pieza aprobada (My Voice) y a su destino y UTM (CDM).
 | Formato de un medio en borrador | CDM, al armar el cuadro | El formato no aparece para elegir. |
 | Copy que no cabe en un campo | My Voice, paso 8 | El campo marcado y «Acortar»; no se puede aprobar. |
 | Copy sin aprobar | CDM, en la línea | La línea muestra «Esperando el copy en My Voice». |
-| Falta el destino o la UTM | Implementación, en el anuncio | «Falta la UTM · Planning», con el botón para avisarle. No se puede marcar montado. |
+| Falta el destino | Implementación, en el anuncio | «Falta el destino · Planning», con el botón para avisarle. No se puede marcar montado. |
+| Falta la UTM | Implementación, en el anuncio | Solo aviso: «Falta la UTM · Planning». Se puede montar igual y el reporte lo muestra. |
 | Pieza sin aprobar | Implementación, en el anuncio | «Esperando la aprobación del cliente», con quién la tiene. |
 | Copy o pieza cambiados después de montar | Implementación, en el anuncio | Vuelve a «por montar» con lo que cambió; el reporte lo cuenta como desviación. |
 
@@ -120,12 +121,12 @@ Principios:
 | Copy aprobado de una línea | Diseño, Planning | My Voice · Producción / CDM · Línea |
 | Pieza lista para aprobar | Responsable, cliente | My Voice · Producción |
 | Copy aprobado que cambió después | Diseño, Planning | My Voice · Producción (pieza «A revisar») / CDM · Línea |
-| Anuncio listo para montar (todo aprobado, con destino y UTM) | Trafficker | Implementación, en el primer anuncio por montar |
-| Pieza aprobada sin destino o UTM | Planning | CDM · Línea, en el campo que falta |
+| Anuncio listo para montar (todo aprobado, con destino) | Trafficker | Implementación, en el primer anuncio por montar |
+| Pieza aprobada sin destino o sin UTM | Planning | CDM · Línea, en el campo que falta |
 | Destino o UTM cambiados en un anuncio ya montado | Trafficker | Implementación, en ese anuncio |
 | Anuncio devuelto con novedad | Quien lo debe: Planning (destino, UTM), responsable (copy, pieza) | La línea en CDM / la pieza en Producción, con la novedad |
 | Todos los anuncios de la campaña montados | Responsable | Implementación · Reporte |
-| Reporte de implementación enviado | Cliente | El archivo del reporte (Excel y PDF) |
+| Reporte de implementación enviado | Cliente | El archivo del reporte (Excel y PDF); el portal, después |
 
 Lo que falta definir del lado técnico: si las dos herramientas comparten la cola y las
 notificaciones (un solo servicio) o cada una manda las suyas con enlaces a la otra. Ver

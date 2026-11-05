@@ -46,9 +46,9 @@ módulos que usa.
 | PL-12 | **Cambio en la madre con aviso de impacto**: a cuántas submarcas llega y qué campañas activas pasan a la versión nueva del ADN; cada campaña fija la versión con la que arrancó. | P0 |
 | PL-13 | **Formatos de la marca**: los paquetes con que trabaja cada marca (heredados y propios) son lo que se ve primero al armar un cuadro; la biblioteca completa queda a un clic. Es lo que mantiene usable una biblioteca de 60 a 80 medios. | P0 |
 | PL-15 | **Historial de aprobaciones** por campaña: todas, internas y del cliente, en un solo registro que no se edita (decisión 19). | P0 |
-| PL-16 | **Implementación**: por campaña, cada anuncio con copy aprobado, destino, UTM, enlace a la pieza y su historial; «listo para montar» solo con todo aprobado y con destino, UTM y fecha; si falta algo, qué y quién lo debe (decisión 18). | P0 |
-| PL-17 | **Marcar montado o devolver con novedad**: plataforma, ID del anuncio y fecha real; la novedad lleva texto y avisa a quien la debe. | P0 |
-| PL-18 | **Paquete y reporte de implementación**: el paquete (lo que hay que montar) en Excel; el reporte (lo planeado contra lo montado, con novedades y aprobaciones) en Excel y PDF, revisado por el responsable antes de enviarlo. | P0 |
+| PL-16 | **Implementación**: por campaña, cada anuncio con copy aprobado, destino, UTM, enlace a la pieza y su historial; «listo para montar» solo con todo aprobado y con destino y fecha (la UTM avisa, no bloquea); si falta algo, qué y quién lo debe (decisión 18). | P0 |
+| PL-17 | **Marcar montado o devolver con novedad**: plataforma, ID del anuncio y fecha real; devolver lo decide el trafficker cuando no tiene clara la información, antes o después de montar; la novedad lleva texto y avisa a quien la debe. | P0 |
+| PL-18 | **Paquete y reporte de implementación**: el paquete (lo que hay que montar) en Excel; el reporte (lo planeado contra lo montado, con novedades y aprobaciones) en Excel y PDF, revisado por el responsable antes de enviarlo. Se entrega como archivo; el portal, después. | P0 |
 | PL-14 | **Equipo de la marca**: lo heredado de la madre (se edita allá) y las personas propias, con sus funciones. | P1 |
 
 ## 5. No objetivos

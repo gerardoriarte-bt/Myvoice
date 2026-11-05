@@ -78,9 +78,9 @@ está aquí, todavía no tiene nombre acordado: se agrega antes de usarlo en una
 |---|---|---|
 | **Implementación** | La última etapa de la campaña: el trafficker monta los anuncios con todo lo aprobado y registra qué quedó al aire. Vive en la parte común. | Producción, que hace la pieza. |
 | **Anuncio** | Lo que se monta en un medio: una pieza aprobada de una línea, con su copy, su destino y su UTM. Es la unidad de Implementación. | Pieza (lo producido) y línea (lo encargado). |
-| **Listo para montar** | Un anuncio con el copy aprobado, la pieza aprobada, el destino, la UTM y la fecha de salida. Si le falta algo, dice qué y quién lo debe. | — |
+| **Listo para montar** | Un anuncio con el copy aprobado, la pieza aprobada, el destino y la fecha de salida. La UTM no bloquea: si falta, avisa. Si le falta algo, dice qué y quién lo debe. | — |
 | **Montado** | El trafficker lo subió: plataforma, ID del anuncio en la plataforma, fecha real de salida. | Publicado o «al aire» como resultado de la plataforma: My Voice no lo verifica. |
-| **Novedad** | Lo que impide montar o lo que cambió al montar: destino roto, texto que la plataforma no acepta, medida incorrecta. Lleva texto y vuelve a quien lo debe. | Rechazo de una aprobación. |
+| **Novedad** | Lo que el trafficker no tiene claro o no puede montar: destino roto, texto que la plataforma no acepta, medida incorrecta. Devolver lo decide el trafficker; lleva texto y vuelve a quien lo debe. | Rechazo de una aprobación. |
 | **Paquete de implementación** | Lo que hay que montar, por campaña: cada anuncio con su copy, destino, UTM, enlace a la pieza y aprobaciones. Se descarga en Excel. | El reporte. |
 | **Reporte de implementación** | Lo que quedó montado contra lo planeado, con fechas, IDs y novedades. Es la constancia para el cliente. | El rendimiento de los anuncios (eso es medición). |
 | **Historial de aprobaciones** | Todas las aprobaciones de una campaña, internas y del cliente, en un solo lugar: qué, quién, cuándo, por dónde y con qué comentario. | — |
