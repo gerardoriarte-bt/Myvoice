@@ -24,6 +24,12 @@ Estados: **diseñada** · **ajustar** (diseñada, pero una decisión nueva la ca
 | Campaña | Nueva campaña: referencia, audiencias del ADN, **versión del ADN fija**, tratamiento del ADN y **cómo sigue** | Crear y generar / armar el cuadro | diseñada (2026-11-05) | § Campaña nueva · datos, audiencias del ADN, versión del ADN y cómo sigue |
 | Campaña | Una campaña en las dos herramientas: carriles, «espera a», lo que pasó | Ir a la acción que espera | diseñada | § Marco · Una campaña en las dos herramientas — dónde va, qué falta y a quién espera |
 | Cola | Mi cola y avisos, de los dos módulos | Ir a la acción | diseñada | § Marco · Mi cola y avisos — lo que te toca, en las dos herramientas |
+| Campaña | **Historial de aprobaciones** de la campaña: internas y del cliente, en orden | — | por diseñar | — |
+| Implementación | **Implementación de una campaña**: líneas con su avance (por montar, montados, con novedad) y el anuncio de a uno con copy, destino, UTM, pieza y quién aprobó | Marcar montado y seguir | por diseñar | — |
+| Implementación | Anuncio con algo que falta: qué falta y quién lo debe | Avisar a quien lo debe | por diseñar | — |
+| Implementación | Devolver con novedad | Devolver | por diseñar | — |
+| Implementación | **Reporte de implementación**: lo planeado contra lo montado, con novedades y aprobaciones | Enviar al cliente / Descargar | por diseñar | — |
+| Cola | Lo mío del trafficker: anuncios por montar de todas las marcas, por fecha de salida | Ir al anuncio | por diseñar (cabe en Mi cola) | — |
 
 ## My Voice
 
@@ -59,7 +65,8 @@ Estados: **diseñada** · **ajustar** (diseñada, pero una decisión nueva la ca
 | Campaña | Campaña en CDM (desde My Voice) | Armar el cuadro | por diseñar | — |
 | Cuadro | Armar y enviar el cuadro | Enviar versión | por diseñar | — |
 | Cuadro | **Cuadro rápido** (campaña chica, desde los paquetes de la marca) | Enviar | por diseñar | — |
-| Estado | Línea con su copy aprobado y el estado de sus piezas | Ver en My Voice | por diseñar | — |
+| Estado | Línea con su copy aprobado, el estado de sus piezas y de su implementación | Ver en My Voice | por diseñar | — |
+| Cuadro | **Destino y UTM por línea**: pegarlos cuando estén, sin versión nueva | Guardar | por diseñar | — |
 | Seguimiento | Portafolio con «espera a» | Abrir campaña | por diseñar | — |
 | Seguimiento | Mi cola | Ir a la acción | diseñada en la parte común (cruza los dos módulos) | § Marco · Mi cola y avisos… |
 
@@ -69,7 +76,7 @@ Estados: **diseñada** · **ajustar** (diseñada, pero una decisión nueva la ca
 |---|---|---|---|
 | IA | Dónde ayuda la IA en cada etapa y quién decide (refleja [producto/prd-ia.md](./producto/prd-ia.md)) | diseñada | § IA en la plataforma — dónde ayuda y quién decide |
 | Seguimiento | Cada función en diseño, front y back (refleja [seguimiento.md](./seguimiento.md)) | diseñada | § Seguimiento · flujo de usuario y funciones (diseño · front · back) |
-| Mapa | Quién hace qué en cada herramienta | ajustar: hoy muestra solo My Voice | § v2 · Mapa del proceso: quién hace qué |
+| Mapa | Quién hace qué en cada herramienta, con aprobaciones y ejecuciones hasta Implementación | ajustar: hoy muestra solo My Voice y termina en la pieza | § v2 · Mapa del proceso: quién hace qué |
 | Contrato | Lo que viaja | ajustar: «Planning → proceso de campaña» pasa a CDM ↔ My Voice | § v2 · Contrato Planning → proceso de campaña |
 | Navegación | Estado de la campaña visible en las dos herramientas, botones que cruzan | diseñada | § Marco · Una campaña en las dos herramientas… |
 | Avisos | Cada aviso de [flujo.md](./flujo.md) § 4 y adónde lleva | diseñada (panel); falta el correo | § Marco · Mi cola y avisos… |

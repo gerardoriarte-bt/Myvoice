@@ -1,6 +1,6 @@
 # Contrato · CDM ↔ My Voice
 
-Estado: borrador · 2026-10-28 · Términos: [glosario.md](./glosario.md)
+Estado: borrador · 2026-11-05 · Términos: [glosario.md](./glosario.md)
 Reemplaza a [../v2/contrato-plan-de-medios.md](../v2/contrato-plan-de-medios.md): el «módulo
 Planning» que suponía es el CDM. Las reglas de versiones, validaciones y cambios de aquel documento
 siguen valiendo con los nombres nuevos; este documento manda donde difieran.
@@ -15,6 +15,10 @@ siguen valiendo con los nombres nuevos; este documento manda donde difieran.
   Cuadro de materiales  ◄─── estado del copy por línea ────  adaptaciones
   Líneas                ◄─── copy aprobado por formato ────  aprobación del responsable
   Piezas                ──── estado de aprobación ─────────►  medición
+
+                CDM                 Parte común · Implementación            My Voice
+  Líneas: destino, UTM  ─────────►  anuncios listos para montar  ◄─────────  copy, piezas, aprobaciones
+  Líneas                ◄─────────  estado de implementación por línea
 ```
 
 No viajan: el media plan y el presupuesto, la segmentación de pauta, los textos raíz, el toolkit.
@@ -52,6 +56,12 @@ Una **versión completa** cada vez, comparada por `lineaId` con la anterior
 | `fechaSalida`, `fechaCopy` | Sí / No | Ordena el trabajo. |
 | `referencia` | No | Texto libre, si la línea es de una referencia distinta a la de la campaña. |
 | `indicaciones` | No | Contexto para el copy que no está en el formato. |
+| `destino` | Para montar | URL o destino del CTA. La pega Planning (decisión 20). Obligatorio en formatos de búsqueda. |
+| `utm` | Para montar | Los parámetros tal como los define Planning; se guardan como texto, sin armarlos. Suele llegar al final. |
+
+`destino` y `utm` **se pueden completar o cambiar sin versión nueva del cuadro**: no cambian qué se
+escribe, solo qué se monta. Cada cambio queda en el historial de la línea, y si el anuncio ya estaba
+montado, el trafficker recibe el aviso.
 
 ## 3. CDM lee de My Voice
 
@@ -62,6 +72,8 @@ Una **versión completa** cada vez, comparada por `lineaId` con la anterior
 | Referencia de la campaña | Mostrarla en el cuadro. |
 | Estado de My Voice por campaña y por línea | El «espera a» y la navegación cruzada ([flujo.md](./flujo.md), § 4). |
 | **Copy aprobado por línea** | Qué texto va en qué formato: cada campo con su texto, separado en copy en pieza y copy de plataforma, con la versión del formato. |
+
+| **Estado de implementación por línea** (de la parte común) | Cuántos anuncios están listos, montados o con novedad, y qué falta y quién lo debe. |
 
 Si un copy aprobado cambia después, CDM recibe la versión nueva y marca la línea «A revisar»; nunca
 se reemplaza en silencio una pieza ya producida.

@@ -11,7 +11,8 @@ nueva que diga qué cambió y por qué.
 2. **Textos raíz y toolkit se mantienen**, solo dentro de My Voice. Aseguran la calidad del copy
    antes de escribir cada formato; no viajan a CDM.
 3. **El responsable de la campaña aprueba**, y puede ser alguien de Planning o el ejecutivo de
-   cuentas. **Cada aprobación queda en su herramienta.** Por eso la navegación y los avisos tienen
+   cuentas. **Cada aprobación queda en su herramienta.** (Reemplazado por la decisión 19: un solo
+   historial en la plataforma.) Por eso la navegación y los avisos tienen
    que entenderse sin explicación.
 4. **My Voice solo informa qué texto va en qué formato.** El Adaptador no se construye por ahora:
    es una fase 3 o 4.
@@ -113,6 +114,31 @@ nueva que diga qué cambió y por qué.
     - Por ahora **solo LoBueno crea marcas**; cada marca ya pertenece a un workspace, así que abrir
       otras empresas después no obliga a rehacer nada.
 
+## 2026-11-05 · Implementación: el cierre de la campaña
+
+18. **La campaña termina en Implementación, no en la pieza aprobada.** Cuando el cuadro, el copy y las
+    piezas están aprobados, todo converge en un **espacio de implementación** donde el **trafficker**
+    tiene por cada anuncio el copy, el destino con su UTM, el enlace a la pieza y quién aprobó qué. Ahí
+    marca lo que montó (plataforma, ID del anuncio, fecha real) o lo devuelve con una novedad, y de ahí
+    sale el **reporte de implementación**: lo planeado contra lo montado, como constancia para el cliente.
+    - Vive en la **parte común**: junta lo de los dos módulos y su unidad es la línea del cuadro, así que
+      sirve también cuando la marca usa solo CDM (con el copy escrito a mano por campo).
+    - El trafficker es una **función interna** del equipo, con usuario, como Planning o Diseño.
+    - My Voice no compra ni pauta medios, y no se conecta a Meta ni Google por ahora: el ID del anuncio
+      se escribe a mano. Ese ID es la llave para medir el rendimiento después (MV-11).
+19. **Todas las aprobaciones quedan en la misma plataforma, en un solo historial por campaña.**
+    Reemplaza a «cada aprobación queda en su herramienta» (decisión 3): con una plataforma de módulos
+    (decisión 12) no hace falta repartirlas, y la trazabilidad pide verlas juntas. Las internas
+    (Estrategia, Copy, responsable) y las del cliente (toolkit, copy, piezas, en el portal) se registran
+    igual: qué, quién, cuándo, por dónde y con qué comentario. El espacio de implementación y el reporte
+    las muestran por anuncio. Cada módulo sigue decidiendo sus aprobaciones; lo que se unifica es el
+    registro y cómo se ve.
+20. **El destino y la UTM los pone Planning en la línea, cuando los tiene.** Son dos campos de la línea
+    del cuadro, en CDM, que Planning **pega** (la UTM no se arma con una plantilla). Muchas veces la UTM
+    se define al final, así que se pueden completar o cambiar **sin enviar una versión nueva del
+    cuadro**: no cambian qué se escribe. Mientras falten, el anuncio dice «Falta la UTM · Planning» y no
+    queda listo para montar.
+
 ## Antes (2026-10-27), siguen vigentes con los nombres nuevos
 
 - La marca, su ADN y sus audiencias son la fuente de verdad (ahora en la parte común, decisión 7).
@@ -130,3 +156,5 @@ nueva que diga qué cambió y por qué.
 |---|---|---|
 | 8 | ¿Cómo se revisan 200 líneas? Propuesta: generar por tandas según fecha de salida, revisar agrupado por etapa y formato, y **aprobar por muestra** (una de cada grupo; el resto queda aprobado si pasa todos los controles; lo que se pasa del largo o tiene problemas se revisa siempre de a uno). | Revisar de a uno, como está diseñado, sirve para 10 líneas, no para 200. |
 | 9 | Si la campaña sigue directo a My Voice, sin cuadro todavía, ¿para qué etapas se escriben los textos raíz? Propuesta: el brief puede marcar etapas previstas, y el cuadro de CDM las confirma o agrega. Las adaptaciones esperan al cuadro (decisión 15). | Con la decisión 9 la etapa sale del cuadro, pero la decisión 7 permite empezar por My Voice. |
+| 10 | ¿El trafficker puede devolver un anuncio ya montado (por ejemplo, la plataforma lo rechazó)? Propuesta: sí, vuelve a «con novedad» con el motivo y el reporte lo muestra como desviación. | El reporte tiene que reflejar lo que de verdad quedó al aire. |
+| 11 | ¿El cliente ve el reporte en su portal o lo recibe como archivo? Propuesta: archivo en la primera versión (Excel y PDF); el portal después. | Un enlace sin login con datos de pauta es otra superficie pública. |

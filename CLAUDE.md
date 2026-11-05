@@ -391,6 +391,10 @@ medium and a requested quantity at a time. Phase 1 puts the universal writing cr
 `docs/plan-marcas-relacionadas.md` (2026-10-13): a brand can be declared part of another (one level,
 ordering only, nothing inherited) and two brands with the same normalized name are flagged until
 one is renamed or merged; two deliveries, «Unir» is the second.
+`docs/plan-implementacion.md` (2026-11-05): the step after production — an implementation space in the
+common part where the trafficker gets, per ad, approved copy, destination and UTM (pasted by Planning),
+the piece link and one approval history (internal and client), marks what went live and produces the
+implementation report. Decisions 18–20 in `docs/ecosistema/decisiones.md`.
 `docs/plan-h2-produccion-auditoria.md` is the next phase (approved copy → assigned piece → AI
 audit); it is design-first and shares no code with the H1 deploy.
 `docs/plan-feedback-pruebas.md` (2026-11-05): the 8 points from the first user test, the cause of

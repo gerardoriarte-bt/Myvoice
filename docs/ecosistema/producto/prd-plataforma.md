@@ -25,6 +25,7 @@ módulos que usa.
 | Super Admin | Crea la marca y decide qué módulos usa. |
 | Estrategia | Completa y confirma el ADN; define las audiencias. |
 | Responsable de la campaña | Crea la campaña y elige por dónde sigue; ve a quién espera. |
+| Trafficker | Monta los anuncios desde Implementación y registra lo que quedó montado. |
 | Todos | Usan su cola y sus avisos. |
 
 ## 4. Requisitos
@@ -38,18 +39,24 @@ módulos que usa.
 | PL-5 | **Vista de campaña en las dos herramientas**: un carril por módulo con los mismos nombres de etapa, «espera a» con la persona y la herramienta, y un botón directo a esa acción. | P0 |
 | PL-6 | **Mi cola**: lo pendiente de cada persona en todas las campañas y módulos, por fecha de salida. | P0 |
 | PL-7 | **Avisos** que llevan directo a la acción, nunca a una portada ([../flujo.md](../flujo.md) § 4). Por correo, solo lo que le toca a cada uno. | P0 |
-| PL-8 | **Funciones del equipo** por marca: Estrategia, Copy, Planning, Diseño, aprobación; el responsable se elige por campaña. | P0 |
+| PL-8 | **Funciones del equipo** por marca: Estrategia, Copy, Planning, Diseño, Trafficker, aprobación; el responsable se elige por campaña. | P0 |
 | PL-9 | **Inicio de la marca**: ADN, audiencias, formatos de la marca y campañas con su avance. | P1 |
 | PL-10 | **Marcas por familia**: cada madre con sus submarcas, el ADN de cada una contando lo heredado. | P0 |
 | PL-11 | **La submarca hereda de su madre** por capas y en vivo (decisión 16): prohibiciones siempre y sin poder quitarlas; keywords, audiencias, paquetes y equipo se suman; tono, propuesta de valor, público y voz por sección («igual que la madre» o «propio»). Se ve el origen de cada sección. | P0 |
 | PL-12 | **Cambio en la madre con aviso de impacto**: a cuántas submarcas llega y qué campañas activas pasan a la versión nueva del ADN; cada campaña fija la versión con la que arrancó. | P0 |
 | PL-13 | **Formatos de la marca**: los paquetes con que trabaja cada marca (heredados y propios) son lo que se ve primero al armar un cuadro; la biblioteca completa queda a un clic. Es lo que mantiene usable una biblioteca de 60 a 80 medios. | P0 |
+| PL-15 | **Historial de aprobaciones** por campaña: todas, internas y del cliente, en un solo registro que no se edita (decisión 19). | P0 |
+| PL-16 | **Implementación**: por campaña, cada anuncio con copy aprobado, destino, UTM, enlace a la pieza y su historial; «listo para montar» solo con todo aprobado y con destino, UTM y fecha; si falta algo, qué y quién lo debe (decisión 18). | P0 |
+| PL-17 | **Marcar montado o devolver con novedad**: plataforma, ID del anuncio y fecha real; la novedad lleva texto y avisa a quien la debe. | P0 |
+| PL-18 | **Paquete y reporte de implementación**: el paquete (lo que hay que montar) en Excel; el reporte (lo planeado contra lo montado, con novedades y aprobaciones) en Excel y PDF, revisado por el responsable antes de enviarlo. | P0 |
 | PL-14 | **Equipo de la marca**: lo heredado de la madre (se edita allá) y las personas propias, con sus funciones. | P1 |
 
 ## 5. No objetivos
 
 - Rehacer el login o la tenencia: se reusan los de hoy.
 - El Adaptador: fase 3 o 4.
+- Comprar o pautar medios, o conectarse a Meta y Google para montar: el trafficker monta en cada
+  plataforma y escribe el ID a mano.
 
 ## 6. Cómo se mide
 

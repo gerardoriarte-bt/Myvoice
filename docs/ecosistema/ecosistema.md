@@ -1,6 +1,6 @@
 # Ecosistema · qué es dueño de qué
 
-Estado: vigente · 2026-10-28 · Términos: [glosario.md](./glosario.md)
+Estado: vigente · 2026-11-05 · Términos: [glosario.md](./glosario.md)
 
 ## 1. Un dato, un dueño
 
@@ -14,9 +14,12 @@ Estado: vigente · 2026-10-28 · Términos: [glosario.md](./glosario.md)
 | Biblioteca de medios (medio → formato → medidas, campos de texto, archivo) | CDM | My Voice (los campos de texto y sus largos) |
 | Paquetes de formatos de la marca | CDM | — |
 | Cuadro de materiales: medio, formato, etapa, variaciones, fechas | CDM | My Voice (qué escribir) |
+| Destino y UTM de cada línea (los pega Planning) | CDM | Implementación |
 | Media plan y presupuesto | Sheets de Planning, fuera de las dos | Nadie |
 | Copy aprobado: qué texto va en qué formato | My Voice | CDM (y después el Adaptador) |
 | Producción y aprobación de piezas | My Voice (Producción), hasta que exista el Adaptador | CDM (el estado, para seguimiento) |
+| Historial de aprobaciones de la campaña (internas y del cliente) | **Parte común** (cada módulo registra las suyas) | Implementación, el reporte, la vista de campaña |
+| Implementación: qué anuncio se montó, dónde, con qué ID y cuándo | **Parte común** (Trafficker) | CDM (estado por línea), el reporte, la medición |
 | Medición del rendimiento del copy | My Voice | — |
 
 Regla: ninguna herramienta redefine un dato de la otra. Si My Voice necesita un formato que no
@@ -26,17 +29,22 @@ Marca, ADN y campaña se crean una vez en la parte común; después **el usuario
 campaña**: por CDM, armando el cuadro, o directo a My Voice, con el brief. La otra herramienta se
 puede sumar en cualquier momento.
 
-## 2. Cada aprobación queda en su herramienta
+## 2. Todas las aprobaciones, en un solo historial
 
-| Qué se aprueba | Quién | Dónde |
+Cada módulo decide sus aprobaciones, pero **todas quedan registradas en el mismo historial de la
+campaña**, en la plataforma (decisión 19): las internas y las del cliente, con quién, cuándo, por dónde
+y con qué comentario. Así se ve en un solo lugar cómo llegó cada anuncio a estar listo.
+
+| Qué se aprueba | Quién | Dónde se decide |
 |---|---|---|
 | El ADN | Estrategia | Parte común |
 | Los textos raíz | El responsable de la campaña | My Voice |
 | El toolkit | El cliente, en el portal | My Voice |
 | Las adaptaciones (el copy de cada formato) | El responsable de la campaña | My Voice |
 | Las piezas | El responsable y el cliente | My Voice (Producción) |
+| El reporte de implementación (antes de enviarlo al cliente) | El responsable | Parte común (Implementación) |
 
-Como las aprobaciones se reparten entre dos herramientas, la navegación y los avisos tienen que
+El registro es uno, pero las acciones viven en módulos distintos: la navegación y los avisos tienen que
 decir siempre dónde está la campaña y a quién le toca ([flujo.md](./flujo.md), § 4).
 
 ## 3. Cada una funciona sola

@@ -7,6 +7,11 @@ Producto: [prd-proceso-de-campana.md](./prd-proceso-de-campana.md) · Spec:
 [contrato-plan-de-medios.md](./contrato-plan-de-medios.md)
 Diseño: `design/MyVoice_Engine.pen`, tablero «§ v2 · Mapa del proceso: quién hace qué»
 
+> **2026-11-05:** el proceso ya no termina en el paso 14. Sigue en **Implementación** (el trafficker
+> monta los anuncios y el responsable envía el reporte) y todas las aprobaciones quedan en un solo
+> historial. Está en [../ecosistema/flujo.md](../ecosistema/flujo.md), pasos 11 y 12 y § 5, que manda
+> sobre este documento.
+
 Una sola página para ver a cada usuario en cada etapa. Los números siguen el camino principal;
 **P** corre en paralelo; **C** es el catálogo, que se mantiene antes y en cualquier momento.
 
@@ -88,7 +93,9 @@ flowchart LR
 | 11 | Producción | Diseño | Produce las piezas con el copy aprobado y las medidas y el archivo del formato. | IA |
 | 12 | Producción | IA | Audita el copy dentro de la pieza y el archivo contra el formato. | Responsable |
 | 13 | Producción | Responsable | Acepta o devuelve la pieza y decide los hallazgos de la auditoría. | Marca, si es con cliente |
-| 14 | Producción | Marca | Aprueba las piezas, solo en campañas con aprobación del cliente. Un rechazo vuelve a Diseño. | — |
+| 14 | Producción | Marca | Aprueba las piezas, solo en campañas con aprobación del cliente. Un rechazo vuelve a Diseño. | Trafficker |
+| 15 | Implementación | Trafficker | Monta cada anuncio listo o lo devuelve con novedad ([flujo.md](../ecosistema/flujo.md) § 2). | Responsable |
+| 16 | Implementación | Responsable | Revisa y envía el reporte de implementación al cliente. | Medición |
 
 ## 4. Qué puede pasar en paralelo y qué espera
 
