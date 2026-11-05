@@ -29,7 +29,7 @@ Estados: **diseñada** · **ajustar** (diseñada, pero una decisión nueva la ca
 
 | Flujo | Pantalla | Acción principal | Estado | Frame en el `.pen` |
 |---|---|---|---|---|
-| ADN | ADN 2.0 por capas: madre, submarca (igual / propia / suma) y propuesta de la IA sin confirmar | Está bien / Corregir · Completar con IA | diseñada (2026-11-05) | — Decisión 17 · ADN 2.0 por capas (tres frames) |
+| ADN | ADN 2.0 por capas: diez secciones en tres grupos (qué decir · cómo suena · qué no se toca), madre, submarca (igual / propia / suma) y propuesta de la IA sin confirmar | Está bien / Corregir · Completar con IA | diseñada (2026-11-05) | — Decisión 17 · ADN 2.0 por capas (tres frames) |
 | ADN | Campaña nueva con ADN bajo el mínimo | Completar el ADN | diseñada (2026-11-05) | § Campaña nueva · el ADN está bajo el mínimo |
 | Brief | Brief de campaña | Pedir textos raíz | ajustar: falta **referencia**; los frentes salen y quedan las audiencias elegidas | § v2 · Brief de campaña |
 | Textos raíz | Textos raíz de una etapa | Aprobar / rechazar con motivo | ajustar: por etapa, no por frente | § v2 · Textos raíz |
