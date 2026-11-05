@@ -1,6 +1,6 @@
 # Plan · Feedback de las pruebas (2026-11-05)
 
-Estado: lote 1 hecho · Fuente: *My Voice · Comentarios de las pruebas* (8 puntos, con capturas) ·
+Estado: lote 1 en producción (2026-11-05) · Fuente: *My Voice · Comentarios de las pruebas* (8 puntos, con capturas) ·
 Diseño: `.pen`, «— Feedback de pruebas · lote 1».
 
 ## Los 8 puntos y su causa
