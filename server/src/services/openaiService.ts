@@ -82,6 +82,8 @@ export interface OpcionesCanal {
   onReintento?: OpcionesLlamada["onReintento"];
   /** Las piezas que escribe esta llamada. Sin valor, una con el primer ángulo de la espina. */
   piezas?: PiezaAEscribir[];
+  /** Instrucciones extra al final del pedido: «Otra» manda los demás textos de la pieza. */
+  contexto?: string;
 }
 
 /** De 1 a 10 piezas por medio; sin valor, 3 (docs/plan-piezas-por-medio.md). */
@@ -142,7 +144,7 @@ export const generateForChannel = async (
 ): Promise<CopyVariation[]> => {
   const system = buildSystemPrompt(brief);
   const piezas = opciones.piezas ?? [{ indice: 1, angulo: brief.spine.angles?.[0] }];
-  const user = buildUserPrompt(brief, spec, piezas);
+  const user = buildUserPrompt(brief, spec, piezas) + (opciones.contexto ? `\n\n${opciones.contexto}` : "");
   const { signal, onReintento } = opciones;
   const presupuestoMs = opciones.presupuestoMs ?? TIEMPOS.canal;
 

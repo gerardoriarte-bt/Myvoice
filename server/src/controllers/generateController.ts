@@ -403,3 +403,72 @@ export const regenerateChannel = async (req: AuthRequest, res: Response) => {
     res.status(500).json({ error: error.message || 'Error regenerando canal' });
   }
 };
+
+/**
+ * «Otra»: reescribe UN texto de una pieza (una slide, el titular) mirando los demás de esa pieza, para
+ * que siga encajando en la historia (docs/plan-piezas-por-medio.md, F5). El resto de la pieza no cambia.
+ */
+export const regenerarTexto = async (req: AuthRequest, res: Response) => {
+  const { dnaProfileId, platform, existingSpine, params, pieza, slot, variationIndex, conjuntoId, textos } = req.body ?? {};
+  try {
+    const ctx = await buildGenerationContext(dnaProfileId, req.tenant!);
+    await assertQuotaAvailable(req.tenant!, ctx.client);
+    if (!existingSpine?.concept || !Array.isArray(existingSpine?.angles) || !existingSpine.angles.length)
+      return res.status(400).json({ error: 'existingSpine inválida: debe tener concept y angles' });
+    const base = getChannelSpec(platform);
+    if (!base) return res.status(400).json({ error: 'Canal no soportado: ' + platform });
+    const deGeneracion = deLaGeneracion(params);
+    const slotSpec = specParaGeneracion(base, { slides: deGeneracion.slides }).slots.find(s => s.id === slot);
+    if (!slotSpec) return res.status(400).json({ error: `«${slot}» no es un texto de ${platform}` });
+    const indice = Number.isInteger(pieza) && pieza >= 1 && pieza <= 10 ? pieza : 1;
+    const resto = (Array.isArray(textos) ? textos : [])
+      .slice(0, 40)
+      .filter((t: any) => t && typeof t.content === 'string' && typeof t.slot === 'string');
+    const actual = resto.find((t: any) => t.slot === slot && (t.variationIndex ?? 1) === (variationIndex ?? 1));
+    const contexto = [
+      `## REESCRIBÍ SOLO «${slotSpec.label}» DE LA PIEZA ${indice}`,
+      'Devolvé UNA sola entrada, para ese slot. Tiene que encajar con los demás textos de la pieza, que quedan así:',
+      ...resto
+        .filter((t: any) => t !== actual)
+        .map((t: any) => `- ${String(t.slotLabel || t.slot).slice(0, 60)}: "${String(t.content).slice(0, 600)}"`),
+      actual ? `El texto actual es "${String(actual.content).slice(0, 600)}": escribí otro, distinto, que cumpla lo mismo.` : '',
+    ].join('\n');
+
+    const spine = existingSpine;
+    const aiConfig = await resolveWorkspaceAIConfig(req.tenant!.workspaceId);
+    const cliente = createAIClient(aiConfig);
+    const brief = buildBrief({ ...ctx.generationParams, ...deGeneracion }, spine);
+    const usage: UsageEntry[] = [];
+    const t0 = Date.now();
+    const spec = { ...base, slots: [{ ...slotSpec, porPieza: 1 }] };
+    const variaciones = await generateForChannel(spec, brief, cliente, resolveModel(aiConfig, false), resolveModel(aiConfig, true), usage, {
+      piezas: [{ indice, angulo: spine.angles[(indice - 1) % spine.angles.length] }],
+      contexto,
+    });
+    const nueva = variaciones.find(v => v.slot === slot) ?? variaciones[0];
+    if (!nueva) return res.status(502).json({ error: 'El motor no devolvió un texto nuevo' });
+    nueva.variationIndex = Number.isInteger(variationIndex) ? variationIndex : 1;
+    nueva.piezaIndex = indice;
+    if (typeof conjuntoId === 'string') nueva.conjuntoId = conjuntoId;
+
+    const usageTotal = aggregateUsage(usage);
+    await recordUsage({ workspaceId: req.tenant!.workspaceId, clientId: ctx.client.id, usage: usageTotal, variationCount: 1 });
+    await registrarGeneracion({
+      tenant: req.tenant!,
+      client: ctx.client,
+      dnaProfileId: ctx.dnaProfile.id,
+      platforms: [platform],
+      funnelStage: deGeneracion.funnelStage || null,
+      spine,
+      outputJson: { variations: [nueva], usage: usageTotal, regeneratedText: { pieza: indice, slot } },
+      usage: usageTotal,
+      aiConfig,
+      durationMs: Date.now() - t0,
+      adnVersion: ctx.adnVersion,
+    });
+    res.json({ variation: nueva });
+  } catch (error: any) {
+    if (error instanceof AIError) return res.status(502).json({ error: error.message });
+    handleTenantError(error, res, 'Error al reescribir el texto');
+  }
+};

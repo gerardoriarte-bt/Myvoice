@@ -871,8 +871,10 @@ const App: React.FC = () => {
         </header>
 
         <main className="flex-1 p-7">
-          {activeTab === 'generator' && isAdmin && (
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          {/* Generar queda montada aunque se vaya a otra pantalla: si no, al volver el formulario
+              perdía el pedido (campaña, etapa, medio, cantidad). */}
+          {isAdmin && (
+            <div className={`grid grid-cols-1 lg:grid-cols-12 gap-8 items-start ${activeTab === 'generator' ? '' : 'hidden'}`}>
               <div className={`lg:col-span-3 lg:sticky lg:top-[76px] ${eligiendo ? 'hidden' : ''}`}>
                 <ParameterForm
                   onSubmit={p => {
@@ -920,10 +922,37 @@ const App: React.FC = () => {
                     slides={lastParams?.slides}
                     dnaProfileId={lastParams?.dnaProfileId}
                     savedContentList={savedVariations.map(s => s.content)}
+                    savedConjuntos={savedVariations.map(s => s.conjuntoId).filter((c): c is string => !!c)}
                     onGuardar={async textos => {
                       let count = 0;
                       for (const v of textos) if (await handleSaveVariation(v, true)) count++;
                       if (count > 0) addNotification('Guardado en Copy, por aprobar', 'success');
+                    }}
+                    onOtra={async (texto, deLaPieza) => {
+                      if (!lastParams?.dnaProfileId || !spine) return;
+                      try {
+                        const r = await generationApi.regenerarTexto({
+                          dnaProfileId: lastParams.dnaProfileId,
+                          platform: String(texto.platform),
+                          existingSpine: spine,
+                          // Las slides del carrusel salen de sus textos: Historial no las guarda.
+                          params: {
+                            ...lastParams,
+                            slides:
+                              lastParams.slides ??
+                              Math.max(0, ...deLaPieza.map(t => Number(/^slide(\d+)$/.exec(t.slot ?? '')?.[1]) || 0)) ??
+                              undefined,
+                          },
+                          pieza: texto.piezaIndex,
+                          slot: texto.slot,
+                          variationIndex: texto.variationIndex,
+                          conjuntoId: texto.conjuntoId,
+                          textos: deLaPieza.map(t => ({ slot: t.slot, slotLabel: t.slotLabel, content: t.content, variationIndex: t.variationIndex })),
+                        });
+                        if (r?.variation) setVariations(prev => prev.map(v => (v.id === texto.id ? r.variation : v)));
+                      } catch (err: any) {
+                        addNotification(err?.message || 'No se pudo reescribir el texto', 'error');
+                      }
                     }}
                     onAjustar={() => setEligiendo(false)}
                     onOtroMedio={() => {
@@ -1176,6 +1205,8 @@ const App: React.FC = () => {
                     ? (log.outputJson as any).variations
                     : [];
                 if (restoredVars.length > 0) setVariations(restoredVars);
+                // Una generación por piezas se reabre en «Elegir», con el formulario plegado.
+                setEligiendo(restoredVars.some((v: CopyVariation) => v.piezaIndex));
                 // La marca de la generación pasa a ser la activa: antes se
                 // restauraba el copy de una marca con otra seleccionada, y al
                 // guardarlo caía en la equivocada.

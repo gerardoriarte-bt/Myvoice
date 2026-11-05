@@ -216,6 +216,16 @@ async function main() {
     });
     await expectDenied('DELETE /dna-profiles/:id de A', `/dna-profiles/${A.dna.id}`, B.token, { method: 'DELETE' });
     await expectDenied('GET /dna-profiles/:id/insights de A', `/dna-profiles/${A.dna.id}/insights`, B.token);
+    // «Otra» reescribe un texto con el brief: con el de otro workspace, 404 antes de llamar a la IA.
+    await expectDenied('POST /generate/texto con el brief de A', '/generate/texto', B.token, {
+      method: 'POST',
+      body: JSON.stringify({
+        dnaProfileId: A.dna.id,
+        platform: 'Instagram Carrusel',
+        slot: 'slide2',
+        existingSpine: { concept: 'x', angles: [{ name: 'a', premise: 'b', register: 'c' }] },
+      }),
+    });
     await expectDenied('GET /clients/:id/adn de A', `/clients/${A.client.id}/adn`, B.token);
     await expectDenied('GET /clients/:id/adn?version de A', `/clients/${A.client.id}/adn?version=1`, B.token);
     await expectDenied('GET /clients/:id/adn/revision de A', `/clients/${A.client.id}/adn/revision`, B.token);

@@ -126,10 +126,15 @@ const SavedManager: React.FC<SavedManagerProps> = ({
     );
   }, [deLaCampana, etapaFiltro, plataformaFiltro, busqueda]);
 
+  // Cuenta piezas, no textos: un carrusel generado es uno aunque tenga siete textos.
   const conteo = React.useMemo(() => {
-    const c = new Map<EtapaCopy, number>();
-    for (const v of deLaCampana) c.set(etapaDe(v), (c.get(etapaDe(v)) ?? 0) + 1);
-    return c;
+    const unidades = new Map<EtapaCopy, Set<string>>();
+    for (const v of deLaCampana) {
+      const e = etapaDe(v);
+      if (!unidades.has(e)) unidades.set(e, new Set());
+      unidades.get(e)!.add(v.conjuntoId ? `${v.conjuntoId}` : v.id);
+    }
+    return new Map([...unidades.entries()].map(([e, u]) => [e, u.size] as [EtapaCopy, number]));
   }, [deLaCampana]);
 
   const campanaElegida = campanaFiltro !== 'all' && campanaFiltro !== 'none' ? campanaPorId.get(campanaFiltro) : undefined;
@@ -272,8 +277,11 @@ const SavedManager: React.FC<SavedManagerProps> = ({
       }
       g.textos.push(v);
     }
+    // Lo que va en la pieza (las slides en su número), después el copy out en el orden en que se lee.
+    const ORDEN_COPY_OUT: Record<string, number> = { primeraLinea: 1, caption: 1, description: 1, cuerpo: 2, hashtags: 3 };
     const orden = (v: SavedVariation) =>
-      (v.zona === 'copyOut' ? 100 : v.zona === 'indicacion' ? 200 : 0) + (Number(/^slide(\d+)$/.exec(v.slot ?? '')?.[1]) || 0);
+      (v.zona === 'copyOut' ? 100 + (ORDEN_COPY_OUT[v.slot ?? ''] ?? 5) : v.zona === 'indicacion' ? 200 : 0) +
+      (Number(/^slide(\d+)$/.exec(v.slot ?? '')?.[1]) || 0);
     for (const g of lista) g.textos.sort((a, b) => orden(a) - orden(b) || (a.variationIndex ?? 0) - (b.variationIndex ?? 0));
     return lista;
   }, [visibles]);
@@ -591,7 +599,7 @@ const SavedManager: React.FC<SavedManagerProps> = ({
               etapaFiltro === 'all' ? 'bg-ink text-white' : 'text-gray-600 hover:bg-white'
             }`}
           >
-            Todo · {deLaCampana.length}
+            Todo · {new Set(deLaCampana.map(v => v.conjuntoId ?? v.id)).size}
           </button>
           {ETAPAS_COPY.filter(e => (e.id !== 'SIN_CAMPANA' && e.id !== 'DEVUELTO') || (conteo.get(e.id) ?? 0) > 0).map(
             (e, i, arr) => (

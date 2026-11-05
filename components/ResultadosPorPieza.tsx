@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft, Check, ChevronLeft, ChevronRight, Image as ImageIcon, MessageSquareText, Palette, Pencil, Plus } from 'lucide-react';
+import { ArrowLeft, Check, ChevronLeft, ChevronRight, Image as ImageIcon, MessageSquareText, Palette, Pencil, Plus, RefreshCw } from 'lucide-react';
 import { CampaignSpine, CopyVariation } from '../types';
 import { PlatformIcon } from './ui/platformIcons';
 import { etiquetaDelEditor } from '../etiquetasDelEditor';
@@ -22,7 +22,11 @@ interface Props {
   slides?: number;
   dnaProfileId?: string;
   savedContentList: string[];
+  /** Las piezas que ya están en Copy (por su conjunto): no se vuelven a guardar ni se reescriben acá. */
+  savedConjuntos?: string[];
   onGuardar: (textos: CopyVariation[]) => Promise<void>;
+  /** «Otra»: reescribe ese texto mirando los demás de su pieza. */
+  onOtra?: (texto: CopyVariation, deLaPieza: CopyVariation[]) => Promise<void>;
   onAjustar: () => void;
   onOtroMedio: () => void;
 }
@@ -68,7 +72,9 @@ const ResultadosPorPieza: React.FC<Props> = ({
   slides,
   dnaProfileId,
   savedContentList,
+  savedConjuntos = [],
   onGuardar,
+  onOtra,
   onAjustar,
   onOtroMedio,
 }) => {
@@ -88,6 +94,7 @@ const ResultadosPorPieza: React.FC<Props> = ({
   const [aprobador, setAprobador] = React.useState<PersonaQueAprueba | null>(null);
   /** «Otro medio» con piezas sin guardar: la próxima generación reemplaza esta pantalla. */
   const [pidiendoOtro, setPidiendoOtro] = React.useState(false);
+  const [reescribiendo, setReescribiendo] = React.useState<string | null>(null);
 
   React.useEffect(() => setActual(a => Math.min(a, Math.max(0, piezas.length - 1))), [piezas.length]);
   React.useEffect(() => {
@@ -108,7 +115,12 @@ const ResultadosPorPieza: React.FC<Props> = ({
 
   const conEdicion = (v: CopyVariation): CopyVariation =>
     ediciones[v.id] !== undefined ? { ...v, content: ediciones[v.id], charCount: ediciones[v.id].length } : v;
-  const guardada = (textos: CopyVariation[]) => textos.every(v => savedContentList.includes(conEdicion(v).content));
+  // Guardada = ya está en Copy. Por su conjunto, no por su texto: si después se pide «Otra», sigue siendo
+  // la misma pieza, y guardarla de nuevo le sumaría un segundo «Slide 2» en Copy.
+  const guardada = (textos: CopyVariation[]) =>
+    textos.some(v => v.conjuntoId && savedConjuntos.includes(v.conjuntoId)) ||
+    textos.every(v => savedContentList.includes(conEdicion(v).content));
+  const bloqueada = guardada(pieza.textos);
   const sinGuardar = piezas.filter(p => !guardada(p.textos));
 
   const guardar = async (textos: CopyVariation[]) => {
@@ -157,9 +169,35 @@ const ResultadosPorPieza: React.FC<Props> = ({
             {largo}
             {v.budget ? `/${v.budget}` : ''} car
           </span>
-          <button onClick={() => setEditando(v.id)} className="text-gray-400 hover:text-gray-700" aria-label="Editar">
-            <Pencil className="h-3.5 w-3.5" />
-          </button>
+          <span className="flex items-center gap-2" title={bloqueada ? 'Ya está en Copy: se corrige allá' : undefined}>
+            {onOtra && !bloqueada && (
+              <button
+                disabled={reescribiendo !== null}
+                onClick={async () => {
+                  setReescribiendo(v.id);
+                  try {
+                    await onOtra(v, pieza.textos.map(conEdicion));
+                    setEdiciones(prev => {
+                      const next = { ...prev };
+                      delete next[v.id];
+                      return next;
+                    });
+                  } finally {
+                    setReescribiendo(null);
+                  }
+                }}
+                className="flex items-center gap-1 rounded-md bg-blue-50 px-1.5 py-0.5 text-[10.5px] font-semibold text-blue-600 hover:bg-blue-100 disabled:opacity-40"
+                title="Otra versión de este texto, que encaje con los demás de la pieza"
+              >
+                <RefreshCw className={`h-3 w-3 ${reescribiendo === v.id ? 'animate-spin' : ''}`} /> Otra
+              </button>
+            )}
+            {!bloqueada && (
+              <button onClick={() => setEditando(v.id)} className="text-gray-400 hover:text-gray-700" aria-label="Editar">
+                <Pencil className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </span>
         </div>
       </div>
     );
@@ -199,10 +237,15 @@ const ResultadosPorPieza: React.FC<Props> = ({
           <p className="text-[13px] font-bold text-gray-900">{platform}</p>
           <p className="text-[11px] text-gray-500">
             {nombreDePiezas(platform, piezas.length)}
-            {carrusel && slides ? ` · ${slides} slides` : ''}
+            {carrusel ? ` · ${slides ?? Math.max(...piezas.map(p => p.textos.filter(v => numeroDeSlide(v.slot) > 0).length))} slides` : ''}
           </p>
         </div>
-        <button onClick={onAjustar} className="flex items-center gap-1.5 rounded-lg border border-gray-200 px-2.5 py-1.5 text-[11.5px] text-gray-700 hover:bg-gray-50">
+        <button
+          onClick={() => {
+            setPidiendoOtro(false);
+            onAjustar();
+          }}
+          className="flex items-center gap-1.5 rounded-lg border border-gray-200 px-2.5 py-1.5 text-[11.5px] text-gray-700 hover:bg-gray-50">
           <ArrowLeft className="h-3 w-3" /> Ajustar
         </button>
         <button
