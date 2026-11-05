@@ -396,6 +396,8 @@ export interface PiezaSlot {
   esInstruccion: boolean;
   orden: number;
   savedVariationId: string | null;
+  /** Dónde va: en la pieza, como copy out (acompaña la publicación) o como indicación. Lo calcula el servidor. */
+  zona?: 'pieza' | 'copyOut' | 'indicacion';
 }
 
 /** Por qué el copy de la pieza ya no coincide con el de la Biblioteca. */

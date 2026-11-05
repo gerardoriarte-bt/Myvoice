@@ -112,10 +112,11 @@ export const generationApi = {
     method: 'POST',
     body: JSON.stringify({ dnaProfileId, params }),
   }),
-  regenerateChannel: (dnaProfileId: string, platform: string, existingSpine: any, params: any) =>
+  /** `piezas`: las que fallaron; sin lista, todas las pedidas. */
+  regenerateChannel: (dnaProfileId: string, platform: string, existingSpine: any, params: any, piezas?: number[]) =>
     apiRequest('/generate/channel', {
       method: 'POST',
-      body: JSON.stringify({ dnaProfileId, platform, existingSpine, params }),
+      body: JSON.stringify({ dnaProfileId, platform, existingSpine, params, piezas }),
     }),
   history: (clientId?: string) => apiRequest(`/generate/history${clientId ? `?clientId=${encodeURIComponent(clientId)}` : ''}`),
   generateStream: async (

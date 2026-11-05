@@ -34,7 +34,7 @@ interface ResultsTableProps {
 }
 
 const variationKey = (v: CopyVariation) =>
-  `${v.platform}::${v.slot || '_default'}::${v.variationIndex ?? 0}`;
+  `${v.platform}::${v.piezaIndex ?? 0}::${v.slot || '_default'}::${v.variationIndex ?? 0}`;
 
 const ResultsTable: React.FC<ResultsTableProps> = ({ variations, activeClient, campanaNombre, onSave, savedContentList, coherence, spine, usage, onRegenerate, onRegenerateChannel, isLoading, onBulkSave, onRefine }) => {
   const [refineInstruction, setRefineInstruction] = React.useState('');

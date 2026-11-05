@@ -5,6 +5,8 @@ import { PlatformIcon } from './ui/platformIcons';
 export interface CanalFallido {
   message: string;
   terminal: boolean;
+  /** Las piezas de ese medio que no llegaron (docs/plan-piezas-por-medio.md). Vacío = todas. */
+  piezas?: number[];
 }
 
 interface Props {

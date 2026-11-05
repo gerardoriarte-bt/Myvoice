@@ -59,7 +59,9 @@ const desde = (fecha: string): string => {
 };
 
 export default function TarjetaPieza({ pieza, miembros, mostrarMarca, nombreDeMarca, onAbrir, onCambio, onError }: Props) {
-  const publicables = pieza.slots.filter(s => !s.esInstruccion);
+  // El copy out acompaña la publicación: no es «lo que va adentro» (docs/plan-piezas-por-medio.md).
+  const publicables = pieza.slots.filter(s => !s.esInstruccion && s.zona !== 'copyOut');
+  const conCopyOut = pieza.slots.some(s => s.zona === 'copyOut');
   const color = COLORES_ESTADO[pieza.estado];
   // El snapshot gana sobre el enlace: es nuestro, no depende de permisos
   // ajenos y es la misma imagen que miró la auditoría.
@@ -238,6 +240,9 @@ export default function TarjetaPieza({ pieza, miembros, mostrarMarca, nombreDeMa
                 </li>
               )}
             </ul>
+            {conCopyOut && (
+              <p className="mt-1.5 text-[9.5px] font-semibold uppercase tracking-wide text-[#2563EB]">+ copy out</p>
+            )}
           </div>
 
           {pieza.desfases.length > 0 && (

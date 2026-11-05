@@ -80,6 +80,7 @@
     "components/RevisionDeAdn.tsx": "comun",
     "components/": "myvoice",
     "etiquetasDelEditor.ts": "myvoice",
+    "piezas.ts": "myvoice",
     "services/": "myvoice",
 
     "server/prisma/": "fuera",

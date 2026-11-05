@@ -2,6 +2,7 @@
 import React from 'react';
 import ParameterForm from './components/ParameterForm';
 import ResultsTable from './components/ResultsTable';
+import ResultadosPorPieza from './components/ResultadosPorPieza';
 import GenerationProgress from './components/GenerationProgress';
 import FailedChannelsPanel, { CanalFallido } from './components/FailedChannelsPanel';
 import { runMockGeneration } from './services/mockGeneration';
@@ -99,6 +100,12 @@ const App: React.FC = () => {
   const [destinoProduccion, setDestinoProduccion] = React.useState<DestinoAviso | null>(null);
   /** La marca cuyo ADN pidió revisar un aviso de la bandeja: Marcas abre su revisión. */
   const [revisarAdnDe, setRevisarAdnDe] = React.useState<string | null>(null);
+  /**
+   * Pedir → Elegir (docs/plan-piezas-por-medio.md): mientras se eligen las piezas, el formulario se pliega
+   * y su lugar lo toma la barra del pedido. «Ajustar» lo abre con el mismo pedido; «Otro medio», sin medio.
+   */
+  const [eligiendo, setEligiendo] = React.useState(false);
+  const [limpiarMedio, setLimpiarMedio] = React.useState(0);
   const [reviewToken, setReviewToken] = React.useState(() => new URLSearchParams(window.location.search).get('review'));
   /**
    * Respuestas del cliente que todavía no se vieron. Antes contaba TODAS las
@@ -385,7 +392,7 @@ const App: React.FC = () => {
 
     const lockedByKey = new Map<string, CopyVariation>();
     (lockedSnapshot || []).forEach(v => {
-      lockedByKey.set(`${v.platform}::${v.slot || '_default'}::${v.variationIndex ?? 0}`, v);
+      lockedByKey.set(`${v.platform}::${v.piezaIndex ?? 0}::${v.slot || '_default'}::${v.variationIndex ?? 0}`, v);
     });
 
     // Seed with locked variations so they stay visible during regeneration
@@ -431,7 +438,7 @@ const App: React.FC = () => {
         } else if (event.type === 'channel') {
           // Merge: for each new variation, if its key is locked, skip (we keep the old locked one)
           const fresh = event.payload.variations.filter((v: CopyVariation) => {
-            const key = `${v.platform}::${v.slot || '_default'}::${v.variationIndex ?? 0}`;
+            const key = `${v.platform}::${v.piezaIndex ?? 0}::${v.slot || '_default'}::${v.variationIndex ?? 0}`;
             return !lockedByKey.has(key);
           });
           collected.push(...fresh);
@@ -442,11 +449,13 @@ const App: React.FC = () => {
           setProgressChannelStatus(prev => ({ ...prev, [event.payload.platform]: 'error' }));
           // El panel de canales fallidos sobrevive al fin de la generación; la
           // notificación se va sola y el canal quedaría invisible.
+          // Con piezas, un medio falla por tandas: se acumulan las piezas que faltan.
           setFailedChannels(prev => ({
             ...prev,
             [event.payload.platform]: {
               message: event.payload.message,
               terminal: Boolean(event.payload.terminal),
+              piezas: [...(prev[event.payload.platform]?.piezas ?? []), ...(event.payload.piezas ?? [])],
             },
           }));
           addNotification(`Error en ${event.payload.platform}: ${event.payload.message}`, 'error');
@@ -497,7 +506,7 @@ const App: React.FC = () => {
   const handleRegenerate = (lockedKeys: Set<string>) => {
     if (!lastParams) return;
     const lockedSnapshot = variations.filter(v => {
-      const key = `${v.platform}::${v.slot || '_default'}::${v.variationIndex ?? 0}`;
+      const key = `${v.platform}::${v.piezaIndex ?? 0}::${v.slot || '_default'}::${v.variationIndex ?? 0}`;
       return lockedKeys.has(key);
     });
     handleGenerate(lastParams, lockedSnapshot);
@@ -513,9 +522,14 @@ const App: React.FC = () => {
       dnaProfiles.find(p => p.clientId === lastParams.clientId);
     if (!profile) return;
     try {
-      const result = await generationApi.regenerateChannel(profile.id, platform, spine, lastParams);
+      const fallidas = failedChannels[platform]?.piezas ?? [];
+      const result = await generationApi.regenerateChannel(profile.id, platform, spine, lastParams, fallidas);
       if (result?.variations?.length) {
-        setVariations(prev => [...prev.filter(v => v.platform !== platform), ...result.variations]);
+        // Se reemplazan solo las piezas que se pidieron de nuevo; las que llegaron bien se quedan.
+        setVariations(prev => [
+          ...prev.filter(v => v.platform !== platform || (fallidas.length > 0 && !fallidas.includes(v.piezaIndex ?? 0))),
+          ...result.variations,
+        ]);
         setFailedChannels(prev => { const next = { ...prev }; delete next[platform]; return next; });
         setProgressChannelStatus(prev => ({ ...prev, [platform]: 'done' }));
         addNotification(`Canal ${platform} regenerado`, 'success');
@@ -859,9 +873,13 @@ const App: React.FC = () => {
         <main className="flex-1 p-7">
           {activeTab === 'generator' && isAdmin && (
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-              <div className="lg:col-span-3 lg:sticky lg:top-[76px]">
+              <div className={`lg:col-span-3 lg:sticky lg:top-[76px] ${eligiendo ? 'hidden' : ''}`}>
                 <ParameterForm
-                  onSubmit={handleGenerate}
+                  onSubmit={p => {
+                    setEligiendo(true);
+                    void handleGenerate(p);
+                  }}
+                  limpiarMedio={limpiarMedio}
                   isLoading={isLoading} 
                   clients={clients} 
                   dnaProfiles={dnaProfiles}
@@ -873,7 +891,7 @@ const App: React.FC = () => {
                   onError={m => addNotification(m, 'error')}
                 />
               </div>
-              <div className="lg:col-span-9 space-y-6">
+              <div className={`${eligiendo ? 'lg:col-span-12' : 'lg:col-span-9'} space-y-6`}>
                 {isLoading && (
                   <GenerationProgress
                     selectedPlatforms={progressPlatforms}
@@ -894,7 +912,26 @@ const App: React.FC = () => {
                     disabled={isLoading || !spine}
                   />
                 )}
-                {variations.length > 0 ? (
+                {variations.length > 0 && variations.some(v => v.piezaIndex) ? (
+                  <ResultadosPorPieza
+                    variations={variations}
+                    spine={spine}
+                    platform={String(lastParams?.platforms?.[0] ?? variations[0].platform)}
+                    slides={lastParams?.slides}
+                    dnaProfileId={lastParams?.dnaProfileId}
+                    savedContentList={savedVariations.map(s => s.content)}
+                    onGuardar={async textos => {
+                      let count = 0;
+                      for (const v of textos) if (await handleSaveVariation(v, true)) count++;
+                      if (count > 0) addNotification('Guardado en Copy, por aprobar', 'success');
+                    }}
+                    onAjustar={() => setEligiendo(false)}
+                    onOtroMedio={() => {
+                      setEligiendo(false);
+                      setLimpiarMedio(n => n + 1);
+                    }}
+                  />
+                ) : variations.length > 0 ? (
                   <ResultsTable
                     variations={variations}
                     activeClient={marcaDeLoGenerado}
