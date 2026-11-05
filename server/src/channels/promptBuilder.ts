@@ -23,21 +23,47 @@ const renderSlotSpec = (slot: SlotSpec): string => {
       : slot.max !== undefined
       ? `máximo ${slot.max} ${slot.unit === "word" ? "palabras" : "caracteres"}`
       : "sin límite estricto";
-  const angle = slot.varyByAngle ? " (rotar ángulos definidos en la espina)" : "";
+  const zona =
+    slot.zona === "copyOut" ? " [COPY OUT: acompaña la publicación, no va en la imagen]" : slot.zona === "indicacion" ? " [INDICACIÓN para Diseño: no se publica]" : "";
   const guidance = slot.guidance ? `\n    · ${slot.guidance}` : "";
-  return `- "${slot.id}" (${slot.label}) — ${slot.count} variación(es), ${range}${angle}.${guidance}`;
+  const cuantos = (slot.porPieza || 1) === 1 ? "1 texto por pieza" : `${slot.porPieza} textos distintos por pieza`;
+  return `- "${slot.id}" (${slot.label}) — ${cuantos}, ${range}${zona}.${guidance}`;
 };
+
+/** Una pieza que el redactor tiene que escribir en esta llamada, con el ángulo que le toca. */
+export interface PiezaAEscribir {
+  indice: number;
+  angulo?: { name: string; premise: string; register: string };
+}
 
 const renderJsonSchema = (spec: ChannelSpec): string => {
   const items = spec.slots
-    .map(s => `    { "slot": "${s.id}", "variationIndex": 1..${s.count}, "type": "${s.varyByAngle ? "<nombre del ángulo>" : "Standard"}", "content": "string", "score": 1..10, "scoreRationale": "1 línea concreta" }`)
+    .map(s => `    { "pieza": <número de pieza>, "slot": "${s.id}", "variationIndex": 1..${s.porPieza || 1}, "type": "<nombre del ángulo de esa pieza>", "content": "string", "score": 1..10, "scoreRationale": "1 línea concreta" }`)
     .join(",\n");
   return `{
   "variations": [
 ${items}
-    // … una entrada por cada combinación slot × variationIndex
+    // … una entrada por cada pieza × slot × variationIndex
   ]
 }`;
+};
+
+/**
+ * Las piezas de esta llamada. Cada una es un juego completo de slots con su propio ángulo; los textos de
+ * una misma pieza cuentan una sola historia (docs/plan-piezas-por-medio.md).
+ */
+const renderPiezas = (piezas: PiezaAEscribir[]): string => {
+  const lineas = piezas.map(p =>
+    p.angulo
+      ? `- Pieza ${p.indice} — ángulo «${p.angulo.name}»: ${p.angulo.premise} (registro: ${p.angulo.register})`
+      : `- Pieza ${p.indice}`
+  );
+  return `## PIEZAS A ESCRIBIR (${piezas.length})
+${lineas.join("\n")}
+
+Cada pieza es un juego completo: todos los slots de abajo, con su cantidad. Los textos de una misma pieza se
+leen juntos y cuentan UNA historia, con el ángulo de esa pieza. Las piezas son distintas entre sí: otro
+ángulo, otra entrada, nunca la misma frase con otras palabras. "pieza" lleva el número exacto de la lista.`;
 };
 
 const renderNegativeExamples = (brief: ChannelBrief): string => {
@@ -163,7 +189,7 @@ Devolver score + scoreRationale CONCRETO (1 línea, citando un detalle específi
 /**
  * Channel-specific suffix — varies per call, not cached.
  */
-const buildChannelSuffix = (brief: ChannelBrief, spec: ChannelSpec): string => {
+const buildChannelSuffix = (brief: ChannelBrief, spec: ChannelSpec, piezas: PiezaAEscribir[]): string => {
   const slotBlock = spec.slots.map(renderSlotSpec).join("\n");
   const schema = renderJsonSchema(spec);
   const channelExamples = renderChannelExamples(brief, spec);
@@ -171,7 +197,7 @@ const buildChannelSuffix = (brief: ChannelBrief, spec: ChannelSpec): string => {
   const cortos = spec.slots.filter(s => s.unit === "char" && (s.max || 0) > 0 && (s.max || 0) <= 90);
   const cortosLabel = cortos.map(s => `"${s.id}"`).join(", ");
   const conceptLiteralRule = cortosLabel
-    ? `En slots cortos (${cortosLabel}), AL MENOS 1 de cada ${Math.max(2, ...spec.slots.map(s => s.count))} variaciones debe incluir el concepto TEXTUAL. En slots largos, expandilo manteniendo su lógica.`
+    ? `En slots cortos (${cortosLabel}), AL MENOS 1 de cada 2 piezas debe incluir el concepto TEXTUAL. En slots largos, expandilo manteniendo su lógica.`
     : `Toda pieza debe sentirse hija del concepto, expandiendo su lógica.`;
 
   return `
@@ -186,7 +212,9 @@ ${spec.guidance}
 ## REGLA DE CONCEPTO LITERAL
 ${conceptLiteralRule}
 
-## SLOTS A GENERAR
+${renderPiezas(piezas)}
+
+## SLOTS DE CADA PIEZA
 ${slotBlock}
 
 Aplicá las REGLAS — ORDEN DE PRIORIDAD y la rúbrica de SCORING declaradas arriba a estos slots.
@@ -214,9 +242,12 @@ export const buildSystemPrompt = (brief: ChannelBrief): string =>
  * The per-channel user prompt: slots, tactics, scoring rubric and JSON schema.
  * Varies per call and sits after the cache breakpoint.
  */
-export const buildUserPrompt = (brief: ChannelBrief, spec: ChannelSpec): string => {
-  return buildChannelSuffix(brief, spec);
-};
+/** Sin `piezas`, una sola con el primer ángulo de la espina (la vista previa del prompt). */
+export const buildUserPrompt = (
+  brief: ChannelBrief,
+  spec: ChannelSpec,
+  piezas: PiezaAEscribir[] = [{ indice: 1, angulo: brief.spine.angles?.[0] }]
+): string => buildChannelSuffix(brief, spec, piezas);
 
 export const renderChannelPromptForPreview = (brief: ChannelBrief, spec: ChannelSpec): { system: string; user: string } => ({
   system: buildSystemPrompt(brief),

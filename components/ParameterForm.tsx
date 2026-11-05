@@ -1,5 +1,6 @@
 import React from 'react';
-import { Building2, Layers, Target, Radio, Zap, Check, Loader2, Sparkles, ChevronRight, BookOpen, X } from 'lucide-react';
+import { Building2, Layers, Target, Radio, Zap, Check, Loader2, Sparkles, ChevronRight, BookOpen, X, Minus, Plus, Copy as CopyIcon } from 'lucide-react';
+import { CANTIDAD, SLIDES, acotar, esCarrusel, nombreDePiezas } from '../piezas';
 import { Platform, PLATFORM_GROUPS, FunnelStage, FUNNEL_STAGE_DESCRIPTIONS, CopyParameters, BrandConfig, Client, ContentDNAProfile, Project, WorkspaceMember } from '../types';
 import { PlatformIcon } from './ui/platformIcons';
 import { apiRequest, clientApi, libraryApi } from '../services/api';
@@ -8,6 +9,8 @@ import { nombreConMadre } from '../marcas';
 
 interface ParameterFormProps {
   onSubmit: (params: CopyParameters) => void;
+  /** Cambia cada vez que se pide «Otro medio»: el formulario vuelve sin medio elegido. */
+  limpiarMedio?: number;
   isLoading: boolean;
   clients: Client[];
   dnaProfiles: ContentDNAProfile[];
@@ -23,6 +26,7 @@ interface ParameterFormProps {
 
 const ParameterForm: React.FC<ParameterFormProps> = ({
   onSubmit,
+  limpiarMedio,
   isLoading,
   clients,
   dnaProfiles,
@@ -39,6 +43,13 @@ const ParameterForm: React.FC<ParameterFormProps> = ({
   const [activeProfileId, setActiveProfileId] = React.useState<string | null>(null);
   const [selectedPlatforms, setSelectedPlatforms] = React.useState<Platform[]>([]);
   const [funnelStage, setFunnelStage] = React.useState<FunnelStage>(FunnelStage.CONVERSION);
+  // Cuántas piezas del medio y, en el carrusel, cuántas slides (docs/plan-piezas-por-medio.md).
+  const [cantidad, setCantidad] = React.useState<number>(CANTIDAD.porDefecto);
+  const [slides, setSlides] = React.useState<number>(SLIDES.porDefecto);
+  const medio = selectedPlatforms[0] ?? null;
+  React.useEffect(() => {
+    if (limpiarMedio) setSelectedPlatforms([]);
+  }, [limpiarMedio]);
 
   const [dnaInsights, setDnaInsights] = React.useState<{approvedCount: number; negativeCount: number; topReasons: {reason: string; count: number}[]} | null>(null);
 
@@ -74,6 +85,8 @@ const ParameterForm: React.FC<ParameterFormProps> = ({
     if (Array.isArray(p.selectedPlatforms) && p.selectedPlatforms.length > 0) {
       setSelectedPlatforms(p.selectedPlatforms as Platform[]);
     }
+    if (Number.isInteger(p.cantidad)) setCantidad(acotar(p.cantidad, CANTIDAD));
+    if (Number.isInteger(p.slides)) setSlides(acotar(p.slides, SLIDES));
     if (typeof p.funnelStage === 'string' && Object.values(FunnelStage).includes(p.funnelStage as FunnelStage)) {
       setFunnelStage(p.funnelStage as FunnelStage);
     }
@@ -94,6 +107,8 @@ const ParameterForm: React.FC<ParameterFormProps> = ({
             activeProfileId,
             selectedPlatforms,
             funnelStage,
+            cantidad,
+            slides,
           },
         }),
       });
@@ -157,8 +172,9 @@ const ParameterForm: React.FC<ParameterFormProps> = ({
       .catch(() => setDnaInsights(null));
   }, [activeProfileId]);
 
+  // Un medio por generación: elegir otro reemplaza al anterior.
   const togglePlatform = (p: Platform) => {
-    setSelectedPlatforms(prev => prev.includes(p) ? prev.filter(item => item !== p) : [...prev, p]);
+    setSelectedPlatforms(prev => (prev[0] === p ? [] : [p]));
   };
 
   const buildParams = (): CopyParameters | null => {
@@ -178,7 +194,9 @@ const ParameterForm: React.FC<ParameterFormProps> = ({
       primaryCTA: profile.primaryCTA,
       funnelStage,
       feedbackExamples: profile.feedbackExamples,
-      platforms: selectedPlatforms,
+      platforms: selectedPlatforms.slice(0, 1),
+      cantidad,
+      ...(esCarrusel(medio) ? { slides } : {}),
       clientId,
       dnaProfileId: profile.id,
       clientName: activeClient?.name,
@@ -288,7 +306,7 @@ const ParameterForm: React.FC<ParameterFormProps> = ({
             { n: 1, label: 'Marca',    done: !!clientId },
             { n: 2, label: 'Campaña',  done: !!activeProfileId },
             { n: 3, label: 'Funnel',   done: true },
-            { n: 4, label: 'Canales',  done: selectedPlatforms.length > 0 },
+            { n: 4, label: 'Medio',  done: selectedPlatforms.length > 0 },
           ].map((step, i, arr) => (
             <React.Fragment key={step.n}>
               <div className="flex flex-col items-center gap-1">
@@ -482,7 +500,7 @@ const ParameterForm: React.FC<ParameterFormProps> = ({
       </Section>
 
       {/* CANALES */}
-      <Section icon={<Radio className="w-3.5 h-3.5" />} label="Canales" hint={selectedPlatforms.length === 0 ? 'Selecciona al menos uno' : `${selectedPlatforms.length} seleccionado${selectedPlatforms.length === 1 ? '' : 's'}`} required={selectedPlatforms.length === 0}>
+      <Section icon={<Radio className="w-3.5 h-3.5" />} label="Medio" hint={medio ? medio : 'Uno por generación'} required={!medio}>
         <div className="space-y-3">
           {Object.entries(PLATFORM_GROUPS).map(([groupName, platforms]) => (
             <div key={groupName}>
@@ -514,6 +532,19 @@ const ParameterForm: React.FC<ParameterFormProps> = ({
         </div>
       </Section>
 
+      {/* CUÁNTOS: solo con un medio elegido */}
+      {medio && (
+        <Section icon={<CopyIcon className="w-3.5 h-3.5" />} label="Cuántos" hint={nombreDePiezas(medio, cantidad)}>
+          <div className="space-y-3">
+            <div className="flex flex-wrap gap-6">
+              <Contador etiqueta={esCarrusel(medio) ? 'Carruseles' : 'Piezas'} valor={cantidad} limites={CANTIDAD} onCambio={setCantidad} />
+              {esCarrusel(medio) && <Contador etiqueta="Slides por carrusel" valor={slides} limites={SLIDES} onCambio={setSlides} />}
+            </div>
+            <VistaPrevia cantidad={cantidad} slides={esCarrusel(medio) ? slides : 0} medio={medio} />
+          </div>
+        </Section>
+      )}
+
       {/* CTA */}
       <div className="px-5 py-4 bg-gray-50/50 border-t border-gray-100 space-y-2">
         <button
@@ -527,7 +558,7 @@ const ParameterForm: React.FC<ParameterFormProps> = ({
         >
           {isLoading
             ? <><Loader2 className="w-3.5 h-3.5 animate-spin" />Generando…</>
-            : <><Sparkles className="w-3.5 h-3.5" />Generar campaña{selectedPlatforms.length > 0 ? ` (${selectedPlatforms.length} canal${selectedPlatforms.length === 1 ? '' : 'es'})` : ''}</>}
+            : <><Sparkles className="w-3.5 h-3.5" />{medio ? `Generar ${nombreDePiezas(medio, cantidad)}` : 'Generar'}</>}
         </button>
 
         {activeProfile && (
@@ -537,7 +568,7 @@ const ParameterForm: React.FC<ParameterFormProps> = ({
             <span className="flex items-center gap-1 flex-wrap justify-center">
               <span>Director</span>
               <span className="text-gray-300">→</span>
-              <span>{selectedPlatforms.length > 0 ? selectedPlatforms.length : '?'} escritor{selectedPlatforms.length !== 1 ? 'es' : ''}</span>
+              <span>{medio ? nombreDePiezas(medio, cantidad) : 'Redactor'}</span>
               <span className="text-gray-300">→</span>
               <span>Validador</span>
               <span className="text-gray-300">→</span>
@@ -549,6 +580,68 @@ const ParameterForm: React.FC<ParameterFormProps> = ({
         )}
       </div>
     </form>
+  );
+};
+
+/** − n + para la cantidad y las slides. */
+const Contador: React.FC<{
+  etiqueta: string;
+  valor: number;
+  limites: { min: number; max: number };
+  onCambio: (n: number) => void;
+}> = ({ etiqueta, valor, limites, onCambio }) => (
+  <div>
+    <div className="mb-1.5 text-[11px] font-semibold text-gray-700">{etiqueta}</div>
+    <div className="inline-flex items-center rounded-lg border border-gray-200 bg-white">
+      <button type="button" disabled={valor <= limites.min} onClick={() => onCambio(valor - 1)} className="flex h-8 w-8 items-center justify-center text-gray-600 disabled:opacity-30" aria-label={`Menos ${etiqueta.toLowerCase()}`}>
+        <Minus className="h-3.5 w-3.5" />
+      </button>
+      <span className="flex h-8 w-11 items-center justify-center border-x border-gray-200 text-[15px] font-bold text-gray-900">{valor}</span>
+      <button type="button" disabled={valor >= limites.max} onClick={() => onCambio(valor + 1)} className="flex h-8 w-8 items-center justify-center text-gray-600 disabled:opacity-30" aria-label={`Más ${etiqueta.toLowerCase()}`}>
+        <Plus className="h-3.5 w-3.5" />
+      </button>
+    </div>
+  </div>
+);
+
+/**
+ * Lo que va a salir, de un vistazo: una pieza al frente (en el carrusel, sus slides numeradas, la primera
+ * verde y la última ámbar) y las demás apiladas detrás, con «5 × 6» al lado. Diseño en el .pen.
+ */
+const VistaPrevia: React.FC<{ cantidad: number; slides: number; medio: string }> = ({ cantidad, slides, medio }) => {
+  const atras = Math.min(cantidad - 1, 2);
+  return (
+    <div className="flex items-center gap-6 rounded-lg bg-gray-50 px-4 py-3">
+      <div className="relative" style={{ marginRight: atras * 8, marginTop: atras * 6 }}>
+        {Array.from({ length: atras }).map((_, i) => (
+          <div
+            key={i}
+            className="absolute inset-0 rounded-lg border border-gray-200 bg-gray-100"
+            style={{ transform: `translate(${(atras - i) * 8}px, ${-(atras - i) * 6}px)` }}
+          />
+        ))}
+        <div className="relative flex gap-1 rounded-lg border border-gray-200 bg-white p-1.5">
+          {slides > 0 ? (
+            Array.from({ length: slides }).map((_, i) => (
+              <span
+                key={i}
+                className={`flex h-9 w-6 items-center justify-center rounded text-[9px] font-bold ${
+                  i === 0 ? 'bg-[#0F766E] text-white' : i === slides - 1 ? 'bg-[#D97706] text-white' : 'bg-gray-200 text-gray-500'
+                }`}
+              >
+                {i + 1}
+              </span>
+            ))
+          ) : (
+            <span className="block h-9 w-14 rounded bg-gray-200" />
+          )}
+        </div>
+      </div>
+      <div>
+        <div className="text-[22px] font-bold leading-none text-gray-900">{slides > 0 ? `${cantidad} × ${slides}` : `× ${cantidad}`}</div>
+        <div className="mt-1 text-[10.5px] text-gray-500">{slides > 0 ? 'carruseles × slides' : nombreDePiezas(medio, cantidad).replace(/^\d+ /, '')}</div>
+      </div>
+    </div>
   );
 };
 

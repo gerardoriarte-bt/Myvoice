@@ -37,6 +37,10 @@ ${MANUAL_DE_OFICIO}
 Respondes SOLO en JSON válido. Sin texto fuera del JSON. Sin comentarios.
 `.trim();
 
+/** Un ángulo por pieza, y nunca menos de 3 (docs/plan-piezas-por-medio.md). */
+export const cantidadDeAngulos = (params: CopyParameters): number =>
+  Math.max(3, Math.min(10, Number.isInteger(params.cantidad) ? (params.cantidad as number) : 3));
+
 const buildDirectorPrompt = (params: CopyParameters): string => {
   const concept = (params.campaignConcept || "").trim();
   const conceptBlock = concept
@@ -80,8 +84,8 @@ ${stageBlock}
 ## TAREA
 Devuelve un JSON con la espina de la campaña.
 
-REGLAS DE LOS 3 ÁNGULOS:
-1. Los 3 ángulos deben ser SUSTANTIVAMENTE distintos — un lector debería pensar que vienen de 3 estrategias diferentes, no 3 redacciones del mismo brief.
+REGLAS DE LOS ${cantidadDeAngulos(params)} ÁNGULOS (uno por pieza: cada pieza se escribe con el suyo):
+1. Los ${cantidadDeAngulos(params)} ángulos deben ser SUSTANTIVAMENTE distintos — un lector debería pensar que vienen de estrategias diferentes, no de redacciones del mismo brief.
 2. Cada uno declara su propia PREMISA NARRATIVA (no el mismo gancho disfrazado).
 3. Los nombres pueden alejarse de Beneficio/Curiosidad/Urgencia si otra etiqueta describe mejor (ej: "Confesión", "Comparación honesta", "Antes/después").
 4. El "register" debe ser CONCRETO: ritmo, persona gramatical, tipo de frase. NO "tono cercano y profesional".
@@ -100,8 +104,8 @@ REGLAS DE FILTRO antes de devolver:
   "heroCTA": "string — CTA principal en la voz nativa de la marca",
   "angles": [
     { "name": "string", "premise": "string — hipótesis narrativa concreta", "register": "string — ritmo/persona/tipo de frase específicos" },
-    { "name": "string", "premise": "string", "register": "string" },
     { "name": "string", "premise": "string", "register": "string" }
+    // … ${cantidadDeAngulos(params)} en total
   ]
 }
 `.trim();

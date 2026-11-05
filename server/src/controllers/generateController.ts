@@ -2,13 +2,14 @@
 import { Response } from 'express';
 import { AuthRequest, handleTenantError } from '../middleware/auth.js';
 import { assertDnaProfileInWorkspace, TenantContext } from '../lib/tenancy.js';
-import { generateCopyWithOpenAI, streamGenerateCopyWithOpenAI, generateForChannel, buildBrief } from '../services/openaiService.js';
+import { generateCopyWithOpenAI, streamGenerateCopyWithOpenAI, generateForChannel, buildBrief, cantidadValida } from '../services/openaiService.js';
+import { randomUUID } from 'node:crypto';
 import { serverAIConfig, WorkspaceAIConfig, createAIClient, resolveModel, AIError } from '../services/aiClient.js';
 import { UsageEntry, UsageTotal, aggregateUsage } from '../services/pricing.js';
 import { assertQuotaAvailable, recordUsage } from '../services/usageService.js';
 import { prisma } from '../lib/prisma.js';
 import { decryptWorkspaceApiKey } from '../lib/workspaceSecret.js';
-import { getChannelSpec } from '../channels/registry.js';
+import { getChannelSpec, specParaGeneracion } from '../channels/registry.js';
 import { parametrosDeGeneracion } from '../services/parametrosDeGeneracion.js';
 
 const resolveWorkspaceAIConfig = async (workspaceId?: string): Promise<WorkspaceAIConfig> => {
@@ -86,14 +87,21 @@ const registrarGeneracion = async (datos: DatosGeneracion): Promise<void> => {
  * prohibiciones y keywords de la marca (que se suman a las del brief) y los ejemplos de copy
  * aprobado. El ADN manda (docs/ecosistema/decisiones.md, decisión 14).
  */
-const deLaGeneracion = (params: unknown): { platforms: string[]; funnelStage?: string } => {
-  const p = (params ?? {}) as { platforms?: unknown; funnelStage?: unknown };
+const deLaGeneracion = (
+  params: unknown
+): { platforms: string[]; funnelStage?: string; cantidad?: number; slides?: number } => {
+  const p = (params ?? {}) as { platforms?: unknown; funnelStage?: unknown; cantidad?: unknown; slides?: unknown };
   const platforms = Array.isArray(p.platforms)
     ? p.platforms.filter((x): x is string => typeof x === 'string')
     : [];
-  return typeof p.funnelStage === 'string' && p.funnelStage
-    ? { platforms, funnelStage: p.funnelStage }
-    : { platforms };
+  // Cuántas piezas y, en el carrusel, cuántas slides (docs/plan-piezas-por-medio.md). El motor las acota.
+  const entero = (x: unknown) => (typeof x === 'number' && Number.isInteger(x) ? x : undefined);
+  return {
+    platforms,
+    ...(typeof p.funnelStage === 'string' && p.funnelStage ? { funnelStage: p.funnelStage } : {}),
+    ...(entero(p.cantidad) !== undefined ? { cantidad: entero(p.cantidad) } : {}),
+    ...(entero(p.slides) !== undefined ? { slides: entero(p.slides) } : {}),
+  };
 };
 
 async function buildGenerationContext(dnaProfileId: string, tenant: TenantContext): Promise<{
@@ -325,8 +333,10 @@ export const regenerateChannel = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ error: 'existingSpine inválida: debe tener concept y angles' });
     }
 
-    const spec = getChannelSpec(platform);
-    if (!spec) return res.status(400).json({ error: 'Canal no soportado: ' + platform });
+    const base = getChannelSpec(platform);
+    if (!base) return res.status(400).json({ error: 'Canal no soportado: ' + platform });
+    const deGeneracion = deLaGeneracion(params);
+    const spec = specParaGeneracion(base, { slides: deGeneracion.slides });
 
     const spine = existingSpine;
     const aiConfig = await resolveWorkspaceAIConfig(req.tenant!.workspaceId);
@@ -334,10 +344,21 @@ export const regenerateChannel = async (req: AuthRequest, res: Response) => {
     const writerModel = resolveModel(aiConfig, false);
     const miniModel = resolveModel(aiConfig, true);
 
-    const brief = buildBrief({ ...generationParams, ...deLaGeneracion(params) }, spine);
+    const brief = buildBrief({ ...generationParams, ...deGeneracion }, spine);
     const usage: UsageEntry[] = [];
     const t0 = Date.now();
-    const variations = await generateForChannel(spec, brief, aiClientInstance, writerModel, miniModel, usage);
+    // Las piezas que fallaron (las manda el panel de canales fallidos); sin lista, todas las pedidas.
+    // Cada una conserva su ángulo y recibe un id nuevo: es una pieza nueva.
+    const pedidas: unknown[] = Array.isArray(req.body?.piezas) ? req.body.piezas : [];
+    const indices = pedidas.filter((n): n is number => typeof n === 'number' && Number.isInteger(n) && n >= 1 && n <= 10);
+    const todas = Array.from({ length: cantidadValida(deGeneracion.cantidad) }, (_, i) => i + 1);
+    const piezas = (indices.length ? indices : todas).map(indice => ({
+      indice,
+      angulo: spine.angles[(indice - 1) % spine.angles.length],
+    }));
+    const variations = await generateForChannel(spec, brief, aiClientInstance, writerModel, miniModel, usage, { piezas });
+    const conjuntos = new Map(piezas.map(p => [p.indice, randomUUID()]));
+    for (const v of variations) v.conjuntoId = conjuntos.get(v.piezaIndex ?? piezas[0].indice);
     const durationMs = Date.now() - t0;
     const usageTotal = aggregateUsage(usage);
 
@@ -380,5 +401,74 @@ export const regenerateChannel = async (req: AuthRequest, res: Response) => {
     }
     console.error('regenerateChannel error:', error);
     res.status(500).json({ error: error.message || 'Error regenerando canal' });
+  }
+};
+
+/**
+ * «Otra»: reescribe UN texto de una pieza (una slide, el titular) mirando los demás de esa pieza, para
+ * que siga encajando en la historia (docs/plan-piezas-por-medio.md, F5). El resto de la pieza no cambia.
+ */
+export const regenerarTexto = async (req: AuthRequest, res: Response) => {
+  const { dnaProfileId, platform, existingSpine, params, pieza, slot, variationIndex, conjuntoId, textos } = req.body ?? {};
+  try {
+    const ctx = await buildGenerationContext(dnaProfileId, req.tenant!);
+    await assertQuotaAvailable(req.tenant!, ctx.client);
+    if (!existingSpine?.concept || !Array.isArray(existingSpine?.angles) || !existingSpine.angles.length)
+      return res.status(400).json({ error: 'existingSpine inválida: debe tener concept y angles' });
+    const base = getChannelSpec(platform);
+    if (!base) return res.status(400).json({ error: 'Canal no soportado: ' + platform });
+    const deGeneracion = deLaGeneracion(params);
+    const slotSpec = specParaGeneracion(base, { slides: deGeneracion.slides }).slots.find(s => s.id === slot);
+    if (!slotSpec) return res.status(400).json({ error: `«${slot}» no es un texto de ${platform}` });
+    const indice = Number.isInteger(pieza) && pieza >= 1 && pieza <= 10 ? pieza : 1;
+    const resto = (Array.isArray(textos) ? textos : [])
+      .slice(0, 40)
+      .filter((t: any) => t && typeof t.content === 'string' && typeof t.slot === 'string');
+    const actual = resto.find((t: any) => t.slot === slot && (t.variationIndex ?? 1) === (variationIndex ?? 1));
+    const contexto = [
+      `## REESCRIBÍ SOLO «${slotSpec.label}» DE LA PIEZA ${indice}`,
+      'Devolvé UNA sola entrada, para ese slot. Tiene que encajar con los demás textos de la pieza, que quedan así:',
+      ...resto
+        .filter((t: any) => t !== actual)
+        .map((t: any) => `- ${String(t.slotLabel || t.slot).slice(0, 60)}: "${String(t.content).slice(0, 600)}"`),
+      actual ? `El texto actual es "${String(actual.content).slice(0, 600)}": escribí otro, distinto, que cumpla lo mismo.` : '',
+    ].join('\n');
+
+    const spine = existingSpine;
+    const aiConfig = await resolveWorkspaceAIConfig(req.tenant!.workspaceId);
+    const cliente = createAIClient(aiConfig);
+    const brief = buildBrief({ ...ctx.generationParams, ...deGeneracion }, spine);
+    const usage: UsageEntry[] = [];
+    const t0 = Date.now();
+    const spec = { ...base, slots: [{ ...slotSpec, porPieza: 1 }] };
+    const variaciones = await generateForChannel(spec, brief, cliente, resolveModel(aiConfig, false), resolveModel(aiConfig, true), usage, {
+      piezas: [{ indice, angulo: spine.angles[(indice - 1) % spine.angles.length] }],
+      contexto,
+    });
+    const nueva = variaciones.find(v => v.slot === slot) ?? variaciones[0];
+    if (!nueva) return res.status(502).json({ error: 'El motor no devolvió un texto nuevo' });
+    nueva.variationIndex = Number.isInteger(variationIndex) ? variationIndex : 1;
+    nueva.piezaIndex = indice;
+    if (typeof conjuntoId === 'string') nueva.conjuntoId = conjuntoId;
+
+    const usageTotal = aggregateUsage(usage);
+    await recordUsage({ workspaceId: req.tenant!.workspaceId, clientId: ctx.client.id, usage: usageTotal, variationCount: 1 });
+    await registrarGeneracion({
+      tenant: req.tenant!,
+      client: ctx.client,
+      dnaProfileId: ctx.dnaProfile.id,
+      platforms: [platform],
+      funnelStage: deGeneracion.funnelStage || null,
+      spine,
+      outputJson: { variations: [nueva], usage: usageTotal, regeneratedText: { pieza: indice, slot } },
+      usage: usageTotal,
+      aiConfig,
+      durationMs: Date.now() - t0,
+      adnVersion: ctx.adnVersion,
+    });
+    res.json({ variation: nueva });
+  } catch (error: any) {
+    if (error instanceof AIError) return res.status(502).json({ error: error.message });
+    handleTenantError(error, res, 'Error al reescribir el texto');
   }
 };

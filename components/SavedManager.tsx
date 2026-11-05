@@ -126,10 +126,15 @@ const SavedManager: React.FC<SavedManagerProps> = ({
     );
   }, [deLaCampana, etapaFiltro, plataformaFiltro, busqueda]);
 
+  // Cuenta piezas, no textos: un carrusel generado es uno aunque tenga siete textos.
   const conteo = React.useMemo(() => {
-    const c = new Map<EtapaCopy, number>();
-    for (const v of deLaCampana) c.set(etapaDe(v), (c.get(etapaDe(v)) ?? 0) + 1);
-    return c;
+    const unidades = new Map<EtapaCopy, Set<string>>();
+    for (const v of deLaCampana) {
+      const e = etapaDe(v);
+      if (!unidades.has(e)) unidades.set(e, new Set());
+      unidades.get(e)!.add(v.conjuntoId ? `${v.conjuntoId}` : v.id);
+    }
+    return new Map([...unidades.entries()].map(([e, u]) => [e, u.size] as [EtapaCopy, number]));
   }, [deLaCampana]);
 
   const campanaElegida = campanaFiltro !== 'all' && campanaFiltro !== 'none' ? campanaPorId.get(campanaFiltro) : undefined;
@@ -196,11 +201,16 @@ const SavedManager: React.FC<SavedManagerProps> = ({
     try {
       const { aplicados, rechazados } = await libraryApi.decidirAprobacion(ids, aprobar);
       if (rechazados.length) addNotification(rechazados[0].motivo, 'warning');
-      const n = aplicados.length;
+      // Lo generado por piezas se cuenta en piezas: «1 pieza aprobada», no «7 copys».
+      const aplicadas = saved.filter(v => aplicados.includes(v.id));
+      const piezas = new Set(aplicadas.map(v => v.conjuntoId ?? v.id)).size;
+      const sueltos = aplicadas.every(v => !v.conjuntoId);
+      const n = sueltos ? aplicados.length : piezas;
+      const que = sueltos ? `copy${n === 1 ? '' : 's'}` : `pieza${n === 1 ? '' : 's'}`;
       await terminar({
         texto: aprobar
-          ? `${n} copy${n === 1 ? '' : 's'} aprobado${n === 1 ? '' : 's'}. Ya se pueden mandar a producción.`
-          : `${n} copy${n === 1 ? '' : 's'} volvió a «Por aprobar».`,
+          ? `${n} ${que} aprobad${sueltos ? 'o' : 'a'}${n === 1 ? '' : 's'}. Ya se pueden mandar a producción.`
+          : `${n} ${que} volvi${n === 1 ? 'ó' : 'eron'} a «Por aprobar».`,
       });
       if (aprobar) setEtapaFiltro('APROBADO');
     } catch (e) {
@@ -246,6 +256,38 @@ const SavedManager: React.FC<SavedManagerProps> = ({
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
+  /**
+   * Las filas de Copy, agrupadas por pieza (docs/plan-piezas-por-medio.md): los textos con el mismo
+   * conjunto son una pieza generada (un carrusel con sus slides, un post con su copy out) y se ven, se
+   * eligen y se aprueban juntos. Lo guardado antes, sin conjunto, sigue en filas sueltas.
+   */
+  const grupos = React.useMemo(() => {
+    const lista: { clave: string; conjuntoId: string | null; textos: SavedVariation[] }[] = [];
+    const porConjunto = new Map<string, { clave: string; conjuntoId: string | null; textos: SavedVariation[] }>();
+    for (const v of visibles) {
+      if (!v.conjuntoId) {
+        lista.push({ clave: v.id, conjuntoId: null, textos: [v] });
+        continue;
+      }
+      let g = porConjunto.get(v.conjuntoId);
+      if (!g) {
+        g = { clave: v.conjuntoId, conjuntoId: v.conjuntoId, textos: [] };
+        porConjunto.set(v.conjuntoId, g);
+        lista.push(g);
+      }
+      g.textos.push(v);
+    }
+    // Lo que va en la pieza (las slides en su número), después el copy out en el orden en que se lee.
+    const ORDEN_COPY_OUT: Record<string, number> = { primeraLinea: 1, caption: 1, description: 1, cuerpo: 2, hashtags: 3 };
+    const orden = (v: SavedVariation) =>
+      (v.zona === 'copyOut' ? 100 + (ORDEN_COPY_OUT[v.slot ?? ''] ?? 5) : v.zona === 'indicacion' ? 200 : 0) +
+      (Number(/^slide(\d+)$/.exec(v.slot ?? '')?.[1]) || 0);
+    for (const g of lista) g.textos.sort((a, b) => orden(a) - orden(b) || (a.variationIndex ?? 0) - (b.variationIndex ?? 0));
+    return lista;
+  }, [visibles]);
+
+  const [abiertas, setAbiertas] = React.useState<Set<string>>(new Set());
+
   if (!marca) {
     return (
       <div className="rounded-xl border border-dashed border-apple-border p-8 text-center text-[13px] text-apple-secondary">
@@ -256,139 +298,7 @@ const SavedManager: React.FC<SavedManagerProps> = ({
 
   const hayBarra = seleccion.size > 0 || resultado;
 
-  return (
-    <div className="space-y-5 animate-in fade-in duration-300">
-      {/* Encabezado */}
-      <div className="rounded-2xl border border-gray-200 bg-white shadow-sm">
-        <div className="flex flex-col gap-4 px-6 py-5 md:flex-row md:items-start md:justify-between">
-          <div className="flex items-center gap-4">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-ink text-white">
-              <BookmarkCheck className="h-5 w-5" strokeWidth={2} />
-            </div>
-            <div>
-              <h2 className="text-[20px] font-semibold tracking-[-0.01em] text-[#1D1D1F]">
-                {SCREENS.saved.name} <span className="text-gray-400">· {marca.name}</span>
-              </h2>
-              <p className="mt-0.5 text-[12px] text-gray-500">{SCREENS.saved.description}</p>
-            </div>
-          </div>
-          <div className="w-full md:w-80 space-y-2">
-            <select
-              value={campanaFiltro}
-              onChange={e => {
-                setCampanaFiltro(e.target.value);
-                setSeleccion(new Set());
-              }}
-              className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-[13px] font-medium text-gray-800"
-            >
-              <option value="all">Todas las campañas</option>
-              {campanas.map(c => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-              {deLaMarca.some(v => !v.projectId) && <option value="none">Sin campaña</option>}
-            </select>
-            {campanaElegida && (
-              <AprobacionDeCampana
-                campana={campanaElegida}
-                miembros={miembros}
-                puedeEditar={isAdmin}
-                onCambio={actualizarCampana}
-                onError={m => addNotification(m, 'error')}
-              />
-            )}
-          </div>
-        </div>
-
-        {/*
-          El carril. Cada paso dice cuántos hay y filtra con un clic; el orden
-          es el del proceso. «Sin campaña» y «Devuelto» solo aparecen si hay
-          algo: son desvíos, no pasos por los que todo pasa.
-        */}
-        <div className="flex flex-wrap items-stretch gap-1 border-t border-gray-100 bg-gray-50/40 px-4 py-3">
-          <button
-            onClick={() => setEtapaFiltro('all')}
-            className={`rounded-lg px-3 py-1.5 text-[12px] font-medium ${
-              etapaFiltro === 'all' ? 'bg-ink text-white' : 'text-gray-600 hover:bg-white'
-            }`}
-          >
-            Todo · {deLaCampana.length}
-          </button>
-          {ETAPAS_COPY.filter(e => (e.id !== 'SIN_CAMPANA' && e.id !== 'DEVUELTO') || (conteo.get(e.id) ?? 0) > 0).map(
-            (e, i, arr) => (
-              <React.Fragment key={e.id}>
-                <button
-                  onClick={() => setEtapaFiltro(e.id)}
-                  title={e.que}
-                  className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[12px] font-medium ${
-                    etapaFiltro === e.id ? 'border-ink bg-ink text-white' : `${ESTILO_ETAPA[e.id]} hover:brightness-95`
-                  }`}
-                >
-                  {e.label}
-                  <span className="tabular-nums opacity-70">{conteo.get(e.id) ?? 0}</span>
-                </button>
-                {i < arr.length - 1 && <ArrowRight className="h-3 w-3 self-center text-gray-300" />}
-              </React.Fragment>
-            )
-          )}
-        </div>
-        {etapaFiltro !== 'all' && (
-          <p className="border-t border-gray-100 px-6 py-2 text-[11px] text-gray-500">
-            {ETAPAS_COPY.find(e => e.id === etapaFiltro)?.que}
-          </p>
-        )}
-      </div>
-
-      {/* Búsqueda */}
-      <div className="flex flex-col gap-2 rounded-xl border border-gray-200 bg-white p-3 shadow-sm md:flex-row">
-        <div className="relative flex-1">
-          <input
-            type="text"
-            placeholder="Buscar en el copy…"
-            className="w-full rounded-lg border border-gray-200 py-2 pl-9 pr-4 text-[13px] outline-none placeholder:text-gray-400 focus:border-gray-400"
-            value={busqueda}
-            onChange={e => setBusqueda(e.target.value)}
-          />
-          <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400" />
-        </div>
-        <select
-          value={plataformaFiltro}
-          onChange={e => setPlataformaFiltro(e.target.value)}
-          className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-[13px] text-gray-700"
-        >
-          <option value="all">Todos los canales</option>
-          {Object.values(Platform).map(p => (
-            <option key={p} value={p}>
-              {p}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {/* Tabla */}
-      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse text-left">
-            <thead>
-              <tr className="border-b border-gray-200 bg-gray-50/50 text-[12px] font-medium text-gray-500">
-                <th className="w-10 px-4 py-3">
-                  <input
-                    type="checkbox"
-                    aria-label="Seleccionar todo lo visible"
-                    checked={todosVisibles}
-                    onChange={alternarTodos}
-                    className="h-4 w-4 cursor-pointer rounded border-gray-300"
-                  />
-                </th>
-                <th className="w-44 px-4 py-3">Canal</th>
-                <th className="min-w-[300px] px-4 py-3">Copy</th>
-                <th className="w-56 px-4 py-3">Campaña y paso</th>
-                <th className="w-28 px-4 py-3"></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {visibles.map(v => {
+  const fila = (v: SavedVariation, anidada = false) => {
                 const etapa = etapaDe(v);
                 const c = campanaDe(v);
                 const elegido = seleccion.has(v.id);
@@ -397,7 +307,7 @@ const SavedManager: React.FC<SavedManagerProps> = ({
                   <tr
                     key={v.id}
                     onClick={() => alternar(v.id)}
-                    className={`group cursor-pointer transition-colors hover:bg-gray-50/60 ${elegido ? 'bg-blue-50/50' : ''}`}
+                    className={`group cursor-pointer transition-colors hover:bg-gray-50/60 ${elegido ? 'bg-blue-50/50' : ''} ${anidada ? 'bg-gray-50/40' : ''}`}
                   >
                     <td className="px-4 py-3 align-top">
                       <input
@@ -416,7 +326,8 @@ const SavedManager: React.FC<SavedManagerProps> = ({
                           {(v.slotLabel || v.slot) && (
                             <p className="mt-0.5 text-[10px] uppercase tracking-wide text-gray-400">
                               {v.slotLabel || v.slot}
-                              {typeof v.variationIndex === 'number' && ` #${v.variationIndex}`}
+                              {/* En una pieza generada el número solo sirve si el slot se repite (los títulos de un anuncio). */}
+                              {typeof v.variationIndex === 'number' && (!v.conjuntoId || v.variationIndex > 1) && ` #${v.variationIndex}`}
                             </p>
                           )}
                         </div>
@@ -557,7 +468,213 @@ const SavedManager: React.FC<SavedManagerProps> = ({
                     </td>
                   </tr>
                 );
-              })}
+  };
+
+  const filasDeLaPieza = (g: { clave: string; textos: SavedVariation[] }) => {
+    const ids = g.textos.map(t => t.id);
+    const todos = ids.every(id => seleccion.has(id));
+    const abierta = abiertas.has(g.clave);
+    const primera = g.textos[0];
+    const etapas = [...new Set(g.textos.map(etapaDe))];
+    const c = campanaDe(primera);
+    const portada = g.textos.find(t => (t.zona ?? 'pieza') === 'pieza') ?? primera;
+    const alternarPieza = () =>
+      setSeleccion(prev => {
+        const next = new Set(prev);
+        ids.forEach(id => (todos ? next.delete(id) : next.add(id)));
+        return next;
+      });
+    return (
+      <React.Fragment key={g.clave}>
+        <tr onClick={alternarPieza} className={`group cursor-pointer transition-colors hover:bg-gray-50/60 ${todos ? 'bg-blue-50/50' : ''}`}>
+          <td className="px-4 py-3 align-top">
+            <input type="checkbox" checked={todos} onChange={alternarPieza} onClick={e => e.stopPropagation()} className="h-4 w-4 cursor-pointer rounded border-gray-300" />
+          </td>
+          <td className="px-4 py-3 align-top">
+            <div className="flex items-start gap-2.5">
+              <PlatformIcon platform={primera.platform} size="sm" />
+              <div className="min-w-0">
+                <p className="truncate text-[12px] font-semibold leading-tight text-gray-900">
+                  {primera.platform} {primera.piezaIndex ?? ''}
+                </p>
+                <p className="mt-0.5 text-[10px] text-gray-500">{primera.type}</p>
+              </div>
+            </div>
+          </td>
+          <td className="px-4 py-3 align-top">
+            <p className="line-clamp-2 max-w-2xl text-[13px] leading-relaxed text-gray-800">{portada.content}</p>
+            <button
+              onClick={e => {
+                e.stopPropagation();
+                setAbiertas(prev => {
+                  const next = new Set(prev);
+                  next.has(g.clave) ? next.delete(g.clave) : next.add(g.clave);
+                  return next;
+                });
+              }}
+              className="mt-1 inline-flex items-center gap-1 rounded-md bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-700 hover:bg-gray-200"
+            >
+              {abierta ? 'Cerrar' : `Ver sus ${g.textos.length} textos`}
+            </button>
+          </td>
+          <td className="px-4 py-3 align-top">
+            {etapas.length === 1 ? (
+              <span className={`inline-flex rounded border px-2 py-0.5 text-[11px] font-medium ${ESTILO_ETAPA[etapas[0]]}`}>{etiquetaEtapa(etapas[0])}</span>
+            ) : (
+              <span className="inline-flex rounded border border-gray-200 px-2 py-0.5 text-[11px] font-medium text-gray-600">Etapas mezcladas</span>
+            )}
+            <p className="mt-1 truncate text-[11px] text-gray-500" title={c?.name}>{c?.name ?? 'Sin campaña'}</p>
+            {!primera.isApproved && c && (
+              <QuienAprueba
+                compacto
+                rotulo={c.modoAprobacion === 'CLIENTE' ? 'Al cliente lo manda' : 'Lo aprueba'}
+                personas={c.responsable ? [c.responsable] : []}
+                soyYo={!!currentUserId && c.responsableId === currentUserId}
+                sinNadie={!c.responsable}
+                detalle={c.responsable ? undefined : 'la campaña no tiene responsable'}
+              />
+            )}
+          </td>
+          <td className="px-4 py-3" />
+        </tr>
+        {abierta && g.textos.map(t => fila(t, true))}
+      </React.Fragment>
+    );
+  };
+
+  return (
+    <div className="space-y-5 animate-in fade-in duration-300">
+      {/* Encabezado */}
+      <div className="rounded-2xl border border-gray-200 bg-white shadow-sm">
+        <div className="flex flex-col gap-4 px-6 py-5 md:flex-row md:items-start md:justify-between">
+          <div className="flex items-center gap-4">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-ink text-white">
+              <BookmarkCheck className="h-5 w-5" strokeWidth={2} />
+            </div>
+            <div>
+              <h2 className="text-[20px] font-semibold tracking-[-0.01em] text-[#1D1D1F]">
+                {SCREENS.saved.name} <span className="text-gray-400">· {marca.name}</span>
+              </h2>
+              <p className="mt-0.5 text-[12px] text-gray-500">{SCREENS.saved.description}</p>
+            </div>
+          </div>
+          <div className="w-full md:w-80 space-y-2">
+            <select
+              value={campanaFiltro}
+              onChange={e => {
+                setCampanaFiltro(e.target.value);
+                setSeleccion(new Set());
+              }}
+              className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-[13px] font-medium text-gray-800"
+            >
+              <option value="all">Todas las campañas</option>
+              {campanas.map(c => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+              {deLaMarca.some(v => !v.projectId) && <option value="none">Sin campaña</option>}
+            </select>
+            {campanaElegida && (
+              <AprobacionDeCampana
+                campana={campanaElegida}
+                miembros={miembros}
+                puedeEditar={isAdmin}
+                onCambio={actualizarCampana}
+                onError={m => addNotification(m, 'error')}
+              />
+            )}
+          </div>
+        </div>
+
+        {/*
+          El carril. Cada paso dice cuántos hay y filtra con un clic; el orden
+          es el del proceso. «Sin campaña» y «Devuelto» solo aparecen si hay
+          algo: son desvíos, no pasos por los que todo pasa.
+        */}
+        <div className="flex flex-wrap items-stretch gap-1 border-t border-gray-100 bg-gray-50/40 px-4 py-3">
+          <button
+            onClick={() => setEtapaFiltro('all')}
+            className={`rounded-lg px-3 py-1.5 text-[12px] font-medium ${
+              etapaFiltro === 'all' ? 'bg-ink text-white' : 'text-gray-600 hover:bg-white'
+            }`}
+          >
+            Todo · {new Set(deLaCampana.map(v => v.conjuntoId ?? v.id)).size}
+          </button>
+          {ETAPAS_COPY.filter(e => (e.id !== 'SIN_CAMPANA' && e.id !== 'DEVUELTO') || (conteo.get(e.id) ?? 0) > 0).map(
+            (e, i, arr) => (
+              <React.Fragment key={e.id}>
+                <button
+                  onClick={() => setEtapaFiltro(e.id)}
+                  title={e.que}
+                  className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[12px] font-medium ${
+                    etapaFiltro === e.id ? 'border-ink bg-ink text-white' : `${ESTILO_ETAPA[e.id]} hover:brightness-95`
+                  }`}
+                >
+                  {e.label}
+                  <span className="tabular-nums opacity-70">{conteo.get(e.id) ?? 0}</span>
+                </button>
+                {i < arr.length - 1 && <ArrowRight className="h-3 w-3 self-center text-gray-300" />}
+              </React.Fragment>
+            )
+          )}
+        </div>
+        {etapaFiltro !== 'all' && (
+          <p className="border-t border-gray-100 px-6 py-2 text-[11px] text-gray-500">
+            {ETAPAS_COPY.find(e => e.id === etapaFiltro)?.que}
+          </p>
+        )}
+      </div>
+
+      {/* Búsqueda */}
+      <div className="flex flex-col gap-2 rounded-xl border border-gray-200 bg-white p-3 shadow-sm md:flex-row">
+        <div className="relative flex-1">
+          <input
+            type="text"
+            placeholder="Buscar en el copy…"
+            className="w-full rounded-lg border border-gray-200 py-2 pl-9 pr-4 text-[13px] outline-none placeholder:text-gray-400 focus:border-gray-400"
+            value={busqueda}
+            onChange={e => setBusqueda(e.target.value)}
+          />
+          <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400" />
+        </div>
+        <select
+          value={plataformaFiltro}
+          onChange={e => setPlataformaFiltro(e.target.value)}
+          className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-[13px] text-gray-700"
+        >
+          <option value="all">Todos los canales</option>
+          {Object.values(Platform).map(p => (
+            <option key={p} value={p}>
+              {p}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Tabla */}
+      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse text-left">
+            <thead>
+              <tr className="border-b border-gray-200 bg-gray-50/50 text-[12px] font-medium text-gray-500">
+                <th className="w-10 px-4 py-3">
+                  <input
+                    type="checkbox"
+                    aria-label="Seleccionar todo lo visible"
+                    checked={todosVisibles}
+                    onChange={alternarTodos}
+                    className="h-4 w-4 cursor-pointer rounded border-gray-300"
+                  />
+                </th>
+                <th className="w-44 px-4 py-3">Canal</th>
+                <th className="min-w-[300px] px-4 py-3">Copy</th>
+                <th className="w-56 px-4 py-3">Campaña y paso</th>
+                <th className="w-28 px-4 py-3"></th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {grupos.map(g => (g.textos.length === 1 && !g.conjuntoId ? fila(g.textos[0]) : filasDeLaPieza(g)))}
               {visibles.length === 0 && (
                 <tr>
                   <td colSpan={5} className="px-4 py-10 text-center text-[13px] text-gray-500">

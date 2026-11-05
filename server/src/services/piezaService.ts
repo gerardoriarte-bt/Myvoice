@@ -38,6 +38,7 @@ import {
   getChannelSpec,
   getPiezaSpec,
   resolveSlotLabel,
+  zonaDe,
 } from '../channels/registry.js';
 
 /**
@@ -229,6 +230,8 @@ export const conDesfases = (pieza: PiezaConSlots, comentarios = 0) => {
   const ultima = versiones[0];
   return {
     ...resto,
+    // Dónde va cada texto: el copy out acompaña la publicación y no está en la imagen.
+    slots: resto.slots.map(s => ({ ...s, zona: zonaDe(pieza.platform, s.slot) })),
     desfases: desfasesDeCopy(pieza),
     version: ultima
       ? {
@@ -258,6 +261,7 @@ export interface SlotPropuesto {
   slotLabel: string;
   contenido: string;
   esInstruccion: boolean;
+  zona: 'pieza' | 'copyOut' | 'indicacion';
   /** Otros aprobados del mismo slot: la pregunta «¿una pieza o dos?» de D7. */
   alternativas: { savedVariationId: string; contenido: string }[];
 }
@@ -350,7 +354,9 @@ export const proponerPiezas = async (
     // juntos y recién al confirmar saltaba «Una pieza es de una sola marca».
     // El freno existía pero llegaba tarde: ahora son dos piezas, que es lo que
     // siempre debieron ser.
-    const clave = `${v.clientId}|${v.projectId ?? ''}|${v.platform}`;
+    // Lo generado por piezas trae su conjunto (docs/plan-piezas-por-medio.md): cada pieza generada es
+    // una pieza de Producción con todos sus textos. Lo de antes se agrupa como siempre.
+    const clave = v.conjuntoId ? `conjunto|${v.conjuntoId}` : `${v.clientId}|${v.projectId ?? ''}|${v.platform}`;
     grupos.set(clave, [...(grupos.get(clave) ?? []), v]);
   }
 
@@ -364,7 +370,15 @@ export const proponerPiezas = async (
       porSlot.set(slot, [...(porSlot.get(slot) ?? []), v]);
     }
 
-    const slots: SlotPropuesto[] = [...porSlot.entries()].map(([slot, candidatos], i) => {
+    const deUnConjunto = Boolean(primera.conjuntoId);
+    // En un conjunto cada texto es suyo (las slides, o los 3 textos en pantalla de un reel): no son
+    // alternativas de un mismo slot.
+    const entradas: [string, typeof grupo][] = deUnConjunto
+      ? [...grupo]
+          .sort((a, b) => (a.variationIndex ?? 0) - (b.variationIndex ?? 0))
+          .map(v => [v.slot ?? 'sinSlot', [v]])
+      : [...porSlot.entries()];
+    const slots: SlotPropuesto[] = entradas.map(([slot, candidatos]) => {
       const [elegida, ...resto] = candidatos;
       return {
         savedVariationId: elegida.id,
@@ -373,6 +387,7 @@ export const proponerPiezas = async (
         slotLabel: resolveSlotLabel(primera.platform, elegida.slot) ?? elegida.slotLabel ?? slot,
         contenido: elegida.content,
         esInstruccion: esSlotDeInstruccion(elegida.slot),
+        zona: zonaDe(primera.platform, elegida.slot),
         alternativas: resto.map(v => ({ savedVariationId: v.id, contenido: v.content })),
       };
     });
@@ -391,7 +406,9 @@ export const proponerPiezas = async (
       tipo: TIPO_POR_SPEC[spec.tipo],
       formato: formatoPorDefecto(primera.platform) ?? spec.formatos[0],
       formatosDisponibles: spec.formatos,
-      titulo: primera.project?.name ? `${primera.project.name} — ${primera.platform}` : primera.platform,
+      titulo:
+        (primera.project?.name ? `${primera.project.name} — ${primera.platform}` : primera.platform) +
+        (deUnConjunto && primera.piezaIndex ? ` ${primera.piezaIndex}` : ''),
       clientId: primera.clientId,
       projectId: primera.projectId,
       proyectoNombre: primera.project?.name ?? null,

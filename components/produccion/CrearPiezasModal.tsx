@@ -234,6 +234,9 @@ export default function CrearPiezasModal({ savedVariationIds, onClose, onCreadas
                         {s.esInstruccion && (
                           <span className="shrink-0 text-[10px] text-apple-tertiary">brief, no va en el arte</span>
                         )}
+                        {s.zona === 'copyOut' && (
+                          <span className="shrink-0 text-[10px] font-semibold text-[#2563EB]">copy out, no va en el arte</span>
+                        )}
                       </div>
 
                       {s.alternativas.length > 0 && (

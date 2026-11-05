@@ -124,7 +124,10 @@ export default function OrdenDeTrabajo({ piezaId, miembros, onCerrar, onCambio, 
     void cargar();
   };
 
-  const publicables = pieza?.slots.filter(s => !s.esInstruccion) ?? [];
+  // Lo que va en el arte primero; el copy out, al final y marcado (docs/plan-piezas-por-medio.md).
+  const publicables = (pieza?.slots.filter(s => !s.esInstruccion) ?? []).sort(
+    (a, b) => Number(a.zona === 'copyOut') - Number(b.zona === 'copyOut')
+  );
   const brief = pieza?.slots.filter(s => s.esInstruccion) ?? [];
 
   return (
@@ -304,8 +307,13 @@ export default function OrdenDeTrabajo({ piezaId, miembros, onCerrar, onCambio, 
               )}
               {!corrigiendo && (
               <ul className="mt-3 space-y-2">
-                {publicables.map(s => (
-                  <li key={s.id} className="rounded-xl border border-apple-border p-3">
+                {publicables.map((s, i) => (
+                  <React.Fragment key={s.id}>
+                  {/* El copy out va aparte: acompaña la publicación, no está en el arte. */}
+                  {s.zona === 'copyOut' && publicables[i - 1]?.zona !== 'copyOut' && (
+                    <li className="pt-2 text-[10px] font-bold uppercase tracking-wide text-[#2563EB]">Copy out · acompaña la publicación</li>
+                  )}
+                  <li className={`rounded-xl border p-3 ${s.zona === 'copyOut' ? 'border-[#DCE3FB] bg-[#F7F9FF]' : 'border-apple-border'}`}>
                     <div className="flex items-start justify-between gap-3">
                       <span className="text-[10px] font-semibold uppercase tracking-wide text-apple-tertiary">
                         {s.slotLabel}
@@ -320,6 +328,7 @@ export default function OrdenDeTrabajo({ piezaId, miembros, onCerrar, onCambio, 
                     </div>
                     <p className="mt-1 whitespace-pre-wrap text-[12px] text-apple-text">{s.textoCongelado}</p>
                   </li>
+                  </React.Fragment>
                 ))}
               </ul>
               )}

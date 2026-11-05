@@ -94,6 +94,7 @@ router.delete('/workspace/invites/:id', ...asManager, workspaceController.revoke
 router.post('/generate', ...inWorkspace, generateController.generateCopy);
 router.post('/generate/stream', ...inWorkspace, generateController.generateCopyStream);
 router.post('/generate/channel', ...inWorkspace, generateController.regenerateChannel);
+router.post('/generate/texto', ...inWorkspace, generateController.regenerarTexto);
 router.get('/generate/history', ...inWorkspace, generateController.listGenerationHistory);
 router.post('/copy/refine', ...inWorkspace, refineController.refineVariations);
 

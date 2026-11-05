@@ -73,7 +73,7 @@ Para cada variación devolvé:
    "tone-mismatch"         → tono no coincide con la voz/guías
    "prohibition-paraphrase"→ usa una paráfrasis cercana de una prohibición
    "budget-violation"      → excede el límite de chars/palabras
-   "redundant"             → demasiado parecido a otra variación del mismo slot
+   "redundant"             → demasiado parecido a otra variación del mismo slot (no aplica a hashtags: que se repitan entre piezas es esperable)
    "weak-cta"              → CTA blando o genérico
    "agency-speak"          → suena a copy de agencia / corporate
    "tuteo-violation"       → no respeta el tratamiento que eligió la marca (ver VERIFICACIÓN DE TRATAMIENTO). Si no hay esa sección, no lo uses nunca

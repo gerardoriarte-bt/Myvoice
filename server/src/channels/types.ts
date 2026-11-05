@@ -2,6 +2,7 @@ import type { Tratamiento } from "../comun/adn/tratamiento.js";
 import { CampaignSpine, CopyVariation, FunnelStage, Platform } from "../types.js";
 
 export type SlotUnit = "char" | "word";
+export type ZonaSlot = "pieza" | "copyOut" | "indicacion";
 export type ChannelGroup = "social" | "performance" | "engagement" | "audio";
 
 export interface SlotSpec {
@@ -9,14 +10,22 @@ export interface SlotSpec {
   id: string;
   /** human label, e.g. "Título Corto" */
   label: string;
-  /** how many distinct copies to produce for this slot */
-  count: number;
+  /**
+   * Cuántos textos de este slot lleva UNA pieza (docs/plan-piezas-por-medio.md). 1 casi siempre; un
+   * anuncio de Google Ads lleva 10 títulos cortos. Hasta el 2026-11-05 era `count`: cuántas
+   * alternativas del mismo texto, y el carrusel trataba sus slides como alternativas.
+   */
+  porPieza: number;
+  /** Dónde va el texto: en la pieza, como copy out (acompaña la publicación) o como indicación. Por defecto, `pieza`. */
+  zona?: ZonaSlot;
+  /** Solo para leer lo guardado con el modelo anterior: el motor ya no lo genera. */
+  legado?: boolean;
   unit: SlotUnit;
   /** hard ceiling — anything above is invalid */
   max?: number;
   /** soft floor — for word-count specs like radio (55-60 words) */
   min?: number;
-  /** angle: when count >= 3 we vary along Beneficio/Curiosidad/Urgencia by default */
+  /** LEGADO: lo lee scripts/backfillSlots.ts para clasificar copy viejo. El motor ya no lo usa. */
   varyByAngle?: boolean;
   /** extra free-text rule shown to the model for this slot */
   guidance?: string;

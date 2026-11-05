@@ -1,9 +1,9 @@
 import OpenAI from "openai";
 import { randomUUID } from "node:crypto";
 import { CopyParameters, GenerationResponse, CopyVariation, CampaignSpine, CoherenceReport } from "../types.js";
-import { getChannelSpec, resolveSlotLabel } from "../channels/registry.js";
+import { getChannelSpec, resolveSlotLabel, specParaGeneracion, textosPorPieza, zonaDe } from "../channels/registry.js";
 import { ChannelBrief, ChannelSpec } from "../channels/types.js";
-import { buildSystemPrompt, buildUserPrompt } from "../channels/promptBuilder.js";
+import { buildSystemPrompt, buildUserPrompt, PiezaAEscribir } from "../channels/promptBuilder.js";
 import { validateBatch } from "../channels/validators.js";
 import { buildCampaignSpine } from "./directorService.js";
 import { runCritic } from "./criticService.js";
@@ -80,7 +80,34 @@ export interface OpcionesCanal {
   /** Techo de tiempo compartido por todas las etapas del canal. */
   presupuestoMs?: number;
   onReintento?: OpcionesLlamada["onReintento"];
+  /** Las piezas que escribe esta llamada. Sin valor, una con el primer ángulo de la espina. */
+  piezas?: PiezaAEscribir[];
+  /** Instrucciones extra al final del pedido: «Otra» manda los demás textos de la pieza. */
+  contexto?: string;
 }
+
+/** De 1 a 10 piezas por medio; sin valor, 3 (docs/plan-piezas-por-medio.md). */
+export const cantidadValida = (cantidad?: number | null): number =>
+  Number.isInteger(cantidad) ? Math.min(10, Math.max(1, cantidad as number)) : 3;
+
+/**
+ * Textos por llamada al redactor. `MAX_TOKENS.writer` es 8.000 y cada texto viaja con su score y su
+ * justificación: «10 anuncios de Google Ads» (180 textos) en una sola llamada se cortaría a la mitad.
+ */
+const TEXTOS_POR_TANDA = 45;
+
+/** Las piezas de un medio, con su ángulo, repartidas en tandas que entran en una llamada. */
+export const tandasDePiezas = (spec: ChannelSpec, cantidad: number, spine: CampaignSpine): PiezaAEscribir[][] => {
+  const angulos = spine.angles?.length ? spine.angles : [];
+  const piezas: PiezaAEscribir[] = Array.from({ length: cantidad }, (_, i) => ({
+    indice: i + 1,
+    angulo: angulos.length ? angulos[i % angulos.length] : undefined,
+  }));
+  const porTanda = Math.max(1, Math.floor(TEXTOS_POR_TANDA / Math.max(1, textosPorPieza(spec))));
+  const tandas: PiezaAEscribir[][] = [];
+  for (let i = 0; i < piezas.length; i += porTanda) tandas.push(piezas.slice(i, i + porTanda));
+  return tandas;
+};
 
 /**
  * Traduce el fallo de una etapa al mensaje que ve el usuario sin perder los
@@ -116,7 +143,8 @@ export const generateForChannel = async (
   opciones: OpcionesCanal = {}
 ): Promise<CopyVariation[]> => {
   const system = buildSystemPrompt(brief);
-  const user = buildUserPrompt(brief, spec);
+  const piezas = opciones.piezas ?? [{ indice: 1, angulo: brief.spine.angles?.[0] }];
+  const user = buildUserPrompt(brief, spec, piezas) + (opciones.contexto ? `\n\n${opciones.contexto}` : "");
   const { signal, onReintento } = opciones;
   const presupuestoMs = opciones.presupuestoMs ?? TIEMPOS.canal;
 
@@ -188,10 +216,14 @@ export const generateForChannel = async (
 
   if (items.length === 0) throw new Error(`Canal "${spec.id}" ${falloContenido}.`);
 
-  const variations: CopyVariation[] = items.map((item, idx) => ({
+  const variations: CopyVariation[] = items.map((item, idx) => {
+    const pieza = piezas.find(p => p.indice === item.pieza) ?? piezas[0];
+    return {
     id: randomUUID(),
     platform: spec.id,
-    type: item.type || "Standard",
+    type: item.type || pieza.angulo?.name || "Standard",
+    piezaIndex: pieza.indice,
+    zona: zonaDe(spec.id, item.slot),
     slot: item.slot || undefined,
     slotLabel: resolveSlotLabel(spec.id, item.slot) ?? undefined,
     variationIndex: typeof item.variationIndex === "number" ? item.variationIndex : idx + 1,
@@ -199,7 +231,8 @@ export const generateForChannel = async (
     charCount: typeof item.content === "string" ? item.content.length : 0,
     score: typeof item.score === "number" ? item.score : undefined,
     scoreRationale: typeof item.scoreRationale === "string" ? item.scoreRationale : undefined,
-  }));
+  };
+  });
 
   const validated = validateBatch(variations, spec, brief.campaign.prohibitions, brief.tratamiento, {
     marca: brief.brand.name,
@@ -217,7 +250,7 @@ export type StreamEvent =
   | { type: "channel"; payload: { platform: string; variations: CopyVariation[] } }
   | {
       type: "channel-error";
-      payload: { platform: string; message: string; terminal: boolean; codigo?: string; intentos: number };
+      payload: { platform: string; message: string; terminal: boolean; codigo?: string; intentos: number; piezas?: number[] };
     }
   // Sin este evento un backoff de 8 s se ve idéntico a un cuelgue en el panel
   // de progreso.
@@ -277,10 +310,24 @@ const runGeneration = async (
     const brief = buildBrief(params, spine);
     emit({ type: "spine", payload: spine });
 
+    // Cada medio se escribe en piezas (docs/plan-piezas-por-medio.md): la cantidad pedida, repartida en
+    // tandas que entran en una llamada. Cada pieza lleva un id que comparten todos sus textos.
+    const cantidad = cantidadValida(params.cantidad);
+    const trabajos = specs.flatMap(base => {
+      const spec = specParaGeneracion(base, { slides: params.slides });
+      return tandasDePiezas(spec, cantidad, spine).map(piezas => ({ spec, piezas }));
+    });
+    const conjuntos = new Map<string, string>();
+    const conjuntoDe = (platform: string, pieza: number) => {
+      const clave = `${platform}#${pieza}`;
+      if (!conjuntos.has(clave)) conjuntos.set(clave, randomUUID());
+      return conjuntos.get(clave)!;
+    };
+
     const allVariations: CopyVariation[] = [];
     const sem = createSemaphore(5);
     await Promise.all(
-      specs.map(async spec => {
+      trabajos.map(async ({ spec, piezas }) => {
         await sem.acquire();
         // El presupuesto por canal acota por construcción el peor caso de un
         // slot ocupado: sin esto, una petición colgada se queda con uno de los
@@ -302,11 +349,13 @@ const runGeneration = async (
                 message: `Canal "${spec.id}" no se ejecutó: la generación se canceló antes de llegar a él.`,
                 terminal: false,
                 intentos: 0,
+                piezas: piezas.map(p => p.indice),
               },
             });
             return;
           }
           const variations = await generateForChannel(spec, brief, client, writerModel, miniModel, usage, {
+            piezas,
             signal: señalCanal,
             presupuestoMs: TIEMPOS.canal,
             onReintento: info =>
@@ -321,6 +370,7 @@ const runGeneration = async (
                 },
               }),
           });
+          for (const v of variations) v.conjuntoId = conjuntoDe(spec.id, v.piezaIndex ?? piezas[0].indice);
           allVariations.push(...variations);
           emit({ type: "channel", payload: { platform: spec.id, variations } });
         } catch (error: any) {
@@ -333,6 +383,7 @@ const runGeneration = async (
               terminal: aiError ? aiError.terminal : true,
               codigo: aiError?.codigo,
               intentos: aiError?.intentos ?? 1,
+              piezas: piezas.map(p => p.indice),
             },
           });
           // Fallar rápido en lo irrecuperable es la otra mitad de reintentar lo

@@ -1,7 +1,7 @@
-import { ChannelSpec, PiezaSpec, SlotSpec } from "./types.js";
+import { ChannelSpec, PiezaSpec, SlotSpec, ZonaSlot } from "./types.js";
 import { instagramPost } from "./specs/instagramPost.js";
 import { instagramHistoria } from "./specs/instagramHistoria.js";
-import { instagramCarrusel } from "./specs/instagramCarrusel.js";
+import { instagramCarrusel, SLIDES_MAX, SLIDES_MIN, SLIDES_POR_DEFECTO } from "./specs/instagramCarrusel.js";
 import { instagramReel } from "./specs/instagramReel.js";
 import { tiktok } from "./specs/tiktok.js";
 import { youtube } from "./specs/youtube.js";
@@ -75,3 +75,38 @@ export const formatoPorDefecto = (platformId: string): string | null =>
 
 export const esFormatoValido = (platformId: string, formato: string): boolean =>
   !!getPiezaSpec(platformId)?.formatos.includes(formato);
+
+/** Dónde va un texto guardado: en la pieza, como copy out o como indicación (docs/plan-piezas-por-medio.md). */
+export const zonaDe = (platformId: string, slotId?: string | null): ZonaSlot => {
+  if (esSlotDeInstruccion(slotId)) return "indicacion";
+  return (slotId ? getSlotSpec(platformId, slotId)?.zona : undefined) ?? "pieza";
+};
+
+export const esCarrusel = (platformId: string): boolean => platformId === instagramCarrusel.id;
+
+/** Las slides pedidas, dentro del rango del carrusel. */
+export const slidesValidas = (slides?: number | null): number =>
+  Number.isInteger(slides) ? Math.min(SLIDES_MAX, Math.max(SLIDES_MIN, slides as number)) : SLIDES_POR_DEFECTO;
+
+/**
+ * El spec que usa UNA generación: sin los slots de legado y, en el carrusel, con las primeras N slides,
+ * la última convertida en el cierre. El spec del registro no cambia: sigue resolviendo las etiquetas de
+ * todo lo guardado.
+ */
+export const specParaGeneracion = (spec: ChannelSpec, opciones: { slides?: number | null } = {}): ChannelSpec => {
+  let slots = spec.slots.filter(s => !s.legado);
+  if (esCarrusel(spec.id)) {
+    const n = slidesValidas(opciones.slides);
+    slots = slots
+      .filter(s => !/^slide\d+$/.test(s.id) || Number(s.id.slice(5)) <= n)
+      .map(s =>
+        s.id === `slide${n}`
+          ? { ...s, max: 80, guidance: "La última: cierra la historia con la acción concreta (no «visita el link»)." }
+          : s
+      );
+  }
+  return { ...spec, slots };
+};
+
+/** Cuántos textos lleva una pieza de este spec (para repartir las piezas en tandas). */
+export const textosPorPieza = (spec: ChannelSpec): number => spec.slots.reduce((n, s) => n + (s.porPieza || 1), 0);

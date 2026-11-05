@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 /**
  * Verificación de aislamiento multi-tenant.
  *
@@ -215,6 +216,16 @@ async function main() {
     });
     await expectDenied('DELETE /dna-profiles/:id de A', `/dna-profiles/${A.dna.id}`, B.token, { method: 'DELETE' });
     await expectDenied('GET /dna-profiles/:id/insights de A', `/dna-profiles/${A.dna.id}/insights`, B.token);
+    // «Otra» reescribe un texto con el brief: con el de otro workspace, 404 antes de llamar a la IA.
+    await expectDenied('POST /generate/texto con el brief de A', '/generate/texto', B.token, {
+      method: 'POST',
+      body: JSON.stringify({
+        dnaProfileId: A.dna.id,
+        platform: 'Instagram Carrusel',
+        slot: 'slide2',
+        existingSpine: { concept: 'x', angles: [{ name: 'a', premise: 'b', register: 'c' }] },
+      }),
+    });
     await expectDenied('GET /clients/:id/adn de A', `/clients/${A.client.id}/adn`, B.token);
     await expectDenied('GET /clients/:id/adn?version de A', `/clients/${A.client.id}/adn?version=1`, B.token);
     await expectDenied('GET /clients/:id/adn/revision de A', `/clients/${A.client.id}/adn/revision`, B.token);
@@ -438,6 +449,51 @@ async function main() {
       propuesta.status >= 200 && propuesta.status < 300 && propuesta.body?.piezas?.length === 0,
       `respondió ${propuesta.status} ${JSON.stringify(propuesta.body)?.slice(0, 120)}`
     );
+
+    console.log('\nPIEZAS POR CONJUNTO — dos carruseles generados son dos piezas (docs/plan-piezas-por-medio.md)');
+    {
+      const deCarrusel = (conjuntoId: string, piezaIndex: number, slot: string, texto: string) =>
+        prisma.savedVariation.create({
+          data: {
+            clientId: B.client.id,
+            projectId: B.project.id,
+            platform: 'Instagram Carrusel',
+            type: 'Familia',
+            content: texto,
+            charCount: texto.length,
+            tags: [],
+            slot,
+            slotLabel: slot,
+            isApproved: true,
+            conjuntoId,
+            piezaIndex,
+          },
+        });
+      const c1 = randomUUID();
+      const c2 = randomUUID();
+      const textos = [
+        await deCarrusel(c1, 1, 'slide2', 'Uno, slide 2'),
+        await deCarrusel(c1, 1, 'slide1', 'Uno, slide 1'),
+        await deCarrusel(c1, 1, 'primeraLinea', 'Uno, copy out'),
+        await deCarrusel(c2, 2, 'slide1', 'Dos, slide 1'),
+        await deCarrusel(c2, 2, 'slide2', 'Dos, slide 2'),
+      ];
+      const prop = await api('/piezas/propuesta', B.token, {
+        method: 'POST',
+        body: JSON.stringify({ savedVariationIds: textos.map(t => t.id) }),
+      });
+      const piezas: any[] = prop.body?.piezas ?? [];
+      record('Dos conjuntos proponen dos piezas', piezas.length === 2, `propuso ${piezas.length}`);
+      const una = piezas.find(p => p.slots?.some((s: any) => s.contenido === 'Uno, slide 1'));
+      record(
+        'La pieza lleva sus slides en orden y el copy out al final, sin alternativas',
+        !!una &&
+          una.slots.map((s: any) => s.slot).join() === 'slide1,slide2,primeraLinea' &&
+          una.slots.every((s: any) => s.alternativas.length === 0),
+        JSON.stringify(una?.slots?.map((s: any) => s.slot))
+      );
+      await prisma.savedVariation.deleteMany({ where: { id: { in: textos.map(t => t.id) } } });
+    }
 
     console.log('\nPIEZAS — el ciclo propio de B sí funciona');
     const creada = await api('/piezas', B.token, {

@@ -23,6 +23,7 @@
 
 import { AuditoriaEstado, HallazgoTipo, Prisma } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
+import { zonaDe } from '../channels/registry.js';
 import { storage } from '../lib/storage.js';
 import {
   chatCompletionConRetry,
@@ -137,8 +138,9 @@ export const auditarVersion = async (versionId: string): Promise<void> => {
     return;
   }
 
+  // El copy out acompaña la publicación: no está en la imagen y buscarlo ahí sería un hallazgo falso.
   const esperados: SlotEsperado[] = version.pieza.slots
-    .filter(s => !s.esInstruccion)
+    .filter(s => !s.esInstruccion && zonaDe(version.pieza.platform, s.slot) !== 'copyOut')
     .map(s => ({ slot: s.slot, slotLabel: s.slotLabel, texto: s.textoCongelado }));
 
   const usage: UsageEntry[] = [];
