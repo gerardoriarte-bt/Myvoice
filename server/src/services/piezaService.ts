@@ -22,7 +22,7 @@ import { prisma } from '../lib/prisma.js';
 import { TenantContext, TenantError } from '../lib/tenancy.js';
 import { guardarVersion, medidasDelFormato, urlDeSnapshot, ArchivoSubido } from './piezaArchivo.js';
 import { auditarEnSegundoPlano } from './auditoriaService.js';
-import { exigir, permisosDe, AccionConPermiso } from './permisosPieza.js';
+import { exigir, permisosDe, AccionConPermiso, Persona } from './permisosPieza.js';
 import {
   AvisoEscrito,
   destinatariosDe,
@@ -306,7 +306,8 @@ export const proponerPiezas = async (
   const yaEnPieza = new Set(
     (
       await prisma.piezaSlot.findMany({
-        where: { savedVariationId: { in: variaciones.map(v => v.id) } },
+        // Una pieza cancelada devuelve su copy: se puede armar otra con él.
+        where: { savedVariationId: { in: variaciones.map(v => v.id) }, pieza: { canceladaEn: null } },
         select: { savedVariationId: true },
       })
     ).map(s => s.savedVariationId)
@@ -891,11 +892,12 @@ const piezaParaDecidir = async (tenant: TenantContext, piezaId: string) => {
   const pieza = await prisma.pieza.findUnique({
     where: { id: piezaId },
     include: {
-      project: { select: { name: true, modoAprobacion: true, responsableId: true, responsable: { select: { name: true } } } },
+      project: { select: { name: true, modoAprobacion: true, responsableId: true, responsable: { select: { name: true, email: true } } } },
       versiones: { orderBy: { numero: 'desc' }, take: 1, include: { hallazgos: true } },
     },
   });
   if (!pieza || pieza.workspaceId !== tenant.workspaceId) throw new TenantError('Pieza no encontrada', 404);
+  if (pieza.canceladaEn) throw new TenantError('La pieza está cancelada', 409);
   return pieza;
 };
 
@@ -926,6 +928,26 @@ const recongelarCopy = async (tx: Prisma.TransactionClient, piezaId: string) => 
  * auditoría. La URL está firmada y vence, así que se pide en cada lectura en
  * vez de guardarse.
  */
+/**
+ * Quienes administran el workspace, con nombre y correo: son quienes aprueban una pieza que entregó
+ * el responsable (permisosPieza.ts). Una consulta por pedido, aunque se presenten cien piezas.
+ */
+const gestoresPorPedido = new WeakMap<TenantContext, Promise<Persona[]>>();
+const gestoresDe = (tenant: TenantContext): Promise<Persona[]> => {
+  let p = gestoresPorPedido.get(tenant);
+  if (!p) {
+    p = prisma.membership
+      .findMany({
+        where: { workspaceId: tenant.workspaceId, role: { in: [WorkspaceRole.OWNER, WorkspaceRole.ADMIN] } },
+        select: { user: { select: { id: true, name: true, email: true } } },
+        orderBy: { user: { name: 'asc' } },
+      })
+      .then(ms => ms.map(m => m.user));
+    gestoresPorPedido.set(tenant, p);
+  }
+  return p;
+};
+
 const presentar = async (
   tenant: TenantContext,
   pieza: PiezaConSlots,
@@ -934,7 +956,7 @@ const presentar = async (
 ) => ({
   ...conDesfases(pieza, comentarios),
   previaUrl: await urlDeSnapshot(pieza.versiones[0]?.claveSnapshot),
-  ...permisosDe(tenant, pieza),
+  ...permisosDe(tenant, pieza, await gestoresDe(tenant)),
   devolucion: contexto?.devolucion ?? null,
   cierre: contexto?.cierre ?? null,
   enviadaAlCliente: contexto?.enviadaAlCliente ?? null,
@@ -1095,7 +1117,7 @@ export const corregirCopy = async (
 
 export const listarPorMarca = async (tenant: TenantContext, clientId: string) => {
   const piezas = await prisma.pieza.findMany({
-    where: { workspaceId: tenant.workspaceId, clientId },
+    where: { workspaceId: tenant.workspaceId, clientId, canceladaEn: null },
     include: INCLUDE_PIEZA,
     orderBy: [{ estado: 'asc' }, { estadoDesde: 'asc' }],
   });
@@ -1118,6 +1140,7 @@ export const listarMias = async (tenant: TenantContext) => {
   const piezas = await prisma.pieza.findMany({
     where: {
       workspaceId: tenant.workspaceId,
+      canceladaEn: null,
       OR: [
         { asignadaAId: tenant.userId },
         {
@@ -1177,6 +1200,35 @@ export const detalle = async (tenant: TenantContext, piezaId: string) => {
  * El título es lo único que se edita a mano. No deja evento: renombrar no es
  * una decisión sobre el trabajo, es una corrección de etiqueta.
  */
+/**
+ * Cancela una pieza enviada por error (feedback de pruebas del 2026-11-05, punto 7). No se borra: sale
+ * del tablero, de «Lo mío» y del portal del cliente, queda en el historial con quién la canceló, y su
+ * copy vuelve a estar disponible para armar otra pieza.
+ */
+export const cancelar = async (tenant: TenantContext, piezaId: string, motivo?: string) => {
+  const pieza = await piezaParaDecidir(tenant, piezaId);
+  exigir(tenant, pieza, 'cancelar');
+  await prisma.$transaction(async tx => {
+    await tx.pieza.update({
+      where: { id: piezaId },
+      // La huella es única por workspace: sin cambiarla, armar otra pieza con el mismo copy chocaría
+      // contra la cancelada.
+      data: { canceladaEn: new Date(), canceladaPorId: tenant.userId, huella: `${pieza.huella}:cancelada:${piezaId}` },
+    });
+    await tx.piezaEvento.create({
+      data: {
+        piezaId,
+        tipo: 'CANCELADA',
+        deEstado: pieza.estado,
+        aEstado: pieza.estado,
+        autorId: tenant.userId,
+        nota: motivo?.trim().slice(0, 500) || null,
+      },
+    });
+  });
+  return { id: piezaId, cancelada: true };
+};
+
 export const renombrar = async (tenant: TenantContext, piezaId: string, titulo: string) => {
   exigir(tenant, await piezaParaDecidir(tenant, piezaId), 'renombrar');
   const { count } = await prisma.pieza.updateMany({

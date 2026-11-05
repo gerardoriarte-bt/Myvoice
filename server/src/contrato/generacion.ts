@@ -56,6 +56,8 @@ export interface CopyParameters {
   targetAudience: string;
   keywords: string;
   prohibitions?: string;
+  /** Tú, vos o usted, como lo eligió la marca en su ADN. Sin elegir, el motor no impone ninguno. */
+  tratamiento?: 'TU' | 'VOS' | 'USTED' | null;
   brandVoiceGuidelines: string;
   valueProposition: string;
   primaryCTA: string;

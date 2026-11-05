@@ -14,6 +14,7 @@
  * El script limpia lo que crea al terminar.
  */
 
+import { permisosDe } from '../src/services/permisosPieza.js';
 import { PrismaClient, WorkspaceRole } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import { randomBytes } from 'node:crypto';
@@ -410,6 +411,7 @@ async function main() {
       `respondió ${subidaAjena.status}`
     );
     await expectDenied('POST /piezas/:id/reauditar de A', `/piezas/${piezaA.id}/reauditar`, B.token, { method: 'POST' });
+    await expectDenied('POST /piezas/:id/cancelar de A', `/piezas/${piezaA.id}/cancelar`, B.token, { method: 'POST' });
 
     const hallazgoDeA = await prisma.piezaVersion.create({
       data: {
@@ -476,6 +478,34 @@ async function main() {
       ab.status === 201,
       `respondió ${ab.status} ${JSON.stringify(ab.body)?.slice(0, 90)}`
     );
+
+    // Cancelar una pieza enviada por error (feedback del 2026-11-05, punto 7): solo quien administra,
+    // sale del tablero, y su copy vuelve a poder armar otra pieza.
+    const variante = ab.body?.[0];
+    if (variante?.id) {
+      const cancelaMiembro = await api(`/piezas/${variante.id}/cancelar`, disenaB.token, { method: 'POST' });
+      record('Un MEMBER no cancela una pieza', cancelaMiembro.status === 403, `respondió ${cancelaMiembro.status}`);
+      const cancelada = await api(`/piezas/${variante.id}/cancelar`, B.token, { method: 'POST' });
+      record('Quien administra cancela la pieza', cancelada.status === 200, `respondió ${cancelada.status}`);
+      const tablero = await api(`/piezas?clientId=${B.client.id}`, B.token);
+      record(
+        'La pieza cancelada sale del tablero',
+        Array.isArray(tablero.body) && !tablero.body.some((p: any) => p.id === variante.id),
+        'sigue en el tablero'
+      );
+      const otraVez = await api(`/piezas/${variante.id}/asignar`, B.token, {
+        method: 'POST',
+        body: JSON.stringify({ asignadaAId: disenaB.user.id }),
+      });
+      record('Una pieza cancelada no admite acciones (409)', otraVez.status === 409, `respondió ${otraVez.status}`);
+      const rearmada = await api('/piezas', B.token, {
+        method: 'POST',
+        body: JSON.stringify({
+          piezas: [{ platform: 'Instagram Post', formato: '1080×1080', titulo: 'A/B — de nuevo', savedVariationIds: [segundoHook.id] }],
+        }),
+      });
+      record('Con el copy de la cancelada se arma otra pieza', rearmada.status === 201, `respondió ${rearmada.status} ${JSON.stringify(rearmada.body)?.slice(0, 90)}`);
+    }
 
     if (piezaB?.id) {
       const asignada = await api(`/piezas/${piezaB.id}/asignar`, B.token, {
@@ -628,6 +658,37 @@ async function main() {
         conDesfase.body?.desfases?.[0]?.motivo === 'editado' &&
           conDesfase.body?.slots?.[0]?.textoCongelado !== 'Hook editado después',
         `desfases ${JSON.stringify(conDesfase.body?.desfases)?.slice(0, 120)}`
+      );
+    }
+
+    console.log('\nAPROBACIÓN — cuando la entregó el responsable (feedback del 2026-11-05)');
+    {
+      const gestores = [
+        { id: 'resp', name: 'Valentina', email: 'v@x.co' },
+        { id: 'adm', name: 'Sofía', email: 's@x.co' },
+      ];
+      const pieza = {
+        tipo: 'GRAFICA',
+        asignadaAId: 'resp',
+        project: { name: 'Campaña', responsableId: 'resp', responsable: { name: 'Valentina', email: 'v@x.co' } },
+        versiones: [{ subidaPorId: 'resp' }],
+      };
+      const resp = permisosDe({ userId: 'resp', role: 'ADMIN' as any }, pieza, gestores);
+      const adm = permisosDe({ userId: 'adm', role: 'ADMIN' as any }, pieza, gestores);
+      const miembro = permisosDe({ userId: 'otro', role: 'MEMBER' as any }, pieza, gestores);
+      record('El responsable que la entregó no la acepta', !resp.puedo.aceptar, JSON.stringify(resp.puedo));
+      record('Otra persona que administra sí la acepta', adm.puedo.aceptar && adm.puedo.devolver, JSON.stringify(adm.puedo));
+      record('Un MEMBER que no es responsable no la acepta', !miembro.puedo.aceptar, JSON.stringify(miembro.puedo));
+      record(
+        'El aprobador dice quién, sin incluir a quien la subió',
+        resp.aprobador.rol === 'administra' && resp.aprobador.personas.map(p => p.id).join() === 'adm',
+        JSON.stringify(resp.aprobador)
+      );
+      const normal = permisosDe({ userId: 'disena', role: 'MEMBER' as any }, { ...pieza, asignadaAId: 'disena', versiones: [{ subidaPorId: 'disena' }] }, gestores);
+      record(
+        'En el caso de siempre, aprueba el responsable, con su correo',
+        normal.aprobador.rol === 'responsable' && normal.aprobador.personas[0]?.email === 'v@x.co',
+        JSON.stringify(normal.aprobador)
       );
     }
 

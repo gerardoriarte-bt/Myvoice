@@ -317,6 +317,9 @@ export const piezasApi = {
   /** Mis piezas: cruza las marcas del workspace. */
   mias: (): Promise<Pieza[]> => apiRequest('/piezas/mias'),
   detalle: (id: string): Promise<PiezaDetalle> => apiRequest(`/piezas/${id}`),
+  /** Sale del tablero y queda en el historial; su copy vuelve a estar disponible. Solo quien administra. */
+  cancelar: (id: string, motivo?: string): Promise<{ id: string; cancelada: true }> =>
+    apiRequest(`/piezas/${id}/cancelar`, { method: 'POST', body: JSON.stringify({ motivo }) }),
   /** Solo lectura: se puede pedir cada vez que cambia la selección. */
   proponer: (savedVariationIds: string[]): Promise<PropuestaDePiezas> =>
     apiRequest('/piezas/propuesta', {

@@ -177,6 +177,9 @@ model Client {
   /// madre solo si la madre lo tiene: confirmar es lo que enciende la herencia de la familia.
   adnConfirmadoEn           DateTime?
   adnConfirmadoPorId        String?
+  /// Tú, vos o usted (src/comun/adn/tratamiento.ts). NULL = no lo eligió: rige el default del país. Una
+  /// submarca sin tratamiento toma el de su madre, si el ADN de la madre está confirmado.
+  tratamiento               Tratamiento?
 
   @@index([marcaMadreId])
 }
@@ -202,6 +205,13 @@ model SeccionAdn {
   actualizadaEn DateTime       @updatedAt
 
   @@unique([clientId, clave])
+}
+
+/// Cómo le habla la marca a su público (feedback de pruebas del 2026-11-05, punto 2).
+enum Tratamiento {
+  TU
+  VOS
+  USTED
 }
 
 /// HEREDA: igual que la madre. PROPIA: la de esta marca. SUMA: la de la madre más la propia.
@@ -589,44 +599,48 @@ enum PiezaTipo {
 /// dos canales: si fuera una sola, la auditoría no sabría contra qué copy
 /// comparar.
 model Pieza {
-  id          String      @id @default(uuid())
+  id             String      @id @default(uuid())
   /// Denormalizado desde Client, igual que en GenerationLog: el guard de
   /// tenancy y el tablero filtran por acá sin join, y una marca que se mueva de
   /// empresa no arrastra el trabajo ya hecho.
-  workspaceId String
-  clientId    String
+  workspaceId    String
+  clientId       String
   /// La campaña es OPCIONAL porque SavedVariation.projectId lo es: exigirla
   /// dejaría fuera de producción todo el copy guardado sin proyecto.
-  projectId   String?
+  projectId      String?
+  /// Cancelada por quien administra (enviada por error, una prueba). Sale del tablero y del portal,
+  /// queda en el historial, y su copy vuelve a estar disponible para otra pieza.
+  canceladaEn    DateTime?
+  canceladaPorId String?
   /// Valor del enum Platform ("Instagram Post"). Su spec dice tipo y formatos.
-  platform    String
-  tipo        PiezaTipo
+  platform       String
+  tipo           PiezaTipo
   /// Uno de spec.pieza.formatos ("1080×1080"). No cambia después del alta: la
   /// unicidad de PiezaSlot depende de eso.
-  formato     String
-  titulo      String
+  formato        String
+  titulo         String
   /// Huella del contenido de la pieza: formato + los aprobados que la componen,
   /// ordenados. Existe para que la BASE impida la pieza repetida —el doble
   /// clic, los dos que mandan a producir el mismo lote— sin impedir el A/B,
   /// donde dos piezas del mismo formato comparten el cuerpo y difieren en el
   /// hook. La unicidad es del CONJUNTO, no de cada copy por separado.
-  huella      String
-  estado      PiezaEstado @default(POR_ASIGNAR)
+  huella         String
+  estado         PiezaEstado @default(POR_ASIGNAR)
   /// Crear y asignar son dos decisiones: una pieza nace sin dueño, en
   /// Por asignar, y la segunda decisión es del dueño de esa columna (D7).
-  asignadaAId String?
+  asignadaAId    String?
   /// Piezas hermanas: el mismo visual en dos canales. Es un uuid compartido y
   /// no una tabla, porque no tiene datos propios.
-  grupoId     String?
+  grupoId        String?
   /// El entregable de la fase 2 —y el de los canales de video para siempre:
   /// con el tope de 10 MB de D6 un reel no entra (estado límite 4).
-  enlace      String?
-  creadaPorId String
+  enlace         String?
+  creadaPorId    String
   /// Cuándo entró al estado actual. Es el dato que responde "cuánto lleva esto
   /// acá", que es la pregunta que se le hace a un tablero.
-  estadoDesde DateTime    @default(now())
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  estadoDesde    DateTime    @default(now())
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
 
   workspace Workspace      @relation(fields: [workspaceId], references: [id])
   client    Client         @relation(fields: [clientId], references: [id])

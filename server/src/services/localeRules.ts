@@ -1,3 +1,4 @@
+import { reglaDeTratamiento, Tratamiento } from "../comun/adn/tratamiento.js";
 import { CopyParameters } from "../types.js";
 
 export type MarketLocale = "es-CO" | "es-AR" | "es-MX" | "es-419";
@@ -42,43 +43,24 @@ export const resolveMarketLocale = (params: CopyParameters): MarketLocale => {
  * Detecta si el ADN de la marca pide explícitamente voseo paisa/regional.
  * Sólo en ese caso se activa la verificación de voseo.
  */
-export const brandUsesVoseo = (params: CopyParameters): boolean => {
-  const haystack = [
-    params.voice,
-    params.brandVoiceGuidelines,
-    params.targetAudience,
-    params.theme,
-  ]
-    .filter(Boolean)
-    .join(" ")
-    .toLowerCase();
-  return /\b(voseo|paisa|antioquia|medellín|eje cafetero|pereira|manizales|armenia|vos \(|usar vos|tutear)\b/.test(haystack);
-};
+
 
 /**
- * Reglas de voseo colombiano (paisa/andino) — solo para marcas que lo piden explícitamente.
- * Se mantiene separado del default de "usted" para no contaminar el tono general.
+ * Las reglas de idioma del país. Con tratamiento elegido por la marca (comun/adn/tratamiento.ts), el
+ * pronombre lo dice esa regla y no el default del país: hasta el 2026-11-05 el bloque de Colombia
+ * prohibía «tú» aunque la marca lo pidiera.
  */
-export const VOSEO_CO_RULES = `
-VOSEO COLOMBIANO — solo porque el ADN de esta marca lo solicita (paisa/andino):
-- Usa "vos" como pronombre de 2ª persona informal (alternando naturalmente con "usted" si el contexto lo pide).
-- Presente indicativo: tenés, podés, querés, sabés, hacés, venís, sos (ser).
-- Imperativo: usá con moderación — no abuses de las formas acentuadas en cada frase.
-- PROHIBIDO lunfardo/rioplatense: che, boludo, mina, pibe, laburo, bondi.
-- Léxico colombiano: celular, computador, gasolina, parqueadero, manejar, bacano, chévere.
-`.trim();
-
-export const buildLocaleRulesBlock = (locale: MarketLocale): string => {
+export const buildLocaleRulesBlock = (locale: MarketLocale, tratamiento: Tratamiento | null = null): string => {
   const label = LOCALE_LABELS[locale];
 
   const rulesBlock: Record<MarketLocale, string> = {
     "es-CO": `
     REGISTRO COLOMBIANO AUTÉNTICO:
-    - Usa "usted" como pronombre estándar — en Colombia "usted" es cálido, cercano y personal, no distante.
+${tratamiento ? reglaDeTratamiento(tratamiento).split('\n').map(l => `    ${l}`).join('\n') + '\n' : `    - Usa "usted" como pronombre estándar — en Colombia "usted" es cálido, cercano y personal, no distante.
     - "Usted tiene", "usted puede", "usted merece", "disfrute", "conozca", "aproveche" suenan 100 % colombianos.
     - PROHIBIDO "tú" como pronombre — no suena colombiano, suena extranjero o de otro país.
-    - PROHIBIDO forzar voseo (tenés, hacés, podés) salvo que el ADN de la marca lo pida explícitamente — de lo contrario suena argentino.
-    - PROHIBIDO lunfardo/rioplatense: che, boludo, mina, pibe, laburo, bondi.
+    - PROHIBIDO el voseo (tenés, hacés, podés) — suena argentino.
+`}    - PROHIBIDO lunfardo/rioplatense: che, boludo, mina, pibe, laburo, bondi.
     - Léxico natural colombiano: celular, computador, gasolina, parqueadero, manejar, redimir, acumular, beneficio, bacano, chévere.
     - Tono: cálido, directo, con carácter — sin exagerar regionalismos.`,
     "es-AR": `
@@ -107,7 +89,7 @@ export const buildLocaleRulesBlock = (locale: MarketLocale): string => {
 
 /**
  * Voseo nunca se fuerza automáticamente — solo cuando la marca lo pide explícitamente.
- * Usa brandUsesVoseo(params) para ese chequeo dinámico.
+ * El tratamiento lo elige la marca (comun/adn/tratamiento.ts); ya no se deduce del ADN.
  */
 export const requiresVoseo = (_locale: MarketLocale): boolean => false;
 

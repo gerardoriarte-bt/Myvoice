@@ -193,6 +193,8 @@ export interface Client {
    */
   adnPorRevisar?: { revisadas: number; total: number } | null;
   adnConfirmadoEn?: string | null;
+  /** Tú, vos o usted. NULL = no lo eligió: rige el default del país (en Colombia, usted). */
+  tratamiento?: 'TU' | 'VOS' | 'USTED' | null;
 }
 
 /** GET /clients/:id/adn/revision. */
@@ -246,7 +248,7 @@ export interface Project {
   dnaProfileId?: string | null;
   modoAprobacion?: ModoAprobacion;
   responsableId?: string | null;
-  responsable?: { id: string; name: string } | null;
+  responsable?: { id: string; name: string; email?: string | null } | null;
 }
 
 /**
@@ -492,6 +494,13 @@ export interface Pieza {
   puedo: Record<AccionPermitida, boolean>;
   /** Si no puede decidir: quién lo hace, en una línea. */
   quienDecide: string | null;
+  /** Quién aprueba, con nombre y correo (permisosPieza.ts): se muestra siempre, para escribirle. */
+  aprobador?: {
+    rol: 'responsable' | 'administra' | 'nadie';
+    personas: { id: string; name: string; email?: string | null }[];
+    detalle: string;
+    soyYo: boolean;
+  };
   /** Solo en diseño: la devolución vigente y sus motivos. */
   devolucion: {
     por: string;
@@ -516,7 +525,8 @@ export type AccionPermitida =
   | 'corregirCopy'
   | 'actualizarCopy'
   | 'renombrar'
-  | 'mandarAlCliente';
+  | 'mandarAlCliente'
+  | 'cancelar';
 
 export interface PiezaEvento {
   id: string;

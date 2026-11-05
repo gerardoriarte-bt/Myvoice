@@ -432,7 +432,16 @@ export default function OrdenDeTrabajo({ piezaId, miembros, onCerrar, onCambio, 
 
         {pieza && (
           <footer className="border-t border-apple-border px-6 py-4">
-            <AccionesPieza pieza={pieza} miembros={miembros} onCambio={tras} onError={onError} />
+            <AccionesPieza
+              pieza={pieza}
+              miembros={miembros}
+              onCambio={tras}
+              onError={onError}
+              onCancelada={() => {
+                onCambio({ ...pieza, canceladaEn: new Date().toISOString() } as Pieza);
+                onCerrar();
+              }}
+            />
           </footer>
         )}
       </div>

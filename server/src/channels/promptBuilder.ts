@@ -1,7 +1,7 @@
 import { FunnelStage } from "../types.js";
 import { ChannelBrief, ChannelSpec, SlotSpec } from "./types.js";
 import { renderFingerprintForPrompt } from "../services/voiceFingerprintService.js";
-import { VOSEO_CO_RULES } from "../services/localeRules.js";
+import { reglaDeTratamiento } from "../comun/adn/tratamiento.js";
 import { MANUAL_DE_OFICIO } from "../services/oficio.js";
 
 const FUNNEL_HINT: Record<FunnelStage, string> = {
@@ -83,8 +83,8 @@ ${own.slice(0, 4).map(e => `- "${e.content}"`).join("\n")}
  * Rendered as the head of the cacheable system message.
  */
 const buildPersonaPrompt = (brief: ChannelBrief): string => {
-  const voseoSection = brief.checkVoseo
-    ? `\n\n## VOSEO COLOMBIANO — REGLA DURA\n${VOSEO_CO_RULES}\nSi escribís "tú", "eres", "tienes", "puedes", "quieres", "sabes", "haces" o "vienes", la variación está mal. Reescribila antes de devolver.`
+  const voseoSection = brief.tratamiento
+    ? `\n\n## ${reglaDeTratamiento(brief.tratamiento)}\nUna variación con otro tratamiento está mal: reescribila antes de devolver.`
     : "";
 
   return `

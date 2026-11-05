@@ -50,6 +50,7 @@ export const piezasElegibles = async (tenant: TenantContext, piezaIds: string[])
     where: {
       id: { in: ids },
       workspaceId: tenant.workspaceId,
+      canceladaEn: null,
       estado: PiezaEstado.CON_EL_CLIENTE,
       project: { modoAprobacion: ModoAprobacion.CLIENTE },
       itemsDeRevision: {
@@ -114,7 +115,8 @@ const INCLUDE_PIEZA_PUBLICA = {
  */
 export const presentarPiezas = async (piezaIds: string[]) => {
   const piezas = await prisma.pieza.findMany({
-    where: { id: { in: piezaIds } },
+    // Una pieza cancelada después de mandarla deja de verse en el enlace del cliente.
+    where: { id: { in: piezaIds }, canceladaEn: null },
     include: INCLUDE_PIEZA_PUBLICA,
   });
   const porId = new Map(piezas.map(p => [p.id, p]));

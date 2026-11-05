@@ -1,3 +1,4 @@
+import { verificacionDeTratamiento } from "../comun/adn/tratamiento.js";
 import type OpenAI from "openai";
 import { CopyVariation } from "../types.js";
 import { ChannelBrief, ChannelSpec } from "../channels/types.js";
@@ -27,14 +28,13 @@ const buildCriticPrompt = (
     .map(v => {
       let line = `- id: ${v.id}\n  slot: ${v.slot || "(default)"} #${v.variationIndex ?? "?"} | tipo: ${v.type}\n  content: "${v.content.replace(/"/g, '\\"')}"\n  writer-score: ${v.score ?? "?"}\n  budget: ${v.charCount} ${v.budgetUnit === "word" ? "pal" : "car"} (límite: ${v.budget ?? "—"})`;
       if (v.prohibitionsHit && v.prohibitionsHit.length) line += `\n  prohibitions hit: ${v.prohibitionsHit.join(", ")}`;
-      if (v.tuteoHits && v.tuteoHits.length) line += `\n  tuteo detectado (VIOLACIÓN): ${v.tuteoHits.join(" | ")}`;
+      if (v.tuteoHits && v.tuteoHits.length) line += `\n  tratamiento distinto al de la marca (VIOLACIÓN): ${v.tuteoHits.join(" | ")}`;
       if (v.oficioHits && v.oficioHits.length) line += `\n  manual de oficio (VIOLACIÓN): ${v.oficioHits.join(" | ")}`;
       return line;
     })
     .join("\n\n");
-  const voseoBlock = brief.checkVoseo
-    ? `\n## VERIFICACIÓN DE VOSEO (es-CO obligatorio)\nEste copy es para Colombia. Usa SIEMPRE "vos" (nunca "tú"). Formas correctas: hablás/comés/vivís/tenés/podés/querés/sabés/hacés/venís/sos. Imperativos: hablá/comé/viví/tené/vení. Detectar y penalizar: tú (pronombre), eres, tienes, puedes, quieres, sabes, haces, vienes.\n`
-    : "";
+  // Solo si la marca eligió tratamiento (services/tratamiento.ts). Sin elegir, no hay falta posible.
+  const voseoBlock = brief.tratamiento ? verificacionDeTratamiento(brief.tratamiento) : "";
 
   return `
 Eres editor senior de marca. Tu trabajo es re-evaluar el copy que escribió el copywriter.
@@ -76,7 +76,7 @@ Para cada variación devolvé:
    "redundant"             → demasiado parecido a otra variación del mismo slot
    "weak-cta"              → CTA blando o genérico
    "agency-speak"          → suena a copy de agencia / corporate
-   "tuteo-violation"       → usa tuteo (tú/eres/tienes/puedes…) en copy colombiano — debe ser voseo
+   "tuteo-violation"       → no respeta el tratamiento que eligió la marca (ver VERIFICACIÓN DE TRATAMIENTO). Si no hay esa sección, no lo uses nunca
    Manual de oficio:
    "filler"                → relleno o frase de stock que no tiene que ver con esta promoción
    "lazy-question"         → pregunta usada para arrancar, sin ser un gancho real

@@ -48,6 +48,17 @@ export interface Novedad {
 
 export const NOVEDADES: Novedad[] = [
   {
+    id: 'tratamiento-y-quien-aprueba',
+    fecha: '2026-11-05',
+    titulo: 'Tú, vos o usted, y quién aprueba siempre a la vista',
+    cambios: [
+      'Cada marca elige en su ADN si habla de tú, de vos o de usted, y el copy lo respeta. Antes el voseo se adivinaba y aparecía aunque se pidiera tutear.',
+      'Cada pieza y cada copy por aprobar dicen quién lo aprueba, con su nombre y su correo, para escribirle y que avance.',
+      'Si quien entregó la pieza es el responsable de la campaña, la aprueba cualquiera que administre el equipo. Antes quedaba trabada.',
+      'Quien administra puede cancelar una pieza enviada por error: sale del tablero, queda en el historial y su copy vuelve a estar disponible.',
+    ],
+  },
+  {
     id: 'submarca-hereda-adn',
     fecha: '2026-11-04',
     titulo: 'Las submarcas heredan el ADN de su madre',
