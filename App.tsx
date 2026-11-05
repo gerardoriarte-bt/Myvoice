@@ -963,13 +963,13 @@ const App: React.FC = () => {
                           Generá una campaña en minutos.
                         </h3>
                         <p className="text-[13px] text-[#6E6E73] leading-relaxed max-w-md">
-                          Seleccioná marca, campaña y canales. La IA orquesta director estratégico, especialistas por canal, editor y auditoría cross-channel — end-to-end.
+                          Elegí marca, campaña y un medio, y cuántas piezas. La IA arma el concepto, escribe cada pieza con su ángulo y la revisa.
                         </p>
                         <div className="grid grid-cols-2 gap-2.5 max-w-xs pt-1">
                           {[
                             { n: '1', t: 'Marca + ADN' },
                             { n: '2', t: 'Etapa del funnel' },
-                            { n: '3', t: 'Canales (1-14)' },
+                            { n: '3', t: 'Medio y cuántos' },
                             { n: '4', t: 'Generar' },
                           ].map(s => (
                             <div key={s.n} className="flex items-center gap-2.5 text-[12px] text-[#1D1D1F]">
@@ -986,7 +986,7 @@ const App: React.FC = () => {
                             <div className="text-[9px] font-semibold uppercase tracking-[0.15em] text-white/40 mb-2">Concepto</div>
                             <p className="text-[13px] font-medium leading-snug">"Una vez al año bajamos el precio. Hoy."</p>
                             <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between">
-                              <span className="text-[10px] text-white/40">14 canales</span>
+                              <span className="text-[10px] text-white/40">14 medios</span>
                               <span className="text-[11px] font-semibold text-emerald-400">9.2/10</span>
                             </div>
                           </div>

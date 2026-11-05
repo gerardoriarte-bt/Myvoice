@@ -559,6 +559,8 @@ export interface SlotPropuesto {
   slotLabel: string;
   contenido: string;
   esInstruccion: boolean;
+  /** Copy out: acompaña la publicación, no va en el arte. */
+  zona?: 'pieza' | 'copyOut' | 'indicacion';
   /** Otros aprobados del mismo slot: la pregunta «¿una pieza o dos?» de D7. */
   alternativas: { savedVariationId: string; contenido: string }[];
 }

@@ -86,6 +86,8 @@ const ResultadosPorPieza: React.FC<Props> = ({
   const [ediciones, setEdiciones] = React.useState<Record<string, string>>({});
   const [guardando, setGuardando] = React.useState(false);
   const [aprobador, setAprobador] = React.useState<PersonaQueAprueba | null>(null);
+  /** «Otro medio» con piezas sin guardar: la próxima generación reemplaza esta pantalla. */
+  const [pidiendoOtro, setPidiendoOtro] = React.useState(false);
 
   React.useEffect(() => setActual(a => Math.min(a, Math.max(0, piezas.length - 1))), [piezas.length]);
   React.useEffect(() => {
@@ -203,10 +205,44 @@ const ResultadosPorPieza: React.FC<Props> = ({
         <button onClick={onAjustar} className="flex items-center gap-1.5 rounded-lg border border-gray-200 px-2.5 py-1.5 text-[11.5px] text-gray-700 hover:bg-gray-50">
           <ArrowLeft className="h-3 w-3" /> Ajustar
         </button>
-        <button onClick={onOtroMedio} className="flex items-center gap-1.5 rounded-lg border border-gray-200 px-2.5 py-1.5 text-[11.5px] text-gray-700 hover:bg-gray-50">
+        <button
+          onClick={() => (sinGuardar.length > 0 ? setPidiendoOtro(true) : onOtroMedio())}
+          className="flex items-center gap-1.5 rounded-lg border border-gray-200 px-2.5 py-1.5 text-[11.5px] text-gray-700 hover:bg-gray-50"
+        >
           <Plus className="h-3 w-3" /> Otro medio
         </button>
       </div>
+
+      {pidiendoOtro && (
+        <div className="flex flex-wrap items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5">
+          <p className="flex-1 text-[12.5px] text-gray-900">
+            <span className="font-semibold">{nombreDePiezas(platform, sinGuardar.length)} sin guardar.</span> Al generar otro medio salen de esta pantalla y quedan solo en Historial.
+          </p>
+          <button
+            disabled={guardando}
+            onClick={async () => {
+              await guardar(sinGuardar.flatMap(p => p.textos));
+              setPidiendoOtro(false);
+              onOtroMedio();
+            }}
+            className="rounded-lg bg-gray-900 px-3 py-1.5 text-[11.5px] font-semibold text-white disabled:opacity-40"
+          >
+            Guardar y seguir
+          </button>
+          <button
+            onClick={() => {
+              setPidiendoOtro(false);
+              onOtroMedio();
+            }}
+            className="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-[11.5px] text-gray-700"
+          >
+            Seguir sin guardar
+          </button>
+          <button onClick={() => setPidiendoOtro(false)} className="text-[11.5px] text-gray-500 hover:text-gray-800">
+            Volver
+          </button>
+        </div>
+      )}
 
       {/* Una pestaña por pieza, como miniatura. */}
       <div className="flex flex-wrap items-end gap-2.5">
@@ -217,7 +253,7 @@ const ResultadosPorPieza: React.FC<Props> = ({
             <button
               key={p.indice}
               onClick={() => setActual(i)}
-              className={`flex w-28 flex-col items-center gap-1.5 rounded-xl px-2.5 py-2 ${on ? 'border-2 border-gray-900 bg-white' : 'border border-gray-200 bg-gray-50 hover:bg-white'}`}
+              className={`flex w-40 flex-col items-center gap-1.5 rounded-xl px-2.5 py-2 ${on ? 'border-2 border-gray-900 bg-white' : 'border border-gray-200 bg-gray-50 hover:bg-white'}`}
             >
               <span className="flex gap-0.5">
                 {Array.from({ length: Math.min(n, 8) }).map((_, s) => (
@@ -231,7 +267,7 @@ const ResultadosPorPieza: React.FC<Props> = ({
                 <span className={`flex h-[18px] w-[18px] items-center justify-center rounded-full text-[10px] font-bold ${on ? 'bg-gray-900 text-white' : 'bg-gray-200 text-gray-500'}`}>
                   {p.indice}
                 </span>
-                <span className={`max-w-[64px] truncate text-[11.5px] ${on ? 'font-bold text-gray-900' : 'text-gray-500'}`}>{p.textos[0]?.type}</span>
+                <span title={p.textos[0]?.type} className={`max-w-[112px] truncate text-[11.5px] ${on ? 'font-bold text-gray-900' : 'text-gray-500'}`}>{p.textos[0]?.type}</span>
               </span>
               {guardada(p.textos) && (
                 <span className="flex items-center gap-0.5 text-[9.5px] text-emerald-600">
@@ -347,7 +383,7 @@ const ResultadosPorPieza: React.FC<Props> = ({
             onClick={() => guardar(sinGuardar.flatMap(p => p.textos))}
             className="rounded-lg border border-gray-900 bg-white px-4 py-2 text-[12.5px] font-semibold text-gray-900 disabled:opacity-40"
           >
-            Guardar {sinGuardar.length === piezas.length ? `los ${piezas.length}` : `los ${sinGuardar.length} que faltan`}
+            {sinGuardar.length === piezas.length ? `Guardar los ${piezas.length}` : sinGuardar.length === 1 ? 'Guardar el que falta' : `Guardar los ${sinGuardar.length} que faltan`}
           </button>
         )}
       </div>

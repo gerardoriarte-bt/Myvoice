@@ -540,7 +540,7 @@ const ParameterForm: React.FC<ParameterFormProps> = ({
               <Contador etiqueta={esCarrusel(medio) ? 'Carruseles' : 'Piezas'} valor={cantidad} limites={CANTIDAD} onCambio={setCantidad} />
               {esCarrusel(medio) && <Contador etiqueta="Slides por carrusel" valor={slides} limites={SLIDES} onCambio={setSlides} />}
             </div>
-            <VistaPrevia cantidad={cantidad} slides={esCarrusel(medio) ? slides : 0} />
+            <VistaPrevia cantidad={cantidad} slides={esCarrusel(medio) ? slides : 0} medio={medio} />
           </div>
         </Section>
       )}
@@ -608,7 +608,7 @@ const Contador: React.FC<{
  * Lo que va a salir, de un vistazo: una pieza al frente (en el carrusel, sus slides numeradas, la primera
  * verde y la última ámbar) y las demás apiladas detrás, con «5 × 6» al lado. Diseño en el .pen.
  */
-const VistaPrevia: React.FC<{ cantidad: number; slides: number }> = ({ cantidad, slides }) => {
+const VistaPrevia: React.FC<{ cantidad: number; slides: number; medio: string }> = ({ cantidad, slides, medio }) => {
   const atras = Math.min(cantidad - 1, 2);
   return (
     <div className="flex items-center gap-6 rounded-lg bg-gray-50 px-4 py-3">
@@ -639,7 +639,7 @@ const VistaPrevia: React.FC<{ cantidad: number; slides: number }> = ({ cantidad,
       </div>
       <div>
         <div className="text-[22px] font-bold leading-none text-gray-900">{slides > 0 ? `${cantidad} × ${slides}` : `× ${cantidad}`}</div>
-        <div className="mt-1 text-[10.5px] text-gray-500">{slides > 0 ? 'carruseles × slides' : 'piezas'}</div>
+        <div className="mt-1 text-[10.5px] text-gray-500">{slides > 0 ? 'carruseles × slides' : nombreDePiezas(medio, cantidad).replace(/^\d+ /, '')}</div>
       </div>
     </div>
   );

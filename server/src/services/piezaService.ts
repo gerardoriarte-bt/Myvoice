@@ -261,6 +261,7 @@ export interface SlotPropuesto {
   slotLabel: string;
   contenido: string;
   esInstruccion: boolean;
+  zona: 'pieza' | 'copyOut' | 'indicacion';
   /** Otros aprobados del mismo slot: la pregunta «¿una pieza o dos?» de D7. */
   alternativas: { savedVariationId: string; contenido: string }[];
 }
@@ -386,6 +387,7 @@ export const proponerPiezas = async (
         slotLabel: resolveSlotLabel(primera.platform, elegida.slot) ?? elegida.slotLabel ?? slot,
         contenido: elegida.content,
         esInstruccion: esSlotDeInstruccion(elegida.slot),
+        zona: zonaDe(primera.platform, elegida.slot),
         alternativas: resto.map(v => ({ savedVariationId: v.id, contenido: v.content })),
       };
     });

@@ -196,11 +196,16 @@ const SavedManager: React.FC<SavedManagerProps> = ({
     try {
       const { aplicados, rechazados } = await libraryApi.decidirAprobacion(ids, aprobar);
       if (rechazados.length) addNotification(rechazados[0].motivo, 'warning');
-      const n = aplicados.length;
+      // Lo generado por piezas se cuenta en piezas: «1 pieza aprobada», no «7 copys».
+      const aplicadas = saved.filter(v => aplicados.includes(v.id));
+      const piezas = new Set(aplicadas.map(v => v.conjuntoId ?? v.id)).size;
+      const sueltos = aplicadas.every(v => !v.conjuntoId);
+      const n = sueltos ? aplicados.length : piezas;
+      const que = sueltos ? `copy${n === 1 ? '' : 's'}` : `pieza${n === 1 ? '' : 's'}`;
       await terminar({
         texto: aprobar
-          ? `${n} copy${n === 1 ? '' : 's'} aprobado${n === 1 ? '' : 's'}. Ya se pueden mandar a producción.`
-          : `${n} copy${n === 1 ? '' : 's'} volvió a «Por aprobar».`,
+          ? `${n} ${que} aprobad${sueltos ? 'o' : 'a'}${n === 1 ? '' : 's'}. Ya se pueden mandar a producción.`
+          : `${n} ${que} volvi${n === 1 ? 'ó' : 'eron'} a «Por aprobar».`,
       });
       if (aprobar) setEtapaFiltro('APROBADO');
     } catch (e) {
@@ -313,7 +318,8 @@ const SavedManager: React.FC<SavedManagerProps> = ({
                           {(v.slotLabel || v.slot) && (
                             <p className="mt-0.5 text-[10px] uppercase tracking-wide text-gray-400">
                               {v.slotLabel || v.slot}
-                              {typeof v.variationIndex === 'number' && ` #${v.variationIndex}`}
+                              {/* En una pieza generada el número solo sirve si el slot se repite (los títulos de un anuncio). */}
+                              {typeof v.variationIndex === 'number' && (!v.conjuntoId || v.variationIndex > 1) && ` #${v.variationIndex}`}
                             </p>
                           )}
                         </div>

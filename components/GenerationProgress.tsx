@@ -98,7 +98,7 @@ const GenerationProgress: React.FC<Props> = ({
         <Layers className="w-4 h-4 text-gray-700" />
         <h3 className="text-[14px] font-medium text-gray-900">Generando campaña</h3>
         <div className="ml-auto text-[11px] text-gray-500">
-          {selectedPlatforms.filter(p => channelStatus[p] === 'done').length}/{selectedPlatforms.length} canales · ~{Math.max(30, selectedPlatforms.length * 18)}s
+          {selectedPlatforms.every(p => channelStatus[p] === 'done') ? 'Listo' : 'Escribiendo'} · ~60 s
         </div>
       </div>
 
