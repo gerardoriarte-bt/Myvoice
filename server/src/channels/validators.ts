@@ -1,3 +1,4 @@
+import { faltasDeTratamiento, Tratamiento } from "../comun/adn/tratamiento.js";
 import { CopyVariation } from "../types.js";
 import { ChannelSpec, SlotSpec, SlotUnit } from "./types.js";
 import { detectarOficio } from "../services/oficio.js";
@@ -19,37 +20,6 @@ const findProhibitions = (text: string, prohibitions: string): string[] => {
   return tokens.filter(t => lower.includes(t.toLowerCase()));
 };
 
-/**
- * Tuteo forms that are unambiguously 2nd-person singular tuteo — never appear in voseo.
- * Maps the found tuteo form → the Colombian voseo correction.
- * Sorted longest-first to avoid substring collisions.
- */
-const TUTEO_FORMS: { pattern: RegExp; correction: string }[] = [
-  { pattern: /\btienes\b/gi,  correction: "tenés"  },
-  { pattern: /\bpuedes\b/gi,  correction: "podés"  },
-  { pattern: /\bquieres\b/gi, correction: "querés" },
-  { pattern: /\bvienes\b/gi,  correction: "venís"  },
-  { pattern: /\bhaces\b/gi,   correction: "hacés"  },
-  { pattern: /\bsabes\b/gi,   correction: "sabés"  },
-  { pattern: /\beres\b/gi,    correction: "sos"    },
-  { pattern: /\btú\b/gi,      correction: "vos"    },
-];
-
-/**
- * Scan text for unambiguous Colombian tuteo violations.
- * Returns strings like "tienes → tenés" for each hit found.
- */
-export const detectTuteo = (text: string): string[] => {
-  const hits: string[] = [];
-  for (const { pattern, correction } of TUTEO_FORMS) {
-    const matches = text.match(pattern);
-    if (matches) {
-      const unique = [...new Set(matches.map(m => m.toLowerCase()))];
-      unique.forEach(m => hits.push(`${m} → ${correction}`));
-    }
-  }
-  return hits;
-};
 
 /** Lo que el validador necesita saber de la marca y la campaña para las reglas del manual. */
 export interface ContextoDeValidacion {
@@ -69,7 +39,7 @@ export const validateVariation = (
   v: CopyVariation,
   spec: ChannelSpec,
   prohibitions: string,
-  checkVoseo = false,
+  tratamiento: Tratamiento | null = null,
   ctx: ContextoDeValidacion = {}
 ): CopyVariation => {
   const slot: SlotSpec | undefined = v.slot
@@ -82,7 +52,7 @@ export const validateVariation = (
   const overMax = max !== undefined && count > max;
   const underMin = min !== undefined && count < min;
   const hits = findProhibitions(v.content, prohibitions);
-  const tuteoHits = checkVoseo ? detectTuteo(v.content) : (v.tuteoHits ?? []);
+  const tuteoHits = tratamiento ? faltasDeTratamiento(v.content, tratamiento) : (v.tuteoHits ?? []);
   const oficioHits = detectarOficio(v.content, {
     marca: ctx.marca,
     concepto: ctx.concepto,
@@ -105,6 +75,6 @@ export const validateBatch = (
   variations: CopyVariation[],
   spec: ChannelSpec,
   prohibitions: string,
-  checkVoseo = false,
+  tratamiento: Tratamiento | null = null,
   ctx: ContextoDeValidacion = {}
-): CopyVariation[] => variations.map(v => validateVariation(v, spec, prohibitions, checkVoseo, ctx));
+): CopyVariation[] => variations.map(v => validateVariation(v, spec, prohibitions, tratamiento, ctx));

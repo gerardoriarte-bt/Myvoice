@@ -1150,6 +1150,35 @@ const ClientManager: React.FC<ClientManagerProps> = ({
                               </select>
                               {!client.voice && <p className="text-[10px] text-amber-600 mt-0.5 flex items-center gap-1"><svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd"/></svg>Sin esto el copy será genérico</p>}
                            </div>
+                           {/* Se elige una vez y el motor lo cumple (feedback de pruebas del 2026-11-05). */}
+                           <div>
+                              <label className="block text-[12px] font-medium text-gray-700 mb-1">Tratamiento</label>
+                              <div className="flex gap-1 rounded-lg bg-gray-100 p-[3px]">
+                                {([['TU', 'Tú'], ['VOS', 'Vos'], ['USTED', 'Usted']] as const).map(([valor, nombre]) => (
+                                  <button
+                                    key={valor}
+                                    type="button"
+                                    onClick={() => onUpdate(client.id, { tratamiento: client.tratamiento === valor ? null : valor })}
+                                    className={`flex-1 rounded-md py-1.5 text-[12px] transition-colors ${
+                                      client.tratamiento === valor
+                                        ? 'border border-gray-200 bg-white font-semibold text-gray-900 shadow-sm'
+                                        : 'text-gray-500 hover:text-gray-800'
+                                    }`}
+                                  >
+                                    {nombre}
+                                  </button>
+                                ))}
+                              </div>
+                              <p className="text-[10px] text-gray-400 mt-1">
+                                {client.tratamiento === 'TU'
+                                  ? '«¿Sabes cuántos beneficios tienes?»'
+                                  : client.tratamiento === 'VOS'
+                                    ? '«¿Sabés cuántos beneficios tenés?»'
+                                    : client.tratamiento === 'USTED'
+                                      ? '«¿Sabe cuántos beneficios tiene?»'
+                                      : 'Sin elegir, el motor escribe de usted (el default de Colombia).'}
+                              </p>
+                           </div>
                            <div>
                               <label className="block text-[12px] font-medium text-gray-700 mb-1">Propuesta de Valor</label>
                               <textarea

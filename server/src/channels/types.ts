@@ -1,3 +1,4 @@
+import type { Tratamiento } from "../comun/adn/tratamiento.js";
 import { CampaignSpine, CopyVariation, FunnelStage, Platform } from "../types.js";
 
 export type SlotUnit = "char" | "word";
@@ -44,7 +45,8 @@ export interface ChannelBrief {
   };
   examples: { platform: string; content: string }[];
   negativeExamples: { content: string; reason: string }[];
-  checkVoseo: boolean;
+  /** Tú, vos o usted (comun/adn/tratamiento.ts). NULL = la marca no lo eligió: no se impone ninguno. */
+  tratamiento: Tratamiento | null;
 }
 
 /**

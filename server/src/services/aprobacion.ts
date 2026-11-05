@@ -52,7 +52,7 @@ export const etapasDe = async (
 
   const [enPieza, enRevision, respuestas] = await Promise.all([
     prisma.piezaSlot.findMany({
-      where: { savedVariationId: { in: ids } },
+      where: { savedVariationId: { in: ids }, pieza: { canceladaEn: null } },
       select: { savedVariationId: true },
     }),
     prisma.reviewSessionItem.findMany({

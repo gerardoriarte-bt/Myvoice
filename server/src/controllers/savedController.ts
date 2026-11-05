@@ -51,7 +51,7 @@ export const getSavedVariations = async (req: AuthRequest, res: Response) => {
     const variations = await prisma.savedVariation.findMany({
       where: { client: { workspaceId: req.tenant!.workspaceId } },
       include: {
-        project: { include: { responsable: { select: { id: true, name: true } } } },
+        project: { include: { responsable: { select: { id: true, name: true, email: true } } } },
         client: true,
       },
       orderBy: { savedAt: 'desc' },
@@ -107,7 +107,7 @@ export const saveVariation = async (req: AuthRequest, res: Response) => {
         slotLabel: resolveSlotLabel(platform, slotId),
         variationIndex: index,
       },
-      include: { project: { include: { responsable: { select: { id: true, name: true } } } } },
+      include: { project: { include: { responsable: { select: { id: true, name: true, email: true } } } } },
     });
     res.status(201).json({ ...variation, etapa: campanaId ? 'POR_APROBAR' : 'SIN_CAMPANA' });
   } catch (error) {
@@ -192,7 +192,7 @@ export const bulkDeleteSaved = async (req: AuthRequest, res: Response) => {
 
 // ------------------------------------------------------------------ proyectos
 
-const INCLUDE_CAMPANA = { responsable: { select: { id: true, name: true } } } as const;
+const INCLUDE_CAMPANA = { responsable: { select: { id: true, name: true, email: true } } } as const;
 
 /**
  * Las campañas. Con `?clientId=` solo las de esa marca —más las viejas sin

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Loader2, Upload, UserRoundCheck } from 'lucide-react';
 import { Pieza, PiezaEstado } from '../../types';
+import QuienAprueba from '../QuienAprueba';
 import { piezasApi } from '../../services/api';
 
 /**
@@ -26,6 +27,8 @@ interface Props {
   onError: (mensaje: string) => void;
   /** En la tarjeta solo va la acción principal; en la orden de trabajo, todas. */
   compacto?: boolean;
+  /** Después de cancelar la pieza: la orden de trabajo se cierra. */
+  onCancelada?: () => void;
 }
 
 const AYUDA: Record<PiezaEstado, string> = {
@@ -75,10 +78,25 @@ const CAMPOS = [
   },
 ];
 
-export default function AccionesPieza({ pieza, miembros, onCambio, onError, compacto }: Props) {
+export default function AccionesPieza({ pieza, miembros, onCambio, onError, compacto, onCancelada }: Props) {
   const [enlace, setEnlace] = React.useState(pieza.enlace ?? '');
   const [quien, setQuien] = React.useState(pieza.asignadaAId ?? '');
   const [ocupado, setOcupado] = React.useState(false);
+  /** La confirmación de cancelar va acá mismo: un diálogo del navegador corta el flujo. */
+  const [confirmandoCancelar, setConfirmandoCancelar] = React.useState(false);
+
+  const cancelar = async () => {
+    setOcupado(true);
+    try {
+      await piezasApi.cancelar(pieza.id);
+      setConfirmandoCancelar(false);
+      onCancelada?.();
+    } catch (e) {
+      onError(e instanceof Error ? e.message : 'No se pudo cancelar la pieza');
+    } finally {
+      setOcupado(false);
+    }
+  };
   const [pidiendo, setPidiendo] = React.useState<ConMotivo | null>(null);
   const [motivos, setMotivos] = React.useState<{ notaCopy: string; notaDiseno: string }>({
     notaCopy: '',
@@ -365,9 +383,19 @@ export default function AccionesPieza({ pieza, miembros, onCambio, onError, comp
           </button>
         </div>
       )}
-      {pieza.estado === 'POR_REVISAR' && !puedo.aceptar && pieza.quienDecide && (
-        <QuienDecide texto={pieza.quienDecide} />
-      )}
+      {/* Quién aprueba, siempre a la vista: quien espera sabe a quién escribirle (feedback 2026-11-05). */}
+      {(pieza.estado === 'POR_REVISAR' || pieza.estado === 'EN_DISENO') &&
+        (pieza.aprobador ? (
+          <QuienAprueba
+            personas={pieza.aprobador.personas}
+            detalle={pieza.estado === 'EN_DISENO' && !compacto ? `Cuando se entregue. ${pieza.aprobador.detalle}` : compacto ? undefined : pieza.aprobador.detalle}
+            soyYo={pieza.aprobador.soyYo && puedo.aceptar}
+            sinNadie={pieza.aprobador.rol === 'nadie'}
+            compacto={compacto}
+          />
+        ) : (
+          pieza.estado === 'POR_REVISAR' && !puedo.aceptar && pieza.quienDecide && <QuienDecide texto={pieza.quienDecide} />
+        ))}
 
       {pieza.estado === 'CON_EL_CLIENTE' && (
         <div className="space-y-2">
@@ -402,6 +430,33 @@ export default function AccionesPieza({ pieza, miembros, onCambio, onError, comp
         >
           {pieza.enlace}
         </a>
+      )}
+
+      {/* Una pieza enviada por error o de prueba se cancela; no se borra (feedback 2026-11-05). */}
+      {puedo.cancelar && !compacto && !confirmandoCancelar && (
+        <button onClick={() => setConfirmandoCancelar(true)} className="text-[11px] text-red-600 hover:underline">
+          Cancelar pieza
+        </button>
+      )}
+      {puedo.cancelar && !compacto && confirmandoCancelar && (
+        <div className="space-y-2 rounded-lg border border-red-200 bg-red-50 p-3">
+          <p className="text-[12px] font-semibold text-gray-900">¿Cancelar «{pieza.titulo}»?</p>
+          <p className="text-[11px] leading-relaxed text-gray-700">
+            Sale del tablero y queda en el historial. El copy aprobado vuelve a estar disponible para armar otra pieza.
+          </p>
+          <div className="flex justify-end gap-2">
+            <button disabled={ocupado} onClick={() => setConfirmandoCancelar(false)} className={secundario}>
+              Volver
+            </button>
+            <button
+              disabled={ocupado}
+              onClick={cancelar}
+              className="rounded-lg bg-red-600 px-3 py-1.5 text-[11.5px] font-semibold text-white hover:bg-red-700 disabled:opacity-50"
+            >
+              {ocupado ? 'Cancelando…' : 'Cancelar pieza'}
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

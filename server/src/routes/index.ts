@@ -169,6 +169,7 @@ router.post('/piezas/:id/archivo', ...inWorkspace, piezaUpload.single('archivo')
 router.post('/piezas/hallazgos/:hallazgoId/decision', ...inWorkspace, piezaController.decidirHallazgo);
 router.post('/piezas/:id/reauditar', ...inWorkspace, piezaController.reauditar);
 router.post('/piezas/:id/corregir-copy', ...inWorkspace, piezaController.corregirCopy);
+router.post('/piezas/:id/cancelar', ...inWorkspace, piezaController.cancelar);
 router.post('/piezas/:id/:accion', ...inWorkspace, piezaController.ejecutarAccion);
 
 // ---------------------------------------------------------------- bandeja

@@ -1,4 +1,5 @@
 
+import QuienAprueba from './QuienAprueba';
 import React from 'react';
 import { SCREENS, ScreenId, screenName } from '../screens';
 import { Search, Copy, Pencil, Trash2, Check, BookmarkCheck, LayoutGrid, Tag, X, Send, ShieldCheck, Undo2, Link2, ArrowRight } from 'lucide-react';
@@ -492,6 +493,16 @@ const SavedManager: React.FC<SavedManagerProps> = ({
                       <p className="mt-1 truncate text-[11px] text-gray-500" title={c?.name}>
                         {c?.name ?? 'Sin campaña'}
                       </p>
+                      {!v.isApproved && c && (
+                        <QuienAprueba
+                          compacto
+                          rotulo={c.modoAprobacion === 'CLIENTE' ? 'Al cliente lo manda' : 'Lo aprueba'}
+                          personas={c.responsable ? [c.responsable] : []}
+                          soyYo={!!currentUserId && c.responsableId === currentUserId}
+                          sinNadie={!c.responsable}
+                          detalle={c.responsable ? undefined : 'la campaña no tiene responsable'}
+                        />
+                      )}
                       {v.isApproved && v.aprobadoPorNombre && (
                         <p className="mt-0.5 text-[10px] text-gray-400">
                           {v.aprobadoVia === 'CLIENTE' ? 'Cliente' : 'Aprobó'}: {v.aprobadoPorNombre} · {fecha(v.aprobadoEn)}

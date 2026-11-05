@@ -22,6 +22,13 @@ export const parametrosDeGeneracion = async (
   });
   const adn = await resolverAdn(client.id, { version: campana?.adnVersion ?? null });
   const { voz, propuestaDeValor, guias, keywords, prohibiciones } = adn.secciones;
+  // El tratamiento es de la marca; una submarca sin el suyo toma el de su madre confirmada.
+  const conMadre = await prisma.client.findUnique({
+    where: { id: client.id },
+    select: { tratamiento: true, marcaMadre: { select: { tratamiento: true, adnConfirmadoEn: true } } },
+  });
+  const tratamiento =
+    conMadre?.tratamiento ?? (conMadre?.marcaMadre?.adnConfirmadoEn ? conMadre.marcaMadre.tratamiento : null) ?? null;
 
   // Fetch approved variations for few-shot learning (Bucle de Feedback)
   const approvedVariations = await prisma.savedVariation.findMany({
@@ -57,6 +64,7 @@ export const parametrosDeGeneracion = async (
     // Las de la marca (con las de la madre) más las del brief.
     keywords: [keywords.texto, dnaProfile.keywords].filter(Boolean).join(', '),
     prohibitions: [prohibiciones.texto, dnaProfile.prohibitions].filter(Boolean).join(', '),
+    tratamiento,
     campaignConcept: dnaProfile.campaignConcept || '',
     brandFingerprint: client.brandFingerprint || null,
     feedbackExamples: combinedExamples,

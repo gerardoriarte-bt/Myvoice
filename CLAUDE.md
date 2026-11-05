@@ -94,6 +94,14 @@ per channel, concurrency-capped at 5 by an in-file semaphore:
 superCritic       → CoherenceReport across all channels
 ```
 
+**The form of address is the brand's choice** (`server/src/comun/adn/tratamiento.ts`,
+`Client.tratamiento`: TU | VOS | USTED, a submarca without one takes its confirmed mother's). It
+reaches the writer, the director's locale block, the deterministic check (`tuteoHits`, now «wrong form
+of address»), the critic's `tuteo-violation` and the fixer's conversion table. Until 2026-11-05 voseo
+was guessed from words like «Medellín» or «tutear» in the DNA and the critic flagged every «tú» as an
+error, so a brand asking for «tú» got «vos». With no choice, the country default rules (usted in
+Colombia) and nothing is flagged.
+
 **The writing manual is universal** (`services/oficio.ts`, from Buentipo's feedback of 2026-10-26): it
 enters the writer and director prompts (cacheable prefix, identical for every brand), its regex-checkable
 rules run in `validators.ts` (`oficioHits`: «¿sabías que…?», «de inmediato», the brand repeated in the
@@ -202,9 +210,13 @@ stranded in Lista (the responsable now fixes the copy inside the piece, `corregi
 
 **Pieces follow the same owner rule as copy** (`services/permisosPieza.ts`, see
 `docs/plan-produccion-con-responsable.md`). That file is the single place that decides who may act
-on a piece; the board receives it precomputed as `puedo` / `quienDecide`. Accept, return and
-deciding audit findings belong to the campaign's responsable, **never to whoever uploaded the
-current version**; creating pieces is manager-only. A graphic upload stays `EN_DISENO` while the
+on a piece; the board receives it precomputed as `puedo` / `quienDecide` / `aprobador` (who
+approves, with name and email — `components/QuienAprueba.tsx` shows it on every card, in the work
+order and on pending rows in Copy). Accept, return and deciding audit findings belong to the
+campaign's responsable, **never to whoever uploaded the current version**; when the uploader *is* the
+responsable, any OWNER/ADMIN other than the uploader decides (2026-11-05: until then the piece just
+stuck). Creating pieces is manager-only, and so is **cancelling** one (`Pieza.canceladaEn`): it leaves
+the board, «Lo mío» and the client portal, stays in the history, frees its copy and its `huella`. A graphic upload stays `EN_DISENO` while the
 audit runs and moves to `POR_REVISAR` (and notifies) only when it ends; `rescatarAuditoriasTrabadas`
 at boot closes audits cut by a restart. `Project.pideAprobacionDeCliente` is legacy and unused.
 
@@ -362,5 +374,7 @@ ordering only, nothing inherited) and two brands with the same normalized name a
 one is renamed or merged; two deliveries, «Unir» is the second.
 `docs/plan-h2-produccion-auditoria.md` is the next phase (approved copy → assigned piece → AI
 audit); it is design-first and shares no code with the H1 deploy.
+`docs/plan-feedback-pruebas.md` (2026-11-05): the 8 points from the first user test, the cause of
+each in the code and the three batches that answer them (batch 1 shipped).
 `docs/diseno-sistema.md` holds the design decisions — screen names live in `screens.ts`, colors
 in `tailwind.config.js`; the `.pen` source file is local-only and gitignored.

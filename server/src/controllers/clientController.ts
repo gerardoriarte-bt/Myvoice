@@ -18,6 +18,7 @@ import { claveGuiaDeMarca, storage } from '../lib/storage.js';
 import { guardarAdnDesdeColumnas } from '../comun/adn/guardarAdn.js';
 import { resolverAdn } from '../comun/adn/resolverAdn.js';
 import { COLUMNAS_ADN, SECCIONES_ADN } from '../comun/adn/secciones.js';
+import { esTratamiento } from '../comun/adn/tratamiento.js';
 import { avisarAdnPorRevisar, confirmarAdn, estadoDeRevision, revisarSeccion } from '../comun/adn/revisionAdn.js';
 
 
@@ -192,6 +193,13 @@ export const updateClient = async (req: AuthRequest, res: Response) => {
     const data: Record<string, any> = pickFields(req.body, CLIENT_UPDATABLE);
     // El frontend manda `logo`; la columna es `logoUrl`.
     if (req.body.logo) data.logoUrl = req.body.logo;
+    // El tratamiento tampoco: es un enum, y un valor que no existe es un 400, no un 500 de Prisma.
+    if (req.body && 'tratamiento' in req.body) {
+      const t = req.body.tratamiento;
+      if (t !== null && t !== '' && !esTratamiento(t))
+        throw new TenantError('El tratamiento tiene que ser TU, VOS o USTED', 400);
+      data.tratamiento = t || null;
+    }
     // La marca madre no va por la lista blanca: se valida antes de escribirla.
     const marcaMadreId = madreDelBody(req.body);
     if (marcaMadreId) await validarMadre(req.tenant!, id, marcaMadreId);

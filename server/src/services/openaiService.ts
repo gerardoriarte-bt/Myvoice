@@ -26,7 +26,8 @@ import {
   unirSignals,
   OpcionesLlamada,
 } from "./aiClient.js";
-import { resolveMarketLocale, brandUsesVoseo } from "./localeRules.js";
+import { resolveMarketLocale } from "./localeRules.js";
+import { esTratamiento } from "../comun/adn/tratamiento.js";
 
 export const createSemaphore = (max: number) => {
   let running = 0;
@@ -71,7 +72,7 @@ export const buildBrief = (params: CopyParameters, spine: CampaignSpine): Channe
     content: e.content,
     reason: e.reason,
   })),
-  checkVoseo: brandUsesVoseo(params),
+  tratamiento: esTratamiento(params.tratamiento) ? params.tratamiento : null,
 });
 
 export interface OpcionesCanal {
@@ -200,7 +201,7 @@ export const generateForChannel = async (
     scoreRationale: typeof item.scoreRationale === "string" ? item.scoreRationale : undefined,
   }));
 
-  const validated = validateBatch(variations, spec, brief.campaign.prohibitions, brief.checkVoseo, {
+  const validated = validateBatch(variations, spec, brief.campaign.prohibitions, brief.tratamiento, {
     marca: brief.brand.name,
     concepto: brief.spine.concept,
   });

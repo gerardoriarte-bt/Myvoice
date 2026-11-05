@@ -3,6 +3,7 @@ import { CopyVariation } from "../types.js";
 import { ChannelBrief, ChannelSpec } from "../channels/types.js";
 import { validateVariation } from "../channels/validators.js";
 import { MANUAL_DE_OFICIO } from "./oficio.js";
+import { tablaDeConversion } from "../comun/adn/tratamiento.js";
 import { UsageEntry, extractUsage } from "./pricing.js";
 import {
   jsonObjectFormat,
@@ -43,28 +44,9 @@ const isBroken = (v: CopyVariation): boolean => {
   return false;
 };
 
-const needsVoseoConversion = (v: CopyVariation): boolean =>
+const necesitaTratamiento = (v: CopyVariation): boolean =>
   Boolean(v.tuteoHits?.length) || Boolean(v.editorFlags?.includes("tuteo-violation"));
 
-const VOSEO_CONVERSION_TABLE = `
-## TABLA DE CONVERSIÓN TUTEO → VOSEO COLOMBIANO
-| Tuteo (INCORRECTO) | Voseo colombiano (CORRECTO) |
-|--------------------|----------------------------|
-| tú                 | vos                         |
-| eres               | sos                         |
-| tienes             | tenés                       |
-| puedes             | podés                       |
-| quieres            | querés                      |
-| sabes              | sabés                       |
-| haces              | hacés                       |
-| vienes             | venís                       |
-| habla (imperativo) | hablá                       |
-| come (imperativo)  | comé                        |
-| vive (imperativo)  | viví                        |
-| ven (imperativo)   | vení                        |
-| pon (imperativo)   | poné                        |
-REGLA: reemplazá TODAS las formas tuteo por su equivalente voseo. No uses "tú" en ningún caso.
-`;
 
 const slotLimitLabel = (spec: ChannelSpec, v: CopyVariation): string => {
   const slot = v.slot ? spec.slots.find(s => s.id === v.slot) : undefined;
@@ -89,10 +71,10 @@ const describeIssues = (brief: ChannelBrief, spec: ChannelSpec, v: CopyVariation
     issues.push(`Usa una paráfrasis cercana de una prohibición (zona semántica vetada): ${brief.campaign.prohibitions}.`);
   }
   if (v.tuteoHits && v.tuteoHits.length > 0) {
-    issues.push(`TUTEO DETECTADO (violación de voseo colombiano): ${v.tuteoHits.join(" | ")}.`);
+    issues.push(`No respeta el tratamiento de la marca: ${v.tuteoHits.join(" | ")}.`);
   }
   if (!v.tuteoHits?.length && v.editorFlags?.includes("tuteo-violation")) {
-    issues.push(`El editor detectó tuteo implícito o paráfrasis de tuteo — reescribir en voseo colombiano.`);
+    issues.push(`El editor detectó un tratamiento distinto al de la marca — reescribir con el de la marca.`);
   }
   for (const falta of v.oficioHits ?? []) issues.push(`Manual de oficio: ${falta}.`);
   for (const flag of v.editorFlags ?? []) {
@@ -111,7 +93,8 @@ const buildBatchFixPrompt = (
   spec: ChannelSpec,
   broken: CopyVariation[]
 ): string => {
-  const voseoBlock = broken.some(needsVoseoConversion) ? VOSEO_CONVERSION_TABLE : "";
+  const voseoBlock =
+    brief.tratamiento && broken.some(necesitaTratamiento) ? tablaDeConversion(brief.tratamiento) : "";
 
   const items = broken
     .map(v => {
@@ -226,7 +209,7 @@ export const runAutoFix = async (
       const fixed: CopyVariation = { ...v, content: newContent, autofixed: true };
       // Con el voseo y el contexto: sin ellos, las marcas de tuteo viejas
       // quedaban pegadas a un texto ya corregido.
-      return validateVariation(fixed, spec, brief.campaign.prohibitions, brief.checkVoseo, {
+      return validateVariation(fixed, spec, brief.campaign.prohibitions, brief.tratamiento, {
         marca: brief.brand.name,
         concepto: brief.spine.concept,
       });

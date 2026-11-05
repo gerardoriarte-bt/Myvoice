@@ -2,6 +2,7 @@ import type OpenAI from "openai";
 import { CampaignSpine, CopyParameters, FunnelStage } from "../types.js";
 import { UsageEntry, extractUsage } from "./pricing.js";
 import { buildLocaleRulesBlock, resolveMarketLocale } from "./localeRules.js";
+import { esTratamiento } from "../comun/adn/tratamiento.js";
 import { MANUAL_DE_OFICIO } from "./oficio.js";
 import {
   jsonObjectFormat,
@@ -26,7 +27,7 @@ const FUNNEL_GUIDANCE: Record<FunnelStage, string> = {
 const buildDirectorSystemPrompt = (params: CopyParameters) => `
 Eres director de campaña — estratega senior con 15 años en agencia, no copywriter.
 Tu trabajo NO es escribir copy: es decidir el anclaje creativo que mantendrá una campaña coherente entre canales.
-${buildLocaleRulesBlock(resolveMarketLocale(params))}
+${buildLocaleRulesBlock(resolveMarketLocale(params), esTratamiento(params.tratamiento) ? params.tratamiento : null)}
 
 TEST OBLIGATORIO antes de responder: ¿esta espina aplicaría a cualquier marca del mismo rubro, o se siente inconfundiblemente de ESTA marca? Si es lo primero, reformula hasta que sea lo segundo.
 

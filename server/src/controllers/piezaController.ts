@@ -99,6 +99,16 @@ export const ejecutarAccion = async (req: AuthRequest, res: Response) => {
 };
 
 /** Lo único editable a mano. El estado se mueve con acciones, no con un PATCH. */
+export const cancelar = async (req: AuthRequest, res: Response) => {
+  try {
+    await assertPiezaInWorkspace(req.tenant!, req.params.id);
+    const motivo = typeof req.body?.motivo === 'string' ? req.body.motivo : undefined;
+    res.json(await piezas.cancelar(req.tenant!, req.params.id, motivo));
+  } catch (error) {
+    handleTenantError(error, res, 'Error al cancelar la pieza');
+  }
+};
+
 export const renombrar = async (req: AuthRequest, res: Response) => {
   const titulo = typeof req.body?.titulo === 'string' ? req.body.titulo.trim() : '';
   try {
