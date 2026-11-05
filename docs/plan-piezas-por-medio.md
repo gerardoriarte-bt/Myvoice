@@ -1,6 +1,6 @@
 # Plan · Un medio por vez, cuántas piezas, carrusel como historia y copy out
 
-Estado: aprobado el 2026-11-05 · Feedback de pruebas, lote 2 (puntos 01, 03, 04, 05 y, para lo nuevo,
+Estado: F1 a F4 construidas el 2026-11-05 (PR sin desplegar); F5 («Otra») pendiente · Feedback de pruebas, lote 2 (puntos 01, 03, 04, 05 y, para lo nuevo,
 06) · Diseño: `.pen`, «— Feedback de pruebas · lote 2» (cuatro pantallas) · Antes:
 [plan-feedback-pruebas.md](./plan-feedback-pruebas.md).
 

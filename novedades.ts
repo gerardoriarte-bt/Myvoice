@@ -48,6 +48,17 @@ export interface Novedad {
 
 export const NOVEDADES: Novedad[] = [
   {
+    id: 'piezas-por-medio',
+    fecha: '2026-11-05',
+    titulo: 'Un medio por vez, cuántas piezas y el carrusel como una historia',
+    cambios: [
+      'En Generar se elige un medio y cuántas piezas: «5 carruseles de 6 slides», «3 posts». Para otro medio se genera aparte.',
+      'Cada carrusel cuenta una historia: una slide por texto, «Slide 1», «Slide 2»…, la primera engancha y la última cierra.',
+      'Los posts de redes traen lo que va en la imagen y, aparte, el copy out que acompaña la publicación.',
+      'En Copy, los textos de una pieza se ven juntos y se aprueban de una vez; en Producción, un carrusel es una sola pieza.',
+    ],
+  },
+  {
     id: 'tratamiento-y-quien-aprueba',
     fecha: '2026-11-05',
     titulo: 'Tú, vos o usted, y quién aprueba siempre a la vista',

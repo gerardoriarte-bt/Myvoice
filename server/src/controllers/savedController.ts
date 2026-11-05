@@ -11,7 +11,7 @@ import {
   TenantError,
 } from '../lib/tenancy.js';
 import { prisma } from '../lib/prisma.js';
-import { resolveSlotLabel } from '../channels/registry.js';
+import { resolveSlotLabel, zonaDe } from '../channels/registry.js';
 import { ModoAprobacion } from '@prisma/client';
 import {
   assertCampanaDeLaMarca,
@@ -59,7 +59,8 @@ export const getSavedVariations = async (req: AuthRequest, res: Response) => {
     // El paso del recorrido viaja con cada copy: la pantalla no tiene cómo
     // saber, sin tres consultas más, si algo está con el cliente o ya en una pieza.
     const etapas = await etapasDe(variations);
-    res.json(variations.map(v => ({ ...v, etapa: etapas.get(v.id) })));
+    // La zona se calcula al leer, como la etapa: depende del spec del canal, no se guarda.
+    res.json(variations.map(v => ({ ...v, etapa: etapas.get(v.id), zona: zonaDe(v.platform, v.slot) })));
   } catch (error) {
     handleTenantError(error, res, 'Error al obtener el copy');
   }
@@ -114,7 +115,7 @@ export const saveVariation = async (req: AuthRequest, res: Response) => {
       },
       include: { project: { include: { responsable: { select: { id: true, name: true, email: true } } } } },
     });
-    res.status(201).json({ ...variation, etapa: campanaId ? 'POR_APROBAR' : 'SIN_CAMPANA' });
+    res.status(201).json({ ...variation, etapa: campanaId ? 'POR_APROBAR' : 'SIN_CAMPANA', zona: zonaDe(platform, slotId) });
   } catch (error) {
     handleTenantError(error, res, 'Error al guardar el copy');
   }

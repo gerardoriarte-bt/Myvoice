@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 /**
  * Verificación de aislamiento multi-tenant.
  *
@@ -438,6 +439,51 @@ async function main() {
       propuesta.status >= 200 && propuesta.status < 300 && propuesta.body?.piezas?.length === 0,
       `respondió ${propuesta.status} ${JSON.stringify(propuesta.body)?.slice(0, 120)}`
     );
+
+    console.log('\nPIEZAS POR CONJUNTO — dos carruseles generados son dos piezas (docs/plan-piezas-por-medio.md)');
+    {
+      const deCarrusel = (conjuntoId: string, piezaIndex: number, slot: string, texto: string) =>
+        prisma.savedVariation.create({
+          data: {
+            clientId: B.client.id,
+            projectId: B.project.id,
+            platform: 'Instagram Carrusel',
+            type: 'Familia',
+            content: texto,
+            charCount: texto.length,
+            tags: [],
+            slot,
+            slotLabel: slot,
+            isApproved: true,
+            conjuntoId,
+            piezaIndex,
+          },
+        });
+      const c1 = randomUUID();
+      const c2 = randomUUID();
+      const textos = [
+        await deCarrusel(c1, 1, 'slide2', 'Uno, slide 2'),
+        await deCarrusel(c1, 1, 'slide1', 'Uno, slide 1'),
+        await deCarrusel(c1, 1, 'primeraLinea', 'Uno, copy out'),
+        await deCarrusel(c2, 2, 'slide1', 'Dos, slide 1'),
+        await deCarrusel(c2, 2, 'slide2', 'Dos, slide 2'),
+      ];
+      const prop = await api('/piezas/propuesta', B.token, {
+        method: 'POST',
+        body: JSON.stringify({ savedVariationIds: textos.map(t => t.id) }),
+      });
+      const piezas: any[] = prop.body?.piezas ?? [];
+      record('Dos conjuntos proponen dos piezas', piezas.length === 2, `propuso ${piezas.length}`);
+      const una = piezas.find(p => p.slots?.some((s: any) => s.contenido === 'Uno, slide 1'));
+      record(
+        'La pieza lleva sus slides en orden y el copy out al final, sin alternativas',
+        !!una &&
+          una.slots.map((s: any) => s.slot).join() === 'slide1,slide2,primeraLinea' &&
+          una.slots.every((s: any) => s.alternativas.length === 0),
+        JSON.stringify(una?.slots?.map((s: any) => s.slot))
+      );
+      await prisma.savedVariation.deleteMany({ where: { id: { in: textos.map(t => t.id) } } });
+    }
 
     console.log('\nPIEZAS — el ciclo propio de B sí funciona');
     const creada = await api('/piezas', B.token, {

@@ -122,9 +122,20 @@ Retry, backoff and timeouts live in `aiClient.ts` — see below.
 ### Channel specs (`server/src/channels/`)
 
 `specs/*.ts` are the source of truth for what each channel produces: `SlotSpec` defines slot
-id, label, how many variations, and the char/word budget. `registry.ts` maps the `Platform`
-enum value (e.g. `"Instagram Post"`) to its spec. `promptBuilder.ts` turns a spec + brief into
-the system/user prompts. Changing a char limit means editing the spec, not a prompt.
+id, label, **`porPieza`** (how many texts of that slot ONE piece carries — 1 almost always, 10 short
+titles in a Google Ads ad), **`zona`** (`pieza` | `copyOut` | `indicacion`) and the char/word budget.
+`registry.ts` maps the `Platform` enum value (e.g. `"Instagram Post"`) to its spec;
+`specParaGeneracion` drops `legado` slots (kept only to label old saved copy) and, for the carousel,
+keeps `slide1`…`slideN`. `promptBuilder.ts` turns a spec + brief into the system/user prompts.
+Changing a char limit means editing the spec, not a prompt.
+
+**A generation is one medium and a number of pieces** (`docs/plan-piezas-por-medio.md`, since
+2026-11-05): «5 carruseles de 6 slides». The director makes one angle per piece; `runGeneration`
+splits the pieces into batches of ≤45 texts per writer call; each text carries `piezaIndex` and a
+`conjuntoId` shared by its piece, which `SavedVariation` persists. Copy groups and approves by
+`conjuntoId`, Producción proposes one piece per `conjuntoId` with its texts in order, and the audit
+skips the copy out (it is not in the image). Before that, `count` meant «how many alternatives», and
+the carousel treated its slides as alternatives of one «Slides 2-6» slot.
 
 Four channels emit production-instruction slots rather than publishable copy
 (`visualBrief`, `animationBrief`, `structure`, `production`).
