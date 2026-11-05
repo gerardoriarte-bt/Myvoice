@@ -169,11 +169,11 @@ Prioridad: **P0** sin esto no hay v2 · **P1** necesario para el uso real · **P
 
 | Id | Requisito | P |
 |---|---|---|
-| ADN-1 | Secciones estructuradas siguiendo The Brief (Brand kit), incluidas las **audiencias**: una lista fija de la marca, con descriptores, que todas las campañas reutilizan. | P0 |
+| ADN-1 | Secciones estructuradas **por lo que cada una aporta al entregable** (2026-11-05: The Brief fue una referencia, no el molde), en tres grupos: **qué decir** (propuesta de valor, productos y servicios, audiencias), **cómo suena** (voz, tratamiento, «así suena»: ejemplos de copy aprobado que el redactor imita) y **qué no se toca** (prohibiciones, frases que no se cambian, reglas de estilo, keywords). Las **audiencias** son una lista fija de la marca, con descriptores, que todas las campañas reutilizan. | P0 |
 | ADN-2 | **Tratamiento** declarado (tú, usted o vos); deja de adivinarse. | P0 |
 | ADN-3 | **Reglas de estilo** duras de la marca y **assets** intocables con su escritura exacta. | P0 |
 | ADN-4 | **Completitud con peso**: cada sección vacía, débil o completa, con el motivo; un porcentaje único. | P0 |
-| ADN-5 | **Mínimo para crear campañas v2**: porcentaje y secciones críticas, calibrados midiendo. | P0 |
+| ADN-5 | **Mínimo para crear campañas v2**: porcentaje y secciones críticas (las ★ de ADN-1), calibrados midiendo. Decidido el 2026-11-05: el punto de partida es **75 %**; en v2 **bloquea** crear la campaña, en v1 solo **avisa**. | P0 |
 | ADN-6 | **Ayuda de la IA** desde el manual PDF (entero), el copy aprobado, una URL y una entrevista guiada. | P1 |
 | ADN-7 | Lo propuesto por la IA queda «sin confirmar» y **no cuenta** para el mínimo hasta que una persona lo confirma. | P0 |
 | ADN-8 | Cada sección dice quién la llenó, cuándo y de dónde salió. | P1 |
@@ -272,7 +272,7 @@ adaptación de ese piloto se hace todavía en v1. R3 se despliega entera.
 2. **Media planning**: lo hará **Planning, un módulo de My Voice que se va a desarrollar**
    (respuesta del 2026-10-27). Lo que tiene que enviar está en el
    [contrato](./contrato-plan-de-medios.md), con sus propias preguntas abiertas.
-3. **The Brief (Brand kit)**: secciones y cómo describe cada audiencia (ADN-1).
+3. ~~**The Brief (Brand kit)**: secciones y cómo describe cada audiencia (ADN-1).~~ Resuelto el 2026-11-05: The Brief fue una referencia; las secciones se ordenan por la calidad del entregable (ADN-1) y la audiencia se describe con quién es, qué le importa, qué la frena y cómo habla.
 4. **El nombre** del proceso para el usuario. «Proceso de campaña» es provisional.
 5. **¿Plan de medios antes o después del toolkit?** El PRD permite las dos cosas; si siempre es
    antes, las raíces podrían pensarse para los medios del plan.
