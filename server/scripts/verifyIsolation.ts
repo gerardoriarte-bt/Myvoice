@@ -231,6 +231,14 @@ async function main() {
     await expectDenied('GET /clients/:id/adn/revision de A', `/clients/${A.client.id}/adn/revision`, B.token);
     await expectDenied('POST /clients/:id/adn/revision/:clave de A', `/clients/${A.client.id}/adn/revision/voz`, B.token, { method: 'POST', body: '{}' });
     await expectDenied('POST /clients/:id/adn/confirmar de A', `/clients/${A.client.id}/adn/confirmar`, B.token, { method: 'POST' });
+    // ADN 2.0 (docs/plan-adn-2.md): secciones, propuestas de la IA y audiencias de otra marca.
+    await expectDenied('PUT /clients/:id/adn/secciones/:clave de A', `/clients/${A.client.id}/adn/secciones/productos`, B.token, { method: 'PUT', body: JSON.stringify({ contenido: { texto: 'x' } }) });
+    await expectDenied('POST /clients/:id/adn/secciones/:clave/propuesta/confirmar de A', `/clients/${A.client.id}/adn/secciones/productos/propuesta/confirmar`, B.token, { method: 'POST' });
+    await expectDenied('GET /clients/:id/audiencias de A', `/clients/${A.client.id}/audiencias`, B.token);
+    await expectDenied('POST /clients/:id/audiencias de A', `/clients/${A.client.id}/audiencias`, B.token, { method: 'POST', body: JSON.stringify({ nombre: 'x', descriptores: {} }) });
+    const audienciaDeA = await prisma.audienciaDeMarca.create({ data: { clientId: A.client.id, nombre: 'De A', descriptores: {} } });
+    await expectDenied('PUT /clients/:id/audiencias/:aid de A', `/clients/${A.client.id}/audiencias/${audienciaDeA.id}`, B.token, { method: 'PUT', body: JSON.stringify({ nombre: 'x' }) });
+    await expectDenied('PUT audiencia de A colgada de la marca de B', `/clients/${B.client.id}/audiencias/${audienciaDeA.id}`, B.token, { method: 'PUT', body: JSON.stringify({ nombre: 'x' }) });
     await expectDenied('POST /saved en la marca de A', '/saved', B.token, {
       method: 'POST',
       body: JSON.stringify({
@@ -1438,6 +1446,7 @@ async function main() {
     });
     await expectAllowed('GET /clients/:id/adn propio', `/clients/${B.client.id}/adn`, B.token);
     await expectAllowed('GET /clients/:id/adn/revision propio', `/clients/${B.client.id}/adn/revision`, B.token);
+    await expectAllowed('GET /clients/:id/audiencias propio', `/clients/${B.client.id}/audiencias`, B.token);
     await expectAllowed('PUT /saved/:id propio', `/saved/${B.variation.id}`, B.token, {
       method: 'PUT',
       body: JSON.stringify({ content: 'editado por su dueño' }),

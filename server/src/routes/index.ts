@@ -105,6 +105,12 @@ router.get('/clients/:id/adn', ...inWorkspace, clientController.getAdnResuelto);
 router.get('/clients/:id/adn/revision', ...inWorkspace, clientController.getRevisionAdn);
 router.post('/clients/:id/adn/revision/:clave', ...asManager, clientController.postRevisarSeccion);
 router.post('/clients/:id/adn/confirmar', ...asManager, clientController.postConfirmarAdn);
+// ADN 2.0 (docs/plan-adn-2.md): una sección a la vez, lo propuesto por la IA y la lista de audiencias.
+router.put('/clients/:id/adn/secciones/:clave', ...asManager, clientController.putSeccionAdn);
+router.post('/clients/:id/adn/secciones/:clave/propuesta/:accion', ...asManager, clientController.postPropuestaAdn);
+router.get('/clients/:id/audiencias', ...inWorkspace, clientController.getAudiencias);
+router.post('/clients/:id/audiencias', ...asManager, clientController.postAudiencia);
+router.put('/clients/:id/audiencias/:audienciaId', ...asManager, clientController.putAudiencia);
 router.put('/clients/:id', ...asManager, clientController.updateClient);
 router.delete('/clients/:id', ...asManager, clientController.deleteClient);
 router.post('/clients/:id/unir', ...asManager, clientController.unirConOtra);

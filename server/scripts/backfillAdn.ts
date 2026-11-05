@@ -23,7 +23,7 @@
 import { PrismaClient } from '@prisma/client';
 import { guardarAdnDesdeColumnas } from '../src/comun/adn/guardarAdn.js';
 import { resolverAdn } from '../src/comun/adn/resolverAdn.js';
-import { SECCIONES_ADN, seccionesDesdeColumnas } from '../src/comun/adn/secciones.js';
+import { SECCIONES_CON_COLUMNA, seccionesDesdeColumnas } from '../src/comun/adn/secciones.js';
 import { Reporte } from './lib/reporte.js';
 
 const prisma = new PrismaClient();
@@ -60,7 +60,7 @@ async function main() {
   if (yaTenian) reporte.saltea('ya tiene secciones', yaTenian);
 
   const submarcas = pendientes.filter(m => m.marcaMadreId);
-  reporte.planea('SeccionAdn', pendientes.length * SECCIONES_ADN.length);
+  reporte.planea('SeccionAdn', pendientes.length * SECCIONES_CON_COLUMNA.length);
   reporte.planea('AdnVersion inicial', pendientes.length);
 
   console.log(
@@ -78,7 +78,7 @@ async function main() {
         for (const m of submarcas) {
           const antes = seccionesDesdeColumnas(m, false);
           const despues = await resolverAdn(m.id, { db: tx });
-          const lineas = SECCIONES_ADN.filter(
+          const lineas = SECCIONES_CON_COLUMNA.filter(
             d => (antes[d.clave]?.contenido.texto ?? '') !== despues.secciones[d.clave].texto
           ).map(
             d =>

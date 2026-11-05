@@ -21,7 +21,7 @@ export const parametrosDeGeneracion = async (
     select: { adnVersion: true },
   });
   const adn = await resolverAdn(client.id, { version: campana?.adnVersion ?? null });
-  const { voz, propuestaDeValor, guias, keywords, prohibiciones } = adn.secciones;
+  const { voz, propuestaDeValor, reglasDeEstilo, keywords, prohibiciones } = adn.secciones;
   // El tratamiento es de la marca; una submarca sin el suyo toma el de su madre confirmada.
   const conMadre = await prisma.client.findUnique({
     where: { id: client.id },
@@ -53,7 +53,8 @@ export const parametrosDeGeneracion = async (
     clientIndustry: client.industry,
     // El ADN de la marca manda; el del brief solo entra si la marca no tiene (decisión 14).
     valueProposition: propuestaDeValor.texto || dnaProfile.valueProposition,
-    brandVoiceGuidelines: guias.texto || dnaProfile.brandVoiceGuidelines,
+    // Las «guías de voz» son desde el ADN 2.0 las notas de reglas de estilo (docs/plan-adn-2.md).
+    brandVoiceGuidelines: reglasDeEstilo.texto || dnaProfile.brandVoiceGuidelines,
     voice: voz.texto || dnaProfile.voice,
     // Brief Specifics
     product: dnaProfile.product,
