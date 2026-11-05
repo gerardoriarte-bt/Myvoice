@@ -387,5 +387,8 @@ one is renamed or merged; two deliveries, «Unir» is the second.
 audit); it is design-first and shares no code with the H1 deploy.
 `docs/plan-feedback-pruebas.md` (2026-11-05): the 8 points from the first user test, the cause of
 each in the code and the three batches that answer them (batch 1 shipped).
+`docs/plan-adn-2.md` (2026-11-05): DNA 2.0 and the new campaign (decision 17) — ten sections in three
+groups by what each does for the output, completeness with a 75 % minimum (blocks in v2, warns in v1),
+audiences as a brand list, the campaign pinning its DNA version; six phases, design in the `.pen`.
 `docs/diseno-sistema.md` holds the design decisions — screen names live in `screens.ts`, colors
 in `tailwind.config.js`; the `.pen` source file is local-only and gitignored.
