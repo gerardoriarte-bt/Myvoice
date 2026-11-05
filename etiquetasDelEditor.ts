@@ -13,7 +13,7 @@ export const ETIQUETAS_DEL_EDITOR: Record<string, string> = {
   redundant: 'Repite otra variación',
   'weak-cta': 'CTA débil',
   'agency-speak': 'Suena a agencia',
-  'tuteo-violation': 'Tuteo',
+  'tuteo-violation': 'Tratamiento',
   filler: 'Relleno',
   'lazy-question': 'Pregunta de relleno',
   manifesto: 'Manifiesto',
