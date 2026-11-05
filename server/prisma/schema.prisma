@@ -382,6 +382,10 @@ model SavedVariation {
   /// viejas: el backfill lo deja en NULL en vez de numerar por fecha, que
   /// refleja el orden en que un humano fue clickeando "guardar".
   variationIndex    Int?
+  /// La pieza de su generación (docs/plan-piezas-por-medio.md): todos los textos de una pieza comparten
+  /// `conjuntoId` y se guardan, aprueban y producen juntos. NULL = guardado con el modelo anterior.
+  conjuntoId        String?
+  piezaIndex        Int?
   /// Marca las filas cuyo slot lo dedujo el backfill heurístico por conteo de
   /// unidades contra el ChannelSpec. Es columna aparte y no un sufijo en
   /// slotLabel porque tiene que sobrevivir a cualquier edición del texto y ser
@@ -413,6 +417,7 @@ model SavedVariation {
 
   /// La consulta de H2.A: todos los slots de un canal para una marca. Es el
   /// primer índice de la tabla.
+  @@index([conjuntoId])
   @@index([clientId, platform, slot])
 }
 

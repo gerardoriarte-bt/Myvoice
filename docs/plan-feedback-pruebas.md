@@ -26,7 +26,7 @@ Diseño: `.pen`, «— Feedback de pruebas · lote 1».
 - **Cancelar una pieza** (solo quien administra): sale del tablero y del portal, queda en el
   historial y libera su copy y su huella.
 
-## Lote 2 · El carrusel (por diseñar en el `.pen`)
+## Lote 2 · Un medio por vez, carrusel y copy out → [plan-piezas-por-medio.md](./plan-piezas-por-medio.md)
 
 Elegir cuántas slides; cada slide es su propio texto («Slide 2», «Slide 3»…); el motor las escribe
 como una historia; Producción arma una sola pieza con todas.

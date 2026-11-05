@@ -63,6 +63,13 @@ export interface CopyParameters {
   primaryCTA: string;
   funnelStage?: FunnelStage;
   platforms: Platform[];
+  /**
+   * Cuántas piezas por medio (docs/plan-piezas-por-medio.md): «5 carruseles». De 1 a 10; sin valor, 3.
+   * Desde el 2026-11-05 la pantalla manda un solo medio por generación.
+   */
+  cantidad?: number;
+  /** Solo carrusel: cuántas slides tiene cada uno. De 3 a 10; sin valor, 5. */
+  slides?: number;
   clientId: string;
   /**
    * Brief (perfil de ADN) elegido en el formulario. Sin esto el consumidor
@@ -89,6 +96,12 @@ export interface CopyVariation {
   /** Etiqueta legible del slot, resuelta en el servidor contra channels/registry.ts. */
   slotLabel?: string;
   variationIndex?: number;
+  /** Qué pieza de la generación es (1..cantidad). Los textos de una pieza se guardan, aprueban y producen juntos. */
+  piezaIndex?: number;
+  /** Un id por pieza generada, el mismo en todos sus textos: es lo que los agrupa en Copy y en Producción. */
+  conjuntoId?: string;
+  /** Dónde va: en la pieza, como copy out o como indicación para Diseño. */
+  zona?: 'pieza' | 'copyOut' | 'indicacion';
   content: string;
   charCount: number;
   budget?: number;

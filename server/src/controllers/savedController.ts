@@ -72,7 +72,7 @@ export const getSavedVariations = async (req: AuthRequest, res: Response) => {
  */
 export const saveVariation = async (req: AuthRequest, res: Response) => {
   // `slotLabel` NO se lee del body: la etiqueta la resuelve el servidor contra el registry.
-  const { clientId, projectId, dnaProfileId, platform, type, content, charCount, tags, slot, variationIndex } =
+  const { clientId, projectId, dnaProfileId, platform, type, content, charCount, tags, slot, variationIndex, conjuntoId, piezaIndex } =
     req.body;
   try {
     const tenant = req.tenant!;
@@ -93,6 +93,9 @@ export const saveVariation = async (req: AuthRequest, res: Response) => {
     // `slotLabel IS NULL AND slot IS NOT NULL` detecta el caso desde SQL.
     const slotId = typeof slot === 'string' && slot.trim() ? slot.trim().slice(0, 64) : null;
     const index = Number.isInteger(variationIndex) && variationIndex >= 1 ? variationIndex : null;
+    // La pieza a la que pertenece el texto: lo pone el motor al generar (un uuid por pieza).
+    const conjunto = typeof conjuntoId === 'string' && /^[0-9a-f-]{36}$/i.test(conjuntoId) ? conjuntoId : null;
+    const pieza = Number.isInteger(piezaIndex) && piezaIndex >= 1 && piezaIndex <= 10 ? piezaIndex : null;
 
     const variation = await prisma.savedVariation.create({
       data: {
@@ -106,6 +109,8 @@ export const saveVariation = async (req: AuthRequest, res: Response) => {
         slot: slotId,
         slotLabel: resolveSlotLabel(platform, slotId),
         variationIndex: index,
+        conjuntoId: conjunto,
+        piezaIndex: pieza,
       },
       include: { project: { include: { responsable: { select: { id: true, name: true, email: true } } } } },
     });
