@@ -17,11 +17,11 @@ Estados: **diseñada** · **ajustar** (diseñada, pero una decisión nueva la ca
 | Marca | **Recorrido de la marca**: los 6 pasos y las reglas de herencia | — | diseñada | § Marca · Recorrido completo — de crear la marca a su primera campaña |
 | Marca | Marcas por familia: madre con submarcas, ADN contando lo heredado | Nueva marca | diseñada | § Marca · Marcas por familia — cada madre con sus submarcas |
 | Marca | Nueva submarca: lo que trae de la madre | Crear y definir lo propio | diseñada | § Marca · Nueva submarca — parte de lo que ya tiene su madre |
-| ADN | ADN de una submarca, por capas | Guardar | diseñada | § Marca · ADN de una submarca — lo heredado y lo propio, por sección |
+| ADN | ADN de una submarca, por capas | Guardar | reemplazada por «§ ADN 2.0 · una submarca» | § Marca · ADN de una submarca |
 | ADN | Cambiar el ADN de la madre: impacto y versión | Guardar versión nueva | diseñada | § Marca · Cambiar el ADN de la madre — a quién afecta antes de guardar |
 | Formatos | Formatos de la marca (paquetes) | Agregar formatos | diseñada | § Marca · Formatos de la marca — el recorte con el que trabaja cada marca |
 | Equipo | Equipo de la marca: heredado y propio | Invitar | diseñada | § Marca · Equipo de la marca — lo heredado de la madre y las personas propias |
-| Campaña | Nueva campaña y **elegir cómo sigue** (My Voice o CDM) | Crear y abrir el brief / el cuadro | diseñada | § Marco · Nueva campaña — se crea una vez y el equipo elige cómo sigue |
+| Campaña | Nueva campaña: referencia, audiencias del ADN, **versión del ADN fija**, tratamiento del ADN y **cómo sigue** | Crear y generar / armar el cuadro | diseñada (2026-11-05) | § Campaña nueva · datos, audiencias del ADN, versión del ADN y cómo sigue |
 | Campaña | Una campaña en las dos herramientas: carriles, «espera a», lo que pasó | Ir a la acción que espera | diseñada | § Marco · Una campaña en las dos herramientas — dónde va, qué falta y a quién espera |
 | Cola | Mi cola y avisos, de los dos módulos | Ir a la acción | diseñada | § Marco · Mi cola y avisos — lo que te toca, en las dos herramientas |
 
@@ -29,8 +29,8 @@ Estados: **diseñada** · **ajustar** (diseñada, pero una decisión nueva la ca
 
 | Flujo | Pantalla | Acción principal | Estado | Frame en el `.pen` |
 |---|---|---|---|---|
-| ADN | ADN 2.0 | Confirmar sección / Completar con IA | ajustar: «Planning» → «Estrategia» | § v2 · ADN 2.0 |
-| ADN | Campaña nueva con ADN bajo el mínimo | Completar el ADN | diseñada | § v2 · Campaña nueva con ADN bajo el mínimo |
+| ADN | ADN 2.0 por capas: madre, submarca (igual / propia / suma) y propuesta de la IA sin confirmar | Está bien / Corregir · Completar con IA | diseñada (2026-11-05) | — Decisión 17 · ADN 2.0 por capas (tres frames) |
+| ADN | Campaña nueva con ADN bajo el mínimo | Completar el ADN | diseñada (2026-11-05) | § Campaña nueva · el ADN está bajo el mínimo |
 | Brief | Brief de campaña | Pedir textos raíz | ajustar: falta **referencia**; los frentes salen y quedan las audiencias elegidas | § v2 · Brief de campaña |
 | Textos raíz | Textos raíz de una etapa | Aprobar / rechazar con motivo | ajustar: por etapa, no por frente | § v2 · Textos raíz |
 | Textos raíz | Etapa sin textos raíz | Escribir textos raíz | ajustar: ídem | § v2 · Textos raíz · frente sin raíces |
