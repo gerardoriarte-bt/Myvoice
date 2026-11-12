@@ -224,6 +224,35 @@ export const confirmarPropuesta = async (clientId: string, clave: string, autorI
     return r;
   });
 
+/**
+ * «Está bien» sobre cualquier sección (la revisión de la madre generalizada, docs/plan-adn-2.md): queda
+ * revisada por quien la revisó, sin cambiar el contenido, así que no hay versión. Si después cambia el
+ * texto, `guardarSeccion` la vuelve a dejar sin revisar.
+ */
+export const marcarRevisada = async (clientId: string, clave: string, autorId: string): Promise<void> => {
+  const def = seccion(clave);
+  if (!def) throw new TenantError(`No existe la sección «${clave}»`, 400);
+  await prisma.$transaction(async tx => {
+    const client = await tx.client.findUniqueOrThrow({ where: { id: clientId }, select: { marcaMadreId: true } });
+    if ((await tx.seccionAdn.count({ where: { clientId } })) === 0)
+      await guardarAdnDesdeColumnas(clientId, { motivo: 'inicial', autorId, tx });
+    const actual = (await fotoDeSecciones(tx, clientId, Boolean(client.marcaMadreId)))[def.clave];
+    const revisada = { revisadaEn: new Date(), revisadaPorId: autorId };
+    await tx.seccionAdn.upsert({
+      where: { clientId_clave: { clientId, clave: def.clave } },
+      create: {
+        clientId,
+        clave: def.clave,
+        modo: actual?.modo ?? def.modos[0],
+        contenido: (def.clave === 'audiencias' ? { texto: '' } : actual?.contenido ?? { texto: '' }) as unknown as Prisma.InputJsonValue,
+        autorId,
+        ...revisada,
+      },
+      update: revisada,
+    });
+  });
+};
+
 /** «Descartar» lo que propuso la IA. No cambia el ADN, así que no hay versión. */
 export const descartarPropuesta = async (clientId: string, clave: string): Promise<void> => {
   await prisma.seccionAdn.updateMany({

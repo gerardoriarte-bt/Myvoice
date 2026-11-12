@@ -48,6 +48,40 @@ export interface Novedad {
 
 export const NOVEDADES: Novedad[] = [
   {
+    id: 'adn-2',
+    fecha: '2026-11-12',
+    titulo: 'El ADN de la marca, en diez secciones y con lo que le falta',
+    cambios: [
+      'En Marcas, cada marca tiene su pestaña ADN: diez secciones en tres grupos (qué decir, cómo suena, qué no se toca), cada una con su estado.',
+      'Un anillo dice cuánto está completo el ADN. Para abrir campañas hace falta el 75 % y las secciones con ★.',
+      'Secciones nuevas: productos y servicios, audiencias, así suena, frases que no se cambian y reglas de estilo.',
+      'En una submarca, cada sección se elige «igual a la madre» o propia; prohibiciones, frases y keywords se suman a las de la madre.',
+      'Si el ADN no llega al mínimo, Generar avisa qué falta. Por ahora se puede generar igual.',
+    ],
+    aviso: {
+      porQue:
+        'El copy sale tan bueno como lo que el motor sabe de la marca. Ahora el ADN dice qué le falta a cada marca y se completa sección por sección. Más adelante, una campaña nueva no se va a poder crear con el ADN bajo el mínimo.',
+      paraQuienAdministra: {
+        titulo: 'Lo que conviene hacer ahora',
+        pasos: [
+          'Abrí cada marca en Marcas › ADN y completá lo que marca el anillo, empezando por las secciones con ★.',
+          'Cargá las audiencias de la marca: cada campaña va a elegir de esa lista.',
+          'Si la marca tiene submarcas, decí «Está bien» en cada sección y confirmá el ADN para que lo hereden.',
+        ],
+        accion: { label: 'Ir a Marcas', pantalla: 'clients' },
+      },
+      paraElEquipo: {
+        titulo: 'Qué cambia para vos',
+        pasos: [
+          'En Generar, si el ADN de la marca está incompleto, vas a ver qué le falta.',
+          'Podés generar igual: el aviso dice por qué el copy puede salir más genérico.',
+        ],
+        accion: { label: 'Ir a Generar', pantalla: 'generator' },
+      },
+      tambien: ['Las «guías de voz» de antes ahora son las notas de reglas de estilo.'],
+    },
+  },
+  {
     id: 'piezas-por-medio',
     fecha: '2026-11-05',
     titulo: 'Un medio por vez, cuántas piezas y el carrusel como una historia',

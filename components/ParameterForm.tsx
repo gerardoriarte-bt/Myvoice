@@ -18,6 +18,8 @@ interface ParameterFormProps {
   defaultClientId: string;
   onClientChange?: (clientId: string) => void;
   onNavigateToClients: () => void;
+  /** Abre el ADN de la marca en Marcas: el aviso de ADN bajo el mínimo lleva ahí. */
+  onIrAlAdn?: (clientId: string) => void;
   /** Para mostrar y, si administra, definir quién aprueba la campaña elegida. */
   miembros?: WorkspaceMember[];
   puedeEditarAprobacion?: boolean;
@@ -33,6 +35,7 @@ const ParameterForm: React.FC<ParameterFormProps> = ({
   defaultClientId,
   onClientChange,
   onNavigateToClients,
+  onIrAlAdn,
   miembros = [],
   puedeEditarAprobacion = false,
   onError = () => {},
@@ -221,6 +224,30 @@ const ParameterForm: React.FC<ParameterFormProps> = ({
       onSubmit={handleSubmit}
       className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden animate-in fade-in duration-300 sticky top-6"
     >
+      {/* ADN bajo el mínimo (docs/plan-adn-2.md, F3): en v1 avisa y deja generar. */}
+      {activeClient?.adn && !activeClient.adn.apta && (
+        <div className="flex items-start gap-2 border-b border-amber-200 bg-amber-50 px-5 py-3">
+          <span className="mt-[5px] h-2 w-2 shrink-0 rounded-full bg-amber-500" />
+          <div className="min-w-0 flex-1">
+            <p className="text-[12px] font-semibold text-gray-900">
+              Al ADN de {activeClient.name} le falta{activeClient.adn.faltan.length === 1 ? '' : 'n'} {activeClient.adn.faltan.length}
+            </p>
+            <p className="text-[11px] leading-snug text-gray-600">
+              {activeClient.adn.faltan.map(f => f.nombre).join(', ')}. Se puede generar, pero el copy sale más genérico.
+            </p>
+            {onIrAlAdn && (
+              <button
+                type="button"
+                onClick={() => onIrAlAdn(activeClient.id)}
+                className="mt-1 inline-flex items-center gap-0.5 text-[11px] font-semibold text-gray-900 hover:underline"
+              >
+                Completar el ADN <ChevronRight className="h-3 w-3" />
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* PRESETS */}
       <div className="px-5 pt-4 pb-4 border-b border-gray-100">
         <div className="flex items-center justify-between mb-2">

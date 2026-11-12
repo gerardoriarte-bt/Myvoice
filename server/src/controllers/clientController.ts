@@ -19,7 +19,7 @@ import { guardarAdnDesdeColumnas } from '../comun/adn/guardarAdn.js';
 import { resolverAdn } from '../comun/adn/resolverAdn.js';
 import { COLUMNAS_ADN, SECCIONES_DE_REVISION } from '../comun/adn/secciones.js';
 import { completitudAdn, conPropuesta } from '../comun/adn/completitudAdn.js';
-import { guardarSeccion, confirmarPropuesta, descartarPropuesta } from '../comun/adn/guardarAdn.js';
+import { guardarSeccion, confirmarPropuesta, descartarPropuesta, marcarRevisada } from '../comun/adn/guardarAdn.js';
 import { actualizarAudiencia, crearAudiencia, listarAudiencias } from '../comun/adn/audiencias.js';
 import { esTratamiento } from '../comun/adn/tratamiento.js';
 import { avisarAdnPorRevisar, confirmarAdn, estadoDeRevision, revisarSeccion } from '../comun/adn/revisionAdn.js';
@@ -96,7 +96,18 @@ export const getClients = async (req: AuthRequest, res: Response) => {
             }
           : null,
     }));
-    res.json(await Promise.all(conRevision.map(conUrlDeGuia)));
+    // La completitud de cada marca (ADN-5): Marcas pinta el chip y Generar avisa si no llega al mínimo.
+    const conAdn = await Promise.all(
+      conRevision.map(async m => {
+        const c = completitudAdn(await resolverAdn(m.id));
+        const nombres = new Map(c.secciones.map(s => [s.clave, s.nombre]));
+        return {
+          ...m,
+          adn: { porcentaje: c.porcentaje, minimo: c.minimo, apta: c.apta, faltan: c.faltan.map(clave => ({ clave, nombre: nombres.get(clave)! })) },
+        };
+      })
+    );
+    res.json(await Promise.all(conAdn.map(conUrlDeGuia)));
   } catch (error) {
     handleTenantError(error, res, 'Error al obtener marcas');
   }
@@ -261,14 +272,34 @@ export const getAdnResuelto = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ error: 'version tiene que ser un entero positivo' });
     const adn = await resolverAdn(id, { version });
     // Lo pendiente de la IA es de lo vigente: en una versión vieja no hay nada que confirmar.
-    const filas =
-      version == null
-        ? await prisma.seccionAdn.findMany({ where: { clientId: id }, select: { clave: true, propuesta: true, origen: true } })
-        : [];
+    const filas = version == null ? await prisma.seccionAdn.findMany({ where: { clientId: id } }) : [];
+    // Quién y cuándo (ADN-8): los nombres de quien escribió y de quien revisó cada sección.
+    const ids = [...new Set(filas.flatMap(f => [f.autorId, f.revisadaPorId]).filter((x): x is string => Boolean(x)))];
+    const nombres = new Map(
+      (await prisma.user.findMany({ where: { id: { in: ids } }, select: { id: true, name: true } })).map(u => [u.id, u.name])
+    );
+    const nombre = (userId: string | null) => (userId ? nombres.get(userId) ?? null : null);
     res.json({
       ...adn,
       completitud: completitudAdn(adn, conPropuesta(filas)),
-      origenes: Object.fromEntries(filas.map(f => [f.clave, f.origen])),
+      // Lo de cada sección que la pantalla necesita y el motor no: lo propio, lo propuesto y la autoría.
+      filas: Object.fromEntries(
+        filas.map(f => [
+          f.clave,
+          {
+            contenido: f.contenido,
+            modo: f.modo,
+            origen: f.origen,
+            propuesta: f.propuesta,
+            propuestaFuente: f.propuestaFuente,
+            propuestaEn: f.propuestaEn,
+            autor: nombre(f.autorId),
+            actualizadaEn: f.actualizadaEn,
+            revisadaEn: f.revisadaEn,
+            revisadaPor: nombre(f.revisadaPorId),
+          },
+        ])
+      ),
     });
   } catch (error) {
     handleTenantError(error, res, 'Error al resolver el ADN');
@@ -291,6 +322,18 @@ export const putSeccionAdn = async (req: AuthRequest, res: Response) => {
     res.json({ ...r, adn, completitud: completitudAdn(adn) });
   } catch (error) {
     handleTenantError(error, res, 'Error al guardar la sección');
+  }
+};
+
+/** «Está bien» sobre una sección: queda revisada sin cambiar su contenido. */
+export const postSeccionRevisada = async (req: AuthRequest, res: Response) => {
+  const { id, clave } = req.params;
+  try {
+    await assertClientInWorkspace(req.tenant!, id);
+    await marcarRevisada(id, clave, req.tenant!.userId);
+    res.json({ ok: true });
+  } catch (error) {
+    handleTenantError(error, res, 'Error al revisar la sección');
   }
 };
 

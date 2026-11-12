@@ -265,7 +265,10 @@ approvals and quota are still per brand. **DNA 2.0** (`docs/plan-adn-2.md`, F1 s
 sections in three groups (`secciones.ts`: what to say · how it sounds · what is not touched), audiences
 in `AudienciaDeMarca` (a brand list a submarca inherits or replaces), one section written at a time by
 `guardarSeccion`, AI proposals waiting in `SeccionAdn.propuesta` until someone confirms them, and
-`completitudAdn.ts` (75 % plus every ★ section) computed on read over the resolved DNA. **A submarca inherits only once its mother's DNA is
+`completitudAdn.ts` (75 % plus every ★ section) computed on read over the resolved DNA. Since F2/F3
+(2026-11-12) it is a tab of the brand in Marcas (`components/adn/`): ring, three groups, one card per section with its
+«Está bien» (any section, `/revisada`), the submarca's «= madre / Propia» and the IA proposal review; `GET /clients`
+carries `adn` (percent, apta, what is missing) for the Marcas chip and the non-blocking warning in Generar. **A submarca inherits only once its mother's DNA is
 confirmed** (`Client.adnConfirmadoEn`, `docs/plan-revision-adn.md`): `comun/adn/revisionAdn.ts` drives
 the review (each of the 5 sections «está bien» or corrected — a correction writes the column — then
 confirm), Marcas shows an amber banner and a chip on the mother, and OWNER/ADMIN get one

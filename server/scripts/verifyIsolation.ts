@@ -233,6 +233,7 @@ async function main() {
     await expectDenied('POST /clients/:id/adn/confirmar de A', `/clients/${A.client.id}/adn/confirmar`, B.token, { method: 'POST' });
     // ADN 2.0 (docs/plan-adn-2.md): secciones, propuestas de la IA y audiencias de otra marca.
     await expectDenied('PUT /clients/:id/adn/secciones/:clave de A', `/clients/${A.client.id}/adn/secciones/productos`, B.token, { method: 'PUT', body: JSON.stringify({ contenido: { texto: 'x' } }) });
+    await expectDenied('POST /clients/:id/adn/secciones/:clave/revisada de A', `/clients/${A.client.id}/adn/secciones/productos/revisada`, B.token, { method: 'POST' });
     await expectDenied('POST /clients/:id/adn/secciones/:clave/propuesta/confirmar de A', `/clients/${A.client.id}/adn/secciones/productos/propuesta/confirmar`, B.token, { method: 'POST' });
     await expectDenied('GET /clients/:id/audiencias de A', `/clients/${A.client.id}/audiencias`, B.token);
     await expectDenied('POST /clients/:id/audiencias de A', `/clients/${A.client.id}/audiencias`, B.token, { method: 'POST', body: JSON.stringify({ nombre: 'x', descriptores: {} }) });

@@ -1,4 +1,5 @@
 import React from 'react';
+import Info from './ui/Info';
 import { ArrowLeft, Check, ChevronLeft, ChevronRight, Image as ImageIcon, MessageSquareText, Palette, Pencil, Plus, RefreshCw } from 'lucide-react';
 import { CampaignSpine, CopyVariation } from '../types';
 import { PlatformIcon } from './ui/platformIcons';
@@ -30,18 +31,6 @@ interface Props {
   onAjustar: () => void;
   onOtroMedio: () => void;
 }
-
-/** Un «i» que muestra la explicación al pasar el mouse. */
-const Info: React.FC<{ texto: string }> = ({ texto }) => (
-  <span className="group relative inline-flex">
-    <span className="flex h-4 w-4 cursor-help items-center justify-center rounded-full border border-gray-300 bg-white text-[9.5px] font-bold text-gray-500">
-      i
-    </span>
-    <span className="pointer-events-none absolute left-6 top-1/2 z-20 w-64 -translate-y-1/2 rounded-lg bg-gray-900 px-2.5 py-2 text-[11px] leading-snug text-gray-50 opacity-0 shadow-lg transition-opacity group-hover:opacity-100">
-      {texto}
-    </span>
-  </span>
-);
 
 const Pasos: React.FC<{ activo: number }> = ({ activo }) => (
   <div className="flex items-center gap-2">
