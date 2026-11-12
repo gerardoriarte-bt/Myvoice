@@ -177,6 +177,10 @@ export const conClavesDeHoy = (secciones: Record<string, SeccionGuardada | undef
   return (guias && !resto.reglasDeEstilo ? { ...resto, reglasDeEstilo: guias } : resto) as SeccionesGuardadas;
 };
 
+/** Los elementos de una sección que suma: las prohibiciones separadas por coma, las frases por línea. */
+export const elementosDe = (texto: string, separador = ', '): string[] =>
+  texto.split(separador.trim() || '\n').map(t => t.trim()).filter(Boolean);
+
 /** Madre más propia, para las secciones que suman. */
 export const sumar = (deMadre: string, propio: string, separador = ', '): string =>
   [deMadre, propio].map(t => t.trim()).filter(Boolean).join(separador);

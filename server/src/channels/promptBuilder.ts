@@ -2,6 +2,7 @@ import { FunnelStage } from "../types.js";
 import { ChannelBrief, ChannelSpec, SlotSpec } from "./types.js";
 import { renderFingerprintForPrompt } from "../services/voiceFingerprintService.js";
 import { reglaDeTratamiento } from "../comun/adn/tratamiento.js";
+import { reglasDeAdnEnPalabras } from "../comun/adn/estilo.js";
 import { MANUAL_DE_OFICIO } from "../services/oficio.js";
 
 const FUNNEL_HINT: Record<FunnelStage, string> = {
@@ -77,6 +78,13 @@ Estos son fallos reales rechazados por el equipo. NO reproduzcas su tono, estruc
 Si una variación tuya recuerda a alguno de estos, descarta y reescribe desde otra premisa.
 `;
 };
+
+/**
+ * Lo que el ADN 2.0 suma al prefijo (docs/plan-adn-2.md, F4): lo que no se toca. Vacío si la marca no lo
+ * tiene: el prompt queda como antes. Los productos no van acá: el redactor los usaba como tema y el copy
+ * se desconectaba del concepto (verify:calidad, 2026-11-12); los cuida el revisor.
+ */
+const renderProductosYReglas = (brief: ChannelBrief): string => reglasDeAdnEnPalabras(brief.brand.adn);
 
 const renderExamples = (brief: ChannelBrief): string => {
   // For caching, examples are identical across channel calls (no per-channel filtering at prefix).
@@ -156,7 +164,7 @@ ${brief.spine.angles.map(a => `  • ${a.name}: ${a.premise} (registro: ${a.regi
 - Propuesta de valor: ${brief.brand.valueProposition || "—"}
 - Voz: ${brief.brand.voice || "—"}
 - Guías de voz: ${brief.brand.brandVoiceGuidelines || "—"}
-
+${renderProductosYReglas(brief)}
 ${brief.brand.fingerprint ? renderFingerprintForPrompt(brief.brand.fingerprint) : ""}
 
 ## CONTEXTO DE CAMPAÑA

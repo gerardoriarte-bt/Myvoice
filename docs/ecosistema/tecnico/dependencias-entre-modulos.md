@@ -1,6 +1,6 @@
 # Dependencias entre módulos (generado)
 
-Generado el 2026-11-12 desde el commit `132bcab` con `bash scripts/mapa/actualizar.sh`. **No se edita a mano**: se corrige `scripts/mapa/modulos.json` y se vuelve a generar.
+Generado el 2026-11-12 desde el commit `5c72d76` con `bash scripts/mapa/actualizar.sh`. **No se edita a mano**: se corrige `scripts/mapa/modulos.json` y se vuelve a generar.
 
 Cada fila es un archivo que usa algo de otro archivo de **otro módulo** (importa, llama o referencia un tipo). Módulos según la decisión 12; reglas en [spec-plataforma.md](./spec-plataforma.md) § 2.
 
@@ -10,11 +10,11 @@ Cada fila es un archivo que usa algo de otro archivo de **otro módulo** (import
 |---|---|---|---|---|---|
 | **Plataforma** | · | 13 | 21 | · | 14 |
 | **Parte común** | · | · | · | · | 44 |
-| **My Voice** | · | 40 | · | · | 139 |
+| **My Voice** | · | 47 | · | · | 139 |
 | **CDM** | · | · | · | · | · |
 | **Compartido** | · | · | · | · | · |
 
-- **Hay que invertir**: 0 · **pasan por el contrato**: 40 · **permitidas**: 231
+- **Hay que invertir**: 0 · **pasan por el contrato**: 47 · **permitidas**: 231
 
 ## Hay que invertir (0)
 
@@ -22,7 +22,7 @@ Rompen la regla: la parte común o la infraestructura dependen de un módulo, o 
 
 Ninguna.
 
-## Pasan por el contrato (40)
+## Pasan por el contrato (47)
 
 Un módulo lee la parte común. Está bien, pero solo por `contrato/`: esta lista es lo que `contrato/` tiene que exponer.
 
@@ -31,9 +31,12 @@ Un módulo lee la parte común. Está bien, pero solo por `contrato/`: esta list
 | My Voice | `components/ParameterForm.tsx` | Parte común | `marcas.ts` | marcas.ts, nombreConMadre() |
 | My Voice | `components/produccion/TableroProduccion.tsx` | Parte común | `components/Bandeja.tsx` | Bandeja.tsx, DestinoAviso |
 | My Voice | `components/produccion/TableroProduccion.tsx` | Parte común | `marcas.ts` | marcas.ts, nombreConMadre() |
+| My Voice | `server/src/channels/promptBuilder.ts` | Parte común | `server/src/comun/adn/estilo.ts` | estilo.ts, reglasDeAdnEnPalabras() |
 | My Voice | `server/src/channels/promptBuilder.ts` | Parte común | `server/src/comun/adn/tratamiento.ts` | reglaDeTratamiento(), tratamiento.ts |
 | My Voice | `server/src/channels/promptBuilder.ts` | Parte común | `server/src/services/voiceFingerprintService.ts` | renderFingerprintForPrompt(), voiceFingerprintService.ts |
+| My Voice | `server/src/channels/types.ts` | Parte común | `server/src/comun/adn/estilo.ts` | ReglasDeAdn, estilo.ts |
 | My Voice | `server/src/channels/types.ts` | Parte común | `server/src/comun/adn/tratamiento.ts` | Tratamiento, tratamiento.ts |
+| My Voice | `server/src/channels/validators.ts` | Parte común | `server/src/comun/adn/estilo.ts` | ReglasDeAdn, estilo.ts, faltasDeAdn() |
 | My Voice | `server/src/channels/validators.ts` | Parte común | `server/src/comun/adn/tratamiento.ts` | Tratamiento, faltasDeTratamiento(), tratamiento.ts |
 | My Voice | `server/src/controllers/analyticsController.ts` | Parte común | `server/src/lib/tenancy.ts` | assertClientInWorkspace(), tenancy.ts |
 | My Voice | `server/src/controllers/analyticsController.ts` | Parte común | `server/src/middleware/auth.ts` | AuthRequest, auth.ts, handleTenantError() |
@@ -55,12 +58,16 @@ Un módulo lee la parte común. Está bien, pero solo por `contrato/`: esta list
 | My Voice | `server/src/controllers/savedController.ts` | Parte común | `server/src/middleware/auth.ts` | AuthRequest, auth.ts, handleTenantError() |
 | My Voice | `server/src/services/aprobacion.ts` | Parte común | `server/src/lib/tenancy.ts` | TenantContext, TenantError, assertDnaProfileInWorkspace(), assertProjectInWorkspace() |
 | My Voice | `server/src/services/auditoriaService.ts` | Parte común | `server/src/lib/workspaceSecret.ts` | decryptWorkspaceApiKey(), workspaceSecret.ts |
+| My Voice | `server/src/services/criticService.ts` | Parte común | `server/src/comun/adn/estilo.ts` | estilo.ts, reglasDeAdnEnPalabras() |
 | My Voice | `server/src/services/criticService.ts` | Parte común | `server/src/comun/adn/tratamiento.ts` | tratamiento.ts, verificacionDeTratamiento() |
+| My Voice | `server/src/services/directorService.ts` | Parte común | `server/src/comun/adn/estilo.ts` | estilo.ts, reglasDeAdnEnPalabras() |
 | My Voice | `server/src/services/directorService.ts` | Parte común | `server/src/comun/adn/tratamiento.ts` | esTratamiento(), tratamiento.ts |
+| My Voice | `server/src/services/fixerService.ts` | Parte común | `server/src/comun/adn/estilo.ts` | estilo.ts, reglasDeAdnEnPalabras() |
 | My Voice | `server/src/services/fixerService.ts` | Parte común | `server/src/comun/adn/tratamiento.ts` | tablaDeConversion(), tratamiento.ts |
 | My Voice | `server/src/services/localeRules.ts` | Parte común | `server/src/comun/adn/tratamiento.ts` | Tratamiento, reglaDeTratamiento(), tratamiento.ts |
 | My Voice | `server/src/services/openaiService.ts` | Parte común | `server/src/comun/adn/tratamiento.ts` | esTratamiento(), tratamiento.ts |
 | My Voice | `server/src/services/parametrosDeGeneracion.ts` | Parte común | `server/src/comun/adn/resolverAdn.ts` | resolverAdn(), resolverAdn.ts |
+| My Voice | `server/src/services/parametrosDeGeneracion.ts` | Parte común | `server/src/comun/adn/secciones.ts` | AudienciaGuardada, elementosDe(), secciones.ts |
 | My Voice | `server/src/services/permisosPieza.ts` | Parte común | `server/src/lib/tenancy.ts` | TenantContext, TenantError, canManage(), tenancy.ts |
 | My Voice | `server/src/services/piezaArchivo.ts` | Parte común | `server/src/lib/tenancy.ts` | TenantError, tenancy.ts |
 | My Voice | `server/src/services/piezaService.ts` | Parte común | `server/src/lib/tenancy.ts` | TenantContext, TenantError, tenancy.ts |

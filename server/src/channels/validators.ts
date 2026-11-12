@@ -2,6 +2,8 @@ import { faltasDeTratamiento, Tratamiento } from "../comun/adn/tratamiento.js";
 import { CopyVariation } from "../types.js";
 import { ChannelSpec, SlotSpec, SlotUnit } from "./types.js";
 import { detectarOficio } from "../services/oficio.js";
+import { faltasDeAdn, ReglasDeAdn } from "../comun/adn/estilo.js";
+import type { ChannelBrief } from "./types.js";
 
 const countUnits = (text: string, unit: SlotUnit): number => {
   if (unit === "word") {
@@ -25,7 +27,16 @@ const findProhibitions = (text: string, prohibitions: string): string[] => {
 export interface ContextoDeValidacion {
   marca?: string;
   concepto?: string;
+  /** Frases que no se cambian y reglas de estilo medibles (docs/plan-adn-2.md, F4). */
+  adn?: ReglasDeAdn;
 }
+
+/** El contexto de un brief: lo arman igual la escritura y el corrector, que vuelve a validar. */
+export const contextoDeValidacion = (brief: ChannelBrief): ContextoDeValidacion => ({
+  marca: brief.brand.name,
+  concepto: brief.spine.concept,
+  adn: brief.brand.adn,
+});
 
 /**
  * Un titular de una pieza que lleva logo: el slot corto (≤ 90 caracteres) de un
@@ -58,6 +69,8 @@ export const validateVariation = (
     concepto: ctx.concepto,
     titularConLogo: esTitularConLogo(spec, slot),
   });
+  // Una indicación para Diseño no se publica: ahí no aplican las reglas de estilo.
+  const adnHits = slot?.zona === "indicacion" ? [] : faltasDeAdn(v.content, ctx.adn);
 
   return {
     ...v,
@@ -68,6 +81,7 @@ export const validateVariation = (
     prohibitionsHit: hits,
     tuteoHits,
     oficioHits,
+    adnHits,
   };
 };
 

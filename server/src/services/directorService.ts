@@ -3,6 +3,7 @@ import { CampaignSpine, CopyParameters, FunnelStage } from "../types.js";
 import { UsageEntry, extractUsage } from "./pricing.js";
 import { buildLocaleRulesBlock, resolveMarketLocale } from "./localeRules.js";
 import { esTratamiento } from "../comun/adn/tratamiento.js";
+import { reglasDeAdnEnPalabras } from "../comun/adn/estilo.js";
 import { MANUAL_DE_OFICIO } from "./oficio.js";
 import {
   jsonObjectFormat,
@@ -41,6 +42,15 @@ Respondes SOLO en JSON válido. Sin texto fuera del JSON. Sin comentarios.
 export const cantidadDeAngulos = (params: CopyParameters): number =>
   Math.max(3, Math.min(10, Number.isInteger(params.cantidad) ? (params.cantidad as number) : 3));
 
+/**
+ * Lo que el ADN 2.0 suma al director (docs/plan-adn-2.md, F4): lo que no se toca. Sin esas secciones no
+ * agrega nada y el prompt queda como antes. Los productos no van acá, por lo mismo que en el redactor.
+ */
+const adnExtra = (params: CopyParameters): string => {
+  const reglas = reglasDeAdnEnPalabras({ frases: params.frasesIntocables, reglas: params.reglasDeEstilo });
+  return reglas ? `${reglas}\n` : "";
+};
+
 const buildDirectorPrompt = (params: CopyParameters): string => {
   const concept = (params.campaignConcept || "").trim();
   const conceptBlock = concept
@@ -68,7 +78,7 @@ ${stageBlock}
 - Propuesta de valor: ${params.valueProposition || "—"}
 - Voz: ${params.voice || "—"}
 - Guías de voz: ${params.brandVoiceGuidelines || "—"}
-
+${adnExtra(params)}
 ## CONTEXTO DE CAMPAÑA
 - Marca: ${params.clientName || "—"}
 - Producto/Servicio: ${params.product || "—"}

@@ -4,7 +4,7 @@ import { CopyParameters, GenerationResponse, CopyVariation, CampaignSpine, Coher
 import { getChannelSpec, resolveSlotLabel, specParaGeneracion, textosPorPieza, zonaDe } from "../channels/registry.js";
 import { ChannelBrief, ChannelSpec } from "../channels/types.js";
 import { buildSystemPrompt, buildUserPrompt, PiezaAEscribir } from "../channels/promptBuilder.js";
-import { validateBatch } from "../channels/validators.js";
+import { contextoDeValidacion, validateBatch } from "../channels/validators.js";
 import { buildCampaignSpine } from "./directorService.js";
 import { runCritic } from "./criticService.js";
 import { runAutoFix } from "./fixerService.js";
@@ -52,6 +52,8 @@ export const buildBrief = (params: CopyParameters, spine: CampaignSpine): Channe
     voice: params.voice || "",
     valueProposition: params.valueProposition || "",
     brandVoiceGuidelines: params.brandVoiceGuidelines || "",
+    productos: params.productos || "",
+    adn: { frases: params.frasesIntocables ?? [], reglas: params.reglasDeEstilo ?? {} },
     fingerprint: params.brandFingerprint,
   },
   campaign: {
@@ -234,10 +236,7 @@ export const generateForChannel = async (
   };
   });
 
-  const validated = validateBatch(variations, spec, brief.campaign.prohibitions, brief.tratamiento, {
-    marca: brief.brand.name,
-    concepto: brief.spine.concept,
-  });
+  const validated = validateBatch(variations, spec, brief.campaign.prohibitions, brief.tratamiento, contextoDeValidacion(brief));
   const critiqued = await runCritic(brief, spec, validated, client, miniModel, usage, opciones);
   // runAutoFix filtra lo roto y no llama al modelo si no hay nada. Antes solo se
   // llamaba con alguna marca del revisor, y una falta que solo ve el validador

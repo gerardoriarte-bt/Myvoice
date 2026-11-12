@@ -1,6 +1,6 @@
 # Plan · ADN 2.0 por capas y campaña nueva
 
-Estado: F1 construida (2026-11-05, migración `20261105000002_adn_2_secciones`); F2 y F3 construidas (2026-11-12); F4–F6 por hacer · Decisión 17 · PRD: ADN-1 a ADN-8, PL-4, PL-12 ·
+Estado: F1 construida (2026-11-05, migración `20261105000002_adn_2_secciones`); F2 y F3 en producción (2026-11-12); F4 construida y medida (2026-11-12); F5 y F6 por hacer · Decisión 17 · PRD: ADN-1 a ADN-8, PL-4, PL-12 ·
 Diseño: `.pen`, «— Decisión 17 · ADN 2.0 por capas y campaña nueva» (cinco frames) · Antes:
 [plan-revision-adn.md](./plan-revision-adn.md) (revisión de la madre, en producción) y la decisión 16
 (capas, en producción).
@@ -234,6 +234,30 @@ devuelve 404. «Manager» se reemplaza por la función «Estrategia» cuando `Fu
 - **Así suena** sin ejemplos dice en su tarjeta que el motor usa los 5 últimos aprobados (pregunta 2,
   por ahora así). **Frases que no se cambian** quedó con suma fija y candado (pregunta 1); el frame
   `gZTh8` del `.pen` se ajustó.
+
+### Medición de F4 (2026-11-12)
+
+`verify:calidad -- --adn2`, caso LoBueno (sin casos reales exportados), Instagram Post, Google Ads y Push,
+3 repeticiones por variante. Faltas al manual de oficio cada 100 textos, según el juez:
+
+| Variante | Rep. 1 | Rep. 2 | Rep. 3 | Promedio |
+|---|---|---|---|---|
+| Sin ADN 2.0 | 34 | 35 | 27 | 32 |
+| Con todo, productos en el redactor y el director (primera versión) | 41 | 56 | 36 | 44 |
+| Solo frases y reglas | 36 | 36 | 38 | 37 |
+| Con todo, productos solo para el revisor y el corrector | 42 | 29 | 23 | 31 |
+
+- **Productos no va al redactor ni al director.** Con productos en su prompt, el copy se volvía una lista
+  de funciones («14 canales. Un solo ADN.») y «desconectado del concepto» pasó de 2 a 9 cada 100. Ahora
+  es un límite: el revisor marca lo que se afirma fuera de él (`asset-altered`) y el corrector lo reescribe.
+- **Lo que no se toca: 0 faltas** en todas las corridas con las reglas. Las 4 cada 100 de la primera
+  medición eran hashtags («#MyVoice»): el detector ya no mira hashtags ni menciones.
+- **Una marca sin estas secciones recibe el mismo prompt que antes**, comparado texto por texto.
+- **A vigilar:** con solo frases y reglas el juez marca más «genérico» (12 contra 6 cada 100). Son pocas
+  corridas; se mira de nuevo con casos reales.
+- El juez sobre un caso inventado tiene mucho ruido (23 a 42 con la misma configuración): sirve para ver
+  si un cambio empeora mucho, no para afinar. La prueba que cuenta es con el equipo y una marca real con
+  el ADN completo (la marca nueva que entra con el ADN 2.0 desde el primer día).
 
 ### Criterios de aceptación
 

@@ -1,4 +1,5 @@
 import { verificacionDeTratamiento } from "../comun/adn/tratamiento.js";
+import { reglasDeAdnEnPalabras } from "../comun/adn/estilo.js";
 import type OpenAI from "openai";
 import { CopyVariation } from "../types.js";
 import { ChannelBrief, ChannelSpec } from "../channels/types.js";
@@ -19,6 +20,22 @@ interface CriticEvaluation {
   editorFlags: string[];
 }
 
+/**
+ * Lo que el revisor sabe del ADN 2.0 (docs/plan-adn-2.md, F4). Los productos son un límite, no un tema:
+ * el revisor marca lo que se afirma fuera de ellos. Al redactor no le llegan: con productos en su prompt,
+ * el copy se volvía una lista de funciones desconectada del concepto (verify:calidad, 2026-11-12). Sin
+ * estas secciones no agrega nada.
+ */
+const adnParaElRevisor = (brief: ChannelBrief): string => {
+  const lineas = [
+    brief.brand.productos
+      ? `- Productos y servicios (lo único que existe): ${brief.brand.productos}\n  Si un texto afirma un producto, beneficio, cifra o precio que no está acá → "asset-altered".`
+      : "",
+    reglasDeAdnEnPalabras(brief.brand.adn),
+  ].filter(Boolean);
+  return lineas.length ? `${lineas.join("\n")}\n` : "";
+};
+
 const buildCriticPrompt = (
   brief: ChannelBrief,
   spec: ChannelSpec,
@@ -30,6 +47,7 @@ const buildCriticPrompt = (
       if (v.prohibitionsHit && v.prohibitionsHit.length) line += `\n  prohibitions hit: ${v.prohibitionsHit.join(", ")}`;
       if (v.tuteoHits && v.tuteoHits.length) line += `\n  tratamiento distinto al de la marca (VIOLACIÓN): ${v.tuteoHits.join(" | ")}`;
       if (v.oficioHits && v.oficioHits.length) line += `\n  manual de oficio (VIOLACIÓN): ${v.oficioHits.join(" | ")}`;
+      if (v.adnHits && v.adnHits.length) line += `\n  ADN de la marca, lo que no se toca (VIOLACIÓN): ${v.adnHits.join(" | ")}`;
       return line;
     })
     .join("\n\n");
@@ -45,7 +63,7 @@ ${voseoBlock}
 - Voz: ${brief.brand.voice || "—"}
 - Propuesta de valor: ${brief.brand.valueProposition || "—"}
 - Guías: ${brief.brand.brandVoiceGuidelines || "—"}
-
+${adnParaElRevisor(brief)}
 ## ANCLAJE
 - Concepto de campaña: "${brief.spine.concept}"
 - Tono: ${brief.spine.tone}

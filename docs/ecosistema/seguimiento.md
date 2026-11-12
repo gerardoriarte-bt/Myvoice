@@ -21,7 +21,7 @@ Cada función con su estado en las tres pistas. Se actualiza en el mismo PR que 
 | Planning | Formatos de la marca (paquetes, heredados y propios) | ✓ | ○ | ○ | PL-13, CD-6 |
 | Super Admin | Equipo de la marca (heredado y propio) | ✓ | ○ | ○ | PL-14 |
 | Estrategia | ADN de hoy | ● | ● | ● | (v1) |
-| Estrategia | ADN 2.0 por capas: secciones, mínimo, la IA propone, confirmar | ✓ | ◐ | ◐ | PL-3, PL-11 (F1–F3 ✓: secciones, mínimo y aviso en v1; falta la IA, F5) · [plan-adn-2](../plan-adn-2.md) |
+| Estrategia | ADN 2.0 por capas: secciones, mínimo, la IA propone, confirmar | ✓ | ◐ | ◐ | PL-3, PL-11 (F1–F3 ●, F4 ✓: el motor lee las secciones; falta la IA, F5) · [plan-adn-2](../plan-adn-2.md) |
 | Estrategia | Audiencias de la marca | ✓ | ✓ | ✓ | PL-3 (la campaña las elige en F6) |
 | Responsable | Nueva campaña: audiencias del ADN, versión fija, cómo sigue | ✓ | ○ | ◐ | PL-4, PL-12 (`Project.adnVersion` ●) · [plan-adn-2](../plan-adn-2.md) F6 |
 | Responsable | Una campaña en las dos herramientas | ✓ | ○ | ○ | PL-5 |

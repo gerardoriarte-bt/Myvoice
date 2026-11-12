@@ -1,9 +1,10 @@
 import type OpenAI from "openai";
 import { CopyVariation } from "../types.js";
 import { ChannelBrief, ChannelSpec } from "../channels/types.js";
-import { validateVariation } from "../channels/validators.js";
+import { contextoDeValidacion, validateVariation } from "../channels/validators.js";
 import { MANUAL_DE_OFICIO } from "./oficio.js";
 import { tablaDeConversion } from "../comun/adn/tratamiento.js";
+import { reglasDeAdnEnPalabras } from "../comun/adn/estilo.js";
 import { UsageEntry, extractUsage } from "./pricing.js";
 import {
   jsonObjectFormat,
@@ -28,7 +29,7 @@ const REESCRIBIR_POR_OFICIO: Record<string, string> = {
   "lazy-question": "Arranca con una pregunta que no es gancho. Afirmá el beneficio.",
   manifesto: "Es un manifiesto filosófico. Bajalo a tierra: qué hace o gana el público ahora.",
   "semantic-mix": "Mezcla imágenes de campos distintos. Quedate en el territorio del concepto.",
-  "asset-altered": "Altera el concepto, un slogan, un premio o adorna un beneficio. Usalos literales, como dice el brief.",
+  "asset-altered": "Altera el concepto, un slogan, un premio, adorna un beneficio o afirma algo que la marca no vende. Usalos literales, como dice el brief, y no afirmes nada fuera de sus productos.",
   decorative: "Suena bonito pero no vende. Cambialo por algo que empuje la acción o el concepto.",
 };
 
@@ -37,6 +38,7 @@ const isBroken = (v: CopyVariation): boolean => {
   if (v.prohibitionsHit && v.prohibitionsHit.length > 0) return true;
   if (v.tuteoHits && v.tuteoHits.length > 0) return true;
   if (v.oficioHits && v.oficioHits.length > 0) return true;
+  if (v.adnHits && v.adnHits.length > 0) return true;
   if (v.editorFlags?.some(f => f in REESCRIBIR_POR_OFICIO)) return true;
   if (v.editorFlags?.includes("prohibition-paraphrase")) return true;
   if (v.editorFlags?.includes("budget-violation")) return true;
@@ -47,6 +49,18 @@ const isBroken = (v: CopyVariation): boolean => {
 const necesitaTratamiento = (v: CopyVariation): boolean =>
   Boolean(v.tuteoHits?.length) || Boolean(v.editorFlags?.includes("tuteo-violation"));
 
+
+/**
+ * Lo que el corrector necesita del ADN 2.0 para arreglar lo que marcaron el validador y el revisor: los
+ * productos (no afirmar fuera de ellos) y lo que no se toca. Vacío si la marca no tiene esas secciones.
+ */
+const adnParaElCorrector = (brief: ChannelBrief): string => {
+  const lineas = [
+    brief.brand.productos ? `- Productos y servicios (lo único que existe; no afirmes nada fuera de esto): ${brief.brand.productos}` : "",
+    reglasDeAdnEnPalabras(brief.brand.adn),
+  ].filter(Boolean);
+  return lineas.length ? `${lineas.join("\n")}\n` : "";
+};
 
 const slotLimitLabel = (spec: ChannelSpec, v: CopyVariation): string => {
   const slot = v.slot ? spec.slots.find(s => s.id === v.slot) : undefined;
@@ -77,6 +91,7 @@ const describeIssues = (brief: ChannelBrief, spec: ChannelSpec, v: CopyVariation
     issues.push(`El editor detectó un tratamiento distinto al de la marca — reescribir con el de la marca.`);
   }
   for (const falta of v.oficioHits ?? []) issues.push(`Manual de oficio: ${falta}.`);
+  for (const falta of v.adnHits ?? []) issues.push(`ADN de la marca (no se toca): ${falta}.`);
   for (const flag of v.editorFlags ?? []) {
     if (REESCRIBIR_POR_OFICIO[flag]) issues.push(REESCRIBIR_POR_OFICIO[flag]);
   }
@@ -121,7 +136,7 @@ ${MANUAL_DE_OFICIO}
 - Tono: ${brief.spine.tone}
 - Brief (premios y mecánica, literales): ${brief.campaign.theme || "—"}
 - Prohibiciones: ${brief.campaign.prohibitions || "—"} (también paráfrasis cercanas)
-- Canal: ${spec.id}
+${adnParaElCorrector(brief)}- Canal: ${spec.id}
 
 ## VARIACIONES ROTAS (${broken.length})
 ${items}
@@ -209,10 +224,7 @@ export const runAutoFix = async (
       const fixed: CopyVariation = { ...v, content: newContent, autofixed: true };
       // Con el voseo y el contexto: sin ellos, las marcas de tuteo viejas
       // quedaban pegadas a un texto ya corregido.
-      return validateVariation(fixed, spec, brief.campaign.prohibitions, brief.tratamiento, {
-        marca: brief.brand.name,
-        concepto: brief.spine.concept,
-      });
+      return validateVariation(fixed, spec, brief.campaign.prohibitions, brief.tratamiento, contextoDeValidacion(brief));
     });
   } catch (error) {
     console.warn(`AutoFix falló para canal ${spec.id}:`, error);

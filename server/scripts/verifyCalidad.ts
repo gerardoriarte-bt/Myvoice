@@ -5,6 +5,7 @@
  *   npm run verify:calidad -- --plan                # dice qué correría y cuántas llamadas, sin gastar
  *   npm run verify:calidad -- --caso terpel-1 --canales "Instagram Post,Google Ads"
  *   npm run verify:calidad -- --ablacion            # además, el mismo caso con el ADN recortado
+ *   npm run verify:calidad -- --adn2                # el mismo caso sin y con las secciones del ADN 2.0 (F4)
  *
  * GASTA CRÉDITO DE IA: genera de verdad y después juzga. No corre en CI.
  * Se corre antes y después de cada cambio al motor, y la comparación se anota
@@ -37,6 +38,7 @@ import {
   TIEMPOS,
 } from '../src/services/aiClient.js';
 import { REGLAS_DE_OFICIO, detectarOficio } from '../src/services/oficio.js';
+import { faltasDeAdn } from '../src/comun/adn/estilo.js';
 import { CopyParameters, CopyVariation } from '../src/types.js';
 import {
   LOBUENO_BRAND,
@@ -116,8 +118,33 @@ const RECORTES: { nombre: string; recortar: (p: Caso['params']) => Caso['params'
       keywords: '',
       feedbackExamples: [],
       negativeExamples: [],
+      productos: undefined,
+      frasesIntocables: undefined,
+      reglasDeEstilo: undefined,
     }),
   },
+];
+
+/**
+ * Lo que el ADN 2.0 suma al motor (docs/plan-adn-2.md, F4): productos, frases que no se cambian y reglas
+ * de estilo. Un caso exportado con `calidad:caso` ya las trae si la marca las tiene; el de LoBueno no, así
+ * que se le ponen estas, que son ciertas de LoBueno. Se mide el mismo caso sin y con ellas.
+ */
+const ADN2_LOBUENO: Pick<CopyParameters, 'productos' | 'frasesIntocables' | 'reglasDeEstilo'> = {
+  productos:
+    'My Voice: motor de copy multimarca para 14 canales, con aprobación del cliente por enlace y producción con auditoría de piezas. Se contrata por workspace.',
+  frasesIntocables: ['LoBueno', 'My Voice'],
+  reglasDeEstilo: { emojis: 'no', signosDeApertura: true, sinMayusculasSostenidas: true },
+};
+
+const conAdn2 = (p: Caso['params']): Caso['params'] =>
+  p.productos || p.frasesIntocables?.length || p.reglasDeEstilo ? p : { ...p, ...ADN2_LOBUENO };
+
+/** `--variantes solo-reglas,con-adn-2` corre solo esas (la base no cambia si no cambió el código). */
+const VARIANTES_ADN2: { nombre: string; recortar: (p: Caso['params']) => Caso['params'] }[] = [
+  { nombre: 'sin-adn-2', recortar: p => ({ ...p, productos: undefined, frasesIntocables: undefined, reglasDeEstilo: undefined }) },
+  { nombre: 'solo-reglas', recortar: p => ({ ...conAdn2(p), productos: undefined }) },
+  { nombre: 'con-adn-2', recortar: conAdn2 },
 ];
 
 interface Veredicto {
@@ -190,6 +217,8 @@ interface Corrida {
   porRegla: Record<string, number>;
   /** Faltas que encuentra el detector sin IA (no depende del juez). */
   detector: number;
+  /** Textos con alguna falta a lo que el ADN dice que no se toca (comun/adn/estilo.ts), sin IA. */
+  adn: number;
   ejemplos: { texto: string; faltas: string[]; nota?: string }[];
 }
 
@@ -205,7 +234,12 @@ async function main() {
   const config = serverAIConfig();
   const canales = (argumento('canales') || CANALES_POR_DEFECTO.join(',')).split(',').map(s => s.trim());
   const casos = cargarCasos();
-  const recortes = bandera('ablacion') ? RECORTES : RECORTES.slice(0, 1);
+  const soloVariantes = argumento('variantes')?.split(',').map(v => v.trim());
+  const recortes = bandera('adn2')
+    ? VARIANTES_ADN2.filter(v => !soloVariantes || soloVariantes.includes(v.nombre))
+    : bandera('ablacion')
+      ? RECORTES
+      : RECORTES.slice(0, 1);
   const corridas = casos.length * recortes.length;
 
   console.log(`commit    : ${commit}`);
@@ -220,7 +254,10 @@ async function main() {
   const resultados: Corrida[] = [];
   for (const caso of casos) {
     for (const recorte of recortes) {
-      const params = { ...recorte.recortar(caso.params), platforms: canales, clientId: 'calidad' } as unknown as CopyParameters;
+      // La ablación parte del ADN completo de hoy, con las secciones del ADN 2.0 (F4 no empeoró el copy:
+      // docs/plan-adn-2.md, «Medición de F4»).
+      const base = bandera('ablacion') ? conAdn2(caso.params) : caso.params;
+      const params = { ...recorte.recortar(base), platforms: canales, clientId: 'calidad' } as unknown as CopyParameters;
       process.stdout.write(`\n${caso.nombre} · ${recorte.nombre} … `);
       const r = await generateCopyWithOpenAI(params, config);
       const variaciones = (r.variations || []).filter(v => v.content);
@@ -239,6 +276,12 @@ async function main() {
       const porRegla: Record<string, number> = Object.fromEntries(REGLAS_DE_OFICIO.map(r => [r.id, 0]));
       for (const v of veredictos) for (const f of v.faltas) porRegla[f]++;
       const detector = variaciones.filter(v => detectarOficio(v.content).length > 0).length;
+      // Las faltas al ADN se cuentan siempre con las reglas de la variante con ADN 2.0: así «sin» mide
+      // cuánto se le escapa al motor cuando no las conoce.
+      const reglasAdn = conAdn2(caso.params);
+      const adn = variaciones.filter(
+        v => faltasDeAdn(v.content, { frases: reglasAdn.frasesIntocables, reglas: reglasAdn.reglasDeEstilo }).length > 0
+      ).length;
 
       resultados.push({
         caso: caso.nombre,
@@ -248,6 +291,7 @@ async function main() {
         concepto,
         porRegla,
         detector,
+        adn,
         ejemplos: variaciones
           .map(v => ({ texto: v.content, faltas: porId.get(v.id)?.faltas ?? [], nota: porId.get(v.id)?.nota }))
           .filter(e => e.faltas.length > 0),
@@ -270,6 +314,8 @@ async function main() {
   console.log(['TOTAL'.padEnd(22), ...total].join(' '));
   const det = resultados.map(r => (r.textos ? ((100 * r.detector) / r.textos).toFixed(0) : '—').padStart(18));
   console.log(['detector sin IA'.padEnd(22), ...det].join(' '));
+  const adn = resultados.map(r => (r.textos ? ((100 * r.adn) / r.textos).toFixed(0) : '—').padStart(18));
+  console.log(['ADN que no se toca'.padEnd(22), ...adn].join(' '));
   const costo = resultados.reduce((a, r) => a + r.costoUsd, 0);
   console.log(`\ncosto de generación: USD ${costo.toFixed(4)} (el juez no está incluido)`);
 

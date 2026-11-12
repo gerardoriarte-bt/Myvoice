@@ -268,7 +268,12 @@ in `AudienciaDeMarca` (a brand list a submarca inherits or replaces), one sectio
 `completitudAdn.ts` (75 % plus every ★ section) computed on read over the resolved DNA. Since F2/F3
 (2026-11-12) it is a tab of the brand in Marcas (`components/adn/`): ring, three groups, one card per section with its
 «Está bien» (any section, `/revisada`), the submarca's «= madre / Propia» and the IA proposal review; `GET /clients`
-carries `adn` (percent, apta, what is missing) for the Marcas chip and the non-blocking warning in Generar. **A submarca inherits only once its mother's DNA is
+carries `adn` (percent, apta, what is missing) for the Marcas chip and the non-blocking warning in Generar.
+Since F4 the engine reads them (`parametrosDeGeneracion`): «what is not touched» is checked without AI in
+`comun/adn/estilo.ts` (exact phrases, emojis, ¡¿, price format, sustained caps → `adnHits`, fixed like `oficioHits`);
+products are a limit for the critic and fixer only — in the writer's prompt they turned the copy into a feature list
+(`verify:calidad -- --adn2`, 2026-11-12); curated «así suena» examples replace the last 5 approved. A brand without these
+sections gets byte-identical prompts. **A submarca inherits only once its mother's DNA is
 confirmed** (`Client.adnConfirmadoEn`, `docs/plan-revision-adn.md`): `comun/adn/revisionAdn.ts` drives
 the review (each of the 5 sections «está bien» or corrected — a correction writes the column — then
 confirm), Marcas shows an amber banner and a chip on the mother, and OWNER/ADMIN get one
