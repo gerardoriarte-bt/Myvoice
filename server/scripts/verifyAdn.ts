@@ -17,6 +17,8 @@ import { PrismaClient } from '@prisma/client';
 import { confirmarPropuesta, guardarAdnDesdeColumnas, guardarSeccion, marcarRevisada } from '../src/comun/adn/guardarAdn.js';
 import { actualizarAudiencia, crearAudiencia } from '../src/comun/adn/audiencias.js';
 import { completitudAdn } from '../src/comun/adn/completitudAdn.js';
+import { faltasDeAdn } from '../src/comun/adn/estilo.js';
+import { parametrosDeGeneracion } from '../src/services/parametrosDeGeneracion.js';
 import { resolverAdn } from '../src/comun/adn/resolverAdn.js';
 import { confirmarAdn, estadoDeRevision, revisarSeccion } from '../src/comun/adn/revisionAdn.js';
 import { TenantContext, TenantError } from '../src/lib/tenancy.js';
@@ -221,8 +223,33 @@ async function main() {
     comprobar('editarla la deja sin revisar', editada?.revisadaEn === null);
     const malaClave = await marcarRevisada(sola.id, 'guias', 'verify-adn').then(() => 'guardó', (e: TenantError) => e.statusCode);
     comprobar('una clave que no existe es 400', malaClave === 400, String(malaClave));
+
+    // 13. F4: lo que no se toca, sin IA, y las secciones nuevas en lo que recibe el motor.
+    const frases = { frases: ['ViveTerpel', 'Puntos ViveTerpel'] };
+    comprobar('una frase mal escrita es falta', faltasDeAdn('Acumulá con Vive terpel hoy', frases).length === 1);
+    comprobar('escrita igual, o dentro de otra palabra, no', faltasDeAdn('Puntos ViveTerpel y ViveTerpelito', frases).length === 0);
+    comprobar('en un hashtag o una mención va sin espacios', faltasDeAdn('#PuntosViveTerpel @viveterpel', frases).length === 0);
+    const estilo = { reglas: { emojis: 'no' as const, signosDeApertura: true, sinMayusculasSostenidas: true, formatoDePrecio: '$12.900' } };
+    comprobar('sin emojis, signos de apertura y sin gritos', faltasDeAdn('Llegó GRATIS 🎉 Qué esperas?', estilo).length === 3, faltasDeAdn('Llegó GRATIS 🎉 Qué esperas?', estilo).join(' | '));
+    comprobar('una sigla corta no es un grito', faltasDeAdn('Tu CRM, ¿listo?', estilo).length === 0);
+    const precios = faltasDeAdn('Desde $12900 o $ 8,500 y $45.000', estilo);
+    comprobar('los precios siguen el formato de la marca', precios.length === 2 && precios[0].includes('$12.900') && precios[1].includes('$8.500'), precios.join(' | '));
+    const perfil = await prisma.contentDNAProfile.create({ data: {
+        clientId: sola.id, name: 'Brief', voice: '', goal: 'Venta', product: '', targetAudience: '', theme: '', keywords: '',
+        brandVoiceGuidelines: '', valueProposition: '', primaryCTA: '',
+      } });
+    const { params } = await parametrosDeGeneracion(perfil, await prisma.client.findUniqueOrThrow({ where: { id: sola.id } }));
+    comprobar(
+      'el motor recibe productos, frases, reglas y los ejemplos de así suena',
+      params.productos === 'Combustible y tienda' &&
+        params.frasesIntocables.join() === 'Sola' &&
+        params.reglasDeEstilo.emojis === 'no' &&
+        params.feedbackExamples[0]?.content === 'a',
+      JSON.stringify({ p: params.productos, f: params.frasesIntocables, r: params.reglasDeEstilo, e: params.feedbackExamples[0] })
+    );
   } finally {
     await prisma.notificacion.deleteMany({ where: { workspaceId: workspace.id } });
+    await prisma.contentDNAProfile.deleteMany({ where: { client: { workspaceId: workspace.id } } });
     await prisma.client.deleteMany({ where: { workspaceId: workspace.id } });
     await prisma.workspace.delete({ where: { id: workspace.id } });
   }

@@ -1,4 +1,5 @@
 import type { Tratamiento } from "../comun/adn/tratamiento.js";
+import type { ReglasDeAdn } from "../comun/adn/estilo.js";
 import { CampaignSpine, CopyVariation, FunnelStage, Platform } from "../types.js";
 
 export type SlotUnit = "char" | "word";
@@ -40,6 +41,10 @@ export interface ChannelBrief {
     voice: string;
     valueProposition: string;
     brandVoiceGuidelines: string;
+    /** Lo que la marca vende de verdad: el motor no inventa beneficios ni precios fuera de esto. */
+    productos: string;
+    /** Frases que no se cambian y reglas de estilo medibles (comun/adn/estilo.ts). */
+    adn: ReglasDeAdn;
     fingerprint?: any;
   };
   campaign: {

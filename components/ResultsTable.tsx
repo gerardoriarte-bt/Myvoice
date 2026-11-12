@@ -477,6 +477,11 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ variations, activeClient, c
                   Manual de oficio
                 </span>
               )}
+              {v.adnHits && v.adnHits.length > 0 && (
+                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded border bg-amber-50 text-amber-800 border-amber-200" title={v.adnHits.join('\n')}>
+                  ADN de la marca
+                </span>
+              )}
               {v.editorFlags && v.editorFlags.length > 0 && v.editorFlags.map(flag => (
                 <span key={flag} className="text-[10px] font-medium px-1.5 py-0.5 rounded border bg-amber-50 text-amber-800 border-amber-200" title="Detectado por el editor IA">
                   {etiquetaDelEditor(flag)}
@@ -572,7 +577,7 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ variations, activeClient, c
   };
 
   const totalAlerts = localVariations.filter(
-    v => v.budgetOk === false || (v.prohibitionsHit?.length ?? 0) > 0 || (v.editorFlags?.length ?? 0) > 0 || (v.oficioHits?.length ?? 0) > 0
+    v => v.budgetOk === false || (v.prohibitionsHit?.length ?? 0) > 0 || (v.editorFlags?.length ?? 0) > 0 || (v.oficioHits?.length ?? 0) > 0 || (v.adnHits?.length ?? 0) > 0
   ).length
 
   return (
@@ -683,7 +688,7 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ variations, activeClient, c
       <div className="space-y-8">
         {(Object.entries(groupedVariations) as [string, CopyVariation[]][]).map(([platform, items]) => {
           const variationGroups = groupByVariationIndex(items);
-          const totalIssues = items.filter(v => v.budgetOk === false || (v.prohibitionsHit && v.prohibitionsHit.length > 0) || (v.editorFlags && v.editorFlags.length > 0) || (v.oficioHits?.length ?? 0) > 0).length;
+          const totalIssues = items.filter(v => v.budgetOk === false || (v.prohibitionsHit && v.prohibitionsHit.length > 0) || (v.editorFlags && v.editorFlags.length > 0) || (v.oficioHits?.length ?? 0) > 0 || (v.adnHits?.length ?? 0) > 0).length;
           const scored = items.filter(v => typeof v.score === 'number');
           const avgScore = scored.length > 0 ? scored.reduce((a, v) => a + (v.score || 0), 0) / scored.length : 0;
           const slotsPerVariation = variationGroups[0]?.slots.length ?? 1;
@@ -814,9 +819,9 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ variations, activeClient, c
                                   {v.prohibitionsHit && v.prohibitionsHit.length > 0 && (
                                     <span className="text-[9px] text-red-600 font-medium" title={v.prohibitionsHit.join(', ')}>⚠ prohibición</span>
                                   )}
-                                  {((v.editorFlags?.length ?? 0) > 0 || (v.oficioHits?.length ?? 0) > 0) && (
-                                    <span className="text-[9px] text-amber-700 font-medium" title={(v.oficioHits ?? []).join('\n') || undefined}>
-                                      {[...(v.oficioHits?.length ? ['manual de oficio'] : []), ...(v.editorFlags ?? []).map(etiquetaDelEditor)].join(', ')}
+                                  {((v.editorFlags?.length ?? 0) > 0 || (v.oficioHits?.length ?? 0) > 0 || (v.adnHits?.length ?? 0) > 0) && (
+                                    <span className="text-[9px] text-amber-700 font-medium" title={[...(v.oficioHits ?? []), ...(v.adnHits ?? [])].join('\n') || undefined}>
+                                      {[...(v.oficioHits?.length ? ['manual de oficio'] : []), ...(v.adnHits?.length ? ['ADN de la marca'] : []), ...(v.editorFlags ?? []).map(etiquetaDelEditor)].join(', ')}
                                     </span>
                                   )}
                                 </div>

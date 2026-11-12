@@ -86,6 +86,17 @@ export interface CopyParameters {
   feedbackExamples?: FeedbackExample[];
   /** Lo llena el servidor desde los rechazos guardados de la marca. */
   negativeExamples?: { content: string; reason: string }[];
+  /** Lo llenan el servidor desde el ADN 2.0 (docs/plan-adn-2.md, F4): lo que la marca vende de verdad. */
+  productos?: string;
+  /** Frases que se escriben siempre igual. */
+  frasesIntocables?: string[];
+  /** Reglas de estilo que se verifican sin IA. */
+  reglasDeEstilo?: {
+    emojis?: 'no' | 'pocos' | 'libre';
+    signosDeApertura?: boolean;
+    formatoDePrecio?: string;
+    sinMayusculasSostenidas?: boolean;
+  };
 }
 
 export interface CopyVariation {
@@ -111,6 +122,8 @@ export interface CopyVariation {
   tuteoHits?: string[];        // e.g. ["tienes → tenés", "eres → sos"]
   /** Faltas al manual de oficio que se detectan sin IA (services/oficio.ts). */
   oficioHits?: string[];
+  /** Faltas a lo que el ADN dice que no se toca: frases mal escritas, reglas de estilo (comun/adn/estilo.ts). */
+  adnHits?: string[];
   score?: number;
   scoreRationale?: string;
   writerScore?: number;
