@@ -153,6 +153,12 @@ interface Veredicto {
   nota?: string;
 }
 
+/**
+ * El juez es fijo y no compite: con `AI_MODEL_JUEZ` se elige uno distinto de los que se comparan. Sin la
+ * variable, el del redactor, como hasta ahora (y entonces comparar modelos no vale: cada uno se juzga a sí).
+ */
+const modeloDelJuez = (config: ReturnType<typeof serverAIConfig>) => process.env.AI_MODEL_JUEZ || resolveModel(config, false);
+
 const juzgar = async (
   variaciones: CopyVariation[],
   concepto: string,
@@ -161,7 +167,7 @@ const juzgar = async (
   config: ReturnType<typeof serverAIConfig>
 ): Promise<Veredicto[]> => {
   const cliente = createAIClient(config);
-  const modelo = resolveModel(config, false);
+  const modelo = modeloDelJuez(config);
   const reglas = REGLAS_DE_OFICIO.map(r => `- "${r.id}": ${r.pregunta}`).join('\n');
   const items = variaciones
     .map(v => `- id: ${v.id}\n  canal: ${v.platform} · ${v.slotLabel || v.slot || ''}\n  texto: "${v.content.replace(/"/g, '\\"')}"`)
@@ -219,6 +225,8 @@ interface Corrida {
   detector: number;
   /** Textos con alguna falta a lo que el ADN dice que no se toca (comun/adn/estilo.ts), sin IA. */
   adn: number;
+  /** Lo que tardó la generación (sin el juez). */
+  segundos: number;
   ejemplos: { texto: string; faltas: string[]; nota?: string }[];
 }
 
@@ -243,7 +251,15 @@ async function main() {
   const corridas = casos.length * recortes.length;
 
   console.log(`commit    : ${commit}`);
-  console.log(`proveedor : ${config.provider} · redactor ${resolveModel(config, false)} · juez ${resolveModel(config, false)}`);
+  const modelos = {
+    director: process.env.AI_MODEL_DIRECTOR || resolveModel(config, false),
+    redactor: resolveModel(config, false),
+    revisor: resolveModel(config, true),
+    juez: modeloDelJuez(config),
+  };
+  console.log(
+    `proveedor : ${config.provider} · director ${modelos.director} · redactor ${modelos.redactor} · revisor ${modelos.revisor} · juez ${modelos.juez}`
+  );
   console.log(`casos     : ${casos.map(c => c.nombre).join(', ') || '(ninguno)'}`);
   console.log(`canales   : ${canales.join(', ')}`);
   console.log(`recortes  : ${recortes.map(r => r.nombre).join(', ')}`);
@@ -259,7 +275,9 @@ async function main() {
       const base = bandera('ablacion') ? conAdn2(caso.params) : caso.params;
       const params = { ...recorte.recortar(base), platforms: canales, clientId: 'calidad' } as unknown as CopyParameters;
       process.stdout.write(`\n${caso.nombre} · ${recorte.nombre} … `);
+      const inicio = Date.now();
       const r = await generateCopyWithOpenAI(params, config);
+      const segundos = Math.round((Date.now() - inicio) / 1000);
       const variaciones = (r.variations || []).filter(v => v.content);
       const concepto = r.spine?.concept || '';
       const marca = params.clientName || '';
@@ -292,6 +310,7 @@ async function main() {
         porRegla,
         detector,
         adn,
+        segundos,
         ejemplos: variaciones
           .map(v => ({ texto: v.content, faltas: porId.get(v.id)?.faltas ?? [], nota: porId.get(v.id)?.nota }))
           .filter(e => e.faltas.length > 0),
@@ -317,12 +336,13 @@ async function main() {
   const adn = resultados.map(r => (r.textos ? ((100 * r.adn) / r.textos).toFixed(0) : '—').padStart(18));
   console.log(['ADN que no se toca'.padEnd(22), ...adn].join(' '));
   const costo = resultados.reduce((a, r) => a + r.costoUsd, 0);
+  console.log(['segundos'.padEnd(22), ...resultados.map(r => String(r.segundos).padStart(18))].join(' '));
   console.log(`\ncosto de generación: USD ${costo.toFixed(4)} (el juez no está incluido)`);
 
   mkdirSync(join(DIR, 'resultados'), { recursive: true });
   const fecha = new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-');
   const archivo = join(DIR, 'resultados', `${fecha}-${commit}.json`);
-  writeFileSync(archivo, JSON.stringify({ commit, canales, resultados }, null, 2));
+  writeFileSync(archivo, JSON.stringify({ commit, canales, modelos, resultados }, null, 2));
   console.log(`resultado: ${archivo}`);
 }
 
