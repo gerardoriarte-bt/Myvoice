@@ -147,6 +147,36 @@ Las decisiones 20 a 22 se ajustaron el mismo día, después de revisar el mapa d
 22. **El reporte de implementación se entrega como archivo** (Excel y PDF) por ahora. Verlo en el
     portal del cliente queda para después. Cierra la pregunta 11, abierta el mismo día.
 
+## 2026-11-12 · Respuestas a PQRS
+
+23. **Las PQRS son un área de My Voice, no un medio.** Un medio escribe copy de campaña desde un brief;
+    una PQRS se responde desde el mensaje de un cliente y los hechos del caso. Por eso no pasa por el
+    director ni por el cuadro de CDM: usa el ADN de la marca y su propio flujo (caso, hechos, borrador,
+    aprobación). Plan: [../plan-respuestas-pqrs.md](../plan-respuestas-pqrs.md).
+24. **Responde el equipo de atención de la agencia**, con usuario y una función nueva (Atención). Nadie
+    externo por ahora: no hay portal para la marca. Se diseña para una base de 50 casos al día por
+    workspace, con picos de 150; pegar el caso a mano alcanza para ese volumen.
+25. **La revisión legal queda fuera de la herramienta.** La IA sugiere cuándo hace falta (demanda, SIC,
+    tutela, salud, daños) con un aviso que no bloquea; la persona puede marcar que se revisó, y eso queda
+    en el historial.
+26. **Las políticas de atención son una sección opcional del ADN.** «Atención al cliente» (políticas,
+    canales oficiales, fórmulas, lo que nunca se promete) aparece solo cuando el área PQRS está encendida
+    para la marca, no cuenta para el mínimo del ADN y la submarca la hereda de su madre si no define la
+    propia.
+27. **Solo se compromete lo que está en los hechos.** Cada caso lleva «hechos verificados», escritos por
+    una persona. Un monto, un plazo, una compensación o una admisión que no estén ahí bloquean la
+    aprobación. La IA no envía nada y los datos personales se enmascaran antes de llegar al proveedor.
+28. **Quien redacta la respuesta puede aprobarla.** A diferencia de las piezas, no hace falta una
+    segunda persona. La marca puede definir un **aprobador complementario** que aprueba después, y quien
+    redacta puede pedirlo en un caso aunque la marca no lo exija.
+29. **El canal principal son las redes sociales, y se responde lo antes posible.** Los tiempos se miden
+    en horas dentro del horario de la marca (primer contacto y respuesta de fondo). Mientras no hay hechos,
+    la IA puede escribir un **primer contacto** que no compromete nada y lleva a privado o al canal
+    oficial. En público nunca se piden ni se repiten datos personales. El trámite formal de PQRS, con su
+    plazo legal, se remite al canal oficial de la marca.
+30. **Colsubsidio es la marca piloto.** Se le pide el material para la sección de atención del ADN, sus
+    tiempos objetivo y 20 casos reales para la prueba (P0).
+
 ## Antes (2026-10-27), siguen vigentes con los nombres nuevos
 
 - La marca, su ADN y sus audiencias son la fuente de verdad (ahora en la parte común, decisión 7).
