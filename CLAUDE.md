@@ -156,6 +156,11 @@ per-generation time budgets (`TIEMPOS`, `REINTENTOS`, overridable by env). `clas
 checks the terminal error *code* before the HTTP status, so `insufficient_quota` (a 429 on
 OpenAI, a 402 on OpenRouter) is not retried; an unknown error is treated as terminal.
 The SDK's own `maxRetries` is pinned to 0 so the two retry layers don't multiply.
+Models that reason (Claude Opus/Sonnet/Fable 5 via OpenRouter) cannot turn reasoning off and spend the whole
+`max_tokens` on it: `chatCompletionConRetry` gives them `reasoning.effort` per stage, a 6 000-token margin and
+twice the per-call timeout — without it Google Ads came back empty (2026-11-12). Production models are set by
+`AI_MODEL` / `AI_MODEL_MINI` in the server env (Sonnet 5.5 + Haiku 5.5 since 2026-11-12); `AI_MODEL_DIRECTOR`
+can give the director its own model, and `verify:calidad` takes a fixed judge with `AI_MODEL_JUEZ`.
 
 Config resolution: a workspace's own `aiProvider`/`aiApiKey` wins; otherwise `serverAIConfig()`
 from env. `pricing.ts` computes real per-stage cost, which is returned to the client **and** persisted

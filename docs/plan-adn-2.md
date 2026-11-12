@@ -259,6 +259,17 @@ devuelve 404. «Manager» se reemplaza por la función «Estrategia» cuando `Fu
   si un cambio empeora mucho, no para afinar. La prueba que cuenta es con el equipo y una marca real con
   el ADN completo (la marca nueva que entra con el ADN 2.0 desde el primer día).
 
+### Ablación sobre el ADN completo (2026-11-12)
+
+`verify:calidad -- --ablacion`, LoBueno con las secciones del ADN 2.0, 3 repeticiones, juez Sonnet 4.6.
+Faltas cada 100 textos: completo 33 · sin propuesta 42 · sin voz 40 · sin audiencia 43 · sin ejemplos 33 ·
+solo el nombre 42.
+
+- Propuesta de valor, voz y audiencia son las que más pesan, y son ★: los pesos quedan como están.
+- Sin ejemplos no cambia en este caso (la voz de LoBueno es muy detallada); no se baja su peso con un caso.
+- El 75 % no se puede calibrar con esto: «solo el nombre» empeora tanto como quitar una sección, y el
+  completo dio 30, 54 y 14 en tres corridas iguales. Se calibra con la marca nueva y el equipo.
+
 ### Criterios de aceptación
 
 - Una marca sin las ★ completas no queda apta. Con las ★ completas y ≥ 75 % queda apta. Una propuesta

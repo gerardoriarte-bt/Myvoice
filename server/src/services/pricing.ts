@@ -27,12 +27,18 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
   "gpt-4o":      p(2.50, 10.00),
   "gpt-4o-mini": p(0.15, 0.60),
   // Anthropic (bare ids)
+  "claude-opus-5-5":   p(4.00, 20.00),
+  "claude-sonnet-5-5": p(2.00, 10.00),
+  "claude-haiku-5-5":  p(0.10, 0.50),
   "claude-opus-5":    p(5.00, 25.00),
   "claude-sonnet-5":  p(2.00, 10.00),
   "claude-sonnet-4-6": p(3.00, 15.00),
   "claude-haiku-4-5":  p(1.00, 5.00),
   "claude-haiku-4-5-20251001": p(1.00, 5.00),
   // Anthropic via OpenRouter slugs
+  "anthropic/claude-opus-5.5":   p(4.00, 20.00),
+  "anthropic/claude-sonnet-5.5": p(2.00, 10.00),
+  "anthropic/claude-haiku-5.5":  p(0.10, 0.50),
   "anthropic/claude-opus-5":     p(5.00, 25.00),
   "anthropic/claude-sonnet-5":   p(2.00, 10.00),
   "anthropic/claude-sonnet-4.6": p(3.00, 15.00),

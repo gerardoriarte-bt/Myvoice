@@ -289,6 +289,10 @@ const runGeneration = async (
   const client = opciones.clienteInyectado ?? createAIClient(aiConfig);
   const writerModel = resolveModel(aiConfig, false);
   const miniModel = resolveModel(aiConfig, true);
+  // El director decide concepto y ángulos en una sola llamada por generación: puede ir con un modelo más
+  // fuerte que el redactor (`AI_MODEL_DIRECTOR`). Solo con la config del servidor: un workspace con su
+  // propio modelo lo usa en todo. Sin la variable, el del redactor, como hasta ahora.
+  const directorModel = (!aiConfig.model && process.env.AI_MODEL_DIRECTOR) || writerModel;
 
   const usage: UsageEntry[] = [];
 
@@ -305,7 +309,7 @@ const runGeneration = async (
   );
 
   try {
-    const spine = await buildCampaignSpine(params, client, writerModel, usage, señalGeneracion);
+    const spine = await buildCampaignSpine(params, client, directorModel, usage, señalGeneracion);
     const brief = buildBrief(params, spine);
     emit({ type: "spine", payload: spine });
 

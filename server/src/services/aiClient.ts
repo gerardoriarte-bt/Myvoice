@@ -419,12 +419,57 @@ export interface OpcionesLlamada {
  * bajo el presupuesto de tiempo del canal, así que el peor caso de la llamada
  * está acotado y ningún slot del semáforo queda tomado indefinidamente.
  */
+/** Los modelos que razonan antes de contestar (Opus, Sonnet y Fable de la familia 5; Haiku 5.5 casi no). */
+const RAZONA = /claude-(opus-5|sonnet-5|fable-5)/i;
+
+type Esfuerzo = "low" | "medium" | "high";
+
+/** Cuánto razona cada etapa. El director decide concepto y ángulos; el resto escribe o corrige. */
+const ESFUERZO_POR_ETAPA: Record<string, Esfuerzo> = {
+  director: (process.env.AI_RAZONAMIENTO_DIRECTOR as Esfuerzo) || "medium",
+  writer: (process.env.AI_RAZONAMIENTO_REDACTOR as Esfuerzo) || "low",
+  critic: "low",
+  fixer: "low",
+  supercritic: "low",
+};
+
+/** Tokens extra para el razonamiento: con `effort: low` usan entre 1.100 y 2.500 por llamada. */
+const MARGEN_RAZONAMIENTO = 6_000;
+
+/**
+ * Un modelo que razona gasta tokens antes de escribir, y esos tokens salen del mismo `max_tokens`: con
+ * el límite de siempre, Google Ads volvía vacío o vencía el tiempo (verify:calidad, 2026-11-12). En la
+ * familia 5 el razonamiento no se puede apagar ni topar con `reasoning.max_tokens` (usa todo lo que hay).
+ * Para esos modelos, y solo por OpenRouter, se fija cuánto razona cada etapa (`reasoning.effort`, que sí
+ * lo baja a un tercio), se suma un margen al límite de tokens y se duplica el tiempo por llamada. Los
+ * demás modelos pasan sin cambios.
+ */
+const paraModeloQueRazona = (
+  client: OpenAI,
+  request: OpenAI.Chat.Completions.ChatCompletionCreateParamsNonStreaming,
+  etapa: string,
+  timeoutMs: number
+): { request: OpenAI.Chat.Completions.ChatCompletionCreateParamsNonStreaming; timeoutMs: number } => {
+  if (!RAZONA.test(String(request.model)) || !client.baseURL?.includes("openrouter.ai")) return { request, timeoutMs };
+  const esfuerzo = ESFUERZO_POR_ETAPA[etapa.split(":")[0].toLowerCase()];
+  const conRazonamiento = {
+    ...request,
+    ...(request.max_tokens ? { max_tokens: request.max_tokens + MARGEN_RAZONAMIENTO } : {}),
+    // `reasoning` es un campo de OpenRouter que los tipos del SDK de OpenAI no modelan.
+    ...(esfuerzo ? { reasoning: { effort: esfuerzo } } : {}),
+  } as OpenAI.Chat.Completions.ChatCompletionCreateParamsNonStreaming;
+  return { request: conRazonamiento, timeoutMs: timeoutMs * 2 };
+};
+
 export const chatCompletionConRetry = async (
   client: OpenAI,
   request: OpenAI.Chat.Completions.ChatCompletionCreateParamsNonStreaming,
   opts: OpcionesLlamada
 ): Promise<OpenAI.Chat.Completions.ChatCompletion> => {
   const t0 = Date.now();
+  const ajustado = paraModeloQueRazona(client, request, opts.etapa, opts.timeoutMs);
+  request = ajustado.request;
+  const timeoutPorLlamada = ajustado.timeoutMs;
   const intentosMax = opts.intentosMax ?? REINTENTOS.intentosMax;
   const presupuestoMs = opts.presupuestoMs ?? TIEMPOS.canal;
 
@@ -459,7 +504,7 @@ export const chatCompletionConRetry = async (
 
     // No se saltea el intento por no entrar entero: se le recorta el timeout a
     // lo que queda de presupuesto.
-    const timeoutEfectivo = Math.min(opts.timeoutMs, restante);
+    const timeoutEfectivo = Math.min(timeoutPorLlamada, restante);
     const acLlamada = new AbortController();
     let vencioPorTimeout = false;
     const temporizador = setTimeout(() => {
