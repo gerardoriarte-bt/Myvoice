@@ -398,7 +398,7 @@ implementation report. Decisions 18–22 in `docs/ecosistema/decisiones.md`.
 `docs/plan-respuestas-pqrs.md` (2026-11-12): customer-service replies (PQRS) as an area of My Voice
 switched on per brand — not a channel: a case, human-verified facts, a draft in the brand's voice that
 may only commit what the facts say, approval, copy-out. Agency team only; legal review suggested, done
-outside. Decisions 23–27.
+outside. Decisions 23–30.
 `docs/plan-h2-produccion-auditoria.md` is the next phase (approved copy → assigned piece → AI
 audit); it is design-first and shares no code with the H1 deploy.
 `docs/plan-feedback-pruebas.md` (2026-11-05): the 8 points from the first user test, the cause of

@@ -166,6 +166,16 @@ Las decisiones 20 a 22 se ajustaron el mismo día, después de revisar el mapa d
 27. **Solo se compromete lo que está en los hechos.** Cada caso lleva «hechos verificados», escritos por
     una persona. Un monto, un plazo, una compensación o una admisión que no estén ahí bloquean la
     aprobación. La IA no envía nada y los datos personales se enmascaran antes de llegar al proveedor.
+28. **Quien redacta la respuesta puede aprobarla.** A diferencia de las piezas, no hace falta una
+    segunda persona. La marca puede definir un **aprobador complementario** que aprueba después, y quien
+    redacta puede pedirlo en un caso aunque la marca no lo exija.
+29. **El canal principal son las redes sociales, y se responde lo antes posible.** Los tiempos se miden
+    en horas dentro del horario de la marca (primer contacto y respuesta de fondo). Mientras no hay hechos,
+    la IA puede escribir un **primer contacto** que no compromete nada y lleva a privado o al canal
+    oficial. En público nunca se piden ni se repiten datos personales. El trámite formal de PQRS, con su
+    plazo legal, se remite al canal oficial de la marca.
+30. **Colsubsidio es la marca piloto.** Se le pide el material para la sección de atención del ADN, sus
+    tiempos objetivo y 20 casos reales para la prueba (P0).
 
 ## Antes (2026-10-27), siguen vigentes con los nombres nuevos
 

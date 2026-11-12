@@ -1,6 +1,6 @@
 # Plan · Respuestas a PQRS con la voz de la marca
 
-Estado: propuesta · 2026-11-12 · Decisiones 23 a 27 en
+Estado: propuesta · 2026-11-12 · Marca piloto: Colsubsidio · Decisiones 23 a 30 en
 [ecosistema/decisiones.md](./ecosistema/decisiones.md) · Depende del ADN 2.0
 ([plan-adn-2.md](./plan-adn-2.md))
 
@@ -25,7 +25,9 @@ distinto a escribir campañas. Por eso esto es un área, no un medio:
 |---|---|---|
 | Quién responde | El equipo de atención de la agencia, con usuario. Nadie externo por ahora. | Reusa login, funciones y permisos. No hay portal para la marca. |
 | Volumen base | **50 casos al día por workspace**, entre todas las marcas, repartidos entre 3 a 5 personas (10 a 15 casos cada una). Picos de hasta 150. | Con este volumen alcanza con pegar el caso a mano. Una integración con el sistema de tickets se evalúa si el volumen real pasa los 150 diarios de forma sostenida. |
-| Revisión legal | Fuera de la herramienta. La IA sugiere cuándo hace falta. | No hay un segundo paso de aprobación dentro de My Voice. |
+| Canal principal | **Redes sociales**: comentarios públicos y mensajes privados. Se responde lo antes posible. | El plazo se mide en horas, no en días, y la respuesta es corta. |
+| Aprobación | Quien redacta puede aprobar. La marca puede sumar un aprobador complementario. | No hace falta una segunda persona para cada caso. |
+| Revisión legal | Fuera de la herramienta. La IA sugiere cuándo hace falta. | No hay un paso legal dentro de My Voice. |
 | Políticas de la marca | Una sección **opcional** del ADN, que solo se ve cuando el área está encendida. | No cambia el mínimo del ADN para hacer campañas. |
 
 El volumen es una suposición para diseñar. Se corrige con lo que muestre el piloto.
@@ -36,9 +38,9 @@ El volumen es una suposición para diseñar. Se corrige con lo que muestre el pi
 
 | Quién | Qué hace |
 |---|---|
-| **Atención** (función nueva, interna) | Registra el caso, confirma el tipo, escribe los hechos verificados, revisa el borrador y lo deja listo para aprobar. |
+| **Atención** (función nueva, interna) | Registra el caso, confirma el tipo, escribe los hechos verificados, revisa el borrador y **lo aprueba**. |
 | **IA** | Propone el tipo, el tema y la urgencia; propone un borrador; marca promesas sin respaldo y sugiere revisión legal cuando la detecta. |
-| **Responsable de atención** | Aprueba la respuesta antes de enviarla. Puede ser la misma persona de Atención si la marca lo permite (abierto). |
+| **Aprobador complementario** (opcional) | Si la marca lo define, aprueba también, después de quien redactó. Quien redacta puede pedirlo en un caso aunque la marca no lo exija. |
 | **Estrategia** | Completa la sección «Atención al cliente» del ADN de la marca. |
 
 ### Encender el área
@@ -62,21 +64,26 @@ El volumen es una suposición para diseñar. Se corrige con lo que muestre el pi
 1. **Bandeja de casos.** Los casos de todas las marcas con el área encendida, ordenados por fecha límite.
    Cada uno muestra marca, tipo, estado (por responder, por aprobar, respondido) y días que quedan. Los
    que vencen en dos días hábiles o menos van arriba, marcados.
-2. **Caso nuevo.** Marca, canal de entrada (correo, redes, WhatsApp, otro), radicado si existe y el mensaje
-   del cliente pegado. La IA propone el tipo, el tema y la urgencia, y la persona confirma. La fecha
-   límite se calcula del tipo y de la fecha de recibido.
+2. **Caso nuevo.** Marca, red o canal (Facebook, Instagram, X, TikTok, WhatsApp, correo), si el mensaje es
+   **público** (un comentario) o **privado** (un mensaje directo), el enlace a la publicación si existe y
+   el mensaje del cliente pegado. La IA propone el tipo, el tema y la urgencia, y la persona confirma. La
+   hora límite sale del tiempo objetivo de la marca para ese canal.
 3. **Responder un caso, de a uno.**
-   - Arriba: el mensaje del cliente.
+   - Arriba: el mensaje del cliente y si es público o privado.
+   - **Primer contacto.** Si todavía no hay hechos, la IA puede escribir una respuesta que reconoce el
+     caso, no compromete nada y lleva la conversación a privado o al canal oficial de la marca. Es lo
+     que sale primero en redes, mientras se averiguan los hechos.
    - Al centro: **«Hechos verificados»**, un campo obligatorio: qué pasó, qué se va a hacer y en qué plazo.
-     Sin hechos no se genera.
+     Sin hechos solo se genera el primer contacto.
    - Después: el borrador de la IA con los avisos en el lugar exacto (una promesa que no está en los
      hechos, un tratamiento equivocado, una pregunta del cliente que quedó sin responder).
    - Acciones: «Pedir otra versión», editar, y **«Enviar a aprobar»** como acción principal.
 4. **Sugerencia de revisión legal.** Un aviso ámbar, no un bloqueo: «Este caso menciona una demanda.
    Sugerimos que lo revise el área legal antes de responder». La persona puede marcar «Revisado por
    legal», y eso queda en el historial. La revisión ocurre fuera de My Voice.
-5. **Aprobar.** El responsable ve el caso, los hechos, la respuesta y los avisos. Aprueba o devuelve con
-   un comentario.
+5. **Aprobar.** Quien redacta aprueba. Si la marca tiene aprobador complementario, o quien redacta lo
+   pidió, la respuesta le llega con el caso, los hechos y los avisos, y aprueba o devuelve con un
+   comentario.
 6. **Respondido.** Botón «Copiar respuesta» para pegarla en el canal donde se contesta, y «Marcar
    enviada» con la fecha. My Voice no envía nada.
 
@@ -88,6 +95,9 @@ El volumen es una suposición para diseñar. Se corrige con lo que muestre el pi
 - **La voz y el tratamiento son los del ADN**, con un registro más cuidadoso que en campañas: menos
   ingenio, más claridad. Una queja no se responde con un juego de palabras.
 - **Cada respuesta contesta todo lo que el cliente preguntó.** Si algo queda sin responder, se avisa.
+- **En público, corto y sin datos personales.** Un comentario público nunca pide ni repite un documento,
+  un teléfono o un número de cuenta. Si el caso los necesita, la respuesta lleva a privado o al canal
+  oficial. El largo máximo sale de cada red.
 - **Los datos personales no salen de la plataforma sin necesidad.** Antes de enviar el caso al proveedor
   de IA se enmascaran los números de documento, teléfonos, correos y cuentas.
 - **Todo queda en el historial único** (decisión 19): caso registrado, tipo confirmado, borrador, avisos,
@@ -118,8 +128,10 @@ ADN solo a través de `resolverAdn` (parte común) y no toca campañas, cuadros 
   - un grupo propio que la pantalla del ADN muestra solo con el área encendida;
   - `completitudAdn.ts` la deja fuera del mínimo.
 - **`CasoPqrs`:** `clientId`, `workspaceId`, `tipo` (`PETICION | QUEJA | RECLAMO | SUGERENCIA`), `tema`,
-  `urgencia`, `canal`, `radicado?`, `mensaje` (enmascarado), `hechos`, `recibidoEn`, `venceEn`,
-  `estado`, `responsableId?`, `revisionLegalSugerida`, `revisionLegalMarcada`.
+  `urgencia`, `red`, `publico` (bool), `enlace?`, `mensaje` (enmascarado), `hechos`, `recibidoEn`,
+  `venceEn`, `estado`, `redactorId`, `pideComplementario`, `revisionLegalSugerida`, `revisionLegalMarcada`.
+- **Aprobador complementario por marca:** `aprobadorComplementarioId?` en la configuración del área.
+  Aprueba después de quien redactó; sin él, la aprobación de quien redacta basta.
 - **`RespuestaPqrs`:** las versiones del borrador con sus avisos, la aprobada y `enviadaEn`.
 - **`CasoPqrsEvento`:** append-only, con el mismo patrón que `PiezaEvento`. Alimenta el historial único.
 
@@ -141,18 +153,15 @@ ADN solo a través de `resolverAdn` (parte común) y no toca campañas, cuadros 
 - **Todo pasa por `chatCompletionConRetry`** (`aiClient.ts`) y registra su costo como `GenerationLog`,
   con un `tipo` que separe PQRS de campañas en `/analytics/usage`.
 
-### Plazos
+### Tiempos
 
-La fecha límite se calcula en días hábiles colombianos desde `recibidoEn`. Valores iniciales, a
-confirmar con el equipo de atención:
+En redes se responde lo antes posible, así que el plazo se mide en **horas dentro del horario de
+atención** de la marca, no en días. Cada marca define en la sección de atención dos tiempos objetivo:
+el del primer contacto y el de la respuesta de fondo. Mientras Colsubsidio no confirme los suyos, la
+herramienta arranca con 1 hora para el primer contacto y 24 horas para la de fondo, y los ajusta la marca.
 
-| Tipo | Plazo inicial |
-|---|---|
-| Petición | 15 días hábiles (Ley 1755 de 2015) |
-| Queja, reclamo | 15 días hábiles |
-| Sugerencia | Sin plazo legal; se ordena al final |
-
-Cada marca podrá ajustar sus plazos en la sección de atención si su política es más corta.
+Un caso que exige el trámite formal de PQRS (con su radicado y su plazo legal) se lleva al canal
+oficial de la marca. My Voice no lleva ese trámite.
 
 ### Permisos y aislamiento
 
@@ -165,9 +174,9 @@ Cada marca podrá ajustar sus plazos en la sección de atención si su política
 
 | Fase | Qué entrega | Depende de |
 |---|---|---|
-| P0 | Diseño en el `.pen` y prueba de redacción: 20 casos reales anonimizados contra el ADN de una marca, juzgados con `verify:calidad` adaptado | ADN 2.0 |
+| P0 | Diseño en el `.pen` y prueba de redacción: 20 casos reales anonimizados de Colsubsidio contra su ADN, juzgados con `verify:calidad` adaptado | ADN 2.0 de Colsubsidio, material pedido a la marca |
 | P1 | Sección del ADN, encendido por marca, caso nuevo, respuesta y aprobación, copiar y marcar enviada | P0 |
-| P2 | Bandeja con plazos, avisos de vencimiento en la cola y reporte mensual por marca (casos, tipos, tiempos) | P1 |
+| P2 | Bandeja con tiempos objetivo, avisos antes de vencer en la cola y reporte mensual por marca (casos, tipos, tiempos) | P1 |
 | P3 | Integración con el sistema de tickets, si el volumen lo pide | volumen real |
 
 ### Cómo se mide
@@ -176,13 +185,17 @@ Cada marca podrá ajustar sus plazos en la sección de atención si su política
 |---|---|
 | Respuestas aprobadas con un compromiso que no estaba en los hechos | 0 |
 | Respuestas con el tratamiento equivocado | 0 |
-| Casos que vencen sin respuesta | 0 |
+| Casos de redes respondidos fuera del tiempo objetivo | 0 |
+| Comentarios públicos que piden o repiten datos personales | 0 |
 | Tiempo desde que se pega el caso hasta el borrador | Menos de 30 s |
 | Respuestas aprobadas sin editar o con una edición menor | A medir en el piloto |
 
 ## Preguntas abiertas
 
-- ¿La persona que redacta puede aprobar su propia respuesta, o siempre aprueba otra? En piezas, quien
-  sube no decide (decisión de 2026-11-05).
-- ¿Qué plazos usa hoy el equipo de atención, por tipo y por marca?
-- ¿Con qué marca se hace el piloto y de dónde salen los 20 casos de prueba?
+Se resuelven con lo que mande Colsubsidio (el correo de solicitud del 2026-11-12):
+
+- Sus tiempos objetivo por red y su horario de atención.
+- Qué responde la agencia en público, qué pasa a privado y qué se remite al canal oficial de PQRS.
+- Qué unidades de negocio entran y si alguna habla distinto (serían submarcas).
+- Si quieren un aprobador complementario de su lado o de la agencia.
+- Los 20 casos de prueba y las respuestas que hoy consideran buenas.
