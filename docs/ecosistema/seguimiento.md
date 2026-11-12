@@ -50,6 +50,8 @@ Cada función con su estado en las tres pistas. Se actualiza en el mismo PR que 
 | Responsable | Aprobación de copy por campaña | ● | ● | ● | (v1) |
 | Cliente | Aprobar copy y piezas en el portal | ● | ● | ● | (v1) |
 | Diseño, responsable | Producción y auditoría de piezas | ● | ● | ● | MV-10 |
+| Atención | Respuestas a PQRS: caso, hechos, borrador, aprobación | ○ | ○ | ○ | decisiones 23–27 · [plan](../plan-respuestas-pqrs.md) |
+| Estrategia | Sección «Atención al cliente» del ADN | ○ | ○ | ○ | decisión 26 |
 
 ## CDM
 

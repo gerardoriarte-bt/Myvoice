@@ -48,6 +48,11 @@ Estados: **diseñada** · **ajustar** (diseñada, pero una decisión nueva la ca
 | Adaptaciones | Algo que corregir | Acortar | diseñada | § v2 · Adaptaciones · algo que corregir |
 | Entrega | **Qué texto va en qué formato** (lo que se informa a CDM) | Enviar a CDM / Descargar | por diseñar | — |
 | Producción | Tablero de piezas, auditoría y aprobación | Aceptar / devolver | en producción (H2) | secciones de Producción del `.pen` |
+| PQRS | Bandeja de casos por fecha límite | Abrir el caso | por diseñar | — |
+| PQRS | Caso nuevo: pegar el mensaje, confirmar tipo | Registrar | por diseñar | — |
+| PQRS | Responder un caso: hechos verificados, borrador con avisos, sugerencia de revisión legal | Enviar a aprobar | por diseñar | — |
+| PQRS | Aprobar la respuesta | Aprobar / devolver | por diseñar | — |
+| ADN | Sección «Atención al cliente» (solo con el área encendida) | Guardar | por diseñar | — |
 
 ## CDM
 

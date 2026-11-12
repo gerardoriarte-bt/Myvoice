@@ -85,6 +85,16 @@ está aquí, todavía no tiene nombre acordado: se agrega antes de usarlo en una
 | **Reporte de implementación** | Lo que quedó montado contra lo planeado, con fechas, IDs y novedades. Es la constancia para el cliente. | El rendimiento de los anuncios (eso es medición). |
 | **Historial de aprobaciones** | Todas las aprobaciones de una campaña, internas y del cliente, en un solo lugar: qué, quién, cuándo, por dónde y con qué comentario. | — |
 
+## Atención (PQRS)
+
+| Término | Significa | No confundir con |
+|---|---|---|
+| **PQRS** | Petición, queja, reclamo o sugerencia de un cliente de la marca. | Un medio: las PQRS son un área aparte, sin campaña. |
+| **Atención** | Función interna del equipo de la agencia que registra y responde los casos. | Responsable de la campaña. |
+| **Caso** | Una PQRS registrada: marca, canal, tipo, mensaje del cliente, hechos y fecha límite. | — |
+| **Hechos verificados** | Lo que una persona confirma del caso: qué pasó, qué se va a hacer y en qué plazo. Es lo único que la respuesta puede comprometer. | Las políticas de la marca, que son generales. |
+| **Atención al cliente (sección del ADN)** | Políticas, canales oficiales, fórmulas y lo que nunca se promete. Opcional; aparece con el área PQRS encendida. | Prohibiciones de la marca, que valen para todo. |
+
 ## Palabras que dejamos de usar
 
 | En vez de… | Se dice… |
