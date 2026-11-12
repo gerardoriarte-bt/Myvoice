@@ -1,6 +1,6 @@
 # Plan · ADN 2.0 por capas y campaña nueva
 
-Estado: F1 construida (2026-11-05, migración `20261105000002_adn_2_secciones`); F2–F6 por hacer · Decisión 17 · PRD: ADN-1 a ADN-8, PL-4, PL-12 ·
+Estado: F1 construida (2026-11-05, migración `20261105000002_adn_2_secciones`); F2 y F3 construidas (2026-11-12); F4–F6 por hacer · Decisión 17 · PRD: ADN-1 a ADN-8, PL-4, PL-12 ·
 Diseño: `.pen`, «— Decisión 17 · ADN 2.0 por capas y campaña nueva» (cinco frames) · Antes:
 [plan-revision-adn.md](./plan-revision-adn.md) (revisión de la madre, en producción) y la decisión 16
 (capas, en producción).
@@ -213,6 +213,28 @@ devuelve 404. «Manager» se reemplaza por la función «Estrategia» cuando `Fu
 - **Frases que no se cambian: suma fija**, como propuso la pregunta 1. Cambiarlo es una línea en
   `secciones.ts`.
 
+### Lo que F2 y F3 decidieron al construir (2026-11-12)
+
+- **El ADN es una pestaña de la marca** (ADN · Campañas · Métricas), no una pantalla aparte. Una marca que
+  no llega al mínimo abre en el ADN; la tarjeta de la izquierda, que editaba voz, tratamiento, propuesta de
+  valor y guías, ahora solo muestra el porcentaje y lleva a la pestaña.
+- **«Está bien» vale para cualquier sección**: `POST /clients/:id/adn/secciones/:clave/revisada` marca
+  `revisadaEn` sin guardar versión, y editarla después la vuelve a dejar sin revisar. La franja de la madre
+  (`RevisionDeAdn.tsx`) ya no lista las secciones: dice cuáles de las cinco faltan, lleva a su tarjeta y
+  confirma. Mientras la madre pide revisión, una sección vacía o débil también se puede dar por buena
+  («Está bien así»): si no, una madre sin keywords no confirmaba nunca.
+- **En una submarca no hay «Está bien»**: la revisión es de la madre antes de heredar. «Propia» abre el
+  editor con lo de la madre para partir de ahí, y al guardar deja de heredar; «= Terpel» vuelve a heredar
+  sin borrar lo propio.
+- **`GET /clients/:id/adn` devuelve `filas`** (lo propio, la propuesta y quién y cuándo, ADN-8) en lugar
+  de `origenes`; **`GET /clients` devuelve `adn`** (porcentaje, apta y qué falta) para el chip de Marcas
+  y el aviso de Generar. Calcula la completitud de cada marca al leer la lista.
+- **«Completar con IA» no aparece todavía**: llega con F5. El manual en PDF sigue en la columna de la
+  izquierda como hasta ahora.
+- **Así suena** sin ejemplos dice en su tarjeta que el motor usa los 5 últimos aprobados (pregunta 2,
+  por ahora así). **Frases que no se cambian** quedó con suma fija y candado (pregunta 1); el frame
+  `gZTh8` del `.pen` se ajustó.
+
 ### Criterios de aceptación
 
 - Una marca sin las ★ completas no queda apta. Con las ★ completas y ≥ 75 % queda apta. Una propuesta
@@ -231,11 +253,11 @@ devuelve 404. «Manager» se reemplaza por la función «Estrategia» cuando `Fu
 
 ## Preguntas abiertas
 
-1. **Frases que no se cambian en una submarca**:
+1. **Frases que no se cambian en una submarca** (resuelta el 2026-11-12: suma fija):
    - El `.pen` la dibuja con «= Terpel / Propia».
    - El plan propone **suma fija**, con candado como las prohibiciones. «ViveTerpel» tiene que
      escribirse igual en Terpel CRM, y sumar las frases de la madre no le quita nada a la submarca.
    - Si se aprueba, se ajusta el frame.
-2. **Ejemplos de «así suena» sin elegir**:
+2. **Ejemplos de «así suena» sin elegir** (resuelta el 2026-11-12: la regla de hoy hasta F5):
    - Mientras nadie los elija, ¿alcanza la regla de hoy (los 5 últimos aprobados)?
    - ¿O F5 debería proponer de entrada los 10 mejores del copy aprobado para confirmar?

@@ -14,7 +14,7 @@
  */
 
 import { PrismaClient } from '@prisma/client';
-import { confirmarPropuesta, guardarAdnDesdeColumnas, guardarSeccion } from '../src/comun/adn/guardarAdn.js';
+import { confirmarPropuesta, guardarAdnDesdeColumnas, guardarSeccion, marcarRevisada } from '../src/comun/adn/guardarAdn.js';
 import { actualizarAudiencia, crearAudiencia } from '../src/comun/adn/audiencias.js';
 import { completitudAdn } from '../src/comun/adn/completitudAdn.js';
 import { resolverAdn } from '../src/comun/adn/resolverAdn.js';
@@ -206,6 +206,21 @@ async function main() {
     });
     const conGuias = await resolverAdn(sola.id, { version: 999 });
     comprobar('una versión de antes lee las guías como reglas de estilo', conGuias.secciones.reglasDeEstilo.texto === 'Guías viejas', conGuias.secciones.reglasDeEstilo.texto);
+
+    // 12. «Está bien» en cualquier sección (F2): no cambia el ADN, y editarla después la deja sin revisar.
+    const versiones = await prisma.adnVersion.count({ where: { clientId: sola.id } });
+    await marcarRevisada(sola.id, 'productos', 'verify-adn');
+    await marcarRevisada(sola.id, 'audiencias', 'verify-adn');
+    const revisadas = await prisma.seccionAdn.findMany({ where: { clientId: sola.id, clave: { in: ['productos', 'audiencias'] } } });
+    comprobar(
+      '«Está bien» marca la sección sin guardar versión',
+      revisadas.length === 2 && revisadas.every(f => f.revisadaEn) && (await prisma.adnVersion.count({ where: { clientId: sola.id } })) === versiones
+    );
+    await guardarSeccion(sola.id, 'productos', { contenido: { texto: 'Combustible y tienda' } }, yo);
+    const editada = await prisma.seccionAdn.findUnique({ where: { clientId_clave: { clientId: sola.id, clave: 'productos' } } });
+    comprobar('editarla la deja sin revisar', editada?.revisadaEn === null);
+    const malaClave = await marcarRevisada(sola.id, 'guias', 'verify-adn').then(() => 'guardó', (e: TenantError) => e.statusCode);
+    comprobar('una clave que no existe es 400', malaClave === 400, String(malaClave));
   } finally {
     await prisma.notificacion.deleteMany({ where: { workspaceId: workspace.id } });
     await prisma.client.deleteMany({ where: { workspaceId: workspace.id } });

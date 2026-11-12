@@ -8,6 +8,7 @@ import BrandHubHero from './BrandHubHero';
 import { clientApi, analyticsApi } from '../services/api';
 import { Copy, CornerDownRight, Network, Plus, ShieldAlert, ArrowRight } from 'lucide-react';
 import RevisionDeAdn from './RevisionDeAdn';
+import AdnDeMarca from './adn/AdnDeMarca';
 import { distincion, familias, madreDe, madresPosibles, normalizarNombre, opcionDeMadre, tieneNombreRepetido } from '../marcas';
 
 /** El brief de una campaña mientras se edita en la marca. */
@@ -136,7 +137,9 @@ const ClientManager: React.FC<ClientManagerProps> = ({
   const [duplicatingId, setDuplicatingId] = React.useState<string | null>(null);
 
   // Client detail view state
-  const [clientDetailView, setClientDetailView] = React.useState<'campaigns' | 'metrics'>('campaigns');
+  const [clientDetailView, setClientDetailView] = React.useState<'adn' | 'campaigns' | 'metrics'>('campaigns');
+  /** Sube cada vez que algo cambia el ADN: la pantalla del ADN y la franja de revisión lo vuelven a leer. */
+  const [adnRecarga, setAdnRecarga] = React.useState(0);
 
   // Analytics / Metricas state
   const [analyticsData, setAnalyticsData] = React.useState<any>(null);
@@ -347,12 +350,14 @@ const ClientManager: React.FC<ClientManagerProps> = ({
     setShowDnaForm(false);
   };
 
-  const enterHub = (clientId: string) => {
+  /** `vista` fuerza la pestaña; sin ella, una marca que no llega al mínimo del ADN abre en el ADN. */
+  const enterHub = (clientId: string, vista?: 'adn' | 'campaigns') => {
     setActiveClientHub(clientId);
     onAbrirMarca?.(clientId);
     resetDnaForm();
     setShowGlobalSettings(false);
-    setClientDetailView('campaigns');
+    const marca = clients.find(c => c.id === clientId);
+    setClientDetailView(vista ?? (marca?.adn && !marca.adn.apta ? 'adn' : 'campaigns'));
     setAnalyticsData(null);
     setAnalyticsError(null);
   };
@@ -360,7 +365,7 @@ const ClientManager: React.FC<ClientManagerProps> = ({
   // Un aviso de la bandeja pide abrir la revisión del ADN de una marca.
   React.useEffect(() => {
     if (!revisarAdnDe || !clients.some(c => c.id === revisarAdnDe)) return;
-    enterHub(revisarAdnDe);
+    enterHub(revisarAdnDe, 'adn');
     onRevisionAbierta?.();
     window.scrollTo({ top: 0 });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -524,23 +529,20 @@ const ClientManager: React.FC<ClientManagerProps> = ({
                 </span>
               </div>
             )}
-            {(() => {
-              const score = [
-                !!client.voice,
-                !!client.valueProposition,
-                !!client.brandVoiceGuidelines,
-                !!client.brandGuidelinePdfUrl,
-                profilesCount > 0,
-              ].filter(Boolean).length
-              return (
-                <div className="flex items-center gap-1 mt-1.5">
-                  {[0,1,2,3,4].map(i => (
-                    <div key={i} className={`w-4 h-1 rounded-full ${i < score ? 'bg-ink' : 'bg-gray-200'}`} />
-                  ))}
-                  <span className="text-[9px] text-gray-400 ml-1">ADN {score}/5</span>
+            {client.adn && (
+              // La completitud del ADN (docs/plan-adn-2.md, F3): en v1 solo avisa, no bloquea.
+              <div className="mt-1.5 flex items-center gap-1.5" title={client.adn.apta ? 'ADN listo para campañas' : `Faltan: ${client.adn.faltan.map(f => f.nombre).join(', ')}`}>
+                <div className="h-1 w-20 rounded-full bg-gray-200">
+                  <div
+                    className={`h-1 rounded-full ${client.adn.apta ? 'bg-emerald-500' : 'bg-amber-500'}`}
+                    style={{ width: `${client.adn.porcentaje}%` }}
+                  />
                 </div>
-              )
-            })()}
+                <span className={`text-[10px] font-medium ${client.adn.apta ? 'text-emerald-700' : 'text-amber-700'}`}>
+                  ADN {client.adn.porcentaje} %{!client.adn.apta && ` · faltan ${client.adn.faltan.length}`}
+                </span>
+              </div>
+            )}
          </div>
          <div className="mt-4 flex items-center justify-between text-[11px] text-gray-500">
             <span className="flex items-center gap-1.5">
@@ -699,7 +701,7 @@ const ClientManager: React.FC<ClientManagerProps> = ({
                           <option key={m.id} value={m.id}>{opcionDeMadre(m)}</option>
                         ))}
                       </select>
-                      <p className="mt-1 text-[11px] text-gray-500">Hereda el ADN de la madre una vez confirmado: suma sus prohibiciones y keywords, y toma su voz, propuesta de valor y guías mientras no tenga propias. Las campañas y aprobaciones siguen siendo de cada marca.</p>
+                      <p className="mt-1 text-[11px] text-gray-500">Hereda el ADN de la madre una vez confirmado: suma sus prohibiciones, frases y keywords, y toma el resto de sus secciones mientras no tenga propias. Las campañas y aprobaciones siguen siendo de cada marca.</p>
                     </div>
                   </div>
                 </div>
@@ -734,7 +736,7 @@ const ClientManager: React.FC<ClientManagerProps> = ({
               <div>
                 <h3 className="text-[16px] font-semibold text-gray-900">Agregar una submarca a {madre.name}</h3>
                 <p className="mt-1 text-[12px] text-gray-500">
-                  La submarca aparece debajo de {madre.name} en el selector y en Marcas. Cuando el ADN de {madre.name} esté confirmado, suma sus prohibiciones y keywords y toma su voz, propuesta de valor y guías mientras no tenga propias. Sus campañas y aprobaciones siguen siendo suyas.
+                  La submarca aparece debajo de {madre.name} en el selector y en Marcas. Cuando el ADN de {madre.name} esté confirmado, suma sus prohibiciones, frases y keywords y toma el resto de sus secciones mientras no tenga propias. Sus campañas y aprobaciones siguen siendo suyas.
                 </p>
               </div>
 
@@ -930,11 +932,11 @@ const ClientManager: React.FC<ClientManagerProps> = ({
                      Revisá el ADN de {m.name} antes de que lo {n === 1 ? 'herede su submarca' : `hereden sus ${n} submarcas`}
                    </p>
                    <p className="text-[11.5px] leading-relaxed text-gray-700">
-                     Cuando lo confirmes, sus submarcas suman sus prohibiciones y keywords, y toman su voz, propuesta de valor y guías si no tienen propias. Hasta entonces nada cambia en el copy.
+                     Cuando lo confirmes, sus submarcas suman sus prohibiciones, frases y keywords, y toman el resto de sus secciones si no tienen propias. Hasta entonces nada cambia en el copy.
                    </p>
                  </div>
                  <button
-                   onClick={() => enterHub(m.id)}
+                   onClick={() => enterHub(m.id, 'adn')}
                    className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-ink px-3 py-2 text-[12px] font-semibold text-white hover:bg-ink-hover"
                  >
                    Revisar el ADN <ArrowRight className="h-3.5 w-3.5" />
@@ -1122,12 +1124,13 @@ const ClientManager: React.FC<ClientManagerProps> = ({
                                )}
                              </>
                            )}
-                           <p className="text-[10.5px] text-gray-500">Con el ADN de la madre confirmado, la submarca suma sus prohibiciones y keywords y toma su voz, propuesta de valor y guías mientras no tenga propias. Campañas y aprobaciones siguen siendo de cada marca.</p>
+                           <p className="text-[10.5px] text-gray-500">Con el ADN de la madre confirmado, la submarca suma sus prohibiciones, frases y keywords y toma el resto de sus secciones mientras no tenga propias. Campañas y aprobaciones siguen siendo de cada marca.</p>
                          </div>
                        );
                      })()}
-                     <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
-                        <div className="flex items-center gap-4 mb-6">
+                     {/* El ADN se edita en su pestaña (docs/plan-adn-2.md, F2); acá queda la marca y cuánto le falta. */}
+                     <div className="bg-white rounded-xl p-5 border border-gray-200 shadow-sm">
+                        <div className="flex items-center gap-4">
                            <div className="w-12 h-12 rounded-lg bg-gray-50 border border-gray-100 flex items-center justify-center p-1">
                               {client.logo ? <img src={client.logo} className="w-full h-full object-contain" /> : <span className="text-sm font-medium text-gray-500">{client.name.substring(0, 2).toUpperCase()}</span>}
                            </div>
@@ -1136,76 +1139,28 @@ const ClientManager: React.FC<ClientManagerProps> = ({
                               <p className="text-[12px] text-gray-500 mt-0.5">{client.industry}</p>
                            </div>
                         </div>
-
-                        <div className="space-y-4 pt-4 border-t border-gray-100">
-                           <div>
-                              <label className="block text-[12px] font-medium text-gray-700 mb-1">Voz Global</label>
-                              <select
-                                className="w-full bg-white border border-gray-200 text-gray-900 rounded-lg px-3 py-2 text-[13px] outline-none focus:border-gray-400 transition-colors"
-                                value={client.voice || ''}
-                                onChange={e => onUpdate(client.id, { voice: e.target.value })}
-                              >
-                                <option value="">Seleccionar voz...</option>
-                                {voices.map(v => <option key={v.id} value={v.name}>{v.name}</option>)}
-                              </select>
-                              {!client.voice && <p className="text-[10px] text-amber-600 mt-0.5 flex items-center gap-1"><svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd"/></svg>Sin esto el copy será genérico</p>}
-                           </div>
-                           {/* Se elige una vez y el motor lo cumple (feedback de pruebas del 2026-11-05). */}
-                           <div>
-                              <label className="block text-[12px] font-medium text-gray-700 mb-1">Tratamiento</label>
-                              <div className="flex gap-1 rounded-lg bg-gray-100 p-[3px]">
-                                {([['TU', 'Tú'], ['VOS', 'Vos'], ['USTED', 'Usted']] as const).map(([valor, nombre]) => (
-                                  <button
-                                    key={valor}
-                                    type="button"
-                                    onClick={() => onUpdate(client.id, { tratamiento: client.tratamiento === valor ? null : valor })}
-                                    className={`flex-1 rounded-md py-1.5 text-[12px] transition-colors ${
-                                      client.tratamiento === valor
-                                        ? 'border border-gray-200 bg-white font-semibold text-gray-900 shadow-sm'
-                                        : 'text-gray-500 hover:text-gray-800'
-                                    }`}
-                                  >
-                                    {nombre}
-                                  </button>
-                                ))}
-                              </div>
-                              <p className="text-[10px] text-gray-400 mt-1">
-                                {client.tratamiento === 'TU'
-                                  ? '«¿Sabes cuántos beneficios tienes?»'
-                                  : client.tratamiento === 'VOS'
-                                    ? '«¿Sabés cuántos beneficios tenés?»'
-                                    : client.tratamiento === 'USTED'
-                                      ? '«¿Sabe cuántos beneficios tiene?»'
-                                      : 'Sin elegir, el motor escribe de usted (el default de Colombia).'}
-                              </p>
-                           </div>
-                           <div>
-                              <label className="block text-[12px] font-medium text-gray-700 mb-1">Propuesta de Valor</label>
-                              <textarea
-                                className="w-full bg-white border border-gray-200 text-gray-900 rounded-lg px-3 py-2 text-[13px] outline-none focus:border-gray-400 transition-colors resize-none h-20 placeholder:text-gray-400"
-                                placeholder="ADN inamovible de la marca"
-                                value={client.valueProposition || ''}
-                                onChange={e => onUpdate(client.id, { valueProposition: e.target.value })}
+                        {client.adn && (
+                          <button
+                            onClick={() => setClientDetailView('adn')}
+                            className="mt-4 block w-full rounded-lg border border-gray-200 p-3 text-left hover:border-gray-400"
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className="text-[12.5px] font-semibold text-gray-900">ADN · {client.adn.porcentaje} %</span>
+                              <span className={`text-[11px] font-medium ${client.adn.apta ? 'text-emerald-700' : 'text-amber-700'}`}>
+                                {client.adn.apta ? 'Lista para campañas' : `Faltan ${client.adn.faltan.length}`}
+                              </span>
+                            </div>
+                            <div className="mt-2 h-1.5 rounded-full bg-gray-100">
+                              <div
+                                className={`h-1.5 rounded-full ${client.adn.apta ? 'bg-emerald-500' : 'bg-amber-500'}`}
+                                style={{ width: `${client.adn.porcentaje}%` }}
                               />
-                              {!client.valueProposition && <p className="text-[10px] text-amber-600 mt-0.5 flex items-center gap-1"><svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd"/></svg>Sin esto el copy será genérico</p>}
-                           </div>
-                           <div>
-                              <label className="block text-[12px] font-medium text-gray-700 mb-1">Guidelines</label>
-                              <textarea
-                                className="w-full bg-white border border-gray-200 text-gray-900 rounded-lg px-3 py-2 text-[13px] outline-none focus:border-gray-400 transition-colors resize-none h-20 placeholder:text-gray-400"
-                                placeholder="Reglas y estilo gramatical"
-                                value={client.brandVoiceGuidelines || ''}
-                                onChange={e => onUpdate(client.id, { brandVoiceGuidelines: e.target.value })}
-                              />
-                              {!client.brandVoiceGuidelines && <p className="text-[10px] text-amber-600 mt-0.5 flex items-center gap-1"><svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd"/></svg>Sin esto el copy será genérico</p>}
-                           </div>
-                           <button 
-                             onClick={() => alert('Modificaciones del ADN Global guardadas exitosamente.')}
-                             className="w-full py-2 bg-gray-100 text-gray-700 rounded-lg font-medium text-[12px] hover:bg-gray-200 transition-colors mt-2"
-                           >
-                             Guardar Cambios
-                           </button>
-                        </div>
+                            </div>
+                            <span className="mt-2 inline-flex items-center gap-1 text-[11.5px] text-gray-600">
+                              {clientDetailView === 'adn' ? 'Abierto a la derecha' : 'Abrir el ADN'} <ArrowRight className="h-3 w-3" />
+                            </span>
+                          </button>
+                        )}
                      </div>
 
                      {/* BRAND GUIDELINE PDF UPLOADER */}
@@ -1316,18 +1271,32 @@ const ClientManager: React.FC<ClientManagerProps> = ({
 
                   {/* DETAIL RIGHT: WORKSPACE CAMPAÑAS / METRICAS */}
                   <div className="xl:col-span-9 space-y-6">
-                     {(client.conteos?.complementarias ?? 0) > 0 && (
-                       <RevisionDeAdn clientId={client.id} onConfirmado={() => onAdnConfirmado?.()} onCorregida={() => onAdnCorregido?.()} />
+                     {clientDetailView !== 'adn' && client.adn && !client.adn.apta && (
+                       // En v1 el ADN bajo el mínimo solo avisa (docs/plan-adn-2.md, decisión 2): en v2 no deja crear la campaña.
+                       <div className="flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5">
+                         <ShieldAlert className="h-4 w-4 shrink-0 text-amber-600" />
+                         <p className="flex-1 text-[12.5px] text-gray-800">
+                           Al ADN de {client.name} le falta{client.adn.faltan.length === 1 ? '' : 'n'} {client.adn.faltan.length} para el mínimo:{' '}
+                           {client.adn.faltan.map(f => f.nombre).join(', ')}. Se puede generar, pero el copy sale más genérico.
+                         </p>
+                         <button onClick={() => setClientDetailView('adn')} className="inline-flex shrink-0 items-center gap-1 text-[12px] font-semibold text-gray-900 hover:underline">
+                           Completar el ADN <ArrowRight className="h-3.5 w-3.5" />
+                         </button>
+                       </div>
                      )}
                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
                         <div>
                           <h4 className="text-[16px] font-medium text-gray-900">
-                             {clientDetailView === 'metrics'
+                             {clientDetailView === 'adn'
+                               ? `${client.name} · ADN`
+                               : clientDetailView === 'metrics'
                                ? 'Métricas'
                                : showDnaForm ? (editingProfileId ? 'Editor de Campaña' : 'Nueva Campaña') : 'Campañas Activas'}
                           </h4>
                           <p className="text-[12px] text-gray-500 mt-0.5">
-                             {clientDetailView === 'metrics'
+                             {clientDetailView === 'adn'
+                               ? 'Lo que el motor sabe de la marca: qué decir, cómo suena y qué no se toca'
+                               : clientDetailView === 'metrics'
                                ? 'Resumen de rendimiento por cliente'
                                : showDnaForm ? 'Parametriza el brief estratégico' : `${profiles.length} campañas configuradas`}
                           </p>
@@ -1335,6 +1304,12 @@ const ClientManager: React.FC<ClientManagerProps> = ({
                         <div className="flex items-center gap-3">
                           {/* Sub-tab toggle */}
                           <div className="flex items-center bg-gray-100 rounded-lg p-1 gap-1">
+                            <button
+                              onClick={() => setClientDetailView('adn')}
+                              className={`px-3 py-1.5 rounded-md text-[12px] font-medium transition-colors ${clientDetailView === 'adn' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                            >
+                              ADN
+                            </button>
                             <button
                               onClick={() => setClientDetailView('campaigns')}
                               className={`px-3 py-1.5 rounded-md text-[12px] font-medium transition-colors ${clientDetailView === 'campaigns' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
@@ -1359,7 +1334,39 @@ const ClientManager: React.FC<ClientManagerProps> = ({
                         </div>
                      </div>
 
-                     {clientDetailView === 'metrics' ? (
+                     {clientDetailView === 'adn' ? (
+                        <div className="space-y-4">
+                          {(client.conteos?.complementarias ?? 0) > 0 && (
+                            <RevisionDeAdn
+                              clientId={client.id}
+                              recarga={adnRecarga}
+                              onConfirmado={() => {
+                                setAdnRecarga(n => n + 1);
+                                onAdnConfirmado?.();
+                              }}
+                              onIrASeccion={clave =>
+                                document.getElementById(`adn-${clave}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                              }
+                            />
+                          )}
+                          <AdnDeMarca
+                            clientId={client.id}
+                            marca={client.name}
+                            madreDeclarada={(() => {
+                              const m = madreDe(client, clients);
+                              return m ? { id: m.id, name: m.name } : null;
+                            })()}
+                            submarcas={client.conteos?.complementarias ?? 0}
+                            pideRevision={Boolean(client.adnPorRevisar)}
+                            recarga={adnRecarga}
+                            onAbrirMarca={id => enterHub(id, 'adn')}
+                            onCambio={() => {
+                              setAdnRecarga(n => n + 1);
+                              onAdnCorregido?.();
+                            }}
+                          />
+                        </div>
+                     ) : clientDetailView === 'metrics' ? (
                         /* METRICAS PANEL */
                         <div className="animate-in fade-in duration-300">
                           {analyticsLoading && (

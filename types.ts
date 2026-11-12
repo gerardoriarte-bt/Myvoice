@@ -195,6 +195,94 @@ export interface Client {
   adnConfirmadoEn?: string | null;
   /** Tú, vos o usted. NULL = no lo eligió: rige el default del país (en Colombia, usted). */
   tratamiento?: 'TU' | 'VOS' | 'USTED' | null;
+  /** Calculado por GET /clients: la completitud del ADN resuelto (docs/plan-adn-2.md, ADN-5). */
+  adn?: { porcentaje: number; minimo: number; apta: boolean; faltan: { clave: ClaveAdn; nombre: string }[] };
+}
+
+// ------------------------------------------------------------ ADN 2.0 (docs/plan-adn-2.md)
+// Copia de lo que define server/src/comun/adn/: el front no puede importar del server.
+
+export type ClaveAdn =
+  | 'propuestaDeValor'
+  | 'productos'
+  | 'audiencias'
+  | 'voz'
+  | 'tratamiento'
+  | 'asiSuena'
+  | 'prohibiciones'
+  | 'frasesIntocables'
+  | 'reglasDeEstilo'
+  | 'keywords';
+
+export type ModoSeccionAdn = 'HEREDA' | 'PROPIA' | 'SUMA';
+export type OrigenSeccion = 'PERSONA' | 'IA_PROPUESTA' | 'IA_CONFIRMADA';
+export type EstadoSeccionAdn = 'VACIA' | 'DEBIL' | 'COMPLETA';
+
+export interface DescriptoresAudiencia {
+  quienEs: string;
+  queLeImporta: string;
+  queLaFrena: string;
+  comoHabla: string;
+}
+
+export interface Audiencia {
+  id: string;
+  nombre: string;
+  descriptores: DescriptoresAudiencia;
+  origen: OrigenSeccion;
+  fuente: string | null;
+  orden: number;
+  archivada: boolean;
+}
+
+export interface ReglasMedibles {
+  emojis?: 'no' | 'pocos' | 'libre';
+  signosDeApertura?: boolean;
+  formatoDePrecio?: string;
+  sinMayusculasSostenidas?: boolean;
+}
+
+export interface ContenidoSeccionAdn {
+  texto: string;
+  ejemplos?: { texto: string; platform?: string; savedVariationId?: string }[];
+  reglas?: ReglasMedibles;
+  audiencias?: { id: string; nombre: string; descriptores: DescriptoresAudiencia }[];
+}
+
+/** GET /clients/:id/adn. */
+export interface AdnDeMarca {
+  clientId: string;
+  /** La madre de la que hereda: NULL si no tiene, o si su ADN no está confirmado. */
+  marcaMadre: { id: string; name: string } | null;
+  version: number | null;
+  secciones: Record<
+    ClaveAdn,
+    { texto: string; contenido: ContenidoSeccionAdn; origen: 'PROPIA' | 'MADRE' | 'SUMA' | 'VACIA'; modo: ModoSeccionAdn; propio: string; deMadre: string }
+  >;
+  completitud: {
+    porcentaje: number;
+    minimo: number;
+    apta: boolean;
+    secciones: { clave: ClaveAdn; nombre: string; critica: boolean; estado: EstadoSeccionAdn; motivo: string | null; propuestaPendiente: boolean }[];
+    faltan: ClaveAdn[];
+  };
+  filas: Partial<
+    Record<
+      ClaveAdn,
+      {
+        contenido: ContenidoSeccionAdn;
+        modo: ModoSeccionAdn;
+        origen: OrigenSeccion;
+        propuesta: ContenidoSeccionAdn | null;
+        propuestaFuente: string | null;
+        propuestaEn: string | null;
+        autor: string | null;
+        actualizadaEn: string;
+        revisadaEn: string | null;
+        revisadaPor: string | null;
+      }
+    >
+  >;
 }
 
 /** GET /clients/:id/adn/revision. */

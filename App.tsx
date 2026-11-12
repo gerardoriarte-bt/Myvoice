@@ -888,6 +888,10 @@ const App: React.FC = () => {
                   defaultClientId={activeClientId}
                   onClientChange={setActiveClientId}
                   onNavigateToClients={() => setActiveTab('clients')}
+                  onIrAlAdn={clientId => {
+                    setRevisarAdnDe(clientId);
+                    setActiveTab('clients');
+                  }}
                   miembros={users}
                   puedeEditarAprobacion={isAdmin}
                   onError={m => addNotification(m, 'error')}

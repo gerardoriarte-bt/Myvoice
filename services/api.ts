@@ -195,6 +195,20 @@ export const clientApi = {
       body: JSON.stringify(texto === undefined ? {} : { texto }),
     }),
   confirmarAdn: (id: string) => apiRequest(`/clients/${id}/adn/confirmar`, { method: 'POST' }),
+  /** ADN 2.0 (docs/plan-adn-2.md): el ADN resuelto con su completitud y lo de cada sección. */
+  adn: (id: string) => apiRequest(`/clients/${id}/adn`),
+  /** `contenido`, `modo` o los dos. */
+  guardarSeccionAdn: (id: string, clave: string, cambios: { contenido?: unknown; modo?: string }) =>
+    apiRequest(`/clients/${id}/adn/secciones/${clave}`, { method: 'PUT', body: JSON.stringify(cambios) }),
+  seccionAdnRevisada: (id: string, clave: string) =>
+    apiRequest(`/clients/${id}/adn/secciones/${clave}/revisada`, { method: 'POST' }),
+  propuestaAdn: (id: string, clave: string, accion: 'confirmar' | 'descartar') =>
+    apiRequest(`/clients/${id}/adn/secciones/${clave}/propuesta/${accion}`, { method: 'POST' }),
+  audiencias: (id: string) => apiRequest(`/clients/${id}/audiencias`),
+  crearAudiencia: (id: string, datos: { nombre: string; descriptores: unknown }) =>
+    apiRequest(`/clients/${id}/audiencias`, { method: 'POST', body: JSON.stringify(datos) }),
+  actualizarAudiencia: (id: string, audienciaId: string, datos: Record<string, unknown>) =>
+    apiRequest(`/clients/${id}/audiencias/${audienciaId}`, { method: 'PUT', body: JSON.stringify(datos) }),
   saveDNA: (data: any) => apiRequest('/dna-profiles', { method: 'POST', body: JSON.stringify(data) }),
   duplicateDNA: (id: string) => apiRequest(`/dna-profiles/${id}/duplicate`, { method: 'POST' }),
   updateDNA: (id: string, data: any) => apiRequest(`/dna-profiles/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
