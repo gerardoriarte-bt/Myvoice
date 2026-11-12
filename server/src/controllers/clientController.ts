@@ -17,7 +17,10 @@ import { prisma } from '../lib/prisma.js';
 import { claveGuiaDeMarca, storage } from '../lib/storage.js';
 import { guardarAdnDesdeColumnas } from '../comun/adn/guardarAdn.js';
 import { resolverAdn } from '../comun/adn/resolverAdn.js';
-import { COLUMNAS_ADN, SECCIONES_ADN } from '../comun/adn/secciones.js';
+import { COLUMNAS_ADN, SECCIONES_DE_REVISION } from '../comun/adn/secciones.js';
+import { completitudAdn, conPropuesta } from '../comun/adn/completitudAdn.js';
+import { guardarSeccion, confirmarPropuesta, descartarPropuesta } from '../comun/adn/guardarAdn.js';
+import { actualizarAudiencia, crearAudiencia, listarAudiencias } from '../comun/adn/audiencias.js';
 import { esTratamiento } from '../comun/adn/tratamiento.js';
 import { avisarAdnPorRevisar, confirmarAdn, estadoDeRevision, revisarSeccion } from '../comun/adn/revisionAdn.js';
 
@@ -79,7 +82,7 @@ export const getClients = async (req: AuthRequest, res: Response) => {
   try {
     const clients = await prisma.client.findMany({
       where: { workspaceId: req.tenant!.workspaceId },
-      include: { dnaProfiles: true, seccionesAdn: { select: { revisadaEn: true } } },
+      include: { dnaProfiles: true, seccionesAdn: { select: { clave: true, revisadaEn: true } } },
       orderBy: { createdAt: 'asc' },
     });
     // Una madre con submarcas y el ADN sin confirmar pide revisión (docs/plan-revision-adn.md).
@@ -87,7 +90,10 @@ export const getClients = async (req: AuthRequest, res: Response) => {
       ...m,
       adnPorRevisar:
         m.conteos.complementarias > 0 && !m.adnConfirmadoEn
-          ? { revisadas: seccionesAdn.filter(s => s.revisadaEn).length, total: SECCIONES_ADN.length }
+          ? {
+              revisadas: seccionesAdn.filter(s => s.revisadaEn && SECCIONES_DE_REVISION.some(d => d.clave === s.clave)).length,
+              total: SECCIONES_DE_REVISION.length,
+            }
           : null,
     }));
     res.json(await Promise.all(conRevision.map(conUrlDeGuia)));
@@ -253,9 +259,96 @@ export const getAdnResuelto = async (req: AuthRequest, res: Response) => {
     const version = req.query.version != null ? Number(req.query.version) : null;
     if (version != null && (!Number.isInteger(version) || version < 1))
       return res.status(400).json({ error: 'version tiene que ser un entero positivo' });
-    res.json(await resolverAdn(id, { version }));
+    const adn = await resolverAdn(id, { version });
+    // Lo pendiente de la IA es de lo vigente: en una versión vieja no hay nada que confirmar.
+    const filas =
+      version == null
+        ? await prisma.seccionAdn.findMany({ where: { clientId: id }, select: { clave: true, propuesta: true, origen: true } })
+        : [];
+    res.json({
+      ...adn,
+      completitud: completitudAdn(adn, conPropuesta(filas)),
+      origenes: Object.fromEntries(filas.map(f => [f.clave, f.origen])),
+    });
   } catch (error) {
     handleTenantError(error, res, 'Error al resolver el ADN');
+  }
+};
+
+/**
+ * Guarda una sección del ADN 2.0: `{ contenido?, modo? }` (docs/plan-adn-2.md). Devuelve el ADN resuelto
+ * con su completitud, que es lo que la pantalla vuelve a pintar.
+ */
+export const putSeccionAdn = async (req: AuthRequest, res: Response) => {
+  const { id, clave } = req.params;
+  try {
+    await assertClientInWorkspace(req.tenant!, id);
+    const body = req.body ?? {};
+    if (!('contenido' in body) && !('modo' in body))
+      return res.status(400).json({ error: 'Falta contenido o modo' });
+    const r = await guardarSeccion(id, clave, { contenido: body.contenido, modo: body.modo }, { autorId: req.tenant!.userId });
+    const adn = await resolverAdn(id);
+    res.json({ ...r, adn, completitud: completitudAdn(adn) });
+  } catch (error) {
+    handleTenantError(error, res, 'Error al guardar la sección');
+  }
+};
+
+/** «Está bien» o «Descartar» sobre lo que propuso la IA en una sección (ADN-7). */
+export const postPropuestaAdn = async (req: AuthRequest, res: Response) => {
+  const { id, clave, accion } = req.params;
+  try {
+    await assertClientInWorkspace(req.tenant!, id);
+    if (accion === 'confirmar') {
+      const r = await confirmarPropuesta(id, clave, req.tenant!.userId);
+      return res.json(r);
+    }
+    if (accion === 'descartar') {
+      await descartarPropuesta(id, clave);
+      return res.json({ version: null, submarcasAfectadas: 0 });
+    }
+    res.status(404).json({ error: 'Acción no encontrada' });
+  } catch (error) {
+    handleTenantError(error, res, 'Error con la propuesta');
+  }
+};
+
+/** La lista fija de audiencias de la marca, con las archivadas y las propuestas (ADN-1). */
+export const getAudiencias = async (req: AuthRequest, res: Response) => {
+  try {
+    await assertClientInWorkspace(req.tenant!, req.params.id);
+    res.json(await listarAudiencias(req.params.id));
+  } catch (error) {
+    handleTenantError(error, res, 'Error al leer las audiencias');
+  }
+};
+
+export const postAudiencia = async (req: AuthRequest, res: Response) => {
+  try {
+    await assertClientInWorkspace(req.tenant!, req.params.id);
+    const body = req.body ?? {};
+    res.status(201).json(
+      await crearAudiencia(req.params.id, { nombre: body.nombre, descriptores: body.descriptores }, { autorId: req.tenant!.userId })
+    );
+  } catch (error) {
+    handleTenantError(error, res, 'Error al crear la audiencia');
+  }
+};
+
+export const putAudiencia = async (req: AuthRequest, res: Response) => {
+  try {
+    await assertClientInWorkspace(req.tenant!, req.params.id);
+    const { nombre, descriptores, orden, archivada, confirmar } = req.body ?? {};
+    res.json(
+      await actualizarAudiencia(
+        req.params.id,
+        req.params.audienciaId,
+        { nombre, descriptores, orden, archivada, confirmar },
+        { autorId: req.tenant!.userId }
+      )
+    );
+  } catch (error) {
+    handleTenantError(error, res, 'Error al guardar la audiencia');
   }
 };
 

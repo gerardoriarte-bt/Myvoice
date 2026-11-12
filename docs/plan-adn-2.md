@@ -1,6 +1,6 @@
 # Plan · ADN 2.0 por capas y campaña nueva
 
-Estado: plan (2026-11-05), sin código · Decisión 17 · PRD: ADN-1 a ADN-8, PL-4, PL-12 ·
+Estado: F1 construida (2026-11-05, migración `20261105000002_adn_2_secciones`); F2–F6 por hacer · Decisión 17 · PRD: ADN-1 a ADN-8, PL-4, PL-12 ·
 Diseño: `.pen`, «— Decisión 17 · ADN 2.0 por capas y campaña nueva» (cinco frames) · Antes:
 [plan-revision-adn.md](./plan-revision-adn.md) (revisión de la madre, en producción) y la decisión 16
 (capas, en producción).
@@ -194,6 +194,24 @@ devuelve 404. «Manager» se reemplaza por la función «Estrategia» cuando `Fu
   `asiSuena` vacía mantiene la regla de hoy.
 - Después de F2, quien confirme el ADN de Terpel ya lo hace en la pantalla nueva. Este pendiente
   sigue abierto desde el 2026-11-04.
+
+### Lo que F1 decidió al construir (2026-11-05)
+
+- **Lo propuesto por la IA no reemplaza el contenido**: espera en `SeccionAdn.propuesta` (con
+  `propuestaFuente` y `propuestaEn`) hasta «Está bien», que lo copia al contenido con origen
+  `IA_CONFIRMADA`. Así una propuesta no borra lo que ya escribió una persona. En una audiencia, la fila
+  misma lleva `origen: IA_PROPUESTA` y el resolver la ignora.
+- **El estado no se guarda**: se calcula al leer, sobre el ADN resuelto (`completitudAdn.ts`). Es
+  determinista y barato, y guardarlo habría quedado viejo cada vez que cambia la madre.
+- **Rutas**: `PUT /clients/:id/adn/secciones/:clave`, `POST /clients/:id/adn/secciones/:clave/propuesta/(confirmar|descartar)`
+  y `GET/POST/PUT /clients/:id/audiencias[/:audienciaId]` (con `confirmar: true` para una propuesta).
+  `GET /clients/:id/adn` suma `completitud` y `origenes`.
+- **El tratamiento es una sección con columna** (`Client.tratamiento`): cambiarlo en v1 ya guarda versión.
+- **La revisión de la madre sigue pidiendo las cinco de antes** (`SECCIONES_DE_REVISION`); la pantalla
+  nueva la generaliza en F2. Desde F1 la sección que era «Guías de voz» se llama «Reglas de estilo» en
+  esa revisión.
+- **Frases que no se cambian: suma fija**, como propuso la pregunta 1. Cambiarlo es una línea en
+  `secciones.ts`.
 
 ### Criterios de aceptación
 
