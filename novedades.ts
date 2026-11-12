@@ -48,6 +48,16 @@ export interface Novedad {
 
 export const NOVEDADES: Novedad[] = [
   {
+    id: 'modelos-claude-5-5',
+    fecha: '2026-11-12',
+    titulo: 'El motor escribe con una versión más nueva de Claude',
+    cambios: [
+      'Generar usa Claude Sonnet 5.5 para escribir y Haiku 5.5 para revisar y corregir.',
+      'En las pruebas, el copy salió con la mitad de faltas al manual de oficio y la generación tardó cerca de un 40 % menos.',
+      'Si notás algo distinto en el copy, para bien o para mal, contáselo a quien administra: nos ayuda a confirmarlo con casos reales.',
+    ],
+  },
+  {
     id: 'adn-2',
     fecha: '2026-11-12',
     titulo: 'El ADN de la marca, en diez secciones y con lo que le falta',

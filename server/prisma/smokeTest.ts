@@ -21,8 +21,10 @@ import {
 
 const brief = LOBUENO_DNA_PROFILES[0];
 
-// Dos canales chicos: suficiente para probar el caché (el prefijo se escribe en
-// la primera llamada y debe leerse en la segunda) sin gastar de más.
+// Dos canales chicos, sin gastar de más. Corren en paralelo, así que los dos escriben el prefijo en
+// el caché y ninguno lo lee: lo que se verifica es que el proveedor lo acepte y lo escriba. Que una
+// segunda llamada lo lea está probado aparte (2026-11-12: 90-95 % más barato); en producción se lee
+// cuando la misma marca vuelve a generar dentro de los 5 minutos.
 const PLATFORMS = ['Push Notification', 'Instagram Historia'];
 
 async function main() {
@@ -65,7 +67,11 @@ async function main() {
     ['variaciones', (result.variations?.length || 0) > 0, `${result.variations?.length || 0} piezas`],
     ['usage reportado', Boolean(u), u ? `${u.promptTokens} in / ${u.completionTokens} out` : 'ausente'],
     ['costo del proveedor', Boolean(u && !u.costEstimated), u?.costEstimated ? 'ESTIMADO (tabla local)' : `USD ${u?.costUsd}`],
-    ['caché de prompt activo', Boolean(u && u.cachedTokens > 0), u ? `${u.cachedTokens} tok (${Math.round((u.cacheHitRate || 0) * 100)}%)` : '—'],
+    [
+      'caché de prompt escrito',
+      Boolean(u && (u.cacheWriteTokens > 0 || u.cachedTokens > 0)),
+      u ? `${u.cacheWriteTokens} tok escritos · ${u.cachedTokens} leídos` : '—',
+    ],
     ['sin truncado', !result.variations?.some(v => !v.content), 'JSON completo en todas'],
   ];
 
@@ -85,13 +91,13 @@ async function main() {
     console.log(`  [${v.platform}/${v.slot}#${v.variationIndex}] "${v.content}"  (${v.charCount}/${v.budget ?? '—'}${v.budgetOk === false ? ' ❌ EXCEDE' : ''})`);
   }
 
-  const hardFail = checks.filter(c => !c[1] && c[0] !== 'caché de prompt activo');
+  const hardFail = checks.filter(c => !c[1] && c[0] !== 'caché de prompt escrito');
   if (hardFail.length) {
     console.log(`\n❌ ${hardFail.length} verificación(es) crítica(s) fallaron.`);
     process.exit(1);
   }
-  if (!u || u.cachedTokens === 0) {
-    console.log('\n⚠️  El caché no se activó. No bloquea el deploy (solo se pierde el ahorro),');
+  if (!u || (u.cacheWriteTokens === 0 && u.cachedTokens === 0)) {
+    console.log('\n⚠️  El proveedor no escribió el prefijo en el caché. No bloquea el deploy (solo se pierde el ahorro),');
     console.log('    pero conviene revisar si el prefijo llegó al mínimo del proveedor.');
   }
   console.log('\n✅ Pipeline sano.');
