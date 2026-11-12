@@ -11,7 +11,8 @@ nueva que diga qué cambió y por qué.
 2. **Textos raíz y toolkit se mantienen**, solo dentro de My Voice. Aseguran la calidad del copy
    antes de escribir cada formato; no viajan a CDM.
 3. **El responsable de la campaña aprueba**, y puede ser alguien de Planning o el ejecutivo de
-   cuentas. **Cada aprobación queda en su herramienta.** Por eso la navegación y los avisos tienen
+   cuentas. **Cada aprobación queda en su herramienta.** (Reemplazado por la decisión 19: un solo
+   historial en la plataforma.) Por eso la navegación y los avisos tienen
    que entenderse sin explicación.
 4. **My Voice solo informa qué texto va en qué formato.** El Adaptador no se construye por ahora:
    es una fase 3 o 4.
@@ -112,6 +113,39 @@ nueva que diga qué cambió y por qué.
     Las 6 cantidades pendientes de la carga de los 14 canales esperan a la etapa de CDM.
     - Por ahora **solo LoBueno crea marcas**; cada marca ya pertenece a un workspace, así que abrir
       otras empresas después no obliga a rehacer nada.
+
+## 2026-11-05 · Implementación: el cierre de la campaña
+
+Las decisiones 20 a 22 se ajustaron el mismo día, después de revisar el mapa del flujo.
+
+18. **La campaña termina en Implementación, no en la pieza aprobada.** Cuando el cuadro, el copy y las
+    piezas están aprobados, todo converge en un **espacio de implementación** donde el **trafficker**
+    tiene por cada anuncio el copy, el destino con su UTM, el enlace a la pieza y quién aprobó qué. Ahí
+    marca lo que montó (plataforma, ID del anuncio, fecha real) o lo devuelve con una novedad, y de ahí
+    sale el **reporte de implementación**: lo planeado contra lo montado, como constancia para el cliente.
+    - Vive en la **parte común**: junta lo de los dos módulos y su unidad es la línea del cuadro, así que
+      sirve también cuando la marca usa solo CDM (con el copy escrito a mano por campo).
+    - El trafficker es una **función interna** del equipo, con usuario, como Planning o Diseño.
+    - My Voice no compra ni pauta medios, y no se conecta a Meta ni Google por ahora: el ID del anuncio
+      se escribe a mano. Ese ID es la llave para medir el rendimiento después (MV-11).
+19. **Todas las aprobaciones quedan en la misma plataforma, en un solo historial por campaña.**
+    Reemplaza a «cada aprobación queda en su herramienta» (decisión 3): con una plataforma de módulos
+    (decisión 12) no hace falta repartirlas, y la trazabilidad pide verlas juntas. Las internas
+    (Estrategia, Copy, responsable) y las del cliente (toolkit, copy, piezas, en el portal) se registran
+    igual: qué, quién, cuándo, por dónde y con qué comentario. El espacio de implementación y el reporte
+    las muestran por anuncio. Cada módulo sigue decidiendo sus aprobaciones; lo que se unifica es el
+    registro y cómo se ve.
+20. **El destino y la UTM los pone Planning en la línea, cuando los tiene.** Son dos campos de la línea
+    del cuadro, en CDM, que Planning **pega** (la UTM no se arma con una plantilla). Muchas veces la UTM
+    se define al final, así que se pueden completar o cambiar **sin enviar una versión nueva del
+    cuadro**: no cambian qué se escribe. **La UTM no bloquea**: si falta, el anuncio avisa «Falta la UTM ·
+    Planning» y el trafficker igual puede montarlo; el reporte lo muestra. El destino sí es necesario.
+21. **Devolver lo decide el trafficker.** Si no tiene clara la información de un anuncio (destino,
+    copy, pieza, lo que sea), lo devuelve con una novedad escrita, antes o después de montarlo, y le
+    llega a quien la debe. No hay una lista de motivos que lo habilite: es su criterio. Cierra la pregunta 10,
+    abierta el mismo día.
+22. **El reporte de implementación se entrega como archivo** (Excel y PDF) por ahora. Verlo en el
+    portal del cliente queda para después. Cierra la pregunta 11, abierta el mismo día.
 
 ## Antes (2026-10-27), siguen vigentes con los nombres nuevos
 

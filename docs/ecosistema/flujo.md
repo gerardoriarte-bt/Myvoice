@@ -1,6 +1,6 @@
 # Flujo de una campaña · quién, dónde, qué se aprueba y qué se avisa
 
-Estado: propuesta · 2026-10-28 · Términos: [glosario.md](./glosario.md)
+Estado: propuesta · 2026-11-05 (suma Implementación y el historial de aprobaciones) · Términos: [glosario.md](./glosario.md)
 Antecedente: [../v2/mapa-del-proceso.md](../v2/mapa-del-proceso.md), que este documento extiende a
 las dos herramientas.
 
@@ -37,14 +37,23 @@ flowchart LR
   B -. biblioteca .-> C6
   C6 -. qué escribir .-> M7
   M8 -. qué texto va en qué formato .-> C9
+  subgraph IMP[Parte común · Implementación]
+    I11[11 · Trafficker monta cada anuncio<br/>o lo devuelve con novedad]
+    I12[12 · Responsable revisa el reporte<br/>y lo envía al cliente]
+  end
   C9 --> C10
   C10 -. estado de la pieza .-> C6
-  C10 --> MED[My Voice mide<br/>y aprende]
+  C6 -. destino y UTM .-> I11
+  C10 -- pieza aprobada --> I11
+  I11 --> I12
+  I11 -. estado de implementación .-> C6
+  I12 --> MED[My Voice mide<br/>y aprende]
 ```
 
 Después del paso 1 el responsable **elige cómo sigue la campaña**: directo a My Voice (paso 2) o por
 CDM (paso 6). La otra herramienta se suma cuando quiera. El paso 6 corre en paralelo con 2 a 5; el
-paso 7 espera al toolkit aprobado y al cuadro.
+paso 7 espera al toolkit aprobado y al cuadro. El paso 11 junta las dos herramientas: cada anuncio
+espera a su pieza aprobada (My Voice) y a su destino y UTM (CDM).
 
 ## 2. Paso a paso
 
@@ -62,7 +71,10 @@ paso 7 espera al toolkit aprobado y al cuadro.
 | 7 | My Voice | IA | Escribe el copy de cada formato (en pieza y de plataforma) desde los textos raíz de la etapa de la línea, para todas las audiencias de la campaña, sin pasarse del largo de cada campo. | Toolkit aprobado, cuadro | Adaptaciones | Responsable |
 | 8 | My Voice | Responsable | Revisa de a uno: aprobar y seguir, pedir otra versión, editar. Lo que no cabe no se aprueba. | Adaptaciones | Copy aprobado por formato | CDM |
 | 9 | My Voice · Producción | Diseño | Produce la pieza con el copy aprobado (después, en el Adaptador). | Copy aprobado, specs | Pieza | Responsable |
-| 10 | My Voice · Producción | Responsable, cliente | Aprueban la pieza; el cliente da la URL final. CDM ve el estado. | Pieza | Pieza aprobada | My Voice mide |
+| 10 | My Voice · Producción | Responsable, cliente | Aprueban la pieza. CDM ve el estado. | Pieza | Pieza aprobada | Trafficker |
+| — | CDM | Planning | Pega el destino y la UTM de cada línea cuando los tiene; puede ser al final, sin versión nueva del cuadro. | Cuadro | Destino y UTM | Trafficker |
+| 11 | Parte común · Implementación | Trafficker | Recibe cada anuncio listo para montar (copy, destino, UTM, pieza y quién aprobó). Lo monta y registra plataforma, ID del anuncio y fecha real, o lo devuelve con una novedad si no tiene clara la información (lo decide él, antes o después de montar). | Anuncios listos | Anuncios montados | Responsable |
+| 12 | Parte común · Implementación | Responsable | Revisa el reporte de implementación (lo planeado contra lo montado, con novedades) y lo envía al cliente. | Anuncios montados | Reporte enviado | My Voice mide |
 
 ## 3. Bloqueos
 
@@ -73,6 +85,10 @@ paso 7 espera al toolkit aprobado y al cuadro.
 | Formato de un medio en borrador | CDM, al armar el cuadro | El formato no aparece para elegir. |
 | Copy que no cabe en un campo | My Voice, paso 8 | El campo marcado y «Acortar»; no se puede aprobar. |
 | Copy sin aprobar | CDM, en la línea | La línea muestra «Esperando el copy en My Voice». |
+| Falta el destino | Implementación, en el anuncio | «Falta el destino · Planning», con el botón para avisarle. No se puede marcar montado. |
+| Falta la UTM | Implementación, en el anuncio | Solo aviso: «Falta la UTM · Planning». Se puede montar igual y el reporte lo muestra. |
+| Pieza sin aprobar | Implementación, en el anuncio | «Esperando la aprobación del cliente», con quién la tiene. |
+| Copy o pieza cambiados después de montar | Implementación, en el anuncio | Vuelve a «por montar» con lo que cambió; el reporte lo cuenta como desviación. |
 
 ## 4. Navegación y avisos
 
@@ -105,7 +121,36 @@ Principios:
 | Copy aprobado de una línea | Diseño, Planning | My Voice · Producción / CDM · Línea |
 | Pieza lista para aprobar | Responsable, cliente | My Voice · Producción |
 | Copy aprobado que cambió después | Diseño, Planning | My Voice · Producción (pieza «A revisar») / CDM · Línea |
+| Anuncio listo para montar (todo aprobado, con destino) | Trafficker | Implementación, en el primer anuncio por montar |
+| Pieza aprobada sin destino o sin UTM | Planning | CDM · Línea, en el campo que falta |
+| Destino o UTM cambiados en un anuncio ya montado | Trafficker | Implementación, en ese anuncio |
+| Anuncio devuelto con novedad | Quien lo debe: Planning (destino, UTM), responsable (copy, pieza) | La línea en CDM / la pieza en Producción, con la novedad |
+| Todos los anuncios de la campaña montados | Responsable | Implementación · Reporte |
+| Reporte de implementación enviado | Cliente | El archivo del reporte (Excel y PDF); el portal, después |
 
 Lo que falta definir del lado técnico: si las dos herramientas comparten la cola y las
 notificaciones (un solo servicio) o cada una manda las suyas con enlaces a la otra. Ver
 [decisiones.md](./decisiones.md), preguntas abiertas.
+
+## 5. El historial de aprobaciones
+
+Todas las aprobaciones de la campaña quedan en un solo historial, en la plataforma (decisión 19). Es el
+mismo registro que muestran la vista de campaña, cada anuncio en Implementación y el reporte.
+
+| # | Qué se aprueba o se ejecuta | Quién | Tipo | Dónde se decide |
+|---|---|---|---|---|
+| — | ADN confirmado | Estrategia | Aprobación interna | Parte común |
+| 3 | Textos raíz | Copy | Aprobación interna | My Voice |
+| 4 | Toolkit enviado | Responsable | Ejecución | My Voice |
+| 5 | Toolkit | Cliente | Aprobación del cliente | Portal |
+| 6 | Cuadro enviado (y cada versión) | Planning | Ejecución | CDM |
+| 8 | Copy de cada formato | Responsable | Aprobación interna | My Voice |
+| 9 | Pieza entregada | Diseño | Ejecución | My Voice · Producción |
+| 10 | Pieza aceptada | Responsable | Aprobación interna | My Voice · Producción |
+| 10 | Pieza | Cliente, si la campaña es con cliente | Aprobación del cliente | Portal |
+| — | Destino y UTM pegados o cambiados | Planning | Ejecución | CDM |
+| 11 | Anuncio montado o devuelto con novedad | Trafficker | Ejecución | Implementación |
+| 12 | Reporte revisado y enviado | Responsable | Aprobación interna | Implementación |
+
+Cada entrada guarda qué (con su versión), quién, cuándo, por dónde (pantalla o portal) y el comentario.
+Un rechazo queda igual que una aprobación: el historial no se edita.

@@ -1,6 +1,6 @@
 # Seguimiento · flujo de usuario y funciones (diseño · front · back)
 
-Estado: vigente · 2026-10-28 · Se refleja en el `.pen` en «§ Seguimiento · flujo de usuario y
+Estado: vigente · 2026-11-05 · Se refleja en el `.pen` en «§ Seguimiento · flujo de usuario y
 funciones», pero **este documento es la fuente**: el `.pen` es local y no está en git.
 
 Cada función con su estado en las tres pistas. Se actualiza en el mismo PR que cambia el estado.
@@ -28,7 +28,10 @@ Cada función con su estado en las tres pistas. Se actualiza en el mismo PR que 
 | Todos | Barra común y rutas | ✓ | ○ | — | PL-1 |
 | Todos | Mi cola | ✓ | ○ | ○ | PL-6 |
 | Todos | Avisos que llevan a la acción | ✓ | ○ | ◐ | PL-7 |
-| Super Admin | Funciones del equipo por marca | ● | ● | ● | PL-8 (suma Estrategia y Planning: ○) |
+| Super Admin | Funciones del equipo por marca | ● | ● | ● | PL-8 (suma Estrategia, Planning y Trafficker: ○) |
+| Todos | Historial de aprobaciones de la campaña | ○ | ○ | ○ | PL-15 |
+| Trafficker | Implementación: anuncios listos, montar o devolver | ○ | ○ | ○ | PL-16, PL-17 |
+| Responsable | Paquete y reporte de implementación | ○ | ○ | ◐ | PL-18 (hoy: Excel de piezas en Lista, sin destino ni aprobaciones) |
 
 ## My Voice
 
@@ -61,6 +64,7 @@ Cada función con su estado en las tres pistas. Se actualiza en el mismo PR que 
 | Planning, responsable | Cuadro rápido para campañas chicas | ○ | ○ | ○ | CD-11 |
 | Planning | Los 14 canales cargados en la biblioteca (carga con decisiones) | ✓ | ○ | ○ | CD-12 |
 | Planning | Estado por línea | ○ | ○ | ○ | CD-8 |
+| Planning | Destino y UTM por línea | ○ | ○ | ○ | decisión 20 |
 | Planning | Portafolio | ○ | ○ | ○ | CD-9 |
 
 ## IA

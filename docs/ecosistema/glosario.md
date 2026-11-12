@@ -1,6 +1,6 @@
 # Glosario · el lenguaje común de CDM y My Voice
 
-Estado: vigente · 2026-10-28
+Estado: vigente · 2026-11-05
 
 Una palabra, un significado, en las dos herramientas, en las pantallas y en el código. Si algo no
 está aquí, todavía no tiene nombre acordado: se agrega antes de usarlo en una pantalla.
@@ -23,6 +23,7 @@ está aquí, todavía no tiene nombre acordado: se agrega antes de usarlo en una
 | **Responsable de la campaña** | La persona que aprueba en nombre del equipo. Puede ser alguien de Planning o el **ejecutivo de cuentas**. Una campaña tiene uno solo. |
 | **Ejecutivo de cuentas** | La relación con el cliente. Puede ser el responsable de la campaña. |
 | **Diseño** | Produce las piezas. |
+| **Trafficker** | Función interna: monta los anuncios en cada medio con lo aprobado y registra lo que quedó montado. Trabaja en Implementación. |
 | **Cliente** | La marca, del lado del cliente. Aprueba el toolkit y las piezas, los dos en My Voice. |
 | **Super Admin** | Crea la marca y decide qué herramientas usa. |
 
@@ -68,6 +69,21 @@ está aquí, todavía no tiene nombre acordado: se agrega antes de usarlo en una
 | **Cuadro de materiales** | El encargo de una campaña, de 10 a 200 líneas: cada una con medio, formato, etapa, cuántas variaciones y fechas. Vive en CDM. | El media plan con presupuesto, que se queda en los Sheets de Planning. |
 | **Línea** | Una fila del cuadro de materiales. | — |
 | **Pieza** | Lo que se publica: el formato producido, con su copy. | Formato. |
+| **Destino** | La URL a la que lleva el anuncio (o el destino del CTA: WhatsApp, app). La pega Planning en la línea. | La URL de la pieza en el disco. |
+| **UTM** | Los parámetros de seguimiento que se agregan al destino. Los pega Planning en la línea cuando los tiene; muchas veces llegan al final. My Voice no los arma. | — |
+
+## Implementación
+
+| Término | Significa | No confundir con |
+|---|---|---|
+| **Implementación** | La última etapa de la campaña: el trafficker monta los anuncios con todo lo aprobado y registra qué quedó al aire. Vive en la parte común. | Producción, que hace la pieza. |
+| **Anuncio** | Lo que se monta en un medio: una pieza aprobada de una línea, con su copy, su destino y su UTM. Es la unidad de Implementación. | Pieza (lo producido) y línea (lo encargado). |
+| **Listo para montar** | Un anuncio con el copy aprobado, la pieza aprobada, el destino y la fecha de salida. La UTM no bloquea: si falta, avisa. Si le falta algo, dice qué y quién lo debe. | — |
+| **Montado** | El trafficker lo subió: plataforma, ID del anuncio en la plataforma, fecha real de salida. | Publicado o «al aire» como resultado de la plataforma: My Voice no lo verifica. |
+| **Novedad** | Lo que el trafficker no tiene claro o no puede montar: destino roto, texto que la plataforma no acepta, medida incorrecta. Devolver lo decide el trafficker; lleva texto y vuelve a quien lo debe. | Rechazo de una aprobación. |
+| **Paquete de implementación** | Lo que hay que montar, por campaña: cada anuncio con su copy, destino, UTM, enlace a la pieza y aprobaciones. Se descarga en Excel. | El reporte. |
+| **Reporte de implementación** | Lo que quedó montado contra lo planeado, con fechas, IDs y novedades. Es la constancia para el cliente. | El rendimiento de los anuncios (eso es medición). |
+| **Historial de aprobaciones** | Todas las aprobaciones de una campaña, internas y del cliente, en un solo lugar: qué, quién, cuándo, por dónde y con qué comentario. | — |
 
 ## Palabras que dejamos de usar
 
