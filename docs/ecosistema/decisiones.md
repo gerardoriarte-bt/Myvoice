@@ -87,6 +87,10 @@ nueva que diga qué cambió y por qué.
     - Consecuencia: CDM necesita un **cuadro rápido** para campañas chicas, que se arme en minutos.
     - Transición: los 14 canales siguen en código (`server/src/channels/specs/`) hasta que estén cargados
       en la biblioteca de CDM; después el motor los lee de ahí.
+    - **Con el flujo de Planning (2026-11-17, decisiones 19 y 20)**: los 14 canales son el medio «Canales
+      propios» del catálogo (pantallas B6 y B7 del mapa) y se pasan una sola vez (B8). El «cuadro rápido» ya
+      no es otra pantalla: es el mismo planning (P2 → P3 → P4) con los medios de la marca ya marcados. Y
+      My Voice deja de elegir el medio en Generar: recibe un pedido de copy por línea de la sábana aprobada.
 
 ## 2026-10-28 · La marca primero, y la submarca hereda
 

@@ -45,7 +45,7 @@ Estados: **diseñada** · **ajustar** (diseñada, pero una decisión nueva la ca
 
 ## CDM
 
-Desde el 2026-11-17 todas las pantallas de CDM están en **su propia columna del `.pen`** (x = 10.000, «══ CDM · columna de pantallas ══»), separada de My Voice: arriba lo vigente, abajo lo reemplazado.
+Arriba de la columna está el **mapa de navegación** («§ Mapa de navegación de CDM»): cada pantalla con su número (P1–P5 y P4b del trabajo, B1–B8 de la biblioteca, M1 de los medios de la marca) y flechas con la acción que lleva de una a otra; el mismo número está junto al título de cada pantalla. Desde el 2026-11-17 todas las pantallas de CDM están en **su propia columna del `.pen`** (x = 10.000, «══ CDM · columna de pantallas ══»), separada de My Voice: arriba lo vigente, abajo lo reemplazado.
 
 | Flujo | Pantalla | Acción principal | Estado | Frame en el `.pen` |
 |---|---|---|---|---|
