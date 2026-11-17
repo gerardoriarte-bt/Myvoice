@@ -40,7 +40,7 @@ El cliente no entra: ve lo suyo por enlace, como hoy.
 | Paso | Pantallas | Qué resuelven |
 |---|---|---|
 | Marco | Encabezado en dos filas (componente): identidad y avisos arriba, proceso abajo · Quién ve qué · menús por módulo | pasos numerados con ✓, candado que dice qué falta o avance por línea; modo lectura con franja «Tu trabajo está en…» |
-| ② CDM | P1 Plannings de la marca · P2 Nuevo planning · P3 Elegir medios · P4 Sábana · P4b Una línea elige ubicaciones · P5 La marca aprueba · **P6 Destino y UTM** | el trabajo de Planning, de la marca a la sábana aprobada |
+| ② CDM | P1 Plannings de la marca · P2 Nuevo planning · P3 Elegir medios · P4 Sábana · P4b Una línea elige ubicaciones · P5 La marca aprueba · **P6 Destinos y UTM** (entrada del menú: elegir la campaña) · **P6b** destino y UTM de una campaña | el trabajo de Planning, de la marca a la sábana aprobada |
 | ② CDM · configuración | B1–B8 Biblioteca (catálogo, Meta por pieza, detalle, guía visual para Diseño, carga desde planilla, los 14 canales) · M1 Medios de la marca | lo que se prepara una vez |
 | ③ My Voice | MV0 Cómo se entera Copy · MV Pedidos de copy | llega la sábana: una línea por formato y etapa, con medio, piezas y largo ya decididos |
 | ④ Producción | **D1** Lo mío · **D2** Orden de trabajo con la guía visual · **D3** La IA revisa y el responsable decide | Diseño recibe medio, formato, medidas, zona segura y textos aprobados en una pantalla; sube y la IA compara |
@@ -71,8 +71,10 @@ el marco, después la marca hacia adelante.
   `?review=`, `?invite=` y `?pieza=` se siguen leyendo y redirigen. Las pantallas de hoy se montan
   dentro del marco sin reescribirlas.
 - **Encabezado en dos filas**: `src/plataforma/Barra.tsx` (identidad, marca, buscar, Mi cola, avisos,
-  cuenta: no cambia entre pantallas) y `src/plataforma/Proceso.tsx` (los cinco pasos y la campaña que se
-  está viendo). El estado de cada paso lo calcula el servidor al leer, **`GET /clients/:id/proceso[?campana=]`**:
+  cuenta: no cambia entre pantallas) y `src/plataforma/Proceso.tsx`: abre con el **selector de campaña**
+  (las de la marca activa, cada una con el paso en que va; «Todas las campañas» para listas y colas) y
+  sigue con los cinco pasos. La campaña activa vive en la ruta (`/campana/:id/…`), no en `localStorage`
+  como la marca: dos pestañas pueden estar en campañas distintas, y un aviso abre la suya. El estado de cada paso lo calcula el servidor al leer, **`GET /clients/:id/proceso[?campana=]`**:
   `{ paso, estado: 'hecho' | 'activo' | 'bloqueado', falta?: string, quien?: {id, nombre},
   avance?: {hechas, total} }[]`, en `server/src/comun/proceso.ts`. Usa `completitudAdn` (①), la sábana
   aprobada (②, cuando exista F3), el copy aprobado por línea (③) y las piezas y anuncios (④ y ⑤, con
@@ -169,7 +171,7 @@ El detalle está en `docs/plan-implementacion.md` (PR #65, nivel 2). Lo que camb
 con lo diseñado hoy:
 
 - La función `TRAFFICKER` entra en F1, con las otras, y el paso ⑤ del encabezado sale de F0.
-- Destino y UTM se guardan en `LineaDePlanning` (P6) y se editan **sin versión nueva** de la sábana; el
+- Destino y UTM se guardan en `LineaDePlanning` (P6 y P6b, entrada propia en el menú de CDM) y se editan **sin versión nueva** de la sábana; el
   puente sin CDM (fase A de #65) los guarda en `Anuncio`.
 - Un cambio de copy, pieza, destino o UTM después de montado devuelve el anuncio a «por montar» y avisa
   al trafficker: se dispara desde los mismos servicios que hoy resetean la aprobación al editar.

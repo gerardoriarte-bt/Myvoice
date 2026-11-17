@@ -173,6 +173,12 @@ nueva que diga qué cambió y por qué.
       un candado de todo o nada.
     - La regla de quién decide no cambia (`permisosPieza.ts`): acepta o devuelve el responsable, nunca quien
       subió.
+    - **Siempre se sabe dónde se está: marca y campaña.** La marca va en la fila de arriba; la **campaña abre
+      el subencabezado** y manda en todo lo que está debajo. Con varias campañas a la vez, el selector dice
+      en qué paso va cada una. Las listas que cruzan campañas dicen «Todas las campañas», y la configuración
+      (biblioteca, medios de la marca, ADN), «Ninguna · configuración de la marca».
+    - **Destinos y UTM tiene entrada propia en el menú de CDM** (Trabajo): se elige la campaña y se pegan por
+      línea, cuando sea, desde que la sábana está aprobada; no hace falta esperar a que estén las piezas.
 
 ## Antes (2026-10-27), siguen vigentes con los nombres nuevos
 
