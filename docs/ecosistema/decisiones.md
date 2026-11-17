@@ -87,6 +87,10 @@ nueva que diga qué cambió y por qué.
     - Consecuencia: CDM necesita un **cuadro rápido** para campañas chicas, que se arme en minutos.
     - Transición: los 14 canales siguen en código (`server/src/channels/specs/`) hasta que estén cargados
       en la biblioteca de CDM; después el motor los lee de ahí.
+    - **Con el flujo de Planning (2026-11-17, decisiones 19 y 20)**: los 14 canales son el medio «Canales
+      propios» del catálogo (pantallas B6 y B7 del mapa) y se pasan una sola vez (B8). El «cuadro rápido» ya
+      no es otra pantalla: es el mismo planning (P2 → P3 → P4) con los medios de la marca ya marcados. Y
+      My Voice deja de elegir el medio en Generar: recibe un pedido de copy por línea de la sábana aprobada.
 
 ## 2026-10-28 · La marca primero, y la submarca hereda
 
@@ -112,6 +116,49 @@ nueva que diga qué cambió y por qué.
     Las 6 cantidades pendientes de la carga de los 14 canales esperan a la etapa de CDM.
     - Por ahora **solo LoBueno crea marcas**; cada marca ya pertenece a un workspace, así que abrir
       otras empresas después no obliga a rehacer nada.
+
+## 2026-11-17 · La biblioteca se organiza por pieza a producir
+
+18. **La unidad de la biblioteca es la pieza maestra**: un tipo de archivo y una proporción (imagen 9:16,
+    video 4:5…), con las ubicaciones que cubre. Diseño produce por proporción y Planning planea por
+    ubicación: las 33 ubicaciones de Meta quedan en 6 piezas
+    ([cdm/biblioteca/meta.md](./cdm/biblioteca/meta.md)). El largo de cada texto lo fija la **línea del
+    cuadro**: el más corto entre las ubicaciones que eligió, no entre todas las de la pieza. Una ubicación
+    con alerta de la guía queda «por confirmar». Fuente: la planilla de Meta del 2026-11-09, versionada en
+    el repo.
+
+19. **Una línea de la sábana es un formato en una etapa.** Planning elige medios con casillas y, en cada
+    formato, para qué etapas va y cuántas piezas por etapa: la etapa multiplica las piezas, y cada línea le
+    dice a Diseño qué producir y para qué (Video 9:16 · Reconocimiento · 3 y Video 9:16 · Consideración · 2
+    son 5 piezas, con mensajes distintos). Planning ve las **medidas**; zona segura, archivo y peso son de
+    Producción. My Voice recibe un pedido de copy por línea.
+
+20. **El menú de CDM sigue el trabajo, no el modelo de datos.** Arriba «Nuevo planning» y **Trabajo**:
+    los plannings de la marca activa, por estado (en armado, por aprobar, aprobados). Abajo
+    **Configuración**, lo que se prepara una vez: los **medios de la marca** (antes «paquetes») y la
+    **biblioteca de medios** (medios, borradores y carga desde planilla pasan adentro). Se quita
+    «Portafolio»: lo cubren la lista de plannings y Mi cola. «Cuadro de materiales» pasa a llamarse
+    **planning**, y su resumen, **sábana**: son las palabras del equipo.
+    El menú destaca solo lo que pide atención: **por aprobar** (con aviso) y **aprobados**; empezar un
+    planning ya es armarlo, así que «en armado» no es un estado propio. La biblioteca abre con el
+    **catálogo de medios** y cada medio lleva su **guía visual para Diseño**.
+
+21. **El encabezado es el proceso: marca → CDM → My Voice.** El selector de marca va primero y los
+    módulos se leen en orden, numerados: ① Marca · ADN › ② CDM · Planning › ③ My Voice · Copy. Un paso
+    hecho lleva ✓; el que todavía no se puede abrir lleva candado y dice qué falta («Completa el ADN de
+    Terpel», «Espera la sábana aprobada»). No hay CDM sin marca ni copy sin CDM. My Voice se entera del
+    trabajo que llega de CDM por la campana, Mi cola y el correo (a quien tiene la función Copy en la marca
+    y al responsable de la campaña), y su menú abre con **Pedidos de copy**.
+
+22. **Cada uno entra a su entorno y ve el resto en lectura.** La función decide dónde entra cada persona y
+    qué puede hacer: Estrategia → Marca · ADN; Planning → CDM · Plannings (y la biblioteca); Copy → My
+    Voice · Pedidos de copy; Diseño → Producción · Lo mío; Aprobación → Mi cola. Los otros pasos se abren
+    en **solo lectura** (sin botones de acción, con una franja que lleva de vuelta a su entorno). Un admin
+    (OWNER o ADMIN) puede actuar en cualquier paso, para destrabar si alguien falta: es lo que conserva el
+    espíritu de D2. Los clientes no entran; ven lo suyo por enlace.
+    - Cambia D2 («ninguna función restringe nada»): ahora la función restringe **actuar**, no **ver**.
+    - En código faltan las funciones `PLANNING` y `ESTRATEGIA` en `FuncionEquipo`, la entrada por función y
+      el modo lectura. Diseño en el `.pen`: «§ Quién ve qué».
 
 ## Antes (2026-10-27), siguen vigentes con los nombres nuevos
 

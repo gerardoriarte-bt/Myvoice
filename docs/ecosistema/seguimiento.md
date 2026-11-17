@@ -53,11 +53,11 @@ Cada función con su estado en las tres pistas. Se actualiza en el mismo PR que 
 | Usuario | Función | Diseño | Front | Back | Requisito |
 |---|---|---|---|---|---|
 | Planning | Biblioteca organizable | ✓ | ○ | ○ | CD-1, CD-2 |
-| Planning | Detalle de un formato y versiones | ◐ | ○ | ○ | CD-1, CD-5 |
-| Planning | Agregar un medio con sus formatos | ◐ | ○ | ○ | CD-3 |
+| Planning | Detalle de un formato y versiones | ✓ | ○ | ○ | CD-1, CD-5 (Meta, por pieza: decisión 18) |
+| Planning | Agregar un medio con sus formatos | ✓ | ○ | ○ | CD-3 (Meta desde la planilla) |
 | Planning | Cargar desde planilla | ◐ | ○ | ○ | CD-4 |
 | Planning | Paquetes de la marca | ○ | ○ | ○ | CD-6 |
-| Planning | Armar y enviar el cuadro | ○ | ○ | ○ | CD-7 |
+| Planning | Armar y enviar el cuadro | ◐ | ○ | ○ | CD-7 (una línea elige sus ubicaciones y su largo: diseñada) |
 | Planning, responsable | Cuadro rápido para campañas chicas | ○ | ○ | ○ | CD-11 |
 | Planning | Los 14 canales cargados en la biblioteca (carga con decisiones) | ✓ | ○ | ○ | CD-12 |
 | Planning | Estado por línea | ○ | ○ | ○ | CD-8 |

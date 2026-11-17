@@ -35,7 +35,7 @@ está aquí, todavía no tiene nombre acordado: se agrega antes de usarlo en una
 | **Marca madre / submarca** | Una submarca (Terpel CRM) es parte de su madre (Terpel) y **hereda** de ella por capas: prohibiciones siempre, lo demás se suma o se define propio. Un solo nivel. | La relación de octubre, que solo ordenaba: desde la decisión 16 hereda. |
 | **Familia** | Una marca madre con sus submarcas. | — |
 | **Versión del ADN** | Cada cambio guardado en el ADN de una marca. Cada campaña fija la versión con que arrancó. | — |
-| **Formatos de la marca** | Sus paquetes: el recorte de la biblioteca con que trabaja. | La biblioteca completa. |
+| **Medios de la marca** | Los medios y formatos que la marca usa siempre: el recorte de la biblioteca con que trabaja. Vienen marcados al elegir medios en un planning. | La biblioteca completa. |
 | **ADN** | Lo que la marca es y cómo habla: secciones, tono, vocabulario, reglas. Vive en la parte común. | «Voz de marca», que es una parte del ADN. |
 | **Audiencia** | Un público de la marca. **Se define en el ADN** (lista fija) y **se selecciona en la campaña**; todas las líneas se escriben para las audiencias de la campaña. | La segmentación de pauta: en CDM se llama **segmentación**, nunca «audiencia». |
 | **Segmentación** | Cómo se compra la pauta en un medio (edad, intereses, zona). Es de CDM y no entra a My Voice. | Audiencia. |
@@ -64,8 +64,8 @@ está aquí, todavía no tiene nombre acordado: se agrega antes de usarlo en una
 | **Medio** | Dónde sale: Meta, Google, programática, radio, exterior. | Formato. |
 | **Formato** | Lo que se produce en un medio: carrusel, banner 300×250, cuña de 30 s. Tiene **medidas**, **campos de texto** y **especificaciones de archivo**, separados. | Pieza. |
 | **Campo de texto** | Un texto que pide el formato, con su largo máximo: headline 40, texto principal 125. Es lo único de la biblioteca que My Voice usa para escribir. | — |
-| **Paquete de formatos** | Los formatos que una marca usa habitualmente. | — |
-| **Cuadro de materiales** | El encargo de una campaña, de 10 a 200 líneas: cada una con medio, formato, etapa, cuántas variaciones y fechas. Vive en CDM. | El media plan con presupuesto, que se queda en los Sheets de Planning. |
+| **Planning** (el encargo) | El encargo de una campaña en una marca: los medios elegidos y su **sábana**. Vive en CDM. | La función Planning (quien lo arma). |
+| **Sábana** | El resumen del planning: una línea por formato y etapa, con medidas, piezas y fechas (decisión 19). Se aprueba completa. | El media plan con presupuesto, que se queda en los Sheets de Planning. |
 | **Línea** | Una fila del cuadro de materiales. | — |
 | **Pieza** | Lo que se publica: el formato producido, con su copy. | Formato. |
 
@@ -77,7 +77,10 @@ está aquí, todavía no tiene nombre acordado: se agrega antes de usarlo en una
 | función Planning (la del ADN) | Estrategia |
 | función Medios / Planner | Planning |
 | catálogo de formatos | biblioteca de medios |
-| plan de medios (lo que llega a My Voice) | cuadro de materiales |
+| plan de medios (lo que llega a My Voice) | sábana |
+| cuadro de materiales | planning y su sábana |
+| paquetes de la marca, paquete de formatos | medios de la marca |
+| portafolio | se quita: lo cubren la lista de plannings (en armado, por aprobar, aprobados) y Mi cola |
 | unidad | el formato y su número: «Carrusel 3 de 6» |
 | audiencia (para pauta) | segmentación |
 | frente | etapa (las audiencias son de toda la campaña) |
