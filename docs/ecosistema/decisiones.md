@@ -221,6 +221,22 @@ dónde se está (marca, campaña, paso) se contradecía entre pantallas. Gerardo
     - El medio que agrupaba email, push, WhatsApp y web se llama **CRM y web**: «Propios de la marca» se
       leía como formatos de una sola marca.
 
+## 2026-11-17 · Una sola forma de moverse
+
+26. **Los cinco pasos se navegan igual.** Lo que dejó el resto de la auditoría de UX:
+    - **Un solo patrón de menú lateral**: el paso arriba («② CDM · Planning»), **Trabajo**, **Seguimiento** y,
+      si hace falta, la configuración o referencia (De la marca, De la agencia, Referencia), con una ayuda
+      corta al pie. El menú del paso ① Marca es el de Inicio de la marca.
+    - **Lo que es de la persona o de la agencia va en el menú de la cuenta** (el avatar): Panorama, Equipo y
+      funciones, Configuración de la agencia (estas tres, solo OWNER/ADMIN), Guía, Novedades y Salir. No va
+      en el menú de ningún módulo.
+    - **Al cambiar de campaña te quedas en tu entorno**: si la campaña no llegó a tu paso, la pantalla lo
+      dice en vez de llevarte a otro. El selector muestra, por campaña, en qué paso va y **lo tuyo**.
+    - **Todo detalle tiene «← volver» a su lista** (D2 ← Lo mío, T2 a T4 ← Por montar, MV2 ← Copy por
+      aprobar…), y Mi cola, Inicio de la marca y el Panorama muestran el avance con los mismos cinco pasos.
+    - En la revisión de una pieza, cada hallazgo se marca «pedir cambio» o «aceptar así», y un solo
+      **Devolver** manda todos los cambios juntos.
+
 ## Antes (2026-10-27), siguen vigentes con los nombres nuevos
 
 - La marca, su ADN y sus audiencias son la fuente de verdad (ahora en la parte común, decisión 7).
