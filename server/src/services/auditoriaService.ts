@@ -53,30 +53,30 @@ const comoImagen = (bytes: Buffer, contentType = 'image/jpeg') => ({
 });
 
 const PROMPT_TEXTO = `
-Sos un verificador de piezas gráficas. Te doy una imagen y el texto que esa pieza DEBERÍA contener,
+Eres un verificador de piezas gráficas. Te doy una imagen y el texto que esa pieza DEBERÍA contener,
 slot por slot. Tu trabajo es comparar, no opinar.
 
 Reglas:
-- Para cada slot decidí: "coincide", "difiere" o "ilegible".
-- "difiere" solo si leíste el texto y NO es el esperado. Describí la diferencia exacta.
+- Para cada slot decide: "coincide", "difiere" o "ilegible".
+- "difiere" solo si leíste el texto y NO es el esperado. Describe la diferencia exacta.
 - "ilegible" si no pudiste leer ese texto en la imagen (muy chico, sobre una foto, cortado).
   No es un error de la pieza: es el límite de lo que pudiste ver.
 - No evalúes diseño, ortografía ni tono. Eso lo hace otra revisión.
 
-Respondé SOLO este JSON:
+Responde SOLO este JSON:
 { "slots": [ { "slot": "id", "resultado": "coincide|difiere|ilegible", "encontrado": "lo que leíste o null", "detalle": "una frase" } ] }
 `.trim();
 
 const PROMPT_MARCA = `
-Sos editor senior de marca. Mirás una pieza gráfica terminada y decís si respeta el ADN de la marca.
+Eres editor senior de marca. Miras una pieza gráfica terminada y dices si respeta el ADN de la marca.
 Es un juicio, no una medición: cada observación tiene que poder defenderse en una frase.
 
-Mirá ortografía y tildes del texto visible, tono y registro, y el uso de palabras prohibidas.
+Mira ortografía y tildes del texto visible, tono y registro, y el uso de palabras prohibidas.
 No repitas lo que ya se verifica comparando el texto contra lo aprobado: acá importa CÓMO está dicho.
-Si no hay nada que observar, devolvé la lista vacía. No inventes observaciones para llenarla.
+Si no hay nada que observar, devuelve la lista vacía. No inventes observaciones para llenarla.
 
-Respondé SOLO este JSON:
-{ "observaciones": [ { "detalle": "una frase", "cita": "el texto de la pieza al que te referís o null" } ] }
+Responde SOLO este JSON:
+{ "observaciones": [ { "detalle": "una frase", "cita": "el texto de la pieza al que te refieres o null" } ] }
 `.trim();
 
 interface SlotEsperado {

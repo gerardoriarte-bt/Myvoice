@@ -150,8 +150,8 @@ export default function CollaborationHub({ clients, clientId, addNotification, o
           <p className="p-6 text-[12px] text-gray-400 text-center">Cargando...</p>
         ) : sessions.length === 0 ? (
           <p className="p-8 text-[12px] text-gray-400 text-center">
-            {marca?.name ?? 'Esta marca'} no tiene revisiones. Se arman desde {screenName('saved')}: elegí el copy
-            de una campaña que aprueba el cliente y usá «Enviar al cliente».
+            {marca?.name ?? 'Esta marca'} no tiene revisiones. Se arman desde {screenName('saved')}: elige el copy
+            de una campaña que aprueba el cliente y usa «Enviar al cliente».
           </p>
         ) : (
           <div className="divide-y divide-gray-50">

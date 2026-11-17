@@ -158,18 +158,18 @@ interface AvisoPayload {
  * correo que se puede leer entero sin entrar es un correo que nadie contesta.
  */
 export const notifyAviso = async (payload: AvisoPayload): Promise<void> => {
-  // Cada aviso dice por qué te llega, y lo dice en serio: decir «tenés la
+  // Cada aviso dice por qué te llega, y lo dice en serio: decir «tienes la
   // función de Aprobación» a quien recibe la entrega por ser responsable de la
   // campaña era mentirle.
   const TEXTOS: Record<string, { rotulo: string; enlace: string; pie: string }> = {
-    ASIGNACION: { rotulo: 'Te toca producirla', enlace: 'Ver la pieza', pie: 'Te llega porque esta pieza quedó asignada a vos.' },
-    DEVOLUCION: { rotulo: 'Vuelve a tus manos', enlace: 'Ver el motivo', pie: 'Te llega porque esta pieza está asignada a vos.' },
+    ASIGNACION: { rotulo: 'Te toca producirla', enlace: 'Ver la pieza', pie: 'Te llega porque esta pieza quedó asignada a ti.' },
+    DEVOLUCION: { rotulo: 'Vuelve a tus manos', enlace: 'Ver el motivo', pie: 'Te llega porque esta pieza está asignada a ti.' },
     ENTREGA: {
       rotulo: 'Te toca revisarla',
       enlace: 'Revisar la pieza',
-      pie: 'Te llega porque sos responsable de la campaña, o porque la campaña todavía no tiene uno y vos administrás o aprobás esta marca.',
+      pie: 'Te llega porque eres responsable de la campaña, o porque la campaña todavía no tiene uno o tú administras o apruebas esta marca.',
     },
-    RESPUESTA_CLIENTE: { rotulo: 'El cliente respondió', enlace: 'Ver la respuesta', pie: 'Te llega porque sos responsable de la campaña.' },
+    RESPUESTA_CLIENTE: { rotulo: 'El cliente respondió', enlace: 'Ver la respuesta', pie: 'Te llega porque eres responsable de la campaña.' },
   };
   const t = TEXTOS[payload.tipo] ?? TEXTOS.ENTREGA;
   await enviar(
@@ -210,7 +210,7 @@ export const notifyWorkspaceInvite = async (payload: WorkspaceInvitePayload): Pr
       titulo: `Te invitaron a ${payload.workspaceName}`,
       cuerpo: `<p style="font-size:14px;color:#6e6e73;margin:0;line-height:1.5;">El enlace vence el ${payload.expiresAt.toLocaleDateString('es-CO')}.</p>`,
       enlace: { texto: 'Aceptar invitación', url: link },
-      pie: `Si no esperabas esta invitación, ignorá este correo: sin aceptarla no se crea ninguna cuenta.`,
+      pie: `Si no esperabas esta invitación, ignora este correo: sin aceptarla no se crea ninguna cuenta.`,
     }),
     `Invitación a ${payload.workspaceName} para ${payload.email} (${link})`
   );

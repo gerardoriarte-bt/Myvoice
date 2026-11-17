@@ -74,7 +74,7 @@ export const SCREENS: Record<ScreenId, ScreenDef> = {
   generator: {
     id: 'generator',
     name: 'Generar',
-    description: 'Elegí marca, campaña y canales. El motor arma el concepto y escribe cada canal.',
+    description: 'Elige marca, campaña y canales. El motor arma el concepto y escribe cada canal.',
     icon: Sparkles,
     stage: 'escribir',
     adminOnly: true,

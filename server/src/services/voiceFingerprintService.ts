@@ -66,7 +66,7 @@ const computeStats = (texts: string[]): DeterministicStats => {
 };
 
 const buildQualPrompt = (texts: string[], stats: DeterministicStats): string => `
-Eres lingüista de marca. Analiza esta muestra de copy aprobado y devolvé el fingerprint cualitativo.
+Eres lingüista de marca. Analiza esta muestra de copy aprobado y devuelve el fingerprint cualitativo.
 
 ## MÉTRICAS DETERMINÍSTICAS YA CALCULADAS (usalas como contexto, no las recalcules)
 - Muestra: ${stats.sampleSize} textos, ${stats.totalChars} caracteres
@@ -78,12 +78,12 @@ Eres lingüista de marca. Analiza esta muestra de copy aprobado y devolvé el fi
 ## MUESTRA DE COPY
 ${texts.map((t, i) => `[${i + 1}] "${t.replace(/"/g, '\\"')}"`).join("\n")}
 
-## DEVOLVÉ JSON con:
-- "archetype": 1 de los 12 arquetipos clásicos (Sabio, Inocente, Explorador, Rebelde, Mago, Héroe, Amante, Bufón, Hombre Común, Cuidador, Gobernante, Creador). Elegí EL que mejor describe esta marca según el copy.
+## Devuelve JSON con:
+- "archetype": 1 de los 12 arquetipos clásicos (Sabio, Inocente, Explorador, Rebelde, Mago, Héroe, Amante, Bufón, Hombre Común, Cuidador, Gobernante, Creador). Elige EL que mejor describe esta marca según el copy.
 - "archetypeRationale": 1 línea explicando por qué — citando un ejemplo concreto del copy.
 - "personaGramatical": qué persona usa la marca ("1ra plural — 'creemos', 'hicimos'", "2da informal — tú/usted según marca", "3ra omnisciente", o "mixta — describir cuál mezcla").
 - "toneSummary": 1-2 líneas describiendo el tono de manera CONCRETA (no "cercano y profesional"). Ej: "ritmo entrecortado, frases de 5-7 palabras, repetición intencional, tendencia a la confesión negativa".
-- "linguisticTics": array de 3-5 tics OBSERVABLES en el copy. Ej: "abre con negación ('No inventamos…')", "usa repetición rítmica ('Hoy. Hoy.')", "termina con preguntas retóricas". Citá ejemplos.
+- "linguisticTics": array de 3-5 tics OBSERVABLES en el copy. Ej: "abre con negación ('No inventamos…')", "usa repetición rítmica ('Hoy. Hoy.')", "termina con preguntas retóricas". Cita ejemplos.
 - "favoriteWords": array de 5-10 palabras/expresiones que la marca usa repetidamente (no genéricas — específicas).
 - "avoidWords": array de 5-10 palabras que el copy EVITA explícitamente (deducilo por contraste con el rubro — qué dirían los competidores que esta marca no dice).
 
@@ -158,5 +158,5 @@ ${fp.linguisticTics.length ? `- Tics lingüísticos a reproducir:\n${fp.linguist
 ${fp.favoriteWords.length ? `- Palabras/expresiones favorecidas: ${fp.favoriteWords.join(", ")}` : ""}
 ${fp.avoidWords.length ? `- Palabras a evitar (estilo): ${fp.avoidWords.join(", ")}` : ""}
 
-REGLA: tu output debe respetar estas señales. Si tu draft tiene oraciones de 25 palabras y la marca usa 7, recortá. Si te falta el tic "${fp.linguisticTics[0] || "(ninguno)"}" en al menos una variación, agregalo.`;
+REGLA: tu output debe respetar estas señales. Si tu draft tiene oraciones de 25 palabras y la marca usa 7, recorta. Si te falta el tic "${fp.linguisticTics[0] || "(ninguno)"}" en al menos una variación, agregalo.`;
 };

@@ -22,15 +22,15 @@ import {
  * débil, redundante) siguen solo como aviso.
  */
 const REESCRIBIR_POR_OFICIO: Record<string, string> = {
-  generic: "Es genérico: podría firmarlo otra marca del rubro. Anclalo en algo que solo esta marca y este concepto pueden decir.",
-  "agency-speak": "Suena a agencia o a comunicado corporativo. Decilo como lo diría la marca, directo.",
-  "concept-drift": "Va por un lado y el concepto por otro. Hacé que el texto construya el concepto.",
-  filler: "Tiene relleno o una frase de stock ajena a esta promoción. Sacala y decí algo del tema de la campaña.",
-  "lazy-question": "Arranca con una pregunta que no es gancho. Afirmá el beneficio.",
-  manifesto: "Es un manifiesto filosófico. Bajalo a tierra: qué hace o gana el público ahora.",
-  "semantic-mix": "Mezcla imágenes de campos distintos. Quedate en el territorio del concepto.",
-  "asset-altered": "Altera el concepto, un slogan, un premio, adorna un beneficio o afirma algo que la marca no vende. Usalos literales, como dice el brief, y no afirmes nada fuera de sus productos.",
-  decorative: "Suena bonito pero no vende. Cambialo por algo que empuje la acción o el concepto.",
+  generic: "Es genérico: podría firmarlo otra marca del rubro. Ánclalo en algo que solo esta marca y este concepto pueden decir.",
+  "agency-speak": "Suena a agencia o a comunicado corporativo. Dilo como lo diría la marca, directo.",
+  "concept-drift": "Va por un lado y el concepto por otro. Haz que el texto construya el concepto.",
+  filler: "Tiene relleno o una frase de stock ajena a esta promoción. Sácala y di algo del tema de la campaña.",
+  "lazy-question": "Arranca con una pregunta que no es gancho. Afirma el beneficio.",
+  manifesto: "Es un manifiesto filosófico. Bájalo a tierra: qué hace o gana el público ahora.",
+  "semantic-mix": "Mezcla imágenes de campos distintos. Quédate en el territorio del concepto.",
+  "asset-altered": "Altera el concepto, un slogan, un premio, adorna un beneficio o afirma algo que la marca no vende. Úsalos literales, como dice el brief, y no afirmes nada fuera de sus productos.",
+  decorative: "Suena bonito pero no vende. Cámbialo por algo que empuje la acción o el concepto.",
 };
 
 const isBroken = (v: CopyVariation): boolean => {
@@ -142,15 +142,15 @@ ${adnParaElCorrector(brief)}- Canal: ${spec.id}
 ${items}
 
 ## TAREA
-Reescribí CADA variación cumpliendo TODAS estas condiciones:
-1. Respetá el budget del slot indicado en cada una — contá antes de devolver.
+Reescribe CADA variación cumpliendo TODAS estas condiciones:
+1. Respeta el budget del slot indicado en cada una — cuenta antes de devolver.
 2. NO uses las palabras prohibidas ni paráfrasis cercanas.
-3. Mantené el ángulo/tipo de cada variación y la lógica del concepto de campaña.
-4. Mantené el efecto que buscaba; si el problema es de oficio (genérico, relleno, manifiesto…), cambiá la frase, no el ángulo.
-5. Cumplí el manual de oficio.
+3. Mantén el ángulo/tipo de cada variación y la lógica del concepto de campaña.
+4. Mantén el efecto que buscaba; si el problema es de oficio (genérico, relleno, manifiesto…), cambia la frase, no el ángulo.
+5. Cumple el manual de oficio.
 6. Sigue sonando inconfundiblemente como "${brief.brand.name}".
 
-Devolvé una entrada por cada id recibido, con el id LITERAL.
+Devuelve una entrada por cada id recibido, con el id LITERAL.
 
 ## FORMATO JSON (única salida válida)
 {
@@ -183,7 +183,7 @@ export const runAutoFix = async (
         messages: [
           {
             role: "system",
-            content: "Eres editor de copy especializado en respetar restricciones duras. Respondés SOLO en JSON válido.",
+            content: "Eres editor de copy especializado en respetar restricciones duras. Respondes SOLO en JSON válido.",
           },
           { role: "user", content: buildBatchFixPrompt(brief, spec, broken) },
         ],

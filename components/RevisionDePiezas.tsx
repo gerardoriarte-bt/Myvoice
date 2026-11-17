@@ -114,7 +114,7 @@ export default function RevisionDePiezas({ token, sesion, onEnviada, onError }: 
       <main className="mx-auto max-w-[1080px] space-y-5 px-6 py-7">
         <p className="text-[13px] text-[#6E6E73]">
           Estas piezas ya las revisó el equipo. Miralas contra el copy aprobado, que va con cada una,
-          y marcá tu decisión.
+          y marca tu decisión.
         </p>
 
         {piezas.map((pieza, i) => (
@@ -157,7 +157,7 @@ export default function RevisionDePiezas({ token, sesion, onEnviada, onError }: 
             <p className="mt-2 text-center text-[11px] text-[#86868B]">
               {decididas < piezas.length
                 ? `Falta decidir ${piezas.length - decididas} de ${piezas.length}.`
-                : `En ${sinMotivo === 1 ? 'una pieza' : `${sinMotivo} piezas`} pediste cambios: escribí cuáles.`}
+                : `En ${sinMotivo === 1 ? 'una pieza' : `${sinMotivo} piezas`} pediste cambios: escribe cuáles.`}
             </p>
           )}
         </section>

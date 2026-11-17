@@ -86,7 +86,7 @@ const RevisionDeAdn: React.FC<Props> = ({ clientId, recarga, onConfirmado, onIrA
           <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
             {faltan.length > 0 ? (
               <>
-                <span className="text-[11.5px] text-gray-700">Decí «Está bien» o corregí:</span>
+                <span className="text-[11.5px] text-gray-700">Di «Está bien» o corrige:</span>
                 {faltan.map(s => (
                   <button
                     key={s.clave}

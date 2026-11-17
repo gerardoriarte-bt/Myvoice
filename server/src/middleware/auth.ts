@@ -71,7 +71,7 @@ export const requireWorkspace = async (req: AuthRequest, res: Response, next: Ne
 
     if (!membership) {
       return res.status(403).json({
-        error: 'No tenés acceso a este workspace. Pedí una invitación a un administrador.',
+        error: 'No tienes acceso a este workspace. Pide una invitación a un administrador.',
       });
     }
 
@@ -93,7 +93,7 @@ export const requireWorkspace = async (req: AuthRequest, res: Response, next: Ne
 export const requireManager = (req: AuthRequest, res: Response, next: NextFunction) => {
   if (!req.tenant) return res.status(401).json({ error: 'No autenticado' });
   if (!canManage(req.tenant.role)) {
-    return res.status(403).json({ error: 'Necesitás rol de administrador en este workspace' });
+    return res.status(403).json({ error: 'Necesitas rol de administrador en este workspace' });
   }
   next();
 };

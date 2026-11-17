@@ -59,7 +59,7 @@ ${channelBlocks}
 5. **CTA**: ¿la jerarquía de acción es coherente, o hay canales con CTAs que no encajan con la etapa?
 
 ## TU TAREA
-Devolvé JSON con:
+Devuelve JSON con:
 - "coherenceScore": 1-10. Rúbrica:
    • 9-10 — el deck se lee como una campaña perfectamente unificada
    • 7-8 — coherente con desviaciones menores
@@ -72,7 +72,7 @@ Devolvé JSON con:
    - "severity": "low" | "medium" | "high"
 - "flags": tags rápidas. Válidas: "concept-drift", "tone-drift", "message-conflict", "cta-misalignment", "voice-drift", "channel-orphan" (un canal totalmente desconectado del resto). Vacío si todo coherente.
 
-Si todo está bien, decilo (8-10). No castigues por castigar.
+Si todo está bien, dilo (8-10). No castigues por castigar.
 
 ## FORMATO JSON (única salida válida)
 {
@@ -108,7 +108,7 @@ export const runSuperCritic = async (
       {
         model,
         messages: [
-          { role: "system", content: "Eres director creativo senior. Auditas coherencia entre canales. Severo pero justo. Respondés SOLO en JSON válido." },
+          { role: "system", content: "Eres director creativo senior. Auditas coherencia entre canales. Severo pero justo. Respondes SOLO en JSON válido." },
           { role: "user", content: buildPrompt(brandName, spine, variations, prohibitions) },
         ],
         response_format: jsonObjectFormat(client),

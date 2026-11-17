@@ -32,7 +32,7 @@ export const ETIQUETA_SEMAFORO: Record<NonNullable<Semaforo>, {
     fondo: '#FFFBEB',
     color: '#B45309',
     Icono: TriangleAlert,
-    ayuda: 'Hay diferencias contra el copy aprobado o juicios de marca. No bloquean: decidís vos.',
+    ayuda: 'Hay diferencias contra el copy aprobado o juicios de marca. No bloquean: decides tú.',
   },
   'revisar-a-ojo': {
     texto: () => 'Revisar a ojo',

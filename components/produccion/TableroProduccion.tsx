@@ -136,7 +136,7 @@ export default function TableroProduccion({
     },
     {
       titulo: 'En diseño',
-      que: 'Asignadas a vos y todavía sin entregar.',
+      que: 'Asignadas a ti y todavía sin entregar.',
       piezas: piezas.filter(p => p.estado === 'EN_DISENO' && !p.devolucion && p.puedo.entregar),
     },
     {
@@ -205,7 +205,7 @@ export default function TableroProduccion({
       {!cargando && piezas.length === 0 && (
         <div className="rounded-xl border border-dashed border-apple-border p-8 text-center">
           <p className="text-[13px] font-medium text-apple-text">
-            {vista === 'marca' ? 'Todavía no hay piezas en producción' : 'No hay nada esperando por vos'}
+            {vista === 'marca' ? 'Todavía no hay piezas en producción' : 'No hay nada esperando por ti'}
           </p>
           {/*
             El vacío decía dónde se resuelve pero no cómo, y el camino real son
@@ -214,8 +214,8 @@ export default function TableroProduccion({
           */}
           <p className="mt-1 text-[12px] leading-relaxed text-apple-secondary">
             Las piezas nacen del copy aprobado. En{' '}
-            <span className="font-medium text-apple-text">{screenName('saved')}</span>, tocá{' '}
-            <span className="font-medium text-apple-text">Seleccionar</span>, marcá los copys y usá{' '}
+            <span className="font-medium text-apple-text">{screenName('saved')}</span>, toca{' '}
+            <span className="font-medium text-apple-text">Seleccionar</span>, marca los copys y usa{' '}
             <span className="font-medium text-apple-text">Mandar a producción</span>.
           </p>
           {onIrACopyAprobado && vista === 'marca' && (

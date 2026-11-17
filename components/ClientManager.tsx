@@ -217,7 +217,7 @@ const ClientManager: React.FC<ClientManagerProps> = ({
     }
     const fileMb = file.size / 1024 / 1024;
     if (fileMb > MAX_MB) {
-      setUploadError(`El archivo pesa ${fileMb.toFixed(1)} MB y supera el límite de ${MAX_MB} MB. Comprimí el PDF antes de subirlo.`);
+      setUploadError(`El archivo pesa ${fileMb.toFixed(1)} MB y supera el límite de ${MAX_MB} MB. Comprime el PDF antes de subirlo.`);
       return;
     }
     if (fileMb > IDEAL_MB) {
@@ -685,7 +685,7 @@ const ClientManager: React.FC<ClientManagerProps> = ({
                         : undefined;
                       return igual && !clientForm.marcaMadreId ? (
                         <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[12px] text-amber-800">
-                          Ya hay una «{igual.name}» en este workspace. ¿Querías crear una submarca? Elegí de cuál en «¿Es submarca de otra marca?».
+                          Ya hay una «{igual.name}» en este workspace. ¿Querías crear una submarca? Elige de cuál en «¿Es submarca de otra marca?».
                         </p>
                       ) : null;
                     })()}
@@ -756,7 +756,7 @@ const ClientManager: React.FC<ClientManagerProps> = ({
               </button>
 
               <div className="space-y-2">
-                <p className="text-[12px] font-medium text-gray-700">O elegí una marca que ya existe</p>
+                <p className="text-[12px] font-medium text-gray-700">O elige una marca que ya existe</p>
                 {candidatas.length === 0 ? (
                   <p className="rounded-lg bg-gray-50 px-3 py-2 text-[12px] text-gray-500">No hay otras marcas que puedan pasar a ser submarca.</p>
                 ) : (
@@ -929,7 +929,7 @@ const ClientManager: React.FC<ClientManagerProps> = ({
                  <ShieldAlert className="h-4 w-4 shrink-0 text-amber-600" />
                  <div className="min-w-0 flex-1">
                    <p className="text-[12.5px] font-semibold text-gray-900">
-                     Revisá el ADN de {m.name} antes de que lo {n === 1 ? 'herede su submarca' : `hereden sus ${n} submarcas`}
+                     Revisa el ADN de {m.name} antes de que lo {n === 1 ? 'herede su submarca' : `hereden sus ${n} submarcas`}
                    </p>
                    <p className="text-[11.5px] leading-relaxed text-gray-700">
                      Cuando lo confirmes, sus submarcas suman sus prohibiciones, frases y keywords, y toman el resto de sus secciones si no tienen propias. Hasta entonces nada cambia en el copy.
@@ -960,7 +960,7 @@ const ClientManager: React.FC<ClientManagerProps> = ({
                    const nombres = [...porClave.values()];
                    return nombres.length === 1 ? `Dos o más marcas se llaman «${nombres[0]}».` : `Hay nombres repetidos: ${nombres.map(n => `«${n}»`).join(', ')}.`;
                  })()}{' '}
-                 En el selector se ven iguales y es fácil trabajar en la equivocada. Resolvelo en las tarjetas marcadas: renombrá la que sobra, hacela submarca de la otra o, si eran la misma, fusionalas.
+                 En el selector se ven iguales y es fácil trabajar en la equivocada. Resolvelo en las tarjetas marcadas: renombra la que sobra, hacela submarca de la otra o, si eran la misma, fusionalas.
                </span>
              </div>
            )}
@@ -1000,7 +1000,7 @@ const ClientManager: React.FC<ClientManagerProps> = ({
                     <div className="md:col-span-2 space-y-3">
                       <span className="inline-block text-[10px] font-medium uppercase tracking-[0.2em] text-gray-500">Onboarding</span>
                       <h3 className="text-[22px] font-medium text-gray-900 tracking-tight leading-tight">
-                        Empezá agregando tu primera marca.
+                        Empieza agregando tu primera marca.
                       </h3>
                       <p className="text-[13px] text-gray-500 leading-relaxed max-w-md">
                         Cada marca es un workspace independiente: tiene su propio ADN, manual de marca (PDF), voice fingerprint y biblioteca aprobada que alimenta el motor.
@@ -1115,7 +1115,7 @@ const ClientManager: React.FC<ClientManagerProps> = ({
                                      value=""
                                      onChange={e => e.target.value && onUpdate(client.id, { marcaMadreId: e.target.value })}
                                    >
-                                     <option value="">Elegí la marca…</option>
+                                     <option value="">Elige la marca…</option>
                                      {madresPosibles(client, clients).map(m => (
                                        <option key={m.id} value={m.id}>{opcionDeMadre(m)}</option>
                                      ))}
@@ -1646,7 +1646,7 @@ const ClientManager: React.FC<ClientManagerProps> = ({
                                   {Object.values(Platform).map(p => <option key={p} value={p}>{p}</option>)}
                                 </select>
                                 <div className="flex-1 flex gap-2">
-                                  <input placeholder="Pegá el copy…" className="flex-1 px-3 py-2 bg-white border border-gray-200 rounded-lg text-gray-900 text-[12px] outline-none focus:border-gray-400 transition-colors" value={newFeedback.content} onChange={e => setNewFeedback({...newFeedback, content: e.target.value})} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addFeedback())} />
+                                  <input placeholder="Pega el copy…" className="flex-1 px-3 py-2 bg-white border border-gray-200 rounded-lg text-gray-900 text-[12px] outline-none focus:border-gray-400 transition-colors" value={newFeedback.content} onChange={e => setNewFeedback({...newFeedback, content: e.target.value})} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addFeedback())} />
                                   <button type="button" onClick={addFeedback} className="bg-ink text-white px-4 rounded-lg font-medium text-[12px] hover:bg-ink transition-colors">Añadir</button>
                                 </div>
                               </div>

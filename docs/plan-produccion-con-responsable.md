@@ -51,7 +51,7 @@ Gómez.» Quien administra no se salta al responsable: si hace falta, lo cambia 
 Mensaje); «Auditando la versión 2…»; «Sin enviar» o «Enviada el 13 oct · esperando» al cliente;
 «Aprobada por el cliente · Natalia O.» o «Aceptada por Laura · interna» en Lista.
 
-**«Lo mío» reemplaza a «Mis piezas»** y suma lo que te toca decidir, no solo lo que diseñás. Para
+**«Lo mío» reemplaza a «Mis piezas»** y suma lo que te toca decidir, no solo lo que diseñas. Para
 quien aprueba: «Esperan tu visto bueno», «Para mandar al cliente», «Esperando al cliente». Para
 quien diseña: «Devueltas», «En diseño», «Entregadas». Cruza marcas, como antes.
 

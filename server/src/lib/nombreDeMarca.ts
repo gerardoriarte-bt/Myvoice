@@ -8,7 +8,7 @@
  * Docker se arma desde `server/`. El frontend tiene una copia en
  * `utils/nombreDeMarca.ts` solo para avisar antes de crear una marca: la
  * verdad la calcula este archivo (`nombreRepetidoCon` en GET /clients). Si
- * cambiás la regla, cambiala en los dos.
+ * cambias la regla, cambiala en los dos.
  */
 export const normalizarNombre = (nombre: string): string =>
   nombre.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();

@@ -55,7 +55,7 @@ export const resolvePlanLimits = (plan?: string | null): PlanLimits => {
     planesAdvertidos.add(etiqueta);
     console.warn(
       `[planLimits] Plan desconocido "${etiqueta}". Se aplican los límites de "${FALLBACK_PLAN}". ` +
-      `Agregalo a PLAN_LIMITS en lib/planLimits.ts o corregí Workspace.plan.`
+      `Agregalo a PLAN_LIMITS en lib/planLimits.ts o corrige Workspace.plan.`
     );
   }
   return PLAN_LIMITS[FALLBACK_PLAN];

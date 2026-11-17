@@ -32,9 +32,9 @@ interface Props {
 }
 
 const AYUDA: Record<PiezaEstado, string> = {
-  POR_ASIGNAR: 'Elegí quién la diseña.',
+  POR_ASIGNAR: 'Elige quién la diseña.',
   EN_DISENO: 'Cuando esté lista, subila. Se audita y recién ahí pasa a revisión.',
-  POR_REVISAR: 'Miralo contra la orden de trabajo y decidí.',
+  POR_REVISAR: 'Miralo contra la orden de trabajo y decide.',
   CON_EL_CLIENTE: 'El equipo ya la aceptó. Falta la aprobación del cliente.',
   LISTA: 'Terminada. Se puede reabrir con un motivo.',
 };
@@ -181,7 +181,7 @@ export default function AccionesPieza({ pieza, miembros, onCambio, onError, comp
           placeholder="La diferencia es de la miniatura; en el tamaño real se lee bien…"
           className="w-full rounded-lg border border-apple-border px-2 py-1.5 text-[11px] text-apple-text"
         />
-        <p className="text-[10px] text-apple-tertiary">Queda en el historial. También podés decidir cada hallazgo en la orden de trabajo.</p>
+        <p className="text-[10px] text-apple-tertiary">Queda en el historial. También puedes decidir cada hallazgo en la orden de trabajo.</p>
         <div className="flex items-center gap-2">
           <button
             disabled={!notaAceptar.trim() || ocupado}

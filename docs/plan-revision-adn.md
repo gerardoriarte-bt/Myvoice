@@ -17,7 +17,7 @@ lo que enciende la herencia de esa familia y reemplaza al `--apply` del backfill
 ## Nivel 1 · Qué ve el usuario
 
 1. **Marcas.** Si una marca madre con submarcas no tiene el ADN confirmado, arriba aparece un aviso
-   ámbar: «Revisá el ADN de Terpel antes de que lo hereden sus 7 submarcas», con lo que va a pasar y
+   ámbar: «Revisa el ADN de Terpel antes de que lo hereden sus 7 submarcas», con lo que va a pasar y
    un botón «Revisar el ADN». La tarjeta de la madre lleva «ADN por revisar · 2 de 5».
 2. **La revisión**, dentro de la marca, arriba del detalle. Las 5 secciones (voz, guías, propuesta de
    valor, keywords, prohibiciones), cada una con su texto, cómo la heredan las submarcas («se suman a
@@ -25,7 +25,7 @@ lo que enciende la herencia de esa familia y reemplaza al `--apply` del backfill
    guarda como revisada). Arriba, cuántas van y qué submarcas lo heredan. «Confirmar el ADN» se
    habilita con las 5 revisadas.
 3. **La bandeja.** Quienes administran el workspace (OWNER y ADMIN) reciben un aviso por marca madre:
-   «Revisá el ADN de Terpel: lo van a heredar 7 submarcas». Lleva directo a la revisión y se cierra
+   «Revisa el ADN de Terpel: lo van a heredar 7 submarcas». Lleva directo a la revisión y se cierra
    solo al confirmar.
 4. **Al confirmar**: «ADN de Terpel confirmado. Sus 7 submarcas ya lo heredan», y la tarjeta pasa a
    «ADN confirmado».

@@ -280,7 +280,7 @@ referencia al original. Si difieren, la tarjeta muestra «El copy cambió» y qu
 actualizar la orden. Nunca se actualiza sola, y una pieza en *Lista* no se reabre sola.
 
 **4 · Un archivo de 40 MB, o en formato inesperado.** Son dos casos distintos. *Regla:* **el
-peso y el tipo se rechazan antes de subir**, diciendo qué hacer («exportá en PNG o JPG, con 1.600
+peso y el tipo se rechazan antes de subir**, diciendo qué hacer («exporta en PNG o JPG, con 1.600
 px en el lado largo alcanza»). **Las medidas distintas se aceptan y quedan como hallazgo**, igual
 que D2: una pieza de 728×90 cuando se pidió 300×250 está mal, pero es un hecho que alguien tiene
 que ver, no un archivo inservible.

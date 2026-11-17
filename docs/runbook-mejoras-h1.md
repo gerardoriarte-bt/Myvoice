@@ -71,8 +71,8 @@ producción en los pasos 5 y 6.
 
 ### 3. Migración
 
-Si venís de [runbook-tenancy.md](./runbook-tenancy.md), el `migrate deploy` del paso 6 de ese
-documento ya aplicó esta migración a continuación de `_workspace_required` y podés saltear
+Si vienes de [runbook-tenancy.md](./runbook-tenancy.md), el `migrate deploy` del paso 6 de ese
+documento ya aplicó esta migración a continuación de `_workspace_required` y puedes saltear
 este paso.
 
 ```bash
@@ -130,7 +130,7 @@ recuperables. Sustituirlos por el modelo de hoy produciría números plausibles 
 npm run backfill:telemetria -- --apply   # una sola transacción
 ```
 
-Compará los dos reportes: el bloque `plan` tiene que ser idéntico y `divergencia` tiene que
+Compara los dos reportes: el bloque `plan` tiene que ser idéntico y `divergencia` tiene que
 ser `false`.
 
 ```bash

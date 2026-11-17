@@ -34,7 +34,7 @@ export const GRUPOS: { id: string; nombre: string; ayuda: string; secciones: Sec
     ayuda: 'Lo que usan el redactor y el revisor para que el texto suene a la marca.',
     secciones: [
       { clave: 'voz', nombre: 'Voz y personalidad', critica: true, modos: ['HEREDA', 'PROPIA'], ayuda: 'Cómo es la marca cuando habla. Con menos de una frase completa queda débil.' },
-      { clave: 'tratamiento', nombre: 'Tratamiento', critica: true, modos: ['HEREDA', 'PROPIA'], ayuda: 'Tú, vos o usted. El motor lo cumple en todos los textos y el revisor marca el que no.' },
+      { clave: 'tratamiento', nombre: 'Tratamiento', critica: true, modos: ['HEREDA', 'PROPIA'], ayuda: 'Tú, usted o vos (el voseo paisa de Antioquia). El motor lo cumple en todos los textos y el revisor marca el que no.' },
       { clave: 'asiSuena', nombre: 'Así suena', critica: false, modos: ['HEREDA', 'PROPIA'], ayuda: 'Textos que la marca dio por buenos y el redactor imita. Hacen falta 3. Mientras no haya, el motor usa los 5 últimos aprobados.' },
     ],
   },
@@ -63,7 +63,7 @@ export const COLOR_ESTADO: Record<EstadoSeccionAdn | 'PROPUESTA', { punto: strin
 
 export const TRATAMIENTOS: { valor: 'TU' | 'VOS' | 'USTED'; nombre: string; ejemplo: string }[] = [
   { valor: 'TU', nombre: 'Tú', ejemplo: '«¿Sabes cuántos beneficios tienes?»' },
-  { valor: 'VOS', nombre: 'Vos', ejemplo: '«¿Sabés cuántos beneficios tenés?»' },
+  { valor: 'VOS', nombre: 'Vos (paisa)', ejemplo: '«¿Sabés cuántos beneficios tenés, pues?»' },
   { valor: 'USTED', nombre: 'Usted', ejemplo: '«¿Sabe cuántos beneficios tiene?»' },
 ];
 

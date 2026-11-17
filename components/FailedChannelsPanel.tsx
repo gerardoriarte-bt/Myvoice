@@ -97,7 +97,7 @@ const FailedChannelsPanel: React.FC<Props> = ({ canales, onReintentar, disabled 
               </div>
               {canal.terminal ? (
                 <span
-                  title="El error no se resuelve reintentando: revisá los créditos o la API key en Ajustes."
+                  title="El error no se resuelve reintentando: revisa los créditos o la API key en Ajustes."
                   className="flex items-center gap-1.5 text-[11px] text-gray-400 border border-gray-200 rounded-lg px-2.5 py-1.5 cursor-not-allowed"
                 >
                   <Ban className="w-3 h-3" />

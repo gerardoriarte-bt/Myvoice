@@ -175,7 +175,7 @@ const UserManager: React.FC<UserManagerProps> = ({
                   <div className="min-w-0">
                     <div className="text-[13px] text-[#1D1D1F] truncate">
                       {member.name}
-                      {isSelf && <span className="text-[#86868B] font-normal"> · vos</span>}
+                      {isSelf && <span className="text-[#86868B] font-normal"> · tú</span>}
                     </div>
                     <div className="text-[11px] text-[#86868B] truncate">{member.email}</div>
                   </div>

@@ -250,7 +250,7 @@ export default function OrdenDeTrabajo({ piezaId, miembros, onCerrar, onCambio, 
               </div>
               <p className="mt-1 text-[11px] text-apple-secondary">
                 {corrigiendo
-                  ? 'Lo que cambies queda en la pieza y en Copy, aprobado por vos. Queda en el historial.'
+                  ? 'Lo que cambies queda en la pieza y en Copy, aprobado por ti. Queda en el historial.'
                   : 'Copiar y pegar, no retipear: la auditoría después compara carácter por carácter.'}
               </p>
               {pieza.devolucion?.esperaCopy && !corrigiendo && (

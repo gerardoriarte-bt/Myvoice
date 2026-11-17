@@ -79,7 +79,7 @@ export const computeCost = (
       warnedModels.add(model);
       console.warn(
         `[pricing] Sin tarifa conocida para "${model}" y el proveedor no reportó costo. ` +
-        `Se registra 0 USD. Agregá el modelo a MODEL_PRICING en services/pricing.ts.`
+        `Se registra 0 USD. Agrega el modelo a MODEL_PRICING en services/pricing.ts.`
       );
     }
     return 0;
