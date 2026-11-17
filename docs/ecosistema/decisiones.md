@@ -143,6 +143,13 @@ nueva que diga qué cambió y por qué.
     planning ya es armarlo, así que «en armado» no es un estado propio. La biblioteca abre con el
     **catálogo de medios** y cada medio lleva su **guía visual para Diseño**.
 
+21. **El encabezado es el proceso: marca → CDM → My Voice.** El selector de marca va primero y los
+    módulos se leen en orden, numerados: ① Marca · ADN › ② CDM · Planning › ③ My Voice · Copy. Un paso
+    hecho lleva ✓; el que todavía no se puede abrir lleva candado y dice qué falta («Completa el ADN de
+    Terpel», «Espera la sábana aprobada»). No hay CDM sin marca ni copy sin CDM. My Voice se entera del
+    trabajo que llega de CDM por la campana, Mi cola y el correo (a quien tiene la función Copy en la marca
+    y al responsable de la campaña), y su menú abre con **Pedidos de copy**.
+
 ## Antes (2026-10-27), siguen vigentes con los nombres nuevos
 
 - La marca, su ADN y sus audiencias son la fuente de verdad (ahora en la parte común, decisión 7).
