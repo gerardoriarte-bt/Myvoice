@@ -123,6 +123,12 @@ nueva que diga qué cambió y por qué.
     con alerta de la guía queda «por confirmar». Fuente: la planilla de Meta del 2026-11-09, versionada en
     el repo.
 
+19. **Una línea de la sábana es un formato en una etapa.** Planning elige medios con casillas y, en cada
+    formato, para qué etapas va y cuántas piezas por etapa: la etapa multiplica las piezas, y cada línea le
+    dice a Diseño qué producir y para qué (Video 9:16 · Reconocimiento · 3 y Video 9:16 · Consideración · 2
+    son 5 piezas, con mensajes distintos). Planning ve las **medidas**; zona segura, archivo y peso son de
+    Producción. My Voice recibe un pedido de copy por línea.
+
 ## Antes (2026-10-27), siguen vigentes con los nombres nuevos
 
 - La marca, su ADN y sus audiencias son la fuente de verdad (ahora en la parte común, decisión 7).
