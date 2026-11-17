@@ -48,3 +48,4 @@ Módulos: parte común · My Voice · CDM   (los que se tocaron)
 - [2026-10-27](./2026-10-27.md) · El proceso de campaña v2 de punta a punta en el `.pen`.
 - [2026-10-28](./2026-10-28.md) · Del plan del Adaptador al ecosistema CDM + My Voice.
 - [2026-11-12](./2026-11-12.md) · ADN 2.0 en pantalla y el aviso en v1 (F2 y F3).
+- [2026-11-17](./2026-11-17.md) · La plataforma como proceso, diseñada y auditada; sin voseo en producción.
