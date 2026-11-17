@@ -63,7 +63,7 @@ Desde el 2026-11-17 todas las pantallas de CDM están en **su propia columna del
 | Biblioteca | Cargar desde planilla | Cargar formatos | reemplazada por las pantallas de Meta (decisión 18) | § Catálogo · cargar medios y formatos desde planilla (SUPUESTO) |
 | Marca | Equipo y paquetes de formatos | Guardar paquete | por diseñar | — |
 | Campaña | Campaña en CDM (desde My Voice) | Armar el cuadro | por diseñar | — |
-| Cuadro | Armar y enviar el cuadro | Enviar versión | por diseñar | — |
+| Cuadro | Armar y enviar el cuadro | Enviar versión | en curso: la línea con ubicaciones está diseñada | § CDM · Cuadro de materiales · una línea de Meta elige ubicaciones |
 | Cuadro | **Cuadro rápido** (campaña chica, desde los paquetes de la marca) | Enviar | por diseñar | — |
 | Estado | Línea con su copy aprobado y el estado de sus piezas | Ver en My Voice | por diseñar | — |
 | Seguimiento | Portafolio con «espera a» | Abrir campaña | por diseñar | — |
