@@ -1,6 +1,6 @@
 # Plan · La plataforma como proceso: entornos, CDM, pedidos de copy e implementación
 
-Estado: diseñado en el `.pen` (2026-11-17), por construir · Decisiones 18 a 22 en
+Estado: diseñado en el `.pen` (2026-11-17), por construir · Decisiones 18 a 23 en
 [ecosistema/decisiones.md](./ecosistema/decisiones.md) · Pantallas en
 [ecosistema/pantallas.md](./ecosistema/pantallas.md) · Spec de la plataforma:
 [ecosistema/tecnico/spec-plataforma.md](./ecosistema/tecnico/spec-plataforma.md) · Implementación:
@@ -12,7 +12,9 @@ Hoy My Voice es una herramienta: cualquiera del workspace abre cualquier pantall
 la cabeza del equipo. Lo diseñado el 2026-11-17 lo vuelve un proceso con dueños:
 
 - **El encabezado es el proceso**: ① Marca · ADN › ② CDM · Planning › ③ My Voice · Copy ›
-  ④ Implementación. No hay CDM sin marca, ni copy sin sábana aprobada (decisión 21).
+  ④ Producción · Piezas › ⑤ Implementación. No hay CDM sin marca, ni copy sin sábana aprobada (decisión
+  21), y Producción es un paso propio, no una pantalla de My Voice (decisión 23). Va en un subencabezado:
+  la fila de arriba queda para identidad, marca, buscar, Mi cola y avisos.
 - **Cada persona entra a su entorno y ve el resto en lectura** (decisión 22).
 - **CDM arma el planning y la sábana**; al aprobarse, My Voice recibe **pedidos de copy**, uno por línea.
 - **El trafficker monta los anuncios** con todo lo aprobado y deja constancia.
@@ -26,9 +28,9 @@ la cabeza del equipo. Lo diseñado el 2026-11-17 lo vuelve un proceso con dueño
 | **Estrategia** | ① Marca · ADN | ADN, audiencias, confirmar el ADN | sábanas, copy, piezas |
 | **Planning** (el *planner* de `docs/v2`: es la misma función) | ② CDM · Plannings | plannings, sábana, biblioteca, medios de la marca, destino y UTM | ADN, copy, piezas |
 | **Copy** | ③ My Voice · Pedidos de copy | pedidos de copy; corregir copy dentro de una pieza | ADN, sábana, biblioteca |
-| **Diseño** | Producción · Lo mío | sus piezas | ADN, guía visual, copy aprobado |
+| **Diseño** | ④ Producción · Lo mío | sus piezas: subir versiones | ADN, guía visual, copy aprobado |
 | **Aprobación** (responsable o marca) | Mi cola | aprueba sábana, copy y piezas de su campaña | ADN |
-| **Trafficker** | ④ Implementación · Por montar | anuncios: montar, devolver con novedad | sábana, destino, copy y piezas aprobadas |
+| **Trafficker** | ⑤ Implementación · Por montar | anuncios: montar, devolver con novedad | sábana, destino, copy y piezas aprobadas |
 | **Admin** (OWNER o ADMIN) | la última pantalla que usó | todo, para destrabar si alguien falta | — |
 
 El cliente no entra: ve lo suyo por enlace, como hoy.
@@ -37,11 +39,12 @@ El cliente no entra: ve lo suyo por enlace, como hoy.
 
 | Paso | Pantallas | Qué resuelven |
 |---|---|---|
-| Marco | Encabezado como proceso (componente) · Quién ve qué · menús por módulo | pasos numerados con ✓ y candado que dice qué falta; modo lectura con franja «Tu trabajo está en…» |
+| Marco | Encabezado en dos filas (componente): identidad y avisos arriba, proceso abajo · Quién ve qué · menús por módulo | pasos numerados con ✓, candado que dice qué falta o avance por línea; modo lectura con franja «Tu trabajo está en…» |
 | ② CDM | P1 Plannings de la marca · P2 Nuevo planning · P3 Elegir medios · P4 Sábana · P4b Una línea elige ubicaciones · P5 La marca aprueba · **P6 Destino y UTM** | el trabajo de Planning, de la marca a la sábana aprobada |
 | ② CDM · configuración | B1–B8 Biblioteca (catálogo, Meta por pieza, detalle, guía visual para Diseño, carga desde planilla, los 14 canales) · M1 Medios de la marca | lo que se prepara una vez |
 | ③ My Voice | MV0 Cómo se entera Copy · MV Pedidos de copy | llega la sábana: una línea por formato y etapa, con medio, piezas y largo ya decididos |
-| ④ Implementación | **T1** Por montar · **T2** Montar un anuncio · **T3** Falta algo · **T4** Devolver con novedad · **T5** Reporte e historial | el trafficker monta de a uno y deja constancia |
+| ④ Producción | **D1** Lo mío · **D2** Orden de trabajo con la guía visual · **D3** La IA revisa y el responsable decide | Diseño recibe medio, formato, medidas, zona segura y textos aprobados en una pantalla; sube y la IA compara |
+| ⑤ Implementación | **T1** Por montar · **T2** Montar un anuncio · **T3** Falta algo · **T4** Devolver con novedad · **T5** Reporte e historial | el trafficker monta de a uno y deja constancia |
 
 ### Reglas que el código tiene que cumplir
 
@@ -63,16 +66,23 @@ el marco, después la marca hacia adelante.
 
 ### F0 · El marco: enrutador, encabezado y menús (sin datos nuevos)
 
-- **Enrutador** (spec § 4.1): rutas `/marca/:id`, `/cdm/…`, `/myvoice/…`, `/implementacion/…`, `/cola`.
+- **Enrutador** (spec § 4.1): rutas `/marca/:id`, `/cdm/…`, `/myvoice/…`, `/produccion/…`,
+  `/implementacion/…`, `/cola`.
   `?review=`, `?invite=` y `?pieza=` se siguen leyendo y redirigen. Las pantallas de hoy se montan
   dentro del marco sin reescribirlas.
-- **Barra de la plataforma** (`src/plataforma/BarraDeProceso.tsx`): marca primero, cuatro pasos. El
-  estado de cada paso lo calcula el servidor al leer, **`GET /clients/:id/proceso`**:
-  `{ paso, estado: 'hecho' | 'activo' | 'bloqueado', falta?: string, quien?: {id, nombre} }[]`, en
-  `server/src/comun/proceso.ts`. Usa `completitudAdn` (paso ①), la sábana aprobada (②, cuando exista
-  F3) y copy y piezas aprobados (③ y ④). Sin CDM encendido, ② no aparece y ③ no tiene candado.
-- **Menú por módulo**: el de My Voice ya diseñado (Pedidos de copy · Copy · Con el cliente · Producción
-  · Métricas · Generar suelto · Historial). `screens.ts` sigue siendo la única fuente de nombres; las
+- **Encabezado en dos filas**: `src/plataforma/Barra.tsx` (identidad, marca, buscar, Mi cola, avisos,
+  cuenta: no cambia entre pantallas) y `src/plataforma/Proceso.tsx` (los cinco pasos y la campaña que se
+  está viendo). El estado de cada paso lo calcula el servidor al leer, **`GET /clients/:id/proceso[?campana=]`**:
+  `{ paso, estado: 'hecho' | 'activo' | 'bloqueado', falta?: string, quien?: {id, nombre},
+  avance?: {hechas, total} }[]`, en `server/src/comun/proceso.ts`. Usa `completitudAdn` (①), la sábana
+  aprobada (②, cuando exista F3), el copy aprobado por línea (③) y las piezas y anuncios (④ y ⑤, con
+  `avance`: avanzan por línea). Sin CDM encendido, ② no aparece y ③ no tiene candado.
+- **Menú por módulo**: My Voice (Pedidos de copy · Copy · Con el cliente · Métricas · Generar suelto ·
+  Historial) y **Producción** (Lo mío · Por revisar · Por marca · Con el cliente · Listas para montar ·
+  Guías de la biblioteca), que sale del menú de My Voice (decisión 23). Producción ya está separada en el
+  servidor (`Pieza`, `permisosPieza.ts`, `revisionDePiezas.ts`, la auditoría): pasa a ser su propio
+  módulo en `scripts/mapa/modulos.json`, y `npm run fronteras` la obliga a leer el copy y la guía visual
+  por el contrato, no de las tablas de My Voice o CDM. `screens.ts` sigue siendo la única fuente de nombres; las
   etapas de `NAV_STAGES` se reemplazan por los módulos del encabezado.
 - **Riesgo**: `App.tsx` concentra el estado (~1000 líneas). Se muda de a una pantalla (spec § 7), con
   el estado que cada una necesita, y nunca hay dos versiones vivas de la misma pantalla.
@@ -158,12 +168,13 @@ el suyo, y que el admin actúa en todos. Con `observar` no bloquea y lo registra
 El detalle está en `docs/plan-implementacion.md` (PR #65, nivel 2). Lo que cambia
 con lo diseñado hoy:
 
-- La función `TRAFFICKER` entra en F1, con las otras, y el paso ④ del encabezado sale de F0.
+- La función `TRAFFICKER` entra en F1, con las otras, y el paso ⑤ del encabezado sale de F0.
 - Destino y UTM se guardan en `LineaDePlanning` (P6) y se editan **sin versión nueva** de la sábana; el
   puente sin CDM (fase A de #65) los guarda en `Anuncio`.
 - Un cambio de copy, pieza, destino o UTM después de montado devuelve el anuncio a «por montar» y avisa
   al trafficker: se dispara desde los mismos servicios que hoy resetean la aprobación al editar.
-- **Al mergear #65**: sus decisiones 18 a 22 chocan con las de #72 y se renumeran a 23 a 27.
+- **Al mergear #65**: sus decisiones 18 a 22 chocan con las de #72 y la 23 de este plan; se renumeran a
+  24 a 28.
 
 ## Qué no cambia
 
@@ -173,15 +184,13 @@ con lo diseñado hoy:
 
 ## Falta diseñar antes de construir
 
-- **Producción con la guía visual dentro de la orden de trabajo** (pantalla PR): necesaria para F2 en
-  Producción.
 - **Revisión agrupada** de pedidos grandes (sábanas de 200 líneas).
 - **Estado de una línea** en CDM: su copy aprobado y sus piezas.
 
 ## Verificación de cada entrega
 
 - Los tres `tsc`, las dos builds, `npm run fronteras` (el código nuevo vive en `comun/`, `cdm/`,
-  `myvoice/`, `src/plataforma/`) y el chequeo de deriva de migraciones.
+  `myvoice/`, `produccion/`, `src/plataforma/`) y el chequeo de deriva de migraciones.
 - `verify:isolation` con cada ruta nueva que toma un `:id`; `verify:permisos` desde F1.
 - Recorrerlo con el equipo en una marca piloto con CDM encendido (la marca nueva con ADN completo) antes
   de encenderlo en Terpel.

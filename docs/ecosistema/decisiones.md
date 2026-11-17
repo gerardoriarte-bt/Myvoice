@@ -160,6 +160,20 @@ nueva que diga qué cambió y por qué.
     - En código faltan las funciones `PLANNING` y `ESTRATEGIA` en `FuncionEquipo`, la entrada por función y
       el modo lectura. Diseño en el `.pen`: «§ Quién ve qué».
 
+23. **Producción es un paso del proceso, no una pantalla de My Voice.** El proceso queda en cinco pasos:
+    ① Marca · ADN › ② CDM · Planning › ③ My Voice · Copy › ④ Producción · Piezas › ⑤ Implementación ·
+    Anuncios. Producción junta lo que viene de CDM (medio, formato, medidas, guía visual) y de My Voice (copy
+    aprobado), así que no vive dentro de ninguno de los dos: tiene su propio menú (Lo mío, Por revisar, Por
+    marca, Con el cliente, Listas para montar, Guías de la biblioteca) y Diseño entra a ④ Producción · Lo mío.
+    El menú de My Voice deja de tener «Producción».
+    - **El encabezado se parte en dos filas**: arriba lo que es de la persona y no cambia (identidad, marca,
+      buscar, Mi cola, avisos, cuenta); abajo el proceso de la campaña que está viendo, con la campaña a la
+      derecha.
+    - **Producción e Implementación avanzan por línea**: el paso muestra cuánto lleva («6 de 17 piezas»), no
+      un candado de todo o nada.
+    - La regla de quién decide no cambia (`permisosPieza.ts`): acepta o devuelve el responsable, nunca quien
+      subió.
+
 ## Antes (2026-10-27), siguen vigentes con los nombres nuevos
 
 - La marca, su ADN y sus audiencias son la fuente de verdad (ahora en la parte común, decisión 7).
