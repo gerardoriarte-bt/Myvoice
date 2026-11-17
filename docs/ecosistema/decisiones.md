@@ -150,6 +150,16 @@ nueva que diga qué cambió y por qué.
     trabajo que llega de CDM por la campana, Mi cola y el correo (a quien tiene la función Copy en la marca
     y al responsable de la campaña), y su menú abre con **Pedidos de copy**.
 
+22. **Cada uno entra a su entorno y ve el resto en lectura.** La función decide dónde entra cada persona y
+    qué puede hacer: Estrategia → Marca · ADN; Planning → CDM · Plannings (y la biblioteca); Copy → My
+    Voice · Pedidos de copy; Diseño → Producción · Lo mío; Aprobación → Mi cola. Los otros pasos se abren
+    en **solo lectura** (sin botones de acción, con una franja que lleva de vuelta a su entorno). Un admin
+    (OWNER o ADMIN) puede actuar en cualquier paso, para destrabar si alguien falta: es lo que conserva el
+    espíritu de D2. Los clientes no entran; ven lo suyo por enlace.
+    - Cambia D2 («ninguna función restringe nada»): ahora la función restringe **actuar**, no **ver**.
+    - En código faltan las funciones `PLANNING` y `ESTRATEGIA` en `FuncionEquipo`, la entrada por función y
+      el modo lectura. Diseño en el `.pen`: «§ Quién ve qué».
+
 ## Antes (2026-10-27), siguen vigentes con los nombres nuevos
 
 - La marca, su ADN y sus audiencias son la fuente de verdad (ahora en la parte común, decisión 7).
