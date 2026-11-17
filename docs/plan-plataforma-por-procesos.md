@@ -61,8 +61,33 @@ El cliente no entra: ve lo suyo por enlace, como hoy.
 ## Nivel 2 · Cómo se construye
 
 Seis entregas, cada una un PR (o dos) que deja `main` desplegable, con el esquema solo aditivo y lo
-nuevo detrás del interruptor por marca (`ModuloDeMarca`, spec § 3). El orden sigue la decisión 17: primero
+nuevo detrás del interruptor del workspace (`plataformaPorProcesos`, abajo) y, para CDM, del interruptor por
+marca (`ModuloDeMarca`, spec § 3). El orden sigue la decisión 17: primero
 el marco, después la marca hacia adelante.
+
+### Convivencia con lo que está en producción (2026-11-17)
+
+El plan se construye sobre el mismo código que corre en myvoice.lobueno.co, y F0 cambia lo que el equipo
+usa todos los días (encabezado, navegación, Producción fuera de My Voice). `ModuloDeMarca` decide qué
+módulos tiene una marca, pero no protege el marco: sin otra cosa, desplegar F0 lo cambiaría para todos de
+una vez. Gerardo decidió (2026-11-17):
+
+- **Un interruptor por workspace, `Workspace.plataformaPorProcesos`** (booleano, `false` por defecto,
+  migración aditiva), como `Workspace.procesoCampana` en la v2. Apagado, la app se ve como hoy: la
+  navegación de `App.tsx` y `NAV_STAGES`. Encendido, el marco nuevo: encabezado en dos filas, enrutador,
+  menús por paso, Producción como paso ④ y el Panorama. El interruptor elige el **marco**, no duplica
+  pantallas: las de hoy se montan dentro de uno u otro sin reescribirse.
+- **Lo nuevo de cada entrega (F1 a F5) también queda detrás del interruptor**, y CDM además detrás de
+  `ModuloDeMarca` por marca.
+- **Migraciones solo aditivas**: columnas y tablas nuevas, nunca cambiar ni borrar las que se usan hoy. Un
+  despliegue con el interruptor apagado no cambia nada para el equipo, así que cada entrega se puede
+  mergear y desplegar sin esperar a la siguiente.
+- **Se prende primero en «LoBueno · Capacitación»** (`seed:capacitacion`) y en el workspace real solo
+  cuando Gerardo lo decida. Apagarlo de nuevo vuelve al marco de hoy sin perder datos.
+- **Verificación de cada despliegue con el interruptor apagado**: iniciar sesión, generar, Copy, Revisiones
+  y el tablero de Producción se ven y funcionan igual que antes.
+- Lo que ya estaba en `main` antes de F0 (el #73, sin voseo) se despliega antes y por separado, para no
+  mezclarlo con el marco nuevo.
 
 ### F0 · El marco: enrutador, encabezado y menús (sin datos nuevos)
 
@@ -184,6 +209,7 @@ con lo diseñado hoy:
 
 ## Qué no cambia
 
+- Con `plataformaPorProcesos` apagado, el equipo ve la app como hoy.
 - Las rutas de hoy conservan su contrato; ninguna marca sin CDM ve un candado nuevo.
 - La aprobación sigue siendo del responsable de la campaña (`aprobacion.ts`, `permisosPieza.ts`).
 - El portal del cliente sigue sin cuenta y filtrado por marca.
