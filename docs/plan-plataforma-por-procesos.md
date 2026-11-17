@@ -40,9 +40,9 @@ El cliente no entra: ve lo suyo por enlace, como hoy.
 | Paso | Pantallas | Qué resuelven |
 |---|---|---|
 | Marco | Encabezado en dos filas (componente): identidad y avisos arriba, proceso abajo · Quién ve qué · menús por módulo | pasos numerados con ✓, candado que dice qué falta o avance por línea; modo lectura con franja «Tu trabajo está en…» |
-| ② CDM | P1 Plannings de la marca · P2 Nuevo planning · P3 Elegir medios · P4 Sábana · P4b Una línea elige ubicaciones · P5 La marca aprueba · **P6 Destinos y UTM** (entrada del menú: elegir la campaña) · **P6b** destino y UTM de una campaña | el trabajo de Planning, de la marca a la sábana aprobada |
+| ② CDM | P1 Plannings de la marca · **P7** cómo va cada línea · P2 Nuevo planning · P3 Elegir medios · P4 Sábana · P4b Una línea elige ubicaciones · P5 La marca aprueba · **P6 Destinos y UTM** (entrada del menú: elegir la campaña) · **P6b** destino y UTM de una campaña | el trabajo de Planning, de la marca a la sábana aprobada |
 | ② CDM · configuración | B1–B8 Biblioteca (catálogo, Meta por pieza, detalle, guía visual para Diseño, carga desde planilla, los 14 canales) · M1 Medios de la marca | lo que se prepara una vez |
-| ③ My Voice | MV0 Cómo se entera Copy · MV Pedidos de copy | llega la sábana: una línea por formato y etapa, con medio, piezas y largo ya decididos |
+| ③ My Voice | MV0 Cómo se entera Copy · MV Pedidos de copy · **MV2** Aprobar por grupos | llega la sábana: una línea por formato y etapa, con medio, piezas y largo ya decididos |
 | ④ Producción | **D1** Lo mío · **D2** Orden de trabajo con la guía visual · **D3** La IA revisa y el responsable decide | Diseño recibe medio, formato, medidas, zona segura y textos aprobados en una pantalla; sube y la IA compara |
 | ⑤ Implementación | **T1** Por montar · **T2** Montar un anuncio · **T3** Falta algo · **T4** Devolver con novedad · **T5** Reporte e historial | el trafficker monta de a uno y deja constancia |
 
@@ -184,10 +184,15 @@ con lo diseñado hoy:
 - La aprobación sigue siendo del responsable de la campaña (`aprobacion.ts`, `permisosPieza.ts`).
 - El portal del cliente sigue sin cuenta y filtrado por marca.
 
-## Falta diseñar antes de construir
+## Diseñado después del plan (2026-11-17)
 
-- **Revisión agrupada** de pedidos grandes (sábanas de 200 líneas).
-- **Estado de una línea** en CDM: su copy aprobado y sus piezas.
+- **MV2 · Aprobar por grupos** (F4): el copy de una sábana grande se agrupa por etapa y formato y se aprueba
+  por grupo, leyendo una muestra. **Aprobar un grupo nunca aprueba un texto con marcas** (validadores, ADN o
+  revisor): esos quedan para revisar de a uno. Es `POST /saved/aprobacion` con los ids del grupo menos los
+  marcados, calculado en el servidor; la muestra elige textos distintos entre sí, no los primeros.
+- **P7 · Cómo va cada línea** (F3 + F4): la sábana aprobada como tablero de la campaña. Cada columna la
+  calcula al leer el módulo dueño por contrato (copy de My Voice, piezas de Producción, anuncios de
+  Implementación); CDM no guarda ningún estado ajeno.
 
 ## Verificación de cada entrega
 

@@ -38,7 +38,7 @@ Estados: **diseñada** · **ajustar** (diseñada, pero una decisión nueva la ca
 | Toolkit | Lo que ve el cliente (portal) | Aprobar / rechazar con comentario | diseñada | § v2 · Toolkit · lo que ve la marca |
 | Cuadro | Cuadro recibido de CDM | Revisar lo que se va a escribir | ajustar: era «Plan de medios · importado»; pasa a cuadro de CDM | § v2 · Plan de medios · importado |
 | Adaptaciones | Revisión de a uno | Aprobar y seguir | ajustar: separar **copy en pieza** y **copy de plataforma** |
-| Adaptaciones | **Revisión agrupada** (cuadros de 200 líneas): por etapa y formato, aprobar por muestra | Aprobar el grupo | por diseñar | § v2 · Adaptaciones de una línea |
+| Adaptaciones | **MV2 · Aprobar por grupos** (sábanas grandes): avance por etapa; grupos por etapa y formato, primero los que tienen algo que mirar; una muestra de 3 textos elegidos para que se vean distintos; aprobar el grupo aprueba solo lo que no tiene marcas | Aprobar el grupo | diseñada (2026-11-17), en revisión | § My Voice · MV2 · aprobar por grupos (sábanas grandes) |
 | Adaptaciones | Algo que corregir | Acortar | diseñada | § v2 · Adaptaciones · algo que corregir |
 | Entrega | **Qué texto va en qué formato** (lo que se informa a CDM) | Enviar a CDM / Descargar | por diseñar | — |
 | Producción | Tablero de piezas, auditoría y aprobación | Aceptar / devolver | en producción (H2) | secciones de Producción del `.pen` |
@@ -84,7 +84,7 @@ Arriba de la columna está el **mapa de navegación** («§ Mapa de navegación 
 | Campaña | Campaña en CDM (desde My Voice) | Armar el cuadro | por diseñar | — |
 | Cuadro | Armar y enviar el cuadro | Enviar versión | en curso: la línea con ubicaciones está diseñada | § CDM · Cuadro de materiales · una línea de Meta elige ubicaciones |
 | Cuadro | Cuadro rápido | — | no es otra pantalla: es el planning con los medios de la marca ya marcados (decisión 15) | — |
-| Estado | Línea con su copy aprobado y el estado de sus piezas | Ver en My Voice | por diseñar | — |
+| Estado | **P7 · Cómo va cada línea**: la sábana aprobada como tablero de la campaña (copy, piezas, destino, anuncios, con quién lo tiene); al abrir una línea, lo que hay, con enlaces a My Voice, Producción e Implementación | Ver en el módulo | diseñada (2026-11-17), en revisión | § Planning · P7 · la sábana aprobada, línea por línea |
 | Seguimiento | Portafolio | — | se quita: lo cubren P1 (por aprobar, aprobados) y Mi cola (decisión 20) | — |
 | Seguimiento | Mi cola | Ir a la acción | diseñada en la parte común (cruza los dos módulos) | § Marco · Mi cola y avisos… |
 
