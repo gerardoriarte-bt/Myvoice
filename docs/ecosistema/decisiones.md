@@ -167,8 +167,8 @@ nueva que diga qué cambió y por qué.
     marca, Con el cliente, Listas para montar, Guías de la biblioteca) y Diseño entra a ④ Producción · Lo mío.
     El menú de My Voice deja de tener «Producción».
     - **El encabezado se parte en dos filas**: arriba lo que es de la persona y no cambia (identidad, marca,
-      buscar, Mi cola, avisos, cuenta); abajo el proceso de la campaña que está viendo, con la campaña a la
-      derecha.
+      buscar, Mi cola, avisos, cuenta); abajo el proceso de la campaña que está viendo, que abre con la
+      campaña.
     - **Producción e Implementación avanzan por línea**: el paso muestra cuánto lleva («6 de 17 piezas»), no
       un candado de todo o nada.
     - La regla de quién decide no cambia (`permisosPieza.ts`): acepta o devuelve el responsable, nunca quien
@@ -179,6 +179,47 @@ nueva que diga qué cambió y por qué.
       (biblioteca, medios de la marca, ADN), «Ninguna · configuración de la marca».
     - **Destinos y UTM tiene entrada propia en el menú de CDM** (Trabajo): se elige la campaña y se pegan por
       línea, cuando sea, desde que la sábana está aprobada; no hace falta esperar a que estén las piezas.
+
+## 2026-11-17 · Lo que dejó la auditoría de UX del diseño
+
+Una revisión independiente del `.pen` encontró que cada pantalla se entiende sola, pero el marco que dice
+dónde se está (marca, campaña, paso) se contradecía entre pantallas. Gerardo decidió:
+
+24. **En la plataforma solo entra la agencia; la marca aprueba por enlace.** Quien aprueba es el
+    **responsable** de la campaña (agencia, dentro de la app) o el **cliente** (la marca, por enlace, sin
+    cuenta), según el modo de aprobación de la campaña (`INTERNA` | `CLIENTE`), igual para la sábana, el
+    copy y las piezas. Dos nombres, nunca mezclados: «Responsable» y «Cliente».
+    - **La campaña se crea primero y el planning de medios se hace sobre ella.** Un planning es la etapa
+      CDM de una campaña, no otra cosa con nombre propio: se crea la campaña en un solo lugar («Nueva
+      campaña», en el selector de campaña) y CDM la planea. El formulario del planning no vuelve a pedir el
+      nombre.
+    - **Con «Todas las campañas» los pasos del subencabezado solo navegan**: sin ✓, sin avance, sin candado.
+      Con una campaña, el resaltado dice **dónde estás** y el ícono y el avance dicen **cómo va la
+      campaña**; un paso con líneas pendientes nunca lleva ✓ («6 de 17 piezas»).
+    - **Hay una sola marca activa en pantalla.** Al abrir algo de otra marca (desde Mi cola, un aviso o una
+      lista que cruza marcas), la app cambia de marca y campaña y lo avisa; si en esa marca no hay nada en
+      curso, lo dice. Se quita el chip «Estás en X · cambiar» del cuerpo: era un segundo selector.
+    - **Todo el manejo del copy es de My Voice.** Producción es el entorno de Diseño: muestra el copy
+      aprobado en lectura y, si una pieza vuelve por el texto, el arreglo se hace en My Voice y la pieza lo
+      recibe. Copy puede aprobar, pero no edita dentro de Producción. Cambia lo que hoy hace
+      `corregir-copy` dentro de la pieza.
+    - **Falta una vista que vea todo: el Panorama.** Para el admin (OWNER o ADMIN) y la dirección de la
+      agencia: todas las marcas y campañas en curso, en qué paso va cada una, qué está trabado y quién lo
+      debe. Es su entrada por defecto. Diseño en el `.pen`.
+
+## 2026-11-17 · La biblioteca es de la agencia
+
+25. **La biblioteca de medios es de la agencia, no de una marca.** Todos los medios y formatos están
+    disponibles para todas las marcas; lo que se agrega o cambia en la biblioteca queda para todas. Cada
+    marca solo **elige** los suyos («Medios de Terpel»): no hay formatos propios de una marca. Si a una marca
+    le falta un formato, Planning lo agrega a la biblioteca —con aviso de que queda para todas— y vuelve
+    elegido para esa marca. La gestiona **Planning**, que es quien mantiene los medios; no hace falta un
+    admin.
+    - En el menú de CDM la biblioteca va en su propio grupo, **De la agencia**, separada de **De la marca**;
+      sus pantallas llevan la franja «Biblioteca de la agencia: la comparten todas las marcas» y la campaña
+      dice «Ninguna · biblioteca de la agencia».
+    - El medio que agrupaba email, push, WhatsApp y web se llama **CRM y web**: «Propios de la marca» se
+      leía como formatos de una sola marca.
 
 ## Antes (2026-10-27), siguen vigentes con los nombres nuevos
 

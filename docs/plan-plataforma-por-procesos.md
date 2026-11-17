@@ -27,7 +27,7 @@ la cabeza del equipo. Lo diseñado el 2026-11-17 lo vuelve un proceso con dueño
 |---|---|---|---|
 | **Estrategia** | ① Marca · ADN | ADN, audiencias, confirmar el ADN | sábanas, copy, piezas |
 | **Planning** (el *planner* de `docs/v2`: es la misma función) | ② CDM · Plannings | plannings, sábana, biblioteca, medios de la marca, destino y UTM | ADN, copy, piezas |
-| **Copy** | ③ My Voice · Pedidos de copy | pedidos de copy; corregir copy dentro de una pieza | ADN, sábana, biblioteca |
+| **Copy** | ③ My Voice · Pedidos de copy | pedidos de copy; arreglar el copy de una pieza devuelta (en My Voice, decisión 24) | ADN, sábana, biblioteca |
 | **Diseño** | ④ Producción · Lo mío | sus piezas: subir versiones | ADN, guía visual, copy aprobado |
 | **Aprobación** (responsable o marca) | Mi cola | aprueba sábana, copy y piezas de su campaña | ADN |
 | **Trafficker** | ⑤ Implementación · Por montar | anuncios: montar, devolver con novedad | sábana, destino, copy y piezas aprobadas |
@@ -129,13 +129,17 @@ el suyo, y que el admin actúa en todos. Con `observar` no bloquea y lo registra
   `Ubicacion` (cada una con sus largos y su alerta «por confirmar»). La guía visual se guarda como datos
   (`guia`: lienzo, zona segura, dónde va cada texto), no como imagen, para dibujarla a escala en B4 y en la
   orden de trabajo de Producción.
+- **La biblioteca es del workspace (la agencia), no de una marca** (decisión 25): `Medio` y `Formato`
+  llevan `workspaceId` y ningún `clientId`; lo que se agrega queda para todas las marcas.
 - `MediosDeMarca` (en la arquitectura, `PaqueteDeFormatos`): los formatos y etapas habituales de una
-  marca; la submarca ve los de su madre más los propios, calculado al leer (como el ADN).
+  marca, que solo **referencian** formatos de la biblioteca; la submarca ve los de su madre más los propios,
+  calculado al leer (como el ADN). «Agregar a la biblioteca» desde M1 crea el formato en la biblioteca y lo
+  suma a la marca en la misma transacción.
 - **Carga desde planilla**: `cdm/biblioteca/cargarPlanilla.ts`, en seco por defecto, con la planilla de
   Meta del repo como primer caso (33 ubicaciones → 6 piezas, 10 alertas).
 - **Los 14 canales** se cargan como formatos con `canal` = el valor de `Platform`: es el puente que deja
   a My Voice generar una línea con su spec de hoy hasta que el motor lea los campos del formato.
-- Editar la biblioteca es del paso CDM (Planning o admin). Guards de tenencia en cada `:id`;
+- Editar la biblioteca es del paso CDM: Planning, sin pedir admin (decisión 25). Guards de tenencia en cada `:id`;
   `verify:isolation` suma las rutas nuevas.
 
 ### F3 · Planning y sábana (P1 a P5)
@@ -193,6 +197,16 @@ con lo diseñado hoy:
 - **P7 · Cómo va cada línea** (F3 + F4): la sábana aprobada como tablero de la campaña. Cada columna la
   calcula al leer el módulo dueño por contrato (copy de My Voice, piezas de Producción, anuncios de
   Implementación); CDM no guarda ningún estado ajeno.
+- **Lo que dejó la auditoría de UX** (decisión 24), repartido en las entregas:
+  - F0: el subencabezado separa **dónde estás** (el recuadro) de **cómo va la campaña** (número y texto de
+    cada paso, calculados por `GET /clients/:id/proceso`); nunca ✓ con líneas pendientes, y con «Todas las
+    campañas» los pasos solo navegan. Una sola marca activa: abrir algo de otra marca cambia marca y campaña
+    y lo avisa. **Panorama** (`GET /panorama`, solo OWNER/ADMIN): campañas en curso de todas las marcas, el
+    avance por paso y qué está trabado y quién lo debe; es la entrada del admin.
+  - F3: la campaña se crea antes que el planning; el formulario del planning no pide nombre.
+  - F1/F4: quien aprueba es el responsable (agencia) o el cliente por enlace, según `modoAprobacion`; la sábana
+    también. El arreglo de copy de una pieza devuelta se hace en My Voice, no dentro de Producción
+    (`corregir-copy` deja de editar el texto desde la pieza).
 
 ## Verificación de cada entrega
 
