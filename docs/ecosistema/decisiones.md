@@ -113,6 +113,16 @@ nueva que diga qué cambió y por qué.
     - Por ahora **solo LoBueno crea marcas**; cada marca ya pertenece a un workspace, así que abrir
       otras empresas después no obliga a rehacer nada.
 
+## 2026-11-17 · La biblioteca se organiza por pieza a producir
+
+18. **La unidad de la biblioteca es la pieza maestra**: un tipo de archivo y una proporción (imagen 9:16,
+    video 4:5…), con las ubicaciones que cubre. Diseño produce por proporción y Planning planea por
+    ubicación: las 33 ubicaciones de Meta quedan en 6 piezas
+    ([cdm/biblioteca/meta.md](./cdm/biblioteca/meta.md)). El largo de cada texto lo fija la **línea del
+    cuadro**: el más corto entre las ubicaciones que eligió, no entre todas las de la pieza. Una ubicación
+    con alerta de la guía queda «por confirmar». Fuente: la planilla de Meta del 2026-11-09, versionada en
+    el repo.
+
 ## Antes (2026-10-27), siguen vigentes con los nombres nuevos
 
 - La marca, su ADN y sus audiencias son la fuente de verdad (ahora en la parte común, decisión 7).
