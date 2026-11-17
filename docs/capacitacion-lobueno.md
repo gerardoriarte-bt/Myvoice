@@ -21,7 +21,7 @@ CAPACITACION_PASSWORD='…' npm run seed:capacitacion
   workspace.
 - La salida imprime los **dos enlaces del cliente** (sin login). Cambian en cada corrida.
 - **En producción** se corre desde la raíz del repo, con la llave del servidor:
-  `bash deploy/seed-capacitacion.sh` (usa `./Myvoice.pem`, o la de `MYVOICE_PEM`; la rama, la de
+  `bash deploy/seed-capacitacion.sh` (usa `~/.ssh/myvoice.pem`, o la de `MYVOICE_PEM`; la rama, la de
   `RAMA`, por defecto `main`). Levanta un Node desechable al lado del backend —sus mismas variables,
   su misma red, el rol de la instancia para S3—, le instala fuentes y lo borra al terminar. No se
   corre dentro del contenedor del backend: no tiene fuentes ni `shared/`. La primera corrida
