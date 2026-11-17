@@ -414,5 +414,8 @@ each in the code and the three batches that answer them (batch 1 shipped).
 `docs/plan-adn-2.md` (2026-11-05): DNA 2.0 and the new campaign (decision 17) — ten sections in three
 groups by what each does for the output, completeness with a 75 % minimum (blocks in v2, warns in v1),
 audiences as a brand list, the campaign pinning its DNA version; six phases, design in the `.pen`.
+`docs/plan-plataforma-por-procesos.md` (2026-11-17): the platform as a process — the header ① Marca ›
+② CDM › ③ My Voice › ④ Implementación, each function in its own environment with the rest read-only
+(decision 22), CDM planning and sábana, copy requests in My Voice and the trafficker; six deliveries, F0–F5.
 `docs/diseno-sistema.md` holds the design decisions — screen names live in `screens.ts`, colors
 in `tailwind.config.js`; the `.pen` source file is local-only and gitignored.
