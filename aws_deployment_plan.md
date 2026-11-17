@@ -24,12 +24,12 @@ Plan de despliegue y operación para la instancia EC2 y el dominio de producció
 
 ### Clave SSH
 
-- Guardar el PEM fuera del repositorio (p. ej. `~/Downloads/myvoice.pem`).
+- Guardar el PEM fuera del repositorio, en `~/.ssh/myvoice.pem` (desde el 2026-11-17).
 - `Myvoice.pem` está en `.gitignore`; **no commitear** llaves.
 
 ```bash
-chmod 400 /ruta/a/myvoice.pem
-ssh -i "/ruta/a/myvoice.pem" ubuntu@100.52.241.136
+chmod 400 ~/.ssh/myvoice.pem
+ssh -i ~/.ssh/myvoice.pem ubuntu@100.52.241.136
 ```
 
 ---
@@ -194,7 +194,7 @@ curl -sI https://myvoice.lobueno.co/assets/index-*.js
 ### A. Conexión
 
 ```bash
-ssh -i "/ruta/a/myvoice.pem" ubuntu@100.52.241.136
+ssh -i ~/.ssh/myvoice.pem ubuntu@100.52.241.136
 ```
 
 ### B. Dependencias (Ubuntu)

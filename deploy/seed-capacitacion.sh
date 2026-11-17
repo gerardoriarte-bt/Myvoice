@@ -2,7 +2,7 @@
 # Corre seed:capacitacion en producción, dentro del servidor. Se ejecuta desde
 # la máquina de quien opera, en la raíz del repo:
 #
-#   bash deploy/seed-capacitacion.sh            # usa ./Myvoice.pem
+#   bash deploy/seed-capacitacion.sh            # usa ~/.ssh/myvoice.pem
 #   MYVOICE_PEM=/ruta/llave.pem bash deploy/seed-capacitacion.sh
 #
 # No toca el checkout de /opt/myvoice ni el contenedor del backend: baja la rama
@@ -20,7 +20,7 @@
 #   · Y el .env trae NODE_ENV=production: sin --include=dev no se instala tsx.
 set -euo pipefail
 
-PEM="${MYVOICE_PEM:-./Myvoice.pem}"
+PEM="${MYVOICE_PEM:-$HOME/.ssh/myvoice.pem}"
 HOST="ubuntu@100.52.241.136"
 RAMA="${RAMA:-main}"
 ARCHIVO_PW="$HOME/.myvoice-capacitacion-password"
