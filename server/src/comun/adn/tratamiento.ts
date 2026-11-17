@@ -25,7 +25,7 @@ const NOMBRE: Record<Tratamiento, string> = { TU: 'tú', VOS: 'vos', USTED: 'ust
 export const reglaDeTratamiento = (t: Tratamiento): string =>
   ({
     TU: `TRATAMIENTO — TÚ (regla dura, la eligió la marca):
-- Tuteá: tú, tienes, puedes, quieres, sabes, eres; imperativos descubre, conoce, disfruta, aprovecha.
+- Tutea: tú, tienes, puedes, quieres, sabes, eres; imperativos descubre, conoce, disfruta, aprovecha.
 - PROHIBIDO el voseo (vos, tenés, podés, sabés, sos, conocé, descubrí) y PROHIBIDO "usted" (tiene, conozca, disfrute).`,
     VOS: `TRATAMIENTO — VOS (regla dura, la eligió la marca):
 - Voseo colombiano: vos, tenés, podés, querés, sabés, hacés, venís, sos; imperativos conocé, descubrí, disfrutá — sin abusar de las formas acentuadas.
@@ -37,7 +37,7 @@ export const reglaDeTratamiento = (t: Tratamiento): string =>
 
 /** Lo que el revisor tiene que penalizar con `tuteo-violation`. */
 export const verificacionDeTratamiento = (t: Tratamiento): string =>
-  `\n## VERIFICACIÓN DE TRATAMIENTO — ${NOMBRE[t].toUpperCase()}\nLa marca habla de "${NOMBRE[t]}". Marcá "tuteo-violation" en toda variación que use otro tratamiento. ${reglaDeTratamiento(t).split('\n').slice(1).join(' ')}\n`;
+  `\n## VERIFICACIÓN DE TRATAMIENTO — ${NOMBRE[t].toUpperCase()}\nLa marca habla de "${NOMBRE[t]}". Marca "tuteo-violation" en toda variación que use otro tratamiento. ${reglaDeTratamiento(t).split('\n').slice(1).join(' ')}\n`;
 
 // --------------------------------------------------------------- detección sin IA
 
@@ -105,4 +105,4 @@ export const faltasDeTratamiento = (texto: string, t: Tratamiento): string[] => 
 
 /** La tabla que el corrector usa para reescribir. */
 export const tablaDeConversion = (t: Tratamiento): string =>
-  `\n## TRATAMIENTO: ${NOMBRE[t].toUpperCase()} — reescribí toda forma de otro tratamiento\n${reglaDeTratamiento(t)}\n`;
+  `\n## TRATAMIENTO: ${NOMBRE[t].toUpperCase()} — reescribe toda forma de otro tratamiento\n${reglaDeTratamiento(t)}\n`;

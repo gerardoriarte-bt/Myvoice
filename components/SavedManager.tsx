@@ -235,7 +235,7 @@ const SavedManager: React.FC<SavedManagerProps> = ({
 
   const confirmarEdicion = (v: SavedVariation) => {
     if (buffer === v.content) return setEditandoId(null);
-    if (v.isApproved && !window.confirm('Este copy está aprobado. Si lo editás vuelve a «Por aprobar» y hay que aprobarlo de nuevo. ¿Seguir?'))
+    if (v.isApproved && !window.confirm('Este copy está aprobado. Si lo editas vuelve a «Por aprobar» y hay que aprobarlo de nuevo. ¿Seguir?'))
       return;
     onUpdate(v.id, { content: buffer, charCount: buffer.length });
     setEditandoId(null);
@@ -291,7 +291,7 @@ const SavedManager: React.FC<SavedManagerProps> = ({
   if (!marca) {
     return (
       <div className="rounded-xl border border-dashed border-apple-border p-8 text-center text-[13px] text-apple-secondary">
-        Elegí una marca arriba para ver su copy.
+        Elige una marca arriba para ver su copy.
       </div>
     );
   }

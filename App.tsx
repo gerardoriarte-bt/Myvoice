@@ -993,10 +993,10 @@ const App: React.FC = () => {
                           <span className="text-[11px] font-medium text-emerald-700 tracking-tight">Motor listo</span>
                         </div>
                         <h3 className="text-[22px] font-semibold text-[#1D1D1F] tracking-[-0.02em] leading-tight">
-                          Generá una campaña en minutos.
+                          Genera una campaña en minutos.
                         </h3>
                         <p className="text-[13px] text-[#6E6E73] leading-relaxed max-w-md">
-                          Elegí marca, campaña y un medio, y cuántas piezas. La IA arma el concepto, escribe cada pieza con su ángulo y la revisa.
+                          Elige marca, campaña y un medio, y cuántas piezas. La IA arma el concepto, escribe cada pieza con su ángulo y la revisa.
                         </p>
                         <div className="grid grid-cols-2 gap-2.5 max-w-xs pt-1">
                           {[

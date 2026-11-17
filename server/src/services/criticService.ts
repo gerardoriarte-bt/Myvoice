@@ -78,11 +78,11 @@ ${spec.id} — ${spec.description}
 ${items}
 
 ## TU TAREA
-Para cada variación devolvé:
+Para cada variación devuelve:
 - "id": el id literal recibido.
 - "score": 1-10. Rúbrica:
-   • 5 pts máximo: ¿inconfundiblemente "${brief.brand.name}"? Si podría ser otra marca del rubro, restá puntos. Si suena a "agencia escribiendo para cliente", máx 2 pts en este renglón.
-   • 3 pts máximo: ¿cumple budget del slot, respeta prohibiciones (incluyendo paráfrasis), el manual de oficio Y usa voseo colombiano correcto (si aplica)? Si falla alguno, máx 1 pt en este renglón.
+   • 5 pts máximo: ¿inconfundiblemente "${brief.brand.name}"? Si podría ser otra marca del rubro, resta puntos. Si suena a "agencia escribiendo para cliente", máx 2 pts en este renglón.
+   • 3 pts máximo: ¿cumple budget del slot, respeta prohibiciones (incluyendo paráfrasis), el manual de oficio Y usa tieo colombiano correcto (si aplica)? Si falla alguno, máx 1 pt en este renglón.
    • 2 pts máximo: ¿aporta una idea distinta a las otras variaciones del mismo slot, o es redundante?
 - "scoreRationale": 1 línea CONCRETA. Cita un detalle específico (palabra, frase, recurso). NO digas "buen tono" o "claro y conciso".
 - "editorFlags": array de strings con problemas detectados. Tags válidas:
@@ -104,7 +104,7 @@ Para cada variación devolvé:
    "decorative"            → suena bonito pero no empuja la venta ni el concepto
   Vacío si está limpio.
 
-REGLA: si una variación es buena, decilo (8-10). No infles, pero tampoco castigues por castigar.
+REGLA: si una variación es buena, dilo (8-10). No infles, pero tampoco castigues por castigar.
 
 ## FORMATO JSON (única salida)
 {
@@ -136,7 +136,7 @@ export const runCritic = async (
       {
         model,
         messages: [
-          { role: "system", content: "Eres editor senior de marca. Severo pero justo. Respondés SOLO en JSON válido." },
+          { role: "system", content: "Eres editor senior de marca. Severo pero justo. Respondes SOLO en JSON válido." },
           { role: "user", content: prompt },
         ],
         response_format: jsonObjectFormat(client),

@@ -303,7 +303,7 @@ export const updateWorkspaceAIConfig = async (req: AuthRequest, res: Response) =
   // Mantener alineado con AIProvider en services/aiClient.ts.
   const VALID_PROVIDERS = ['openrouter', 'openai', 'anthropic', 'gemini'];
   if (aiProvider && !VALID_PROVIDERS.includes(aiProvider)) {
-    return res.status(400).json({ error: `Provider inválido. Usá: ${VALID_PROVIDERS.join(', ')}` });
+    return res.status(400).json({ error: `Provider inválido. Usa: ${VALID_PROVIDERS.join(', ')}` });
   }
 
   // Validate the key works before saving (quick smoke test).

@@ -27,7 +27,7 @@ interface HomePageProps {
 }
 
 const ETAPAS = [
-  { n: '01', etapa: 'Preparar', titulo: 'Cargá el ADN de la marca', desc: 'Voz, propuesta de valor, prohibiciones y ejemplos aprobados. Se extrae del manual en PDF.', Icon: Building2 },
+  { n: '01', etapa: 'Preparar', titulo: 'Carga el ADN de la marca', desc: 'Voz, propuesta de valor, prohibiciones y ejemplos aprobados. Se extrae del manual en PDF.', Icon: Building2 },
   { n: '02', etapa: 'Escribir', titulo: 'Una campaña, catorce canales', desc: 'El motor define el concepto y escribe cada canal con sus formatos y límites.', Icon: Sparkles },
   { n: '03', etapa: 'Aprobar', titulo: 'El cliente revisa con un enlace', desc: 'Sin cuenta ni contraseña. Aprueba o comenta variación por variación.', Icon: ClipboardCheck },
   { n: '04', etapa: 'Producir', titulo: 'Diseño recibe una orden clara', desc: 'El copy aprobado pasa al tablero como pieza, con su orden de trabajo.', Icon: LayoutGrid },
@@ -104,10 +104,10 @@ const LoginForm: React.FC<{
   return (
     <div id="acceso" className="scroll-mt-24 w-full max-w-[400px] bg-white rounded-[20px] p-7 sm:p-9 shadow-[0_30px_80px_rgba(0,0,0,0.45)]">
       <div className="mb-5">
-        <h2 className="text-[22px] font-semibold text-ink tracking-[-0.02em]">Entrá a tu espacio</h2>
+        <h2 className="text-[22px] font-semibold text-ink tracking-[-0.02em]">Entra a tu espacio</h2>
         <p className="text-[14px] text-[#6E6E73] mt-1.5 leading-snug">
           {inviteToken
-            ? 'Usá el mismo correo al que te llegó la invitación.'
+            ? 'Usa el mismo correo al que te llegó la invitación.'
             : 'Con la cuenta de tu empresa o el correo de tu invitación.'}
         </p>
       </div>
@@ -159,7 +159,7 @@ const LoginForm: React.FC<{
       </form>
 
       <p className="text-[12px] text-[#86868B] text-center mt-5 leading-snug">
-        ¿No tenés cuenta? Pedí una invitación a quien administra tu espacio.
+        ¿No tienes cuenta? Pide una invitación a quien administra tu espacio.
       </p>
     </div>
   );
@@ -429,7 +429,7 @@ const HomePage: React.FC<HomePageProps> = ({ onLoginSuccess }) => {
               ¿Te invitaron a un espacio?
             </h2>
             <p className="text-[17px] sm:text-[18px] text-white/65 leading-[1.55] max-w-[560px]">
-              Entrá con el mismo correo de la invitación y llegás directo a tu equipo y a tus marcas.
+              Entra con el mismo correo de la invitación y llegas directo a tu equipo y a tus marcas.
             </p>
             <a href="#acceso" onClick={irAlAcceso}
               className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-white text-ink text-[15px] font-semibold hover:bg-white/90 transition-colors">

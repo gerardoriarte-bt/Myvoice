@@ -96,9 +96,9 @@ const renderExamples = (brief: ChannelBrief): string => {
 ${items.join("\n")}
 
 CÓMO USARLOS:
-1. Identificá los TICS lingüísticos comunes: aperturas (¿empiezan negando, preguntando, declarando?), ritmo de frase (¿cortas y secas? ¿con repetición?), persona gramatical, tipo de remate.
-2. Reproducí esos tics. NO copies frases.
-3. Si una variación tuya termina pareciéndose mucho a un ejemplo, reescribila con el mismo tic pero idea distinta.
+1. Identifica los TICS lingüísticos comunes: aperturas (¿empiezan negando, preguntando, declarando?), ritmo de frase (¿cortas y secas? ¿con repetición?), persona gramatical, tipo de remate.
+2. Reproduce esos tics. NO copies frases.
+3. Si una variación tuya termina pareciéndose mucho a un ejemplo, reescríbela con el mismo tic pero idea distinta.
 `;
 };
 
@@ -118,7 +118,7 @@ ${own.slice(0, 4).map(e => `- "${e.content}"`).join("\n")}
  */
 const buildPersonaPrompt = (brief: ChannelBrief): string => {
   const voseoSection = brief.tratamiento
-    ? `\n\n## ${reglaDeTratamiento(brief.tratamiento)}\nUna variación con otro tratamiento está mal: reescribila antes de devolver.`
+    ? `\n\n## ${reglaDeTratamiento(brief.tratamiento)}\nUna variación con otro tratamiento está mal: reescríbela antes de devolver.`
     : "";
 
   return `
@@ -225,7 +225,7 @@ ${renderPiezas(piezas)}
 ## SLOTS DE CADA PIEZA
 ${slotBlock}
 
-Aplicá las REGLAS — ORDEN DE PRIORIDAD y la rúbrica de SCORING declaradas arriba a estos slots.
+Aplica las REGLAS — ORDEN DE PRIORIDAD y la rúbrica de SCORING declaradas arriba a estos slots.
 
 ## FORMATO JSON (única salida válida)
 ${schema}

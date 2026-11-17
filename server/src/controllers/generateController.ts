@@ -426,12 +426,12 @@ export const regenerarTexto = async (req: AuthRequest, res: Response) => {
       .filter((t: any) => t && typeof t.content === 'string' && typeof t.slot === 'string');
     const actual = resto.find((t: any) => t.slot === slot && (t.variationIndex ?? 1) === (variationIndex ?? 1));
     const contexto = [
-      `## REESCRIBÍ SOLO «${slotSpec.label}» DE LA PIEZA ${indice}`,
-      'Devolvé UNA sola entrada, para ese slot. Tiene que encajar con los demás textos de la pieza, que quedan así:',
+      `## Reescribe SOLO «${slotSpec.label}» DE LA PIEZA ${indice}`,
+      'Devuelve UNA sola entrada, para ese slot. Tiene que encajar con los demás textos de la pieza, que quedan así:',
       ...resto
         .filter((t: any) => t !== actual)
         .map((t: any) => `- ${String(t.slotLabel || t.slot).slice(0, 60)}: "${String(t.content).slice(0, 600)}"`),
-      actual ? `El texto actual es "${String(actual.content).slice(0, 600)}": escribí otro, distinto, que cumpla lo mismo.` : '',
+      actual ? `El texto actual es "${String(actual.content).slice(0, 600)}": escribe otro, distinto, que cumpla lo mismo.` : '',
     ].join('\n');
 
     const spine = existingSpine;

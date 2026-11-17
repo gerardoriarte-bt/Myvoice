@@ -278,7 +278,7 @@ export const submitReview = async (req: Request, res: Response) => {
           !(typeof f.feedbackCopy === 'string' && f.feedbackCopy.trim()) &&
           !(typeof f.feedbackDiseno === 'string' && f.feedbackDiseno.trim())
       );
-      if (mudo) return res.status(400).json({ error: 'Para pedir cambios, escribí qué cambiar: del mensaje, del arte o de los dos.' });
+      if (mudo) return res.status(400).json({ error: 'Para pedir cambios, escribe qué cambiar: del mensaje, del arte o de los dos.' });
 
       let movidas: { piezaId: string; rechazada: boolean }[] = [];
       await prisma.$transaction(async tx => {

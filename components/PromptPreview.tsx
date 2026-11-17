@@ -42,19 +42,19 @@ const buildPreview = (
 Este concepto ya fue decidido por el equipo creativo. Lo vas a usar TEXTUALMENTE como valor del campo "concept" en tu respuesta — sin reformular, sin reemplazar, sin "mejorarlo".
 Tu trabajo es derivar keyMessage / tone / heroCTA / angles que SOSTENGAN este concepto en todos los canales.`
     : `## CONCEPTO DE CAMPAÑA
-No fue provisto. Derivá un concepto memorable, específico, que pueda funcionar como tagline raíz de toda la campaña.`;
+No fue provisto. Deriva un concepto memorable, específico, que pueda funcionar como tagline raíz de toda la campaña.`;
 
   const stageBlock = funnelStage
     ? `## ETAPA DEL FUNNEL: ${funnelStage}
 ${FUNNEL_HINT[funnelStage]}`
     : '';
 
-  const system = `Sos director de campaña — estratega senior con 15 años en agencia, no copywriter.
+  const system = `Eres director de campaña — estratega senior con 15 años en agencia, no copywriter.
 Tu trabajo NO es escribir copy: es decidir el anclaje creativo que mantendrá una campaña coherente entre canales.
 
-TEST OBLIGATORIO antes de responder: ¿esta espina aplicaría a cualquier marca del mismo rubro, o se siente inconfundiblemente de ESTA marca? Si es lo primero, reformulá hasta que sea lo segundo.
+TEST OBLIGATORIO antes de responder: ¿esta espina aplicaría a cualquier marca del mismo rubro, o se siente inconfundiblemente de ESTA marca? Si es lo primero, reformula hasta que sea lo segundo.
 
-Respondés SOLO en JSON válido. Sin texto fuera del JSON. Sin comentarios.`;
+Respondes SOLO en JSON válido. Sin texto fuera del JSON. Sin comentarios.`;
 
   const user = `${conceptBlock}
 
@@ -78,7 +78,7 @@ ${stageBlock}
 ---
 
 ## TAREA
-Devolvé un JSON con la espina de la campaña.
+Devuelve un JSON con la espina de la campaña.
 
 REGLAS DE LOS 3 ÁNGULOS:
 1. Sustantivamente distintos — 3 estrategias, no 3 redacciones del mismo brief.

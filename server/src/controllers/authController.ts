@@ -150,7 +150,7 @@ export const register = async (req: Request, res: Response) => {
 
     if (session.user.workspaces.length === 0) {
       return res.status(201).json({
-        message: 'Usuario creado. Necesitás una invitación para entrar a un workspace.',
+        message: 'Usuario creado. Necesitas una invitación para entrar a un workspace.',
         userId: user.id,
       });
     }
@@ -180,7 +180,7 @@ export const login = async (req: Request, res: Response) => {
     const session = await buildSession(user);
     if (session.user.workspaces.length === 0) {
       return res.status(403).json({
-        error: 'Tu usuario no pertenece a ningún workspace. Pedí una invitación a un administrador.',
+        error: 'Tu usuario no pertenece a ningún workspace. Pide una invitación a un administrador.',
       });
     }
     res.json(session);
@@ -218,7 +218,7 @@ export const googleLogin = async (req: Request, res: Response) => {
 
       if (!pending) {
         return res.status(403).json({
-          error: 'No hay ninguna invitación para este email. Pedí acceso a un administrador.',
+          error: 'No hay ninguna invitación para este email. Pide acceso a un administrador.',
         });
       }
 
@@ -234,7 +234,7 @@ export const googleLogin = async (req: Request, res: Response) => {
     const session = await buildSession(user);
     if (session.user.workspaces.length === 0) {
       return res.status(403).json({
-        error: 'Tu usuario no pertenece a ningún workspace. Pedí una invitación a un administrador.',
+        error: 'Tu usuario no pertenece a ningún workspace. Pide una invitación a un administrador.',
       });
     }
     res.json(session);

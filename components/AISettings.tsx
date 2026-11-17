@@ -109,7 +109,7 @@ export default function AISettings() {
           Proveedor de IA
         </h2>
         <p style={{ fontSize: 14, color: '#6E6E73', margin: 0 }}>
-          Configurá tu propia API key para controlar costos y modelo. Sin configuración, se usa la clave del servidor.
+          Configura tu propia API key para controlar costos y modelo. Sin configuración, se usa la clave del servidor.
         </p>
       </div>
 

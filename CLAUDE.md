@@ -12,6 +12,12 @@ library and a client approval portal.
 Codebase language: **code and comments are in Spanish** (user-facing strings, error messages,
 and most comments). Match that when editing.
 
+**The platform is for Colombia: no rioplatense voseo, ever.** Every text the team reads — screens,
+buttons, notices, emails, errors, `novedades.ts`, the Guía, the `.pen` frames — and every instruction to the
+models addresses the user as **tú** («Revisa la sábana», «Elige los medios», «¿Puedes…?»), never «Revisá»,
+«Elegí», «podés» or «Decilo» (Gerardo, 2026-11-17). The brand's `VOS` treatment stays, as **paisa voseo**: it is
+what a brand may choose for its copy, not the platform's language.
+
 ## Commands
 
 Two separate npm projects. Root = frontend, `server/` = API.

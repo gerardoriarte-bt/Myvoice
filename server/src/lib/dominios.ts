@@ -56,4 +56,4 @@ export const emailPermitido = (email: string, permitidos: string[]): boolean =>
  * es pedirle a otro que invite por él.
  */
 export const mensajeDeRechazo = (permitidos: string[]): string =>
-  `Este workspace solo invita a ${permitidos.join(', ')}. Cambialo en Equipo si hace falta.`;
+  `Este workspace solo invita a ${permitidos.join(', ')}. Cámbialo en Equipo si hace falta.`;

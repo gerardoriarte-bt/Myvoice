@@ -159,7 +159,7 @@ export const getUsageAnalytics = async (req: AuthRequest, res: Response) => {
   const periodoActual = currentPeriodStart();
   const desde = parseFecha(req.query.from) ?? (req.query.from ? undefined : periodoActual);
   const hasta = parseFecha(req.query.to) ?? (req.query.to ? undefined : nextPeriodStart(periodoActual));
-  if (!desde || !hasta) return res.status(400).json({ error: 'Fechas inválidas: usá formato ISO en from y to' });
+  if (!desde || !hasta) return res.status(400).json({ error: 'Fechas inválidas: usa formato ISO en from y to' });
   if (desde >= hasta) return res.status(400).json({ error: 'El rango es vacío: from debe ser anterior a to' });
 
   try {

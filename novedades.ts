@@ -54,7 +54,7 @@ export const NOVEDADES: Novedad[] = [
     cambios: [
       'Generar usa Claude Sonnet 5.5 para escribir y Haiku 5.5 para revisar y corregir.',
       'En las pruebas, el copy salió con la mitad de faltas al manual de oficio y la generación tardó cerca de un 40 % menos.',
-      'Si notás algo distinto en el copy, para bien o para mal, contáselo a quien administra: nos ayuda a confirmarlo con casos reales.',
+      'Si notas algo distinto en el copy, para bien o para mal, cuéntaselo a quien administra: nos ayuda a confirmarlo con casos reales.',
     ],
   },
   {
@@ -74,17 +74,17 @@ export const NOVEDADES: Novedad[] = [
       paraQuienAdministra: {
         titulo: 'Lo que conviene hacer ahora',
         pasos: [
-          'Abrí cada marca en Marcas › ADN y completá lo que marca el anillo, empezando por las secciones con ★.',
-          'Cargá las audiencias de la marca: cada campaña va a elegir de esa lista.',
-          'Si la marca tiene submarcas, decí «Está bien» en cada sección y confirmá el ADN para que lo hereden.',
+          'Abre cada marca en Marcas › ADN y completa lo que marca el anillo, empezando por las secciones con ★.',
+          'Carga las audiencias de la marca: cada campaña va a elegir de esa lista.',
+          'Si la marca tiene submarcas, di «Está bien» en cada sección y confirma el ADN para que lo hereden.',
         ],
         accion: { label: 'Ir a Marcas', pantalla: 'clients' },
       },
       paraElEquipo: {
-        titulo: 'Qué cambia para vos',
+        titulo: 'Qué cambia para ti',
         pasos: [
           'En Generar, si el ADN de la marca está incompleto, vas a ver qué le falta.',
-          'Podés generar igual: el aviso dice por qué el copy puede salir más genérico.',
+          'Puedes generar igual: el aviso dice por qué el copy puede salir más genérico.',
         ],
         accion: { label: 'Ir a Generar', pantalla: 'generator' },
       },
@@ -132,7 +132,7 @@ export const NOVEDADES: Novedad[] = [
     cambios: [
       'Todas las marcas se escriben con las reglas de oficio de Buentipo: afirmar en vez de dudar, sin grasa, sin relleno, sin manifiestos, y el titular construye el concepto.',
       'El motor ya no abre con «¿Sabías que…?» ni usa «de inmediato», y no repite la marca en el titular de una pieza que lleva el logo.',
-      'Lo genérico ya no solo se marca: se reescribe antes de llegar a vos.',
+      'Lo genérico ya no solo se marca: se reescribe antes de llegar a ti.',
       'Las marcas del editor se leen en castellano («Relleno», «Manifiesto», «Bonito pero no vende»).',
     ],
   },
@@ -154,7 +154,7 @@ export const NOVEDADES: Novedad[] = [
       'Una marca puede tener submarcas: «Terpel CRM» aparece debajo de Terpel en el selector y en Marcas, donde cada familia va en su propio bloque. Se agregan con «+ Submarca». Solo ordena; cada marca sigue con su ADN y sus campañas.',
       'Si dos marcas se llaman igual, el selector lo avisa y dice qué distingue a cada una. Se resuelve en Marcas, renombrando una o haciéndola submarca de la otra.',
       'Al crear una marca con un nombre que ya existe, la herramienta lo avisa antes de guardar.',
-      'Si dos marcas eran la misma, se pueden fusionar desde Marcas: todo pasa a la que elegís y la otra se borra.',
+      'Si dos marcas eran la misma, se pueden fusionar desde Marcas: todo pasa a la que eliges y la otra se borra.',
     ],
   },
   {
@@ -174,17 +174,17 @@ export const NOVEDADES: Novedad[] = [
       paraQuienAdministra: {
         titulo: 'Lo que cambia para quien administra',
         pasos: [
-          'Revisá que cada campaña con piezas en curso tenga responsable: sin él, nadie puede aceptarlas.',
-          'Si el responsable es también quien diseña, nombrá a otra persona: nadie acepta lo que entregó.',
+          'Revisa que cada campaña con piezas en curso tenga responsable: sin él, nadie puede aceptarlas.',
+          'Si el responsable es también quien diseña, nombra a otra persona: nadie acepta lo que entregó.',
           'Las piezas de campañas del cliente que ya estaban enviadas pasaron a «Con el cliente».',
         ],
         accion: { label: 'Ir a Producción', pantalla: 'produccion' },
       },
       paraElEquipo: {
-        titulo: 'Qué cambia para vos',
+        titulo: 'Qué cambia para ti',
         pasos: [
-          'Si diseñás: lo devuelto aparece primero en «Lo mío», con el motivo, y te llega un aviso.',
-          'Si sos responsable de una campaña: aceptás, devolvés y corregís el copy de sus piezas.',
+          'Si diseñas: lo devuelto aparece primero en «Lo mío», con el motivo, y te llega un aviso.',
+          'Si eres responsable de una campaña: aceptas, devuelves y corriges el copy de sus piezas.',
           'Si no te toca decidir, la tarjeta te dice quién lo hace en lugar de los botones.',
         ],
         accion: { label: 'Ver lo mío', pantalla: 'produccion' },
@@ -212,17 +212,17 @@ export const NOVEDADES: Novedad[] = [
       paraQuienAdministra: {
         titulo: 'Lo que te toca antes de que el copy avance',
         pasos: [
-          'En Copy, elegí cada campaña y nombrá su responsable. Sin responsable, el copy se guarda pero no avanza: nadie puede aprobarlo.',
-          'Definí si la aprueba el equipo o el cliente. Si es el cliente, el responsable es quien le manda el enlace.',
+          'En Copy, elige cada campaña y nombra su responsable. Sin responsable, el copy se guarda pero no avanza: nadie puede aprobarlo.',
+          'Define si la aprueba el equipo o el cliente. Si es el cliente, el responsable es quien le manda el enlace.',
           'El copy aprobado que no tenía campaña aparece en «Sin campaña»: asignale una y aprobalo de nuevo.',
         ],
         accion: { label: 'Ir a nombrar responsables', pantalla: 'saved' },
       },
       paraElEquipo: {
-        titulo: 'Qué cambia para vos',
+        titulo: 'Qué cambia para ti',
         pasos: [
-          'Si sos responsable de una campaña, en Copy vas a ver «Aprobar» o «Enviar al cliente» sobre su copy.',
-          'Si no lo sos, el copy espera a quien responde: cada campaña dice quién es.',
+          'Si eres responsable de una campaña, en Copy vas a ver «Aprobar» o «Enviar al cliente» sobre su copy.',
+          'Si no lo eres, el copy espera a quien responde: cada campaña dice quién es.',
           'Si una campaña no tiene responsable, su copy no avanza: avisale a quien administra para que lo nombre.',
         ],
         accion: { label: 'Ver Copy', pantalla: 'saved' },

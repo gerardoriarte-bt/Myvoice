@@ -120,8 +120,8 @@ mismo resumen en JSON bajo `server/.backfills/` para poder difearlo contra el de
 5. Los usuarios que quedan sin membresía **no** se asignan a ningún lado: se listan para
    invitarlos a mano. Es preferible a meterlos en un workspace al azar.
 
-Si el reparto propuesto no refleja la realidad del negocio, no fuerces el script: creá los
-workspaces a mano y reasigná las marcas antes de aplicar.
+Si el reparto propuesto no refleja la realidad del negocio, no fuerces el script: crea los
+workspaces a mano y reasigna las marcas antes de aplicar.
 
 ### 5. Backfill aplicado
 
@@ -245,7 +245,7 @@ defectos, los cuatro corregidos:
 |---|---|---|
 | 1 | El backfill moría antes de aplicar una sola regla: leía con el cliente tipado del schema nuevo, donde `workspaceId` ya es `String`, contra una base donde todavía es `NULL` — que es justo lo que venía a arreglar (`P2032`) | `scripts/backfillTenancy.ts`, ahora lee con SQL crudo |
 | 2 | El mismo choque del otro lado: `client.update()` SELECTea la fila entera y pedía `quotaCostUsdOverride`, columna que agrega una migración **posterior** (`P2022`) | mismo archivo, escrituras en SQL crudo |
-| 3 | Después del fallo deliberado de `_workspace_required`, Prisma se negaba a aplicar nada más (`P3009`). El runbook decía "volvé a ejecutar `migrate deploy`" y eso no alcanzaba | paso 3.b, nuevo |
+| 3 | Después del fallo deliberado de `_workspace_required`, Prisma se negaba a aplicar nada más (`P3009`). El runbook decía "vuelve a ejecutar `migrate deploy`" y eso no alcanzaba | paso 3.b, nuevo |
 | 4 | Las cuatro FK quedaban en `ON DELETE SET NULL` sobre columnas ya `NOT NULL`: drift real contra `schema.prisma` | `20260826000001_workspace_required` |
 
 Los tres primeros habrían aparecido recién en producción, con la migración aditiva ya aplicada

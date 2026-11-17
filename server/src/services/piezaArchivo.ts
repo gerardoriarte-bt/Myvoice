@@ -59,14 +59,14 @@ const extensionDe = (mimetype: string): string =>
 export const validarArchivo = (archivo: ArchivoSubido): void => {
   if (!TIPOS_ACEPTADOS.includes(archivo.mimetype as (typeof TIPOS_ACEPTADOS)[number])) {
     throw new TenantError(
-      `No se puede subir ${archivo.originalname}. Se aceptan PNG, JPG y WEBP; exportá la pieza a alguno de esos —un PDF hay que exportarlo a imagen.`,
+      `No se puede subir ${archivo.originalname}. Se aceptan PNG, JPG y WEBP; exporta la pieza a alguno de esos —un PDF hay que exportarlo a imagen.`,
       400
     );
   }
   if (archivo.size > PESO_MAXIMO) {
     const mb = (archivo.size / 1024 / 1024).toFixed(1);
     throw new TenantError(
-      `No se subió ${archivo.originalname}: pesa ${mb} MB y el máximo es 10 MB. Exportá en PNG o JPG; con 1.600 px en el lado largo la auditoría lee todo.`,
+      `No se subió ${archivo.originalname}: pesa ${mb} MB y el máximo es 10 MB. Exporta en PNG o JPG; con 1.600 px en el lado largo la auditoría lee todo.`,
       400
     );
   }

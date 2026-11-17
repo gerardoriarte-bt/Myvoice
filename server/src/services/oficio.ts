@@ -42,32 +42,32 @@ export const REGLAS_DE_OFICIO: ReglaDeOficio[] = [
  */
 export const MANUAL_DE_OFICIO = `
 ## MANUAL DE OFICIO (vale para toda marca; lo de la marca se suma encima)
-Los ejemplos entre comillas muestran la idea, no el tratamiento: usá el de la marca (tú, usted o vos).
+Los ejemplos entre comillas muestran la idea, no el tratamiento: usa el de la marca (tú, usted o vos).
 Identidad
-- Optimismo: construí desde lo que suma. Nunca uses el miedo o lo negativo como motor.
+- Optimismo: construye desde lo que suma. Nunca uses el miedo o lo negativo como motor.
 - Cero acartonamiento: nada burocrático ni legalista. No «de inmediato» (suena a contrato): «al instante», «de una».
-- Asertividad: afirmá. Prohibido «¿Sabías que…?», «tal vez», «quizás». «[MARCA] te premia», no «[MARCA] podría premiarte».
+- Asertividad: afirma. Prohibido «¿Sabías que…?», «tal vez», «quizás». «[MARCA] te premia», no «[MARCA] podría premiarte».
 Contundencia
-- Inteligente y corto: sacá la grasa. No «Queremos que vivas la experiencia como un profesional»: «Vive la experiencia como un profesional».
+- Inteligente y corto: saca la grasa. No «Queremos que vivas la experiencia como un profesional»: «Vive la experiencia como un profesional».
 - Si la pieza es gráfica o video, el logo ya está: no repitas el nombre de la marca en el titular.
 - Ganchos breves en vez de oraciones largas: no «Cada vez que nos eliges estás más cerca de ganar»: «Tu elección es tu victoria».
 Gancho
 - Insight del tema: nada de frases de stock. Si la campaña es de fútbol, «Juguemos en equipo». El texto respira el tema de la campaña.
 - El titular tiene un solo trabajo: que se lea la línea siguiente. Si no detiene el scroll, el resto sobra.
-- Nunca abras con «¿Cómo participar?»: abrí con el beneficio que genera curiosidad.
-- Buscá la vuelta: un juego de palabras bien hecho se recuerda, no solo se lee.
+- Nunca abras con «¿Cómo participar?»: abre con el beneficio que genera curiosidad.
+- Busca la vuelta: un juego de palabras bien hecho se recuerda, no solo se lee.
 Assets de campaña
 - El nombre de la campaña, los slogans y los nombres de premios van LITERALES: no los cambies, no los mezcles, no los diluyas. La creatividad va en lo que los acompaña.
 - No adornes un beneficio ni cambies el nombre de un premio: ceñite a lo que dice el brief (promesas falsas = riesgo legal).
 Foco
 - Cero relleno: nada que no tenga que ver con esta promoción.
-- Bajada a tierra: nada de manifiestos («La energía que te lleva a cumplir tus metas»). Decí qué hacer ahora.
+- Bajada a tierra: nada de manifiestos («La energía que te lleva a cumplir tus metas»). Di qué hacer ahora.
 - Preguntas solo si son un gancho real, nunca para empezar a escribir.
 Entrega
 - Mata a tus favoritos: si suena bonito pero no empuja la venta o el concepto, va afuera.
-- Ritmo en voz alta: si suena forzado, simplificá. Menos adjetivos, más verbos de acción.
+- Ritmo en voz alta: si suena forzado, simplifica. Menos adjetivos, más verbos de acción.
 Concepto
-- Cada titular es un ladrillo del concepto: si el concepto es «TAN GRANDE COMO TÚ», hablá de «zapatos gigantes», «talento XXL», «no caber en el molde», no de algo genérico.
+- Cada titular es un ladrillo del concepto: si el concepto es «TAN GRANDE COMO TÚ», habla de «zapatos gigantes», «talento XXL», «no caber en el molde», no de algo genérico.
 - El texto explica y expande el concepto: después del titular, el concepto se entiende sin explicarlo aparte.
 - Un solo campo semántico: si el concepto es grandeza, escala, altura, peso, impacto. No mezcles velocidad en una campaña de resistencia.
 - Test final: ¿este titular hace más fuerte el concepto o solo ocupa espacio? Si no construye hacia la idea central, descartalo.
@@ -76,12 +76,12 @@ Concepto
 /** Lo que una expresión regular encuentra sin dudar. Cada patrón dice por qué está mal. */
 const PATRONES: { patron: RegExp; motivo: string }[] = [
   { patron: /¿\s*sab[ií]as\s+que/i, motivo: "«¿Sabías que…?»: duda en vez de afirmar" },
-  { patron: /¿\s*c[oó]mo\s+participar/i, motivo: "«¿Cómo participar?» como entrada: abrí con el beneficio" },
-  { patron: /\btal\s+vez\b/i, motivo: "«tal vez»: afirmá" },
-  { patron: /\bquiz[aá]s?\b/i, motivo: "«quizás»: afirmá" },
+  { patron: /¿\s*c[oó]mo\s+participar/i, motivo: "«¿Cómo participar?» como entrada: abre con el beneficio" },
+  { patron: /\btal\s+vez\b/i, motivo: "«tal vez»: afirma" },
+  { patron: /\bquiz[aá]s?\b/i, motivo: "«quizás»: afirma" },
   { patron: /\bde\s+inmediato\b/i, motivo: "«de inmediato» suena a contrato: «al instante», «de una»" },
-  { patron: /\bqueremos\s+que\b/i, motivo: "«queremos que…»: grasa, decilo directo" },
-  { patron: /\bte\s+invitamos\s+a\b/i, motivo: "«te invitamos a…»: acartonado, decí la acción" },
+  { patron: /\bqueremos\s+que\b/i, motivo: "«queremos que…»: grasa, dilo directo" },
+  { patron: /\bte\s+invitamos\s+a\b/i, motivo: "«te invitamos a…»: acartonado, di la acción" },
 ];
 
 const normalizar = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();

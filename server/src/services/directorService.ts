@@ -104,7 +104,7 @@ REGLAS DE LOS ${cantidadDeAngulos(params)} ÁNGULOS (uno por pieza: cada pieza s
 REGLAS DE FILTRO antes de devolver:
 - Si concept / keyMessage / tone podrían aplicar a otra marca del mismo rubro → reformular hasta que sea inconfundiblemente de "${params.clientName || "esta marca"}".
 - Si el equipo proveyó concept, va TEXTUAL en la respuesta.
-- Si keyMessage repite el concept, reescribilo: el keyMessage es lo que el público se LLEVA, no lo que la marca dice.
+- Si keyMessage repite el concept, reescríbelo: el keyMessage es lo que el público se LLEVA, no lo que la marca dice.
 
 ## FORMATO JSON (única salida válida)
 {

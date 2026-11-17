@@ -16,14 +16,14 @@ const MAX_CHARS = 18000; // ~5k tokens, suficiente para guidelines típicos
 const buildExtractionPrompt = (text: string, clientName: string, industry: string) => `
 Eres un analista de marca. Recibes el documento de "Brand Guidelines" / "Manual de Marca" de ${clientName} (rubro: ${industry}) y debes extraer SOLO la información que sirve para generar copy alineado.
 
-NO inventes nada. Si un campo no está claro en el documento, devolvé string vacío. Es preferible vacío a especulativo.
+NO inventes nada. Si un campo no está claro en el documento, devuelve string vacío. Es preferible vacío a especulativo.
 
 ## DOCUMENTO
 ${text.slice(0, MAX_CHARS)}
 ${text.length > MAX_CHARS ? "\n[...documento truncado por longitud]" : ""}
 
 ## CAMPOS A EXTRAER
-Devolvé un JSON con:
+Devuelve un JSON con:
 - "summary": resumen ejecutivo del posicionamiento de marca según el documento (máx. 3 líneas, en español).
 - "voice": el tono/voz de marca expresado en el documento. Frase corta y específica (ej. "Cercano, irreverente, naturalista"). Si el manual usa un arquetipo (Sabio, Rebelde, etc.) inclúyelo.
 - "valueProposition": la propuesta de valor diferenciadora — qué resuelve la marca y por qué se elige sobre alternativas. Una o dos líneas.
@@ -66,7 +66,7 @@ export const extractBrandFromPdf = async (
     {
       model,
       messages: [
-        { role: "system", content: "Eres un analista de marca. Extraes información estructurada de manuales de marca. Respondés SOLO en JSON válido." },
+        { role: "system", content: "Eres un analista de marca. Extraes información estructurada de manuales de marca. Respondes SOLO en JSON válido." },
         { role: "user", content: buildExtractionPrompt(text, clientName, industry) },
       ],
       response_format: jsonObjectFormat(openai),

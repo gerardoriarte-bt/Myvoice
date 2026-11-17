@@ -11,7 +11,7 @@ import { Client } from './types';
 
 /**
  * Copia de `server/src/lib/nombreDeMarca.ts`, solo para avisar ANTES de crear
- * una marca con un nombre que ya existe. Si cambiás la regla, cambiala en los
+ * una marca con un nombre que ya existe. Si cambias la regla, cambiala en los
  * dos: la API no puede importar este archivo.
  */
 export const normalizarNombre = (nombre: string): string =>

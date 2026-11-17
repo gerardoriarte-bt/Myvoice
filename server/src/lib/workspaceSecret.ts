@@ -63,7 +63,7 @@ export const decryptWorkspaceApiKey = (workspaceId: string, stored: string): str
     plano = decryptSecret(stored);
   } catch {
     throw new TenantError(
-      'La API key de IA del workspace no se pudo descifrar. Revisá ENCRYPTION_KEY o volvé a cargarla desde Configuración.',
+      'La API key de IA del workspace no se pudo descifrar. Revisa ENCRYPTION_KEY o vuelve a cargarla desde Configuración.',
       500
     );
   }

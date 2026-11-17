@@ -165,7 +165,7 @@ export const avisarAdnPorRevisar = async (filtro: { workspaceId?: string; client
           userId,
           tipo: AVISO_ADN_POR_REVISAR,
           clientId: m.id,
-          titulo: `Revisá el ADN de ${m.name}: lo van a heredar ${n === 1 ? 'una submarca' : `${n} submarcas`}`,
+          titulo: `Revisa el ADN de ${m.name}: lo van a heredar ${n === 1 ? 'una submarca' : `${n} submarcas`}`,
           detalle: 'Hasta que lo confirmes, sus submarcas siguen con su propio ADN.',
         },
       });
