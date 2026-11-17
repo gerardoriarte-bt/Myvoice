@@ -35,7 +35,7 @@ está aquí, todavía no tiene nombre acordado: se agrega antes de usarlo en una
 | **Marca madre / submarca** | Una submarca (Terpel CRM) es parte de su madre (Terpel) y **hereda** de ella por capas: prohibiciones siempre, lo demás se suma o se define propio. Un solo nivel. | La relación de octubre, que solo ordenaba: desde la decisión 16 hereda. |
 | **Familia** | Una marca madre con sus submarcas. | — |
 | **Versión del ADN** | Cada cambio guardado en el ADN de una marca. Cada campaña fija la versión con que arrancó. | — |
-| **Medios de la marca** | Los medios y formatos que la marca usa siempre: el recorte de la biblioteca con que trabaja. Vienen marcados al elegir medios en un planning. | La biblioteca completa. |
+| **Medios de la marca** | Los medios y formatos que la marca usa siempre: una selección de la biblioteca de la agencia, no formatos propios. Vienen elegidos de entrada en cada planning. Si falta uno, se agrega a la biblioteca y vuelve elegido para la marca. | La biblioteca completa. |
 | **ADN** | Lo que la marca es y cómo habla: secciones, tono, vocabulario, reglas. Vive en la parte común. | «Voz de marca», que es una parte del ADN. |
 | **Audiencia** | Un público de la marca. **Se define en el ADN** (lista fija) y **se selecciona en la campaña**; todas las líneas se escriben para las audiencias de la campaña. | La segmentación de pauta: en CDM se llama **segmentación**, nunca «audiencia». |
 | **Segmentación** | Cómo se compra la pauta en un medio (edad, intereses, zona). Es de CDM y no entra a My Voice. | Audiencia. |
@@ -60,7 +60,7 @@ está aquí, todavía no tiene nombre acordado: se agrega antes de usarlo en una
 
 | Término | Significa | No confundir con |
 |---|---|---|
-| **Biblioteca de medios** | El catálogo de medios y formatos. Vive en **CDM**; My Voice la hereda. | El «catálogo» de `docs/v2`: es esto. |
+| **Biblioteca de medios** | El catálogo de medios y formatos **de la agencia**: uno solo para todas las marcas. Vive en **CDM** y la gestiona Planning; lo que se agrega o cambia queda para todas. My Voice y Producción la heredan (decisión 25). | El «catálogo» de `docs/v2`: es esto. No es de una marca. |
 | **Medio** | Dónde sale: Meta, Google, programática, radio, exterior. | Formato. |
 | **Formato** | Lo que se produce en un medio: carrusel, banner 300×250, cuña de 30 s. Tiene **medidas**, **campos de texto** y **especificaciones de archivo**, separados. | Pieza. |
 | **Campo de texto** | Un texto que pide el formato, con su largo máximo: headline 40, texto principal 125. Es lo único de la biblioteca que My Voice usa para escribir. | — |
