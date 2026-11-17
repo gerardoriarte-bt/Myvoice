@@ -45,16 +45,22 @@ Estados: **diseñada** · **ajustar** (diseñada, pero una decisión nueva la ca
 
 ## CDM
 
+Desde el 2026-11-17 todas las pantallas de CDM están en **su propia columna del `.pen`** (x = 10.000, «══ CDM · columna de pantallas ══»), separada de My Voice: arriba lo vigente, abajo lo reemplazado.
+
 | Flujo | Pantalla | Acción principal | Estado | Frame en el `.pen` |
 |---|---|---|---|---|
+| Biblioteca | **Meta por pieza a producir**: las 33 ubicaciones en 6 piezas, con sus rangos de texto y lo que está por confirmar (decisión 18) | Cargar versión nueva | diseñada (2026-11-17) | § CDM · Biblioteca · Meta por pieza a producir |
+| Biblioteca | **Detalle de una pieza** (Video 9:16): largos por ubicación, el más corto marcado, zona segura dibujada, archivo e historial | Marcar como probadas | diseñada (2026-11-17) | § CDM · Biblioteca · Meta · detalle de la pieza Video 9:16 |
+| Biblioteca | **Cargar Meta desde la planilla**: 33 filas → 6 piezas, las 10 alertas con su decisión, carga en seco | Activar Meta | diseñada (2026-11-17) | § CDM · Biblioteca · cargar Meta desde la planilla |
+| Cuadro | **Una línea elige sus ubicaciones** y el largo para My Voice se ajusta solo (el más corto entre las elegidas) | Enviar versión | diseñada (2026-11-17) | § CDM · Cuadro de materiales · una línea de Meta elige ubicaciones |
 | Biblioteca | **Biblioteca organizable**: por medio, formato, tipo de archivo, largo de texto o fecha de creación | Agregar medio | diseñada | § Marco · CDM · Biblioteca de medios — una lista, cinco formas de ordenarla |
 | Biblioteca | **Los 14 canales de My Voice ya cargados**, por medio, con origen y estado | Decidir las pendientes | diseñada | § CDM · Biblioteca de medios · los 14 canales de My Voice ya cargados |
 | Biblioteca | **Cargar desde My Voice**: decidir dónde va cada texto y qué es su cantidad, cargar en seco y confirmar | Cargar en seco | diseñada | § CDM · Cargar desde My Voice · decidir antes de cargar |
 | Biblioteca | **Formato cargado desde My Voice** (Email): origen, campos, cantidades pendientes, archivo que falta | Guardar como versión nueva | diseñada | § CDM · Formato cargado desde My Voice · Email |
 | Biblioteca | Medios y sus formatos (primera versión) | Agregar medio | reemplazada por la biblioteca organizable | § Catálogo · medios y sus formatos (SUPUESTO) |
-| Biblioteca | Detalle de un formato | Guardar como versión nueva | ajustar: ídem | § Catálogo · detalle de un formato (SUPUESTO) |
-| Biblioteca | Agregar un medio con sus formatos | Revisar y activar | ajustar: ídem | § Catálogo · agregar un medio con sus formatos (SUPUESTO) |
-| Biblioteca | Cargar desde planilla | Cargar formatos | ajustar: ídem | § Catálogo · cargar medios y formatos desde planilla (SUPUESTO) |
+| Biblioteca | Detalle de un formato | Guardar como versión nueva | reemplazada por las pantallas de Meta (decisión 18) | § Catálogo · detalle de un formato (SUPUESTO) |
+| Biblioteca | Agregar un medio con sus formatos | Revisar y activar | reemplazada por las pantallas de Meta (decisión 18) | § Catálogo · agregar un medio con sus formatos (SUPUESTO) |
+| Biblioteca | Cargar desde planilla | Cargar formatos | reemplazada por las pantallas de Meta (decisión 18) | § Catálogo · cargar medios y formatos desde planilla (SUPUESTO) |
 | Marca | Equipo y paquetes de formatos | Guardar paquete | por diseñar | — |
 | Campaña | Campaña en CDM (desde My Voice) | Armar el cuadro | por diseñar | — |
 | Cuadro | Armar y enviar el cuadro | Enviar versión | por diseñar | — |
