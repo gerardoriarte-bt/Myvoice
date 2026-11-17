@@ -129,6 +129,13 @@ nueva que diga qué cambió y por qué.
     son 5 piezas, con mensajes distintos). Planning ve las **medidas**; zona segura, archivo y peso son de
     Producción. My Voice recibe un pedido de copy por línea.
 
+20. **El menú de CDM sigue el trabajo, no el modelo de datos.** Arriba «Nuevo planning» y **Trabajo**:
+    los plannings de la marca activa, por estado (en armado, por aprobar, aprobados). Abajo
+    **Configuración**, lo que se prepara una vez: los **medios de la marca** (antes «paquetes») y la
+    **biblioteca de medios** (medios, borradores y carga desde planilla pasan adentro). Se quita
+    «Portafolio»: lo cubren la lista de plannings y Mi cola. «Cuadro de materiales» pasa a llamarse
+    **planning**, y su resumen, **sábana**: son las palabras del equipo.
+
 ## Antes (2026-10-27), siguen vigentes con los nombres nuevos
 
 - La marca, su ADN y sus audiencias son la fuente de verdad (ahora en la parte común, decisión 7).
