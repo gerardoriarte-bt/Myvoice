@@ -135,6 +135,9 @@ nueva que diga qué cambió y por qué.
     **biblioteca de medios** (medios, borradores y carga desde planilla pasan adentro). Se quita
     «Portafolio»: lo cubren la lista de plannings y Mi cola. «Cuadro de materiales» pasa a llamarse
     **planning**, y su resumen, **sábana**: son las palabras del equipo.
+    El menú destaca solo lo que pide atención: **por aprobar** (con aviso) y **aprobados**; empezar un
+    planning ya es armarlo, así que «en armado» no es un estado propio. La biblioteca abre con el
+    **catálogo de medios** y cada medio lleva su **guía visual para Diseño**.
 
 ## Antes (2026-10-27), siguen vigentes con los nombres nuevos
 
