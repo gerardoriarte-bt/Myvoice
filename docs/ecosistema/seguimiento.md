@@ -18,7 +18,7 @@ Cada función con su estado en las tres pistas. Se actualiza en el mismo PR que 
 | Estrategia | ADN de una submarca por capas | ✓ | ○ | ✓ | PL-11 (back: `comun/adn/`, `GET /clients/:id/adn`) |
 | Super Admin | Revisar el ADN de la madre antes de heredar (aviso en Marcas, revisión por sección, bandeja) | ● | ● | ● | PL-11 · [plan-revision-adn](../plan-revision-adn.md) |
 | Estrategia | Cambiar el ADN de la madre: impacto y versión por campaña | ✓ | ○ | ◐ | PL-12 (versiones y cascada ✓; fijar la versión por campaña espera a la pantalla) |
-| Planning | Formatos de la marca (paquetes, heredados y propios) | ✓ | ○ | ○ | PL-13, CD-6 |
+| Planning | Medios de la marca: una selección de la biblioteca de la agencia (decisión 25) | ✓ | ○ | ○ | PL-13, CD-6 · F2 |
 | Super Admin | Equipo de la marca (heredado y propio) | ✓ | ○ | ○ | PL-14 |
 | Estrategia | ADN de hoy | ● | ● | ● | (v1) |
 | Estrategia | ADN 2.0 por capas: secciones, mínimo, la IA propone, confirmar | ✓ | ◐ | ◐ | PL-3, PL-11 (F1–F3 ●, F4 ✓: el motor lee las secciones; falta la IA, F5) · [plan-adn-2](../plan-adn-2.md) |
@@ -26,6 +26,10 @@ Cada función con su estado en las tres pistas. Se actualiza en el mismo PR que 
 | Responsable | Nueva campaña: audiencias del ADN, versión fija, cómo sigue | ✓ | ○ | ◐ | PL-4, PL-12 (`Project.adnVersion` ●) · [plan-adn-2](../plan-adn-2.md) F6 |
 | Responsable | Una campaña en las dos herramientas | ✓ | ○ | ○ | PL-5 |
 | Todos | Barra común y rutas | ✓ | ○ | — | PL-1 |
+| Todos | Encabezado en dos filas: dónde estás y cómo va la campaña en los cinco pasos (decisiones 23, 24, 26) | ✓ | ○ | ○ | F0 · [plan-plataforma-por-procesos](../plan-plataforma-por-procesos.md) |
+| Admin | Panorama: todas las campañas, qué está trabado y quién lo debe | ✓ | ○ | ○ | F0 · decisión 24 |
+| — | Interruptor `Workspace.plataformaPorProcesos` (lo nuevo no se ve hasta encenderlo) | — | ○ | ○ | F0 · plan, «Convivencia con producción» |
+| Todos | La plataforma habla de tú (español de Colombia, sin voseo) | ● | ● | ● | #73, desplegado el 2026-11-17 |
 | Todos | Mi cola | ✓ | ○ | ○ | PL-6 |
 | Todos | Avisos que llevan a la acción | ✓ | ○ | ◐ | PL-7 |
 | Super Admin | Funciones del equipo por marca | ● | ● | ● | PL-8 (suma Estrategia y Planning: ○) |
