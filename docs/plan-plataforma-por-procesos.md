@@ -185,6 +185,10 @@ el suyo, y que el admin actúa en todos. Con `observar` no bloquea y lo registra
 
 ### F2 · Biblioteca de medios y medios de la marca (CDM, configuración)
 
+El modelo de datos de F1 a F5 está en [ecosistema/datos/arquitectura-de-datos.md](./ecosistema/datos/arquitectura-de-datos.md)
+(vigente desde el 2026-11-19, decisión 28). F2 empieza partiendo `schema.prisma` por módulo.
+
+
 - Tablas de la arquitectura de datos § 2 (CDM): `Medio`, `Formato`, `FormatoVersion`, `CampoDeTexto`,
   más lo que trae la decisión 18: la **pieza maestra** (tipo de archivo y proporción) con sus
   `Ubicacion` (cada una con sus largos y su alerta «por confirmar»). La guía visual se guarda como datos
