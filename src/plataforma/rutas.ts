@@ -27,6 +27,7 @@ export const RUTAS: Record<ScreenId, string> = {
   control: '/control',
   panorama: '/panorama',
   loMio: '/produccion/lo-mio',
+  adn: '/marca/adn',
 };
 
 export interface Ubicacion {
@@ -67,7 +68,7 @@ export interface PasoDef {
 }
 
 export const PASOS: PasoDef[] = [
-  { id: 'marca', nombre: 'Marca', tema: 'ADN', color: '#1D1D1F', grupos: [{ titulo: 'Trabajo', pantallas: ['clients'] }], trabajo: 'ADN', funcion: 'ESTRATEGIA' },
+  { id: 'marca', nombre: 'Marca', tema: 'ADN', color: '#1D1D1F', grupos: [{ titulo: 'Trabajo', pantallas: ['adn', 'clients'] }], trabajo: 'ADN', funcion: 'ESTRATEGIA' },
   {
     id: 'myvoice',
     nombre: 'My Voice',

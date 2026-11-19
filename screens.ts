@@ -20,6 +20,7 @@ import {
   BookOpen,
   Building2,
   ClipboardCheck,
+  FingerprintPattern,
   Gauge,
   Inbox,
   Map as MapIcon,
@@ -46,7 +47,8 @@ export type ScreenId =
   | 'novedades'
   | 'control'
   | 'panorama'
-  | 'loMio';
+  | 'loMio'
+  | 'adn';
 
 /**
  * Cinco etapas, no cuatro: cuando entra la pieza, «producir» dejaba de
@@ -197,6 +199,19 @@ export const SCREENS: Record<ScreenId, ScreenDef> = {
     // No depende del rol en el workspace activo: el super admin puede ser MEMBER donde está parado.
     adminOnly: false,
     superAdmin: true,
+  },
+  /**
+   * El ADN de la marca activa, para todos (F1b): lo edita quien tiene Estrategia en la marca o un admin; el
+   * resto lo lee. Es la entrada de Estrategia. «Marcas» sigue siendo de quien administra.
+   */
+  adn: {
+    id: 'adn',
+    name: 'ADN',
+    description: 'Qué dice la marca, cómo suena y qué no se toca: lo que el motor lee al escribir.',
+    icon: FingerprintPattern,
+    stage: 'preparar',
+    adminOnly: false,
+    soloPorProcesos: true,
   },
   /**
    * Las piezas que esperan algo de quien mira, de todas las marcas: la entrada de Diseño con la plataforma

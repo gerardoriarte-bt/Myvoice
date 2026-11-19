@@ -73,6 +73,17 @@ export const assertPuedeActuar = async (tenant: TenantContext, paso: PasoDeTraba
 };
 
 /**
+ * Para las rutas que eran solo de admin y se abren a la función del paso (el ADN a Estrategia): decide
+ * siempre, sin modo observar. Observar ahí sería abrirlas a todo el workspace; así solo entra quien un admin
+ * nombró en Equipo.
+ */
+export const exigirPaso = async (tenant: TenantContext, paso: PasoDeTrabajo, clientId?: string | null) => {
+  if (!(await puedeActuar(tenant, paso, clientId))) {
+    throw new TenantError(`Para cambiar ${NOMBRE_DEL_PASO[paso]} hace falta su función en Equipo`, 403);
+  }
+};
+
+/**
  * El paso donde entra cada persona: el de su primera función en el orden del proceso. `null` = no tiene
  * función de un paso (un admin, o solo Aprobación): el marco decide (Panorama, Mi cola).
  */
