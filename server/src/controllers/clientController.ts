@@ -85,12 +85,18 @@ export const getClients = async (req: AuthRequest, res: Response) => {
   try {
     const clients = await prisma.client.findMany({
       where: { workspaceId: req.tenant!.workspaceId },
-      include: { dnaProfiles: true, seccionesAdn: { select: { clave: true, revisadaEn: true } } },
+      include: {
+        dnaProfiles: true,
+        seccionesAdn: { select: { clave: true, revisadaEn: true } },
+        modulos: { select: { modulo: true } },
+      },
       orderBy: { createdAt: 'asc' },
     });
     // Una madre con submarcas y el ADN sin confirmar pide revisión (docs/plan-revision-adn.md).
-    const conRevision = conRelaciones(clients).map(({ seccionesAdn, ...m }) => ({
+    const conRevision = conRelaciones(clients).map(({ seccionesAdn, modulos, ...m }) => ({
       ...m,
+      // Los módulos prendidos para la marca (CDM, Implementación): deciden qué pasos muestra el encabezado.
+      modulos: modulos.map(x => x.modulo),
       adnPorRevisar:
         m.conteos.complementarias > 0 && !m.adnConfirmadoEn
           ? {

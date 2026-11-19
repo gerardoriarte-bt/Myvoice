@@ -1,5 +1,5 @@
 import { Response } from 'express';
-import { Prisma, WorkspaceRole } from '@prisma/client';
+import { ModuloPlataforma, Prisma, WorkspaceRole } from '@prisma/client';
 import { AuthRequest, handleTenantError } from '../middleware/auth.js';
 import { prisma } from '../lib/prisma.js';
 import { resolvePlanLimits } from '../lib/planLimits.js';
@@ -163,5 +163,61 @@ export const quitarMembresia = async (req: AuthRequest, res: Response) => {
     res.status(204).end();
   } catch (error) {
     handleTenantError(error, res, 'Error al quitar la membresía');
+  }
+};
+
+const MODULOS = Object.values(ModuloPlataforma) as string[];
+
+/** Las marcas de todas las empresas, con los módulos que tienen prendidos. */
+export const listarMarcas = async (_req: AuthRequest, res: Response) => {
+  try {
+    const marcas = await prisma.client.findMany({
+      select: {
+        id: true,
+        name: true,
+        marcaMadreId: true,
+        workspace: { select: { id: true, name: true } },
+        modulos: { select: { modulo: true } },
+      },
+      orderBy: [{ workspace: { name: 'asc' } }, { name: 'asc' }],
+    });
+    res.json(
+      marcas.map(m => ({
+        id: m.id,
+        name: m.name,
+        submarca: Boolean(m.marcaMadreId),
+        workspaceId: m.workspace.id,
+        workspaceName: m.workspace.name,
+        modulos: m.modulos.map(x => x.modulo),
+      }))
+    );
+  } catch (error) {
+    handleTenantError(error, res, 'Error al listar las marcas');
+  }
+};
+
+/** Prende o apaga un módulo (CDM, Implementación) en una marca. Apagarlo no borra lo que el módulo guardó. */
+export const cambiarModulo = async (req: AuthRequest, res: Response) => {
+  const { modulo, encendido } = req.body as { modulo?: unknown; encendido?: unknown };
+  if (typeof modulo !== 'string' || !MODULOS.includes(modulo) || typeof encendido !== 'boolean') {
+    return res.status(400).json({ error: 'Faltan un módulo válido y encendido (true o false)' });
+  }
+  const clientId = req.params.id;
+  try {
+    const marca = await prisma.client.findUnique({ where: { id: clientId }, select: { id: true } });
+    if (!marca) return res.status(404).json({ error: 'Marca no encontrada' });
+    if (encendido) {
+      await prisma.moduloDeMarca.upsert({
+        where: { clientId_modulo: { clientId, modulo: modulo as ModuloPlataforma } },
+        create: { clientId, modulo: modulo as ModuloPlataforma, encendidoPorId: req.auth!.userId },
+        update: {},
+      });
+    } else {
+      await prisma.moduloDeMarca.deleteMany({ where: { clientId, modulo: modulo as ModuloPlataforma } });
+    }
+    const modulos = await prisma.moduloDeMarca.findMany({ where: { clientId }, select: { modulo: true } });
+    res.json({ id: clientId, modulos: modulos.map(m => m.modulo) });
+  } catch (error) {
+    handleTenantError(error, res, 'Error al cambiar el módulo');
   }
 };

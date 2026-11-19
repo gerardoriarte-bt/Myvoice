@@ -174,6 +174,7 @@ model Client {
   piezas                    Pieza[]
   funciones                 MiembroFuncion[]
   notificaciones            Notificacion[]
+  modulos                   ModuloDeMarca[]
   campanas                  Project[]
   seccionesAdn              SeccionAdn[]
   audiencias                AudienciaDeMarca[]
@@ -431,4 +432,24 @@ model Notificacion {
   /// El índice de la campana: las no leídas de una persona, más recientes primero.
   @@index([userId, leidaAt, updatedAt])
   @@index([workspaceId, tipo, updatedAt])
+}
+
+/// Los módulos que se prenden por marca (spec-plataforma § 3). My Voice y Producción son de todas; CDM e
+/// Implementación, solo de las marcas que los tienen. Sin CDM, el paso ② no aparece y el copy se genera
+/// como hoy (regla 3 del plan). Lo prende el super admin desde Control.
+enum ModuloPlataforma {
+  CDM
+  IMPLEMENTACION
+}
+
+model ModuloDeMarca {
+  id             String           @id @default(uuid())
+  clientId       String
+  modulo         ModuloPlataforma
+  encendidoEn    DateTime         @default(now())
+  encendidoPorId String?
+
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@unique([clientId, modulo])
 }

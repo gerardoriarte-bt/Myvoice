@@ -10,7 +10,7 @@
  */
 
 import type { ScreenId } from '../../screens';
-import type { FuncionEquipo, User } from '../../types';
+import type { Client, FuncionEquipo, User } from '../../types';
 
 export const RUTAS: Record<ScreenId, string> = {
   clients: '/marca',
@@ -28,6 +28,7 @@ export const RUTAS: Record<ScreenId, string> = {
   panorama: '/panorama',
   loMio: '/produccion/lo-mio',
   adn: '/marca/adn',
+  biblioteca: '/cdm/biblioteca',
 };
 
 export interface Ubicacion {
@@ -49,11 +50,11 @@ export const armarRuta = ({ pantalla, campanaId }: { pantalla: ScreenId; campana
   (campanaId ? `/campana/${encodeURIComponent(campanaId)}` : '') + RUTAS[pantalla];
 
 /**
- * Los pasos del encabezado y el menú de cada uno. CDM (②) e Implementación (⑤) se suman cuando existan:
- * un paso que no se puede abrir no se muestra. Se numeran en el orden en que se ven, para que los números
+ * Los pasos del encabezado y el menú de cada uno. CDM (②) aparece solo en las marcas que lo tienen prendido
+ * (`pasosDeMarca`); Implementación (⑤), cuando exista. Un paso que no se puede abrir no se muestra. Se numeran en el orden en que se ven, para que los números
  * sigan siendo el orden del trabajo.
  */
-export type PasoId = 'marca' | 'myvoice' | 'produccion';
+export type PasoId = 'marca' | 'cdm' | 'myvoice' | 'produccion';
 
 export interface PasoDef {
   id: PasoId;
@@ -69,6 +70,16 @@ export interface PasoDef {
 
 export const PASOS: PasoDef[] = [
   { id: 'marca', nombre: 'Marca', tema: 'ADN', color: '#1D1D1F', grupos: [{ titulo: 'Trabajo', pantallas: ['adn', 'clients'] }], trabajo: 'ADN', funcion: 'ESTRATEGIA' },
+  {
+    id: 'cdm',
+    nombre: 'CDM',
+    tema: 'Planning',
+    color: '#047857',
+    // Plannings, Medios de la marca y Destinos llegan con F2c y F3; la biblioteca es de la agencia.
+    grupos: [{ titulo: 'De la agencia', pantallas: ['biblioteca'] }],
+    trabajo: 'CDM',
+    funcion: 'PLANNING',
+  },
   {
     id: 'myvoice',
     nombre: 'My Voice',
@@ -107,3 +118,7 @@ export const pantallaDeEntrada = (
   if (suya) return suya;
   return administra ? 'panorama' : 'loMio';
 };
+
+/** Los pasos que muestra una marca: CDM solo si lo tiene prendido (ModuloDeMarca). */
+export const pasosDeMarca = (marca?: Pick<Client, 'modulos'> | null): PasoDef[] =>
+  PASOS.filter(p => p.id !== 'cdm' || Boolean(marca?.modulos?.includes('CDM')));

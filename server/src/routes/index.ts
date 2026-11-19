@@ -13,6 +13,7 @@ import * as piezaController from '../controllers/piezaController.js';
 import * as notificacionController from '../controllers/notificacionController.js';
 import { authenticateToken, requireWorkspace, requireManager, requireSuperAdmin } from '../middleware/auth.js';
 import * as controlController from '../controllers/controlController.js';
+import * as bibliotecaController from '../cdm/biblioteca/bibliotecaController.js';
 
 const router = Router();
 const pdfUpload = multer({
@@ -158,6 +159,11 @@ router.post('/feedback/negative', ...inWorkspace, savedController.saveNegativeFe
 router.get('/analytics', ...inWorkspace, analyticsController.getAnalytics);
 // El gasto de IA ya no está acá: es del super admin, en `/control/gasto` (decisión 27).
 
+// ------------------------------------------------------------------ CDM
+// La biblioteca de medios de la agencia (F2b): la lee cualquier miembro; editarla es de Planning.
+router.get('/cdm/biblioteca', ...inWorkspace, bibliotecaController.listarMedios);
+router.get('/cdm/biblioteca/medios/:id', ...inWorkspace, bibliotecaController.detalleDeMedio);
+
 // ------------------------------------------------------------------ control
 /**
  * El super admin (decisión 27): por encima de los workspaces, sin `requireWorkspace`. Es el único que ve
@@ -170,6 +176,8 @@ router.get('/control/usuarios', ...asSuperAdmin, controlController.listarUsuario
 router.put('/control/membresias', ...asSuperAdmin, controlController.guardarMembresia);
 router.delete('/control/membresias/:userId/:workspaceId', ...asSuperAdmin, controlController.quitarMembresia);
 router.get('/control/gasto', ...asSuperAdmin, analyticsController.getUsageAnalytics);
+router.get('/control/marcas', ...asSuperAdmin, controlController.listarMarcas);
+router.put('/control/marcas/:id/modulos', ...asSuperAdmin, controlController.cambiarModulo);
 
 // -------------------------------------------------------------- revisiones
 // -------------------------------------------------------------- producción

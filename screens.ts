@@ -22,6 +22,7 @@ import {
   ClipboardCheck,
   FingerprintPattern,
   Gauge,
+  Layers,
   Inbox,
   Map as MapIcon,
   History,
@@ -48,7 +49,8 @@ export type ScreenId =
   | 'control'
   | 'panorama'
   | 'loMio'
-  | 'adn';
+  | 'adn'
+  | 'biblioteca';
 
 /**
  * Cinco etapas, no cuatro: cuando entra la pieza, «producir» dejaba de
@@ -199,6 +201,19 @@ export const SCREENS: Record<ScreenId, ScreenDef> = {
     // No depende del rol en el workspace activo: el super admin puede ser MEMBER donde está parado.
     adminOnly: false,
     superAdmin: true,
+  },
+  /**
+   * La biblioteca de medios de la agencia (F2b; B1 y B2 en el `.pen`): todos los medios y sus piezas, para
+   * todas las marcas. La lee cualquiera; la mantiene Planning.
+   */
+  biblioteca: {
+    id: 'biblioteca',
+    name: 'Biblioteca de medios',
+    description: 'De la agencia: todos los medios y sus piezas, para todas las marcas. La mantiene Planning.',
+    icon: Layers,
+    stage: 'preparar',
+    adminOnly: false,
+    soloPorProcesos: true,
   },
   /**
    * El ADN de la marca activa, para todos (F1b): lo edita quien tiene Estrategia en la marca o un admin; el

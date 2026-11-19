@@ -220,7 +220,19 @@ el suyo, y que el admin actúa en todos. Con `observar` no bloquea y lo registra
 - **El script** `npm run cdm:importar`.
 - **Meta cargada en local:** 6 piezas, 34 ubicaciones, 13 por confirmar.
 
-**Pasa a F2b:** los 14 canales como formatos (con las decisiones de B8 en el `.pen`), las rutas y las
+**F2b, primera parte (2026-11-19), hecho:**
+- **Módulos por marca.** `ModuloDeMarca` (CDM, Implementación) se prende por marca en Control → Marcas,
+  solo el super admin. `GET /clients` trae `modulos`. Era de F1 y faltaba: sin esto, el paso ② no tenía
+  dónde aparecer.
+- **El paso ② CDM en el encabezado y en el proceso.** Aparece solo en las marcas con CDM. Mientras no
+  exista F3, la campaña lo muestra como «Sin planning todavía».
+- **La biblioteca para leer.**
+  - B1, el catálogo por medio, y B2, el medio por pieza, con los largos como rango y «más corto en».
+  - Rutas `GET /cdm/biblioteca` y `/cdm/biblioteca/medios/:id`, para cualquier miembro; lo ajeno
+    responde 404.
+  - Casos nuevos en `verify:isolation`.
+
+**Pasa a F2b, segunda parte:** los 14 canales como formatos (con las decisiones de B8 en el `.pen`), las rutas y las
 pantallas.
 
 El modelo de datos de F1 a F5 está en [ecosistema/datos/arquitectura-de-datos.md](./ecosistema/datos/arquitectura-de-datos.md)

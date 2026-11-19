@@ -58,7 +58,7 @@ Cada función con su estado en las tres pistas. Se actualiza en el mismo PR que 
 
 | Usuario | Función | Diseño | Front | Back | Requisito |
 |---|---|---|---|---|---|
-| Planning | Biblioteca organizable | ✓ | ○ | ◐ | CD-1, CD-2 · F2a: tablas de la biblioteca |
+| Planning | Biblioteca organizable | ✓ | ◐ | ◐ | CD-1, CD-2 · F2a: tablas; F2b: catálogo (B1) y medio por pieza (B2) para leer |
 | Planning | Detalle de un formato y versiones | ✓ | ○ | ○ | CD-1, CD-5 (Meta, por pieza: decisión 18) |
 | Planning | Agregar un medio con sus formatos | ✓ | ○ | ○ | CD-3 (Meta desde la planilla) |
 | Planning | Cargar desde planilla | ◐ | ○ | ✓ | CD-4 · F2a: importador y `npm run cdm:importar` (Meta, 6 piezas) |
@@ -97,6 +97,6 @@ donde aparece la propuesta de la IA.
 | Limpieza antes de partir (spec-plataforma § 2.2, paso 1) | — | ● | — |
 | Contrato de la generación en `server/src/contrato/` (§ 2.2, paso 2) | — | ● | ● |
 | Fronteras de módulos y regla de imports en CI (`npm run fronteras`) | — | ✓ | ✓ |
-| Módulos encendidos por marca | — | ○ | ○ |
+| Módulos encendidos por marca | — | ✓ | ✓ |
 | Contrato CDM ↔ My Voice en código | — | — | ○ |
 | `verify:isolation` ampliado a módulos | — | — | ○ |

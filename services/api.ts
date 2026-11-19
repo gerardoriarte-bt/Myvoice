@@ -5,6 +5,9 @@ import type {
   PiezaAConfirmar,
   PiezaDetalle,
   PasoDeProceso,
+  MarcaDeControl,
+  MedioDetalle,
+  MedioResumen,
   CampanaEnProceso,
   UsuarioDeControl,
   WorkspaceDeControl,
@@ -108,6 +111,15 @@ export const controlApi = {
     apiRequest('/control/membresias', { method: 'PUT', body: JSON.stringify({ userId, workspaceId, role }) }),
   quitarMembresia: (userId: string, workspaceId: string) =>
     apiRequest(`/control/membresias/${userId}/${workspaceId}`, { method: 'DELETE' }),
+  marcas: (): Promise<MarcaDeControl[]> => apiRequest('/control/marcas'),
+  cambiarModulo: (clientId: string, modulo: 'CDM' | 'IMPLEMENTACION', encendido: boolean) =>
+    apiRequest(`/control/marcas/${clientId}/modulos`, { method: 'PUT', body: JSON.stringify({ modulo, encendido }) }),
+};
+
+/** CDM (F2b): la biblioteca de medios de la agencia. Leerla es de todos; editarla, de Planning. */
+export const cdmApi = {
+  medios: (): Promise<MedioResumen[]> => apiRequest('/cdm/biblioteca'),
+  medio: (id: string): Promise<MedioDetalle> => apiRequest(`/cdm/biblioteca/medios/${id}`),
 };
 
 export const analyticsApi = {
