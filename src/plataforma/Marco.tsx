@@ -1,6 +1,6 @@
 import React from 'react';
 import { Check, ChevronDown, Lock, LogOut } from 'lucide-react';
-import { SCREENS, ScreenId } from '../../screens';
+import { SCREENS, ScreenId, puedeVer } from '../../screens';
 import type { Client, PasoDeProceso, Project, User } from '../../types';
 import { clientApi, libraryApi } from '../../services/api';
 import SelectorDeMarca from '../../components/SelectorDeMarca';
@@ -40,14 +40,14 @@ interface Props {
   children: React.ReactNode;
 }
 
-const PANTALLAS_DE_CUENTA: ScreenId[] = ['users', 'settings', 'help', 'novedades'];
+const PANTALLAS_DE_CUENTA: ScreenId[] = ['control', 'users', 'settings', 'help', 'novedades'];
 
 export default function Marco(props: Props) {
   const { usuario, administra, marcas, marcaId, pantalla, campanaId, onIr } = props;
   const [campanas, setCampanas] = React.useState<Project[] | null>(null);
   const [pasos, setPasos] = React.useState<PasoDeProceso[]>([]);
 
-  const visible = (id: ScreenId) => !SCREENS[id].adminOnly || administra;
+  const visible = (id: ScreenId) => puedeVer(SCREENS[id], { administra, superAdmin: Boolean(usuario.superAdmin) });
   const primeraDe = (paso: PasoDef) => paso.grupos.flatMap(g => g.pantallas).find(visible) ?? null;
 
   // Las campañas del workspace, una vez: así una campaña de otra marca (un enlace, un aviso) se reconoce.
@@ -314,6 +314,11 @@ function Cuenta({ usuario, administra, onIr, onSalir, onCambiarWorkspace }: Prop
             <div className="text-[13px] font-medium text-[#1D1D1F] truncate">{usuario.name}</div>
             <div className="text-[11px] text-[#86868B] truncate">{usuario.email}</div>
           </div>
+          {usuario.superAdmin && (
+            <button type="button" className={`${item} font-medium`} onClick={() => ir('control')}>
+              {SCREENS.control.name}
+            </button>
+          )}
           {administra && (
             <button type="button" className={item} onClick={() => ir('users')}>
               {SCREENS.users.name}

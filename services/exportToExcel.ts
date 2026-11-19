@@ -1,12 +1,11 @@
 import * as XLSX from 'xlsx';
-import { CopyVariation, CampaignSpine, CoherenceReport, UsageReport, Client } from '../types';
+import { CopyVariation, CampaignSpine, CoherenceReport, Client } from '../types';
 
 interface ExportArgs {
   variations: CopyVariation[];
   spine?: CampaignSpine | null;
   client?: Client;
   coherence?: CoherenceReport | null;
-  usage?: UsageReport | null;
   campaignName?: string;
 }
 
@@ -49,7 +48,7 @@ const statusOf = (v: CopyVariation): string => {
 };
 
 const buildSummarySheet = (args: ExportArgs): any[][] => {
-  const { spine, client, coherence, usage, campaignName, variations } = args;
+  const { spine, client, coherence, campaignName, variations } = args;
   const rows: any[][] = [];
   const blank = ['', ''];
 
@@ -102,13 +101,6 @@ const buildSummarySheet = (args: ExportArgs): any[][] => {
       });
     }
     rows.push(blank);
-  }
-
-  if (usage) {
-    rows.push(['COSTO DE GENERACIÓN', `$${usage.costUsd.toFixed(4)} USD`]);
-    rows.push(['Tokens input', usage.promptTokens]);
-    rows.push(['Tokens output', usage.completionTokens]);
-    rows.push(['Tokens cacheados', `${usage.cachedTokens} (${usage.promptTokens > 0 ? Math.round((usage.cachedTokens / usage.promptTokens) * 100) : 0}%)`]);
   }
 
   return rows;

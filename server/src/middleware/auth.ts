@@ -98,6 +98,23 @@ export const requireManager = (req: AuthRequest, res: Response, next: NextFuncti
   next();
 };
 
+/**
+ * El super admin (decisión 27): por encima de los workspaces, así que no pasa por `requireWorkspace`. Se lee
+ * de la base en cada request, como la membresía: quitárselo tiene efecto inmediato. Responde 404 y no 403
+ * para no confirmar que la ruta existe.
+ */
+export const requireSuperAdmin = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  if (!req.auth) return res.status(401).json({ error: 'No autenticado' });
+  try {
+    const user = await prisma.user.findUnique({ where: { id: req.auth.userId }, select: { superAdmin: true } });
+    if (!user?.superAdmin) return res.status(404).json({ error: 'No encontrado' });
+    next();
+  } catch (error) {
+    console.error('requireSuperAdmin error:', error);
+    return res.status(500).json({ error: 'Error al verificar el acceso' });
+  }
+};
+
 /** Traduce TenantError a su status. Cualquier otro error es 500. */
 export const handleTenantError = (error: any, res: Response, fallbackMessage: string) => {
   if (error?.statusCode) return res.status(error.statusCode).json({ error: error.message });

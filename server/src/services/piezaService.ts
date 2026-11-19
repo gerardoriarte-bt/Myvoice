@@ -1210,7 +1210,9 @@ export const detalle = async (tenant: TenantContext, piezaId: string) => {
         },
       })
     : null;
-  return { ...base, eventos: pieza.eventos, hermanas, informe: version };
+  // Lo que costó auditar queda en el servidor: solo el super admin lo ve, en Control (decisión 27).
+  const informe = version ? (({ costoUsd: _costo, ...resto }) => resto)(version) : null;
+  return { ...base, eventos: pieza.eventos, hermanas, informe };
 };
 
 /**

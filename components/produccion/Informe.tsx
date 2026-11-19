@@ -293,12 +293,6 @@ export default function Informe({ pieza, onCambio, onError, onRecargar }: Props)
             </div>
           )}
 
-          {informe.costoUsd != null && (
-            <p className="text-[10px] text-apple-tertiary">
-              Auditar esta versión costó USD {Number(informe.costoUsd).toFixed(4)}
-              {informe.modelo ? ` · ${informe.modelo}` : ''}
-            </p>
-          )}
         </div>
       )}
     </section>

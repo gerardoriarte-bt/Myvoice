@@ -38,6 +38,7 @@
 
     "server/src/index.ts": "plataforma",
     "server/src/routes/": "plataforma",
+    "server/src/controllers/controlController.ts": "plataforma",
 
     "server/src/comun/": "comun",
     "server/src/myvoice/": "myvoice",

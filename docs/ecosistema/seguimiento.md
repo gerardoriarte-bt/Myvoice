@@ -28,6 +28,7 @@ Cada función con su estado en las tres pistas. Se actualiza en el mismo PR que 
 | Todos | Barra común y rutas | ✓ | ✓ | — | PL-1 · F0a, detrás del interruptor |
 | Todos | Encabezado en dos filas: dónde estás y cómo va la campaña en los cinco pasos (decisiones 23, 24, 26) | ✓ | ◐ | ✓ | F0a: marco, rutas y `GET /clients/:id/proceso`; F0b: Panorama, filtro por campaña · [plan-plataforma-por-procesos](../plan-plataforma-por-procesos.md) |
 | Admin | Panorama: todas las campañas, qué está trabado y quién lo debe | ✓ | ○ | ○ | F0 · decisión 24 |
+| Super admin | Control: interruptores, usuarios de todas las empresas y gasto de IA; los costos solo para él (decisión 27) | ✓ | ✓ | ✓ | `User.superAdmin`, `npm run superadmin` |
 | — | Interruptor `Workspace.plataformaPorProcesos` (lo nuevo no se ve hasta encenderlo; `npm run plataforma`) | — | ✓ | ✓ | F0a · plan, «Convivencia con producción» |
 | Todos | La plataforma habla de tú (español de Colombia, sin voseo) | ● | ● | ● | #73, desplegado el 2026-11-17 |
 | Todos | Mi cola | ✓ | ○ | ○ | PL-6 |

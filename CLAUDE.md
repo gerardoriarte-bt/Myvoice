@@ -43,6 +43,7 @@ npm run backfill:telemetria   # fills cost/tokens on historical rows from output
 npm run backfill:slots        # infers slot/slotLabel on saved copy (heuristic)
 npm run backfill:adn          # brand DNA columns → SeccionAdn + version 1; lists what changes for each submarca
 npm run recrypt:keys          # encrypts any aiApiKey still stored in plaintext
+npm run superadmin            # lists super admins; `-- <email> [--quitar] --apply` names one (decision 27)
 npm run plataforma            # lists workspaces; `-- <slug> --encender|--apagar --apply` flips the process frame (F0)
 npm run verify:isolation      # cross-tenant isolation suite; needs the API running
 npm run verify:resiliencia    # retry/backoff/timeout against a fake client; spends no API credit
@@ -51,7 +52,7 @@ npm run verify:calidad        # copy quality vs the writing manual, judged per r
 npm run calidad:caso -- <dnaProfileId>   # exports a real case to server/.calidad/ (gitignored: client data)
 ```
 
-The writing scripts (`backfill:*`, `recrypt:keys`, `plataforma`) are **dry-run by default** and only
+The writing scripts (`backfill:*`, `recrypt:keys`, `plataforma`, `superadmin`) are **dry-run by default** and only
 write with `-- --apply`, inside a single transaction.
 
 **Typechecking is the only gate, and it takes three commands.** `npm run build` uses esbuild
@@ -172,7 +173,7 @@ can give the director its own model, and `verify:calidad` takes a fixed judge wi
 Config resolution: a workspace's own `aiProvider`/`aiApiKey` wins; otherwise `serverAIConfig()`
 from env. `pricing.ts` computes real per-stage cost, which is returned to the client **and** persisted
 as queryable columns on `GenerationLog` (`costUsd`, `cachedTokens`, `model`, `provider`,
-`stageBreakdown`, …). `GET /analytics/usage` reads them; `services/usageService.ts` turns
+`stageBreakdown`, …). `GET /control/gasto` (super admin only) reads them; `services/usageService.ts` turns
 them into a per-period quota over `UsagePeriod`, gated by `QUOTA_ENFORCE` (default `false`
 = observe and warn, don't block).
 
@@ -190,6 +191,15 @@ Three middleware levels, composed in `routes/index.ts`:
   token's `workspaceId` is a preference, never a permission: revoking a membership takes
   effect immediately instead of waiting out the 24 h token.
 - `requireManager` — OWNER or ADMIN of the active workspace.
+- `requireSuperAdmin` — `User.superAdmin`, read from the database on each request (decision 27). It sits
+  **above** workspaces: the `/control/*` routes skip `requireWorkspace` and see every company. Only the
+  `superadmin` script grants it.
+
+**AI costs are the super admin's alone** (decision 27). They are still computed and stored (`GenerationLog`,
+`PiezaVersion.costoUsd`, `UsagePeriod`), but nothing below him receives them: the stream drops the `usage`
+event, history strips `costUsd` and `outputJson.usage`, the piece report drops `costoUsd`, the quota message
+says no amounts, and `GET /analytics/usage` became `GET /control/gasto?workspaceId=`. Don't add a cost to any
+other response.
 
 **Every handler that touches a resource by `id` must call a guard from `lib/tenancy.ts` first**
 (`assertClientInWorkspace`, `assertVariationInWorkspace`, …). This is deliberately not a

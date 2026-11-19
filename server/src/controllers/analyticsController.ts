@@ -145,8 +145,13 @@ const parseFecha = (valor: unknown): Date | null => {
   return Number.isNaN(fecha.getTime()) ? null : fecha;
 };
 
+/**
+ * El gasto de IA. Desde la decisión 27 es solo del super admin: lo sirve `/control/gasto?workspaceId=`, por
+ * encima de los workspaces, así que el workspace sale del pedido y no de la sesión.
+ */
 export const getUsageAnalytics = async (req: AuthRequest, res: Response) => {
-  const workspaceId = req.tenant!.workspaceId;
+  const workspaceId = typeof req.query.workspaceId === 'string' ? req.query.workspaceId : '';
+  if (!workspaceId) return res.status(400).json({ error: 'Falta workspaceId' });
   const clientId = typeof req.query.clientId === 'string' && req.query.clientId ? req.query.clientId : undefined;
 
   const groupBy = typeof req.query.groupBy === 'string' ? req.query.groupBy : 'day';
@@ -163,7 +168,7 @@ export const getUsageAnalytics = async (req: AuthRequest, res: Response) => {
   if (desde >= hasta) return res.status(400).json({ error: 'El rango es vacío: from debe ser anterior a to' });
 
   try {
-    if (clientId) await assertClientInWorkspace(req.tenant!, clientId);
+    if (clientId) await assertClientInWorkspace({ userId: req.auth!.userId, workspaceId, role: 'OWNER' }, clientId);
 
     const where = {
       workspaceId,

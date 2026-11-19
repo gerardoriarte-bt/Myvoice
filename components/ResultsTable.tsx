@@ -4,7 +4,6 @@ import { Lock, Unlock, RefreshCw, FileSpreadsheet } from 'lucide-react';
 import { CopyVariation, Platform, Client, CoherenceReport, CampaignSpine, UsageReport } from '../types';
 import CoherenceBanner from './CoherenceBanner';
 import SpineHero from './SpineHero';
-import UsageBadge from './UsageBadge';
 import { PlatformIcon, getPlatformLabel } from './ui/platformIcons';
 import ScoreCircle from './ui/ScoreCircle';
 import { exportCampaignToExcel } from '../services/exportToExcel';
@@ -25,7 +24,6 @@ interface ResultsTableProps {
   savedContentList: string[];
   coherence?: CoherenceReport | null;
   spine?: CampaignSpine | null;
-  usage?: UsageReport | null;
   onRegenerate?: (lockedKeys: Set<string>) => void;
   onRegenerateChannel?: (platform: string) => Promise<void>;
   isLoading?: boolean;
@@ -36,7 +34,7 @@ interface ResultsTableProps {
 const variationKey = (v: CopyVariation) =>
   `${v.platform}::${v.piezaIndex ?? 0}::${v.slot || '_default'}::${v.variationIndex ?? 0}`;
 
-const ResultsTable: React.FC<ResultsTableProps> = ({ variations, activeClient, campanaNombre, onSave, savedContentList, coherence, spine, usage, onRegenerate, onRegenerateChannel, isLoading, onBulkSave, onRefine }) => {
+const ResultsTable: React.FC<ResultsTableProps> = ({ variations, activeClient, campanaNombre, onSave, savedContentList, coherence, spine, onRegenerate, onRegenerateChannel, isLoading, onBulkSave, onRefine }) => {
   const [refineInstruction, setRefineInstruction] = React.useState('');
   const [refineLoading, setRefineLoading] = React.useState(false);
   const [editingId, setEditingId] = React.useState<string | null>(null);
@@ -208,7 +206,6 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ variations, activeClient, c
       spine,
       client: activeClient,
       coherence,
-      usage,
     });
   };
 
@@ -673,7 +670,6 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ variations, activeClient, c
 
       {coherence && <CoherenceBanner report={coherence} />}
 
-      {usage && <UsageBadge usage={usage} />}
 
       {totalAlerts > 0 && (
         <div className="flex items-center gap-3 px-4 py-3 bg-amber-50 border border-amber-200 rounded-xl text-[12px] text-amber-800">
