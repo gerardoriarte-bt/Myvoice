@@ -5,7 +5,8 @@ import type { CampanaEnProceso, Client, PasoDeProceso, Project, User } from '../
 import { clientApi, libraryApi } from '../../services/api';
 import SelectorDeMarca from '../../components/SelectorDeMarca';
 import Isotipo from '../../components/ui/Isotipo';
-import { PASOS, PasoDef, pasoDe } from './rutas';
+import { PASOS, PasoDef, actuaEn, pantallaDeEntrada, pasoDe } from './rutas';
+import { FUNCION_LABELS } from '../../types';
 
 /**
  * El marco de la plataforma por procesos (F0, docs/plan-plataforma-por-procesos.md; en el `.pen`, el
@@ -193,9 +194,38 @@ export default function Marco(props: Props) {
         <Menu {...props} aqui={aqui} numero={aqui ? numero(aqui) : null} visible={visible} />
         {/* El encabezado mide dos filas: lo que se queda fijo al bajar (el formulario de Generar) va más abajo. */}
         <main className="flex-1 min-w-0 p-7" style={{ ['--tope-fijo' as string]: '133px' }}>
+          {aqui && !actuaEn(usuario, administra, aqui, marcaId) && (
+            <ModoLectura
+              paso={aqui}
+              tuPaso={PASOS.find(p => p.trabajo === usuario.entorno) ?? null}
+              onIrATuTrabajo={() => onIr(pantallaDeEntrada(usuario, administra, visible))}
+            />
+          )}
           {props.children}
         </main>
       </div>
+    </div>
+  );
+}
+
+/**
+ * La franja de un paso en lectura (decisión 22; en el `.pen`, L1 y L2). Se ve todo, pero actúa quien tiene
+ * la función del paso: la franja lo dice y lleva de vuelta a lo propio. El servidor es la regla
+ * (`comun/permisos.ts`); esto solo avisa.
+ */
+function ModoLectura({ paso, tuPaso, onIrATuTrabajo }: { paso: PasoDef; tuPaso: PasoDef | null; onIrATuTrabajo: () => void }) {
+  return (
+    <div className="mb-5 flex items-center gap-3 rounded-[10px] border border-[rgba(0,0,0,0.08)] bg-white px-4 py-2.5">
+      <span className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[#86868B]">Solo lectura</span>
+      <span className="flex-1 text-[13px] text-[#3A3A3C]">
+        En {paso.nombre} actúa quien tiene la función {FUNCION_LABELS[paso.funcion]}.
+        {tuPaso ? ` Tu trabajo está en ${tuPaso.nombre}.` : ''}
+      </span>
+      {tuPaso && tuPaso.id !== paso.id && (
+        <button type="button" onClick={onIrATuTrabajo} className="text-[12.5px] font-semibold" style={{ color: tuPaso.color }}>
+          Ir a {tuPaso.nombre} →
+        </button>
+      )}
     </div>
   );
 }

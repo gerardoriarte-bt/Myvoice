@@ -179,6 +179,22 @@ marcas.
 `soloLectura` (sin botones de acción) y la franja `<ModoLectura entorno=… />`. El servidor sigue siendo
 la regla: el front solo esconde.
 
+**F1a (2026-11-19), hecho:**
+- El enum suma las tres funciones.
+- `comun/permisos.ts`, en modo observar.
+  - Hoy cuida generar, guardar y editar copy.
+  - Se aplica solo con `PERMISOS_POR_FUNCION=aplicar` **y** el workspace con la plataforma encendida.
+- La sesión trae `funciones` y `entorno`, y cada persona entra a su paso.
+- La franja «Solo lectura» lleva a lo propio.
+- Equipo asigna las seis funciones.
+
+**F1b, lo que falta:**
+- `soloLectura` en las pantallas, para esconder los botones de acción.
+- Abrir el ADN a quien tiene Estrategia: hoy sus rutas son `asManager`, y abrirlas en modo observar
+  ampliaría el acceso en producción.
+- `User.ultimaRuta`.
+- `verify:permisos`.
+
 **Verificación**: `npm run verify:permisos` (nuevo, en CI junto a `verify:isolation`): para cada fila
 de la matriz, crea a la persona con su función y prueba que puede leer todos los pasos y actuar solo en
 el suyo, y que el admin actúa en todos. Con `observar` no bloquea y lo registra.

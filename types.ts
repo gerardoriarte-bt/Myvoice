@@ -92,6 +92,10 @@ export interface User {
   plataformaPorProcesos?: boolean;
   /** Por encima de los workspaces (decisión 27): ve Control y los costos. El servidor lo verifica en cada ruta. */
   superAdmin?: boolean;
+  /** Sus funciones en el workspace activo (F1). `clientId` null = todas las marcas. */
+  funciones?: { funcion: FuncionEquipo; clientId: string | null }[];
+  /** El paso donde entra con la plataforma por procesos; null = el marco decide. */
+  entorno?: 'ADN' | 'CDM' | 'COPY' | 'PRODUCCION' | 'IMPLEMENTACION' | null;
 }
 
 /** Una campaña con su proceso (`server/src/comun/proceso.ts`): el selector del encabezado y el Panorama. */
@@ -141,10 +145,10 @@ export interface PasoDeProceso {
 /** Miembro de un workspace, tal como lo devuelve GET /workspace/members. */
 /**
  * Qué hace una persona, que es un eje distinto de cuánto administra
- * (`WorkspaceRole`). No restringe nada: decide a quién se le avisa y quién
- * aparece primero al asignar una pieza.
+ * (`WorkspaceRole`). Desde F1 (decisión 22) decide en qué pasos ACTÚA —ver,
+ * ve todos— además de a quién se le avisa y quién aparece primero al asignar.
  */
-export type FuncionEquipo = 'COPY' | 'DISENO' | 'APROBACION';
+export type FuncionEquipo = 'ESTRATEGIA' | 'PLANNING' | 'COPY' | 'DISENO' | 'TRAFFICKER' | 'APROBACION';
 
 export interface FuncionAsignada {
   id: string;
@@ -155,12 +159,18 @@ export interface FuncionAsignada {
 }
 
 export const FUNCION_LABELS: Record<FuncionEquipo, string> = {
+  ESTRATEGIA: 'Estrategia',
+  PLANNING: 'Planning',
+  TRAFFICKER: 'Trafficker',
   COPY: 'Copy',
   DISENO: 'Diseño',
   APROBACION: 'Aprobación',
 };
 
 export const FUNCION_HINTS: Record<FuncionEquipo, string> = {
+  ESTRATEGIA: 'Escribe y confirma el ADN de la marca',
+  PLANNING: 'Arma el planning y la biblioteca de medios',
+  TRAFFICKER: 'Monta los anuncios',
   COPY: 'Escribe y manda a producción',
   DISENO: 'Recibe piezas asignadas',
   APROBACION: 'Acepta o devuelve piezas',

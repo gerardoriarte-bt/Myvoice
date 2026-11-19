@@ -2,6 +2,7 @@
 import { Response } from 'express';
 import { AuthRequest, handleTenantError } from '../middleware/auth.js';
 import { assertDnaProfileInWorkspace, TenantContext } from '../lib/tenancy.js';
+import { assertPuedeActuar } from '../comun/permisos.js';
 import { generateCopyWithOpenAI, streamGenerateCopyWithOpenAI, generateForChannel, buildBrief, cantidadValida } from '../services/openaiService.js';
 import { randomUUID } from 'node:crypto';
 import { serverAIConfig, WorkspaceAIConfig, createAIClient, resolveModel, AIError } from '../services/aiClient.js';
@@ -115,6 +116,8 @@ async function buildGenerationContext(dnaProfileId: string, tenant: TenantContex
   // llama tenga membresía en él.
   const dnaProfile = await assertDnaProfileInWorkspace(tenant, dnaProfileId);
   const client = dnaProfile.client;
+  // Escribir copy es del paso My Voice (F1): hoy solo se registra quién lo hace sin la función.
+  await assertPuedeActuar(tenant, 'COPY', client.id);
 
   const { params: generationParams, adnVersion } = await parametrosDeGeneracion(dnaProfile, client);
 

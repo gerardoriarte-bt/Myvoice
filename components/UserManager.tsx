@@ -162,12 +162,14 @@ const UserManager: React.FC<UserManagerProps> = ({
       {/* Miembros */}
       <section>
         <h3 className="text-[13px] font-semibold text-[#1D1D1F] mb-3">Miembros ({members.length})</h3>
-        <ul className="divide-y divide-[#E5E5E7] border border-[#E5E5E7] rounded-[14px] overflow-hidden">
+        {/* Sin overflow-hidden: el menú de funciones se abre por fuera de la fila y quedaba cortado. Las
+            esquinas las redondean la primera y la última fila. */}
+        <ul className="divide-y divide-[#E5E5E7] border border-[#E5E5E7] rounded-[14px]">
           {members.map(member => {
             const isSelf = member.id === currentUserId;
             const isLastOwner = member.role === 'OWNER' && ownerCount <= 1;
             return (
-              <li key={member.id} className="flex items-center justify-between gap-4 px-5 py-3.5 bg-white">
+              <li key={member.id} className="flex items-center justify-between gap-4 px-5 py-3.5 bg-white first:rounded-t-[14px] last:rounded-b-[14px]">
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="w-8 h-8 rounded-full bg-[#F5F5F7] text-[#1D1D1F] text-[12px] font-medium flex items-center justify-center shrink-0">
                     {member.name?.[0]?.toUpperCase() || '?'}

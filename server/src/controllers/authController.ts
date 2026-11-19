@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import { OAuth2Client } from 'google-auth-library';
 import { WorkspaceRole } from '@prisma/client';
 import { AuthRequest, signToken } from '../middleware/auth.js';
+import { entornoDe } from '../comun/permisos.js';
 import { prisma } from '../lib/prisma.js';
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
@@ -62,6 +63,14 @@ const buildSession = async (user: {
   const active =
     workspaces.find(w => w.id === user.workspaceId) ?? workspaces[0] ?? null;
 
+  // Las funciones en el workspace activo (F1): deciden dónde entra la persona y qué pasos son suyos.
+  const funciones = active
+    ? await prisma.miembroFuncion.findMany({
+        where: { workspaceId: active.id, userId: user.id },
+        select: { funcion: true, clientId: true },
+      })
+    : [];
+
   if (active && active.id !== user.workspaceId) {
     await prisma.user.update({ where: { id: user.id }, data: { workspaceId: active.id } });
   }
@@ -79,6 +88,9 @@ const buildSession = async (user: {
       plataformaPorProcesos: active?.plataformaPorProcesos ?? false,
       // Solo decide qué ve el menú; cada ruta de Control lo vuelve a mirar en la base (requireSuperAdmin).
       superAdmin: user.superAdmin,
+      funciones,
+      // El paso donde entra con la plataforma por procesos; null = el marco decide (decisión 22).
+      entorno: entornoDe(funciones.map(f => f.funcion)),
       workspaces,
       // El frontend decide qué novedad mostrar: la que no vio y que es
       // posterior a su alta (a quien llega después, «ahora cambió» no le dice nada).
