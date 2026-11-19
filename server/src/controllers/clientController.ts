@@ -7,6 +7,7 @@ import { serverAIConfig } from '../services/aiClient.js';
 import {
   assertClientInWorkspace,
   assertDnaProfileInWorkspace,
+  assertProjectInWorkspace,
   pickFields,
   TenantContext,
   TenantError,
@@ -19,6 +20,7 @@ import { guardarAdnDesdeColumnas } from '../comun/adn/guardarAdn.js';
 import { resolverAdn } from '../comun/adn/resolverAdn.js';
 import { COLUMNAS_ADN, SECCIONES_DE_REVISION } from '../comun/adn/secciones.js';
 import { completitudAdn, conPropuesta } from '../comun/adn/completitudAdn.js';
+import { procesoDeCampana } from '../comun/proceso.js';
 import { guardarSeccion, confirmarPropuesta, descartarPropuesta, marcarRevisada } from '../comun/adn/guardarAdn.js';
 import { actualizarAudiencia, crearAudiencia, listarAudiencias } from '../comun/adn/audiencias.js';
 import { esTratamiento } from '../comun/adn/tratamiento.js';
@@ -668,5 +670,24 @@ export const unirConOtra = async (req: AuthRequest, res: Response) => {
     res.json(await unirMarcas(req.tenant!, req.params.id, req.body?.destinoId));
   } catch (error) {
     handleTenantError(error, res, 'Error al fusionar las marcas');
+  }
+};
+
+/**
+ * Cómo va una campaña en los pasos del encabezado (F0). `?campana=` es opcional: sin ella los pasos solo
+ * navegan. Una campaña de otra marca —aunque sea del mismo workspace— responde 404, como una ajena.
+ */
+export const getProceso = async (req: AuthRequest, res: Response) => {
+  const { id } = req.params;
+  const campanaId = typeof req.query.campana === 'string' && req.query.campana ? req.query.campana : null;
+  try {
+    await assertClientInWorkspace(req.tenant!, id);
+    if (campanaId) {
+      const campana = await assertProjectInWorkspace(req.tenant!, campanaId);
+      if (campana.clientId !== id) return res.status(404).json({ error: 'Proyecto no encontrado' });
+    }
+    res.json(await procesoDeCampana(id, campanaId));
+  } catch (error) {
+    handleTenantError(error, res, 'Error al calcular el proceso de la campaña');
   }
 };

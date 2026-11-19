@@ -25,10 +25,10 @@ Cada función con su estado en las tres pistas. Se actualiza en el mismo PR que 
 | Estrategia | Audiencias de la marca | ✓ | ✓ | ✓ | PL-3 (la campaña las elige en F6) |
 | Responsable | Nueva campaña: audiencias del ADN, versión fija, cómo sigue | ✓ | ○ | ◐ | PL-4, PL-12 (`Project.adnVersion` ●) · [plan-adn-2](../plan-adn-2.md) F6 |
 | Responsable | Una campaña en las dos herramientas | ✓ | ○ | ○ | PL-5 |
-| Todos | Barra común y rutas | ✓ | ○ | — | PL-1 |
-| Todos | Encabezado en dos filas: dónde estás y cómo va la campaña en los cinco pasos (decisiones 23, 24, 26) | ✓ | ○ | ○ | F0 · [plan-plataforma-por-procesos](../plan-plataforma-por-procesos.md) |
+| Todos | Barra común y rutas | ✓ | ✓ | — | PL-1 · F0a, detrás del interruptor |
+| Todos | Encabezado en dos filas: dónde estás y cómo va la campaña en los cinco pasos (decisiones 23, 24, 26) | ✓ | ◐ | ✓ | F0a: marco, rutas y `GET /clients/:id/proceso`; F0b: Panorama, filtro por campaña · [plan-plataforma-por-procesos](../plan-plataforma-por-procesos.md) |
 | Admin | Panorama: todas las campañas, qué está trabado y quién lo debe | ✓ | ○ | ○ | F0 · decisión 24 |
-| — | Interruptor `Workspace.plataformaPorProcesos` (lo nuevo no se ve hasta encenderlo) | — | ○ | ○ | F0 · plan, «Convivencia con producción» |
+| — | Interruptor `Workspace.plataformaPorProcesos` (lo nuevo no se ve hasta encenderlo; `npm run plataforma`) | — | ✓ | ✓ | F0a · plan, «Convivencia con producción» |
 | Todos | La plataforma habla de tú (español de Colombia, sin voseo) | ● | ● | ● | #73, desplegado el 2026-11-17 |
 | Todos | Mi cola | ✓ | ○ | ○ | PL-6 |
 | Todos | Avisos que llevan a la acción | ✓ | ○ | ◐ | PL-7 |

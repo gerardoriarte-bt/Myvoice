@@ -109,6 +109,8 @@ router.post('/clients/:id/adn/confirmar', ...asManager, clientController.postCon
 router.put('/clients/:id/adn/secciones/:clave', ...asManager, clientController.putSeccionAdn);
 router.post('/clients/:id/adn/secciones/:clave/revisada', ...asManager, clientController.postSeccionRevisada);
 router.post('/clients/:id/adn/secciones/:clave/propuesta/:accion', ...asManager, clientController.postPropuestaAdn);
+// El estado de cada paso del encabezado (F0): lo lee cualquier miembro, como el ADN.
+router.get('/clients/:id/proceso', ...inWorkspace, clientController.getProceso);
 router.get('/clients/:id/audiencias', ...inWorkspace, clientController.getAudiencias);
 router.post('/clients/:id/audiencias', ...asManager, clientController.postAudiencia);
 router.put('/clients/:id/audiencias/:audienciaId', ...asManager, clientController.putAudiencia);

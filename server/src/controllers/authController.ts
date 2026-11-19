@@ -34,7 +34,7 @@ const uniqueSlug = async (base: string) => {
 const listWorkspacesOf = async (userId: string) => {
   const memberships = await prisma.membership.findMany({
     where: { userId },
-    include: { workspace: { select: { id: true, name: true, slug: true, plan: true } } },
+    include: { workspace: { select: { id: true, name: true, slug: true, plan: true, plataformaPorProcesos: true } } },
     orderBy: { createdAt: 'asc' },
   });
   return memberships.map(m => ({
@@ -43,6 +43,7 @@ const listWorkspacesOf = async (userId: string) => {
     slug: m.workspace.slug,
     plan: m.workspace.plan,
     role: m.role,
+    plataformaPorProcesos: m.workspace.plataformaPorProcesos,
   }));
 };
 
@@ -73,6 +74,8 @@ const buildSession = async (user: {
       role: active?.role ?? null,
       workspaceId: active?.id ?? null,
       workspaceName: active?.name ?? null,
+      // El marco que ve: el de hoy o el de la plataforma por procesos (F0). Es del workspace activo.
+      plataformaPorProcesos: active?.plataformaPorProcesos ?? false,
       workspaces,
       // El frontend decide qué novedad mostrar: la que no vio y que es
       // posterior a su alta (a quien llega después, «ahora cambió» no le dice nada).
