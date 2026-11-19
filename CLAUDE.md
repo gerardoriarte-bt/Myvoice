@@ -76,7 +76,8 @@ are actually being read (`npx tsc --noEmit --listFiles`).
 There are **no unit tests**, but there is CI: `.github/workflows/ci.yml` runs four jobs on every
 push — the three type gates plus both builds (with a deliberate-error probe that fails if the
 frontend gate stops reading files) and the module-boundary rule (`npm run fronteras`: the common
-part must not import a module, nor a module another — files are assigned in `scripts/mapa/modulos.json`,
+part must not import a module, nor a module another — Producción is its own module since F0c and may read
+My Voice's channel specs only as counted contract debt, never the reverse — files are assigned in `scripts/mapa/modulos.json`,
 see `docs/ecosistema/tecnico/spec-plataforma.md` § 2.1), `verify:resiliencia`, and `verify:isolation` against a
 Postgres service container plus a `migrate diff` drift check. A fourth job checks that the
 links between `CLAUDE.md` and `docs/*.md` resolve. Nothing in CI touches production or spends

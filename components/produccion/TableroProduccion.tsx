@@ -48,6 +48,12 @@ interface Props {
    * `null` = todas las campañas; sin la prop (el marco de hoy), el tablero no filtra por campaña.
    */
   campanaId?: string | null;
+  /**
+   * La vista la elige el menú de Producción con la plataforma por procesos (F0c: «Lo mío» y «Por marca» son
+   * dos entradas). Sin la prop, el tablero la elige con su propio selector, como hoy.
+   */
+  vista?: 'marca' | 'mias';
+  onVista?: (vista: 'marca' | 'mias') => void;
 }
 
 export default function TableroProduccion({
@@ -59,8 +65,12 @@ export default function TableroProduccion({
   onDestinoAtendido,
   onIrACopyAprobado,
   campanaId,
+  vista: vistaDelMenu,
+  onVista,
 }: Props) {
-  const [vista, setVista] = React.useState<'marca' | 'mias'>('marca');
+  const [vistaPropia, setVistaPropia] = React.useState<'marca' | 'mias'>('marca');
+  const vista = vistaDelMenu ?? vistaPropia;
+  const setVista = (v: 'marca' | 'mias') => (onVista ? onVista(v) : setVistaPropia(v));
   const [todas, setPiezas] = React.useState<Pieza[]>([]);
   // «Lo mío» cruza marcas y campañas: la campaña del encabezado acota solo «Por marca».
   const piezas = React.useMemo(
@@ -191,6 +201,7 @@ export default function TableroProduccion({
           <p className="mt-1 text-[13px] text-apple-secondary">{SCREENS.produccion.description}</p>
         </div>
         <div className="flex items-center gap-2">
+          {!vistaDelMenu && (
           <div className="flex rounded-lg border border-apple-border p-0.5">
             {([['marca', 'Por marca'], ['mias', 'Lo mío']] as const).map(([id, label]) => (
               <button
@@ -204,6 +215,7 @@ export default function TableroProduccion({
               </button>
             ))}
           </div>
+          )}
         </div>
       </header>
 

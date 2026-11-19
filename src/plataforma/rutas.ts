@@ -25,6 +25,7 @@ export const RUTAS: Record<ScreenId, string> = {
   novedades: '/novedades',
   control: '/control',
   panorama: '/panorama',
+  loMio: '/produccion/lo-mio',
 };
 
 export interface Ubicacion {
@@ -73,7 +74,7 @@ export const PASOS: PasoDef[] = [
       { titulo: 'Seguimiento', pantallas: ['history', 'analytics'] },
     ],
   },
-  { id: 'produccion', nombre: 'Producción', tema: 'Piezas', color: '#B45309', grupos: [{ titulo: 'Trabajo', pantallas: ['produccion'] }] },
+  { id: 'produccion', nombre: 'Producción', tema: 'Piezas', color: '#B45309', grupos: [{ titulo: 'Trabajo', pantallas: ['loMio', 'produccion'] }] },
 ];
 
 /** El paso de una pantalla; las de la cuenta (Equipo, Configuración, Guía, Novedades) no son de ninguno. */

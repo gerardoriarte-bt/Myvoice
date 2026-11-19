@@ -2,7 +2,8 @@
   "_que_es": "A qué módulo va cada archivo según la decisión 12 (docs/ecosistema/decisiones.md). Gana la regla con el prefijo más largo. Se edita aquí cuando un archivo cambia de dueño.",
   "_modulos": {
     "comun": "Parte común: marca, ADN, campaña, equipo, avisos",
-    "myvoice": "My Voice: motor, copy, portal, Producción",
+    "myvoice": "My Voice: motor y copy",
+    "produccion": "Producción: piezas, su auditoría y la ronda de piezas con el cliente (decisión 23)",
     "cdm": "CDM: biblioteca, cuadro (todavía sin código)",
     "plataforma": "Marco y arranque: puede importar de todos",
     "compartido": "Infraestructura que todos pueden importar",
@@ -39,6 +40,18 @@
     "server/src/index.ts": "plataforma",
     "server/src/routes/": "plataforma",
     "server/src/controllers/controlController.ts": "plataforma",
+    "server/src/controllers/reviewController.ts": "plataforma",
+
+    "server/src/services/piezaService.ts": "produccion",
+    "server/src/services/permisosPieza.ts": "produccion",
+    "server/src/services/revisionDePiezas.ts": "produccion",
+    "server/src/services/auditoriaService.ts": "produccion",
+    "server/src/services/piezaArchivo.ts": "produccion",
+    "server/src/controllers/piezaController.ts": "produccion",
+    "components/produccion/": "produccion",
+    "services/exportPiezasToExcel.ts": "produccion",
+    "server/src/services/pricing.ts": "compartido",
+    "components/QuienAprueba.tsx": "comun",
 
     "server/src/comun/": "comun",
     "server/src/myvoice/": "myvoice",

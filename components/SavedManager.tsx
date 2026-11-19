@@ -5,7 +5,6 @@ import { SCREENS, ScreenId, screenName } from '../screens';
 import { Search, Copy, Pencil, Trash2, Check, BookmarkCheck, LayoutGrid, Tag, X, Send, ShieldCheck, Undo2, Link2, ArrowRight } from 'lucide-react';
 import { SavedVariation, Project, Client, Platform, EtapaCopy, ETAPAS_COPY, WorkspaceMember } from '../types';
 import { PlatformIcon } from './ui/platformIcons';
-import CrearPiezasModal from './produccion/CrearPiezasModal';
 import AprobacionDeCampana from './AprobacionDeCampana';
 import { libraryApi, reviewApi } from '../services/api';
 
@@ -42,6 +41,11 @@ interface SavedManagerProps {
    * el de siempre.
    */
   campanaDelEncabezado?: string | null;
+  /**
+   * El alta de piezas es de Producción, que viene después: Copy no la importa (`npm run fronteras`). La
+   * plataforma la pone en este espacio, igual que Marcas recibe lo de My Voice.
+   */
+  crearPiezas: (args: { savedVariationIds: string[]; onClose: () => void; onCreadas: (cantidad: number) => void }) => React.ReactNode;
 }
 
 /** Lo que muestra la barra después de actuar, en vez de desaparecer. */
@@ -78,6 +82,7 @@ const SavedManager: React.FC<SavedManagerProps> = ({
   addNotification,
   onIrA,
   campanaDelEncabezado,
+  crearPiezas,
 }) => {
   const marca = clients.find(c => c.id === clientId);
   const [campanas, setCampanas] = React.useState<Project[]>([]);
@@ -886,19 +891,18 @@ const SavedManager: React.FC<SavedManagerProps> = ({
         D7 · el alta de piezas es explícita y sale de acá. El servidor arma la
         propuesta y excluye lo que no tiene aprobación con responsable.
       */}
-      {mandandoAProduccion && (
-        <CrearPiezasModal
-          savedVariationIds={mandandoAProduccion}
-          onClose={() => setMandandoAProduccion(null)}
-          onCreadas={async cantidad => {
+      {mandandoAProduccion &&
+        crearPiezas({
+          savedVariationIds: mandandoAProduccion,
+          onClose: () => setMandandoAProduccion(null),
+          onCreadas: async cantidad => {
             setMandandoAProduccion(null);
             await terminar({
               texto: `${cantidad} pieza${cantidad === 1 ? '' : 's'} en el tablero de ${marca.name}, por asignar.`,
               ir: 'produccion',
             });
-          }}
-        />
-      )}
+          },
+        })}
     </div>
   );
 };

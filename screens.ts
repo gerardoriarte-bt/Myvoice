@@ -21,6 +21,7 @@ import {
   Building2,
   ClipboardCheck,
   Gauge,
+  Inbox,
   Map as MapIcon,
   History,
   LayoutGrid,
@@ -44,7 +45,8 @@ export type ScreenId =
   | 'help'
   | 'novedades'
   | 'control'
-  | 'panorama';
+  | 'panorama'
+  | 'loMio';
 
 /**
  * Cinco etapas, no cuatro: cuando entra la pieza, «producir» dejaba de
@@ -146,6 +148,7 @@ export const SCREENS: Record<ScreenId, ScreenDef> = {
   produccion: {
     id: 'produccion',
     name: 'Producción',
+    nombrePorProcesos: 'Por marca',
     description: 'Las piezas de la marca, quién las mueve y en qué paso van.',
     icon: LayoutGrid,
     stage: 'producir',
@@ -194,6 +197,19 @@ export const SCREENS: Record<ScreenId, ScreenDef> = {
     // No depende del rol en el workspace activo: el super admin puede ser MEMBER donde está parado.
     adminOnly: false,
     superAdmin: true,
+  },
+  /**
+   * Las piezas que esperan algo de quien mira, de todas las marcas: la entrada de Diseño con la plataforma
+   * por procesos (D1). Es la vista «Lo mío» del tablero de Producción, con su propia entrada en el menú.
+   */
+  loMio: {
+    id: 'loMio',
+    name: 'Lo mío',
+    description: 'Las piezas que esperan algo de ti, de todas las marcas.',
+    icon: Inbox,
+    stage: 'producir',
+    adminOnly: false,
+    soloPorProcesos: true,
   },
   /**
    * La entrada de quien administra con la plataforma por procesos (decisión 24): todas las campañas en curso

@@ -141,8 +141,14 @@ una vez. Gerardo decidió (2026-11-17):
   - «En qué va» una campaña (`pasoEnCurso`) es el primer paso del trabajo sin hacer. El ADN cuenta solo al
     final, porque sin CDM avisa y no frena. Si no, todas las campañas de una marca con el ADN a medias
     dirían «en Marca».
-- **F0c, lo que falta de F0:** Producción como módulo propio en `modulos.json` (leer el copy por contrato, no
-  de las tablas de My Voice) y su menú por pestañas.
+- **F0c (2026-11-19):**
+  - Producción es su propio módulo en `modulos.json` y `npm run fronteras` lo vigila: 0 por invertir.
+    - My Voice ya no la importa: Copy recibe el alta de piezas como un espacio.
+    - El portal del cliente pasa a la plataforma.
+    - Producción lee de My Voice solo el spec de los canales, y eso cuenta como contrato.
+  - El menú del paso tiene «Lo mío», que es la entrada de Diseño, y «Por marca».
+  - Queda como deuda: Producción lee el copy de las tablas de My Voice con `prisma`. Las columnas del
+    tablero (Por revisar, Con el cliente, Listas) siguen dentro del tablero y no son entradas del menú.
 
 ### F1 · Funciones, entrada por función y modo lectura (decisión 22)
 

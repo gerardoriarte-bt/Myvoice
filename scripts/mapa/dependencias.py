@@ -14,9 +14,9 @@ from collections import defaultdict
 from datetime import date
 
 RELACIONES = {"imports", "imports_from", "calls", "references", "inherits", "indirect_call"}
-ORDEN = ["plataforma", "comun", "myvoice", "cdm", "compartido"]
+ORDEN = ["plataforma", "comun", "myvoice", "produccion", "cdm", "compartido"]
 NOMBRE = {"plataforma": "Plataforma", "comun": "Parte común", "myvoice": "My Voice",
-          "cdm": "CDM", "compartido": "Compartido"}
+          "produccion": "Producción", "cdm": "CDM", "compartido": "Compartido"}
 
 
 def modulo_de(archivo, reglas):
@@ -36,8 +36,12 @@ def clase(origen, destino):
         return "invertir"  # la infraestructura no puede depender de un módulo
     if destino == "plataforma":
         return "invertir"  # nadie depende del arranque
-    if origen in ("myvoice", "cdm") and destino == "comun":
+    if origen in ("myvoice", "produccion", "cdm") and destino == "comun":
         return "contrato"  # un módulo lee la parte común solo por contrato/
+    if origen == "produccion" and destino == "myvoice":
+        # Producción viene después de My Voice: lee el spec de cada canal (formato, zona de cada texto)
+        # y pasa por el contrato cuando el catálogo de CDM sea el dueño. Al revés, nunca (F0c).
+        return "contrato"
     return "invertir"      # la parte común no depende de un módulo, ni un módulo de otro
 
 

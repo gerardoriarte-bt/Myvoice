@@ -46,6 +46,22 @@ por archivo, se regenera en [dependencias-entre-modulos.md](./dependencias-entre
 
 (Pares de archivos. CDM todavía no tiene código.)
 
+**Producción, módulo propio desde F0c (2026-11-19, `npm run mapa`):**
+
+| Desde | Llega a la parte común | Llega a My Voice | Llega a compartido |
+|---|---|---|---|
+| Producción | 11 | 2 | 25 |
+
+Las reglas:
+- My Voice no importa nada de Producción, que viene después en el proceso.
+- Copy recibe el alta de piezas como un espacio que le pasa `App.tsx`.
+- El portal del cliente (`reviewController.ts`) arma las dos rondas, así que es de la plataforma.
+- Los 2 pares de Producción hacia My Voice son el spec de cada canal (`channels/registry.ts`: formato y
+  zona de cada texto). Cuentan como «pasan por el contrato»: se pagan cuando el catálogo de CDM sea el
+  dueño de los formatos.
+- Producción todavía lee el copy con `prisma`, desde las tablas de My Voice. La regla de imports no ve
+  eso; sigue como deuda del contrato.
+
 **Lo que hay que invertir antes de partir carpetas (3).** La parte común no puede depender de My Voice:
 
 | Hoy | Por qué rompe | Cómo se resuelve |
