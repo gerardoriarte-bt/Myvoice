@@ -229,13 +229,29 @@ export const getUsageAnalytics = async (req: AuthRequest, res: Response) => {
 
     const nombreCliente = new Map(clientes.map(c => [c.id, c.name]));
 
+    // La auditoría de piezas se cobra fuera del motor (PiezaVersion.costoUsd): sin sumarla, este detalle
+    // daba menos que el gasto del mes que Control muestra arriba.
+    const auditadas = await prisma.piezaVersion.findMany({
+      where: {
+        auditadaAt: { gte: desde, lt: hasta },
+        costoUsd: { not: null },
+        pieza: { workspaceId, ...(clientId ? { clientId } : {}) },
+      },
+      select: { costoUsd: true, pieza: { select: { clientId: true } } },
+    });
+    const auditoriaPorCliente = new Map<string, number>();
+    for (const v of auditadas) {
+      auditoriaPorCliente.set(v.pieza.clientId, (auditoriaPorCliente.get(v.pieza.clientId) ?? 0) + aNumero(v.costoUsd));
+    }
+    const costoAuditoria = [...auditoriaPorCliente.values()].reduce((s, n) => s + n, 0);
+
     const promptTokens = agregado._sum.promptTokens ?? 0;
     const completionTokens = agregado._sum.completionTokens ?? 0;
     const cachedTokens = agregado._sum.cachedTokens ?? 0;
 
     const total = {
       generaciones: agregado._count._all,
-      costUsd: aNumero(agregado._sum.costUsd),
+      costUsd: aNumero(agregado._sum.costUsd) + costoAuditoria,
       promptTokens,
       cachedTokens,
       cacheWriteTokens: agregado._sum.cacheWriteTokens ?? 0,
@@ -257,13 +273,18 @@ export const getUsageAnalytics = async (req: AuthRequest, res: Response) => {
           clientId: fila.clientId,
           clientName: nombreCliente.get(fila.clientId) ?? fila.clientId,
           generaciones: fila._count._all,
-          costUsd: aNumero(fila._sum.costUsd),
+          costUsd: aNumero(fila._sum.costUsd) + (auditoriaPorCliente.get(fila.clientId) ?? 0),
           promptTokens: prompt,
           completionTokens: fila._sum.completionTokens ?? 0,
           cacheHitRate: prompt > 0 ? Number((cached / prompt).toFixed(3)) : 0,
         };
       })
       .sort((a, b) => b.costUsd - a.costUsd);
+    // Una marca que solo auditó piezas en el periodo (sin generar) igual gastó.
+    for (const [id, costo] of auditoriaPorCliente) {
+      if (porCliente.some(c => c.clientId === id)) continue;
+      porCliente.push({ clientId: id, clientName: nombreCliente.get(id) ?? id, generaciones: 0, costUsd: costo, promptTokens: 0, completionTokens: 0, cacheHitRate: 0 });
+    }
 
     const porPeriodo = porPeriodoRaw.map(fila => ({
       periodo: new Date(fila.periodo).toISOString(),
@@ -294,6 +315,7 @@ export const getUsageAnalytics = async (req: AuthRequest, res: Response) => {
         acumuladoEtapa.set(etapa, acumulado);
       }
     }
+    if (costoAuditoria > 0) acumuladoEtapa.set('auditoría de piezas', { costUsd: costoAuditoria, tokens: 0 });
     const porEtapa = Array.from(acumuladoEtapa.entries())
       .map(([etapa, valores]) => ({
         etapa,
