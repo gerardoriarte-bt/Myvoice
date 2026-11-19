@@ -1,0 +1,12 @@
+// El generador y la base. Las tablas viven en un archivo por módulo (decisión 28): cada uno es dueño
+// de las suyas, como en scripts/mapa/modulos.json. Ver docs/ecosistema/datos/arquitectura-de-datos.md.
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["prismaSchemaFolder"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}

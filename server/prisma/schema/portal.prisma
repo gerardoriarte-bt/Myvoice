@@ -1,0 +1,79 @@
+// Portal del cliente (plataforma): las rondas de revisión sin cuenta, de copy y de piezas.
+
+model ReviewSession {
+  id          String              @id @default(uuid())
+  token       String              @unique @default(uuid())
+  title       String
+  status      ReviewSessionStatus @default(PENDING)
+  expiresAt   DateTime
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  workspaceId String
+  createdById String
+  /// COPY = la ronda que ya existía: el cliente aprueba el mensaje antes de
+  /// producir. PIEZA = la ronda 2 (H2.E): el arte terminado.
+  ronda       RondaRevision       @default(COPY)
+  workspace   Workspace           @relation(fields: [workspaceId], references: [id])
+  createdBy   User                @relation(fields: [createdById], references: [id])
+  items       ReviewSessionItem[]
+  submission  ReviewSubmission?
+}
+
+model ReviewSessionItem {
+  id               String          @id @default(uuid())
+  reviewSessionId  String
+  /// Uno de los dos, según la `ronda` de la sesión. Prisma no expresa el XOR;
+  /// lo sostienen el servicio y un CHECK escrito a mano en la migración.
+  savedVariationId String?
+  piezaId          String?
+  sortOrder        Int             @default(0)
+  reviewSession    ReviewSession   @relation(fields: [reviewSessionId], references: [id], onDelete: Cascade)
+  savedVariation   SavedVariation? @relation(fields: [savedVariationId], references: [id], onDelete: Cascade)
+  pieza            Pieza?          @relation(fields: [piezaId], references: [id], onDelete: Cascade)
+}
+
+model ReviewSubmission {
+  id              String               @id @default(uuid())
+  reviewSessionId String               @unique
+  submittedAt     DateTime             @default(now())
+  reviewerName    String?
+  reviewSession   ReviewSession        @relation(fields: [reviewSessionId], references: [id], onDelete: Cascade)
+  feedbacks       ReviewItemFeedback[]
+}
+
+model ReviewItemFeedback {
+  id                 String           @id @default(uuid())
+  reviewSubmissionId String
+  /// Igual que en el item: uno de los dos, según la ronda.
+  savedVariationId   String?
+  piezaId            String?
+  decision           ReviewDecision
+  /// Era `comment`. En la ronda de copy TODO comentario es sobre copy, así que
+  /// la columna ya significaba esto sin decirlo; se renombra en vez de agregar
+  /// una al lado, porque dos campos que significan lo mismo terminan
+  /// discrepando. La migración usa RENAME, no DROP: hay historial en producción.
+  feedbackCopy       String?
+  /// Se llena solo en la ronda de piezas (H2.E). En la ronda de copy no hay
+  /// arte que comentar, así que queda NULL y eso también es información.
+  feedbackDiseno     String?
+  reviewSubmission   ReviewSubmission @relation(fields: [reviewSubmissionId], references: [id], onDelete: Cascade)
+}
+
+enum ReviewSessionStatus {
+  PENDING
+  IN_REVIEW
+  COMPLETED
+}
+
+/// Qué se revisa en una sesión. Una sesión es HOMOGÉNEA: o lleva copy o lleva
+/// piezas, nunca las dos. Con el tipo acá arriba, los items no tienen que
+/// validarse de a uno y el portal sabe qué pantalla dibujar antes de leerlos.
+enum RondaRevision {
+  COPY
+  PIEZA
+}
+
+enum ReviewDecision {
+  APPROVED
+  REJECTED
+}

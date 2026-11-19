@@ -1,0 +1,250 @@
+// Producción (módulo propio desde F0c): piezas, versiones y la auditoría.
+
+/// Las cuatro columnas de D5, cada una con su dueño y la acción que la vacía.
+/// "En auditoría" NO es un estado: dura minutos, la mueve el sistema y nadie
+/// puede desatascarla (ver docs/plan-h2-produccion-auditoria.md).
+enum PiezaEstado {
+  POR_ASIGNAR
+  EN_DISENO
+  POR_REVISAR
+  /// Aceptada por el responsable en una campaña «del cliente»: falta su
+  /// aprobación. Antes vivía mezclada en LISTA, que dejaba de ser el final.
+  CON_EL_CLIENTE
+  LISTA
+}
+
+/// Lo declara el spec del canal (channels/types.ts, campo `pieza`), no la
+/// campaña: un canal produce siempre la misma clase de entregable, y hay
+/// canales que no producen ninguno.
+enum PiezaTipo {
+  GRAFICA
+  VIDEO
+  AUDIO
+}
+
+/// Una pieza es UN canal y UN archivo (estado límite 1). El mismo visual para
+/// Post e Historia son dos piezas hermanas —mismo `grupoId`—, no una pieza con
+/// dos canales: si fuera una sola, la auditoría no sabría contra qué copy
+/// comparar.
+model Pieza {
+  id             String      @id @default(uuid())
+  /// Denormalizado desde Client, igual que en GenerationLog: el guard de
+  /// tenancy y el tablero filtran por acá sin join, y una marca que se mueva de
+  /// empresa no arrastra el trabajo ya hecho.
+  workspaceId    String
+  clientId       String
+  /// La campaña es OPCIONAL porque SavedVariation.projectId lo es: exigirla
+  /// dejaría fuera de producción todo el copy guardado sin proyecto.
+  projectId      String?
+  /// Cancelada por quien administra (enviada por error, una prueba). Sale del tablero y del portal,
+  /// queda en el historial, y su copy vuelve a estar disponible para otra pieza.
+  canceladaEn    DateTime?
+  canceladaPorId String?
+  /// Valor del enum Platform ("Instagram Post"). Su spec dice tipo y formatos.
+  platform       String
+  tipo           PiezaTipo
+  /// Uno de spec.pieza.formatos ("1080×1080"). No cambia después del alta: la
+  /// unicidad de PiezaSlot depende de eso.
+  formato        String
+  titulo         String
+  /// Huella del contenido de la pieza: formato + los aprobados que la componen,
+  /// ordenados. Existe para que la BASE impida la pieza repetida —el doble
+  /// clic, los dos que mandan a producir el mismo lote— sin impedir el A/B,
+  /// donde dos piezas del mismo formato comparten el cuerpo y difieren en el
+  /// hook. La unicidad es del CONJUNTO, no de cada copy por separado.
+  huella         String
+  estado         PiezaEstado @default(POR_ASIGNAR)
+  /// Crear y asignar son dos decisiones: una pieza nace sin dueño, en
+  /// Por asignar, y la segunda decisión es del dueño de esa columna (D7).
+  asignadaAId    String?
+  /// Piezas hermanas: el mismo visual en dos canales. Es un uuid compartido y
+  /// no una tabla, porque no tiene datos propios.
+  grupoId        String?
+  /// El entregable de la fase 2 —y el de los canales de video para siempre:
+  /// con el tope de 10 MB de D6 un reel no entra (estado límite 4).
+  enlace         String?
+  creadaPorId    String
+  /// Cuándo entró al estado actual. Es el dato que responde "cuánto lleva esto
+  /// acá", que es la pregunta que se le hace a un tablero.
+  estadoDesde    DateTime    @default(now())
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  workspace Workspace      @relation(fields: [workspaceId], references: [id])
+  client    Client         @relation(fields: [clientId], references: [id])
+  project   Project?       @relation(fields: [projectId], references: [id])
+  asignadaA User?          @relation("PiezaAsignada", fields: [asignadaAId], references: [id])
+  creadaPor User           @relation("PiezaAutor", fields: [creadaPorId], references: [id])
+  slots     PiezaSlot[]
+  eventos   PiezaEvento[]
+  versiones PiezaVersion[]
+
+  notificaciones  Notificacion[]
+  itemsDeRevision ReviewSessionItem[]
+
+  /// Los dos ejes del tablero: por marca (la pantalla) y por persona (Mis piezas).
+  @@unique([workspaceId, huella])
+  @@index([workspaceId, clientId, estado])
+  @@index([asignadaAId, estado])
+  @@index([grupoId])
+}
+
+/// El copy aprobado que va adentro de la pieza, congelado.
+model PiezaSlot {
+  id               String  @id @default(uuid())
+  piezaId          String
+  /// SetNull y no Cascade: borrar un copy de la Biblioteca no puede borrar una
+  /// pieza que está en producción. NULL significa "el original ya no existe", y
+  /// la tarjeta lo dice.
+  /// Un mismo aprobado puede estar en varias piezas a propósito: otro formato
+  /// de Display (D7), o la otra mitad de un A/B, donde las dos piezas comparten
+  /// el cuerpo y solo cambia el hook. Lo que no puede repetirse es la pieza
+  /// entera, y de eso se ocupa Pieza.huella.
+  savedVariationId String?
+  slot             String
+  /// Resuelto SIEMPRE con resolveSlotLabel del registry, nunca copiado del body.
+  slotLabel        String
+  /// El texto tal como estaba al crearse la pieza. La auditoría compara contra
+  /// esto y no contra el original: si alguien edita el copy mientras el
+  /// diseñador trabaja, la pieza sigue siendo la que se mandó a producir
+  /// (estado límite 3).
+  textoCongelado   String
+  /// visualBrief, animationBrief, structure, production: van a la orden de
+  /// trabajo como brief, pero no se auditan contra la pieza — no son texto que
+  /// deba aparecer en el arte.
+  esInstruccion    Boolean @default(false)
+  orden            Int     @default(0)
+
+  pieza          Pieza           @relation(fields: [piezaId], references: [id], onDelete: Cascade)
+  savedVariation SavedVariation? @relation(fields: [savedVariationId], references: [id], onDelete: SetNull)
+
+  @@index([piezaId])
+  @@index([savedVariationId])
+}
+
+/// Historial append-only de la pieza. No es auditoría de sistema: es lo que
+/// responde "quién decidió esto y por qué" —el motivo de una devolución, la
+/// nota de quien aceptó con hallazgos (D2)— y lo que permite medir cuánto
+/// tiempo pasa una pieza en cada columna.
+model PiezaEvento {
+  id           String       @id @default(uuid())
+  piezaId      String
+  /// CREADA · ASIGNADA · ENTREGADA · ACEPTADA · DEVUELTA · REABIERTA · COPY_ACTUALIZADO
+  tipo         String
+  deEstado     PiezaEstado?
+  aEstado      PiezaEstado?
+  /// NULL cuando lo escribió alguien que no tiene cuenta: el cliente, desde el
+  /// portal de revisión. Atribuirle sus palabras a quien mandó el enlace sería
+  /// mentir en el único registro que responde «quién decidió esto».
+  autorId      String?
+  /// Obligatoria en DEVUELTA y REABIERTA; el servicio lo exige.
+  nota         String?
+  /// COPY · DISENO. NULL = nadie lo clasificó, y eso es un valor válido: una
+  /// nota vieja o escrita sin elegir categoría se queda sin clasificar en vez
+  /// de recibir una etiqueta inventada. Una devolución con las dos categorías
+  /// deja DOS eventos —el historial es append-only y cada entrada tiene un
+  /// destinatario distinto— y no uno con dos campos.
+  categoria    String?
+  /// El nombre que dejó quien revisó desde afuera. Va junto con `autorId` NULL.
+  autorExterno String?
+  createdAt    DateTime     @default(now())
+
+  pieza Pieza @relation(fields: [piezaId], references: [id], onDelete: Cascade)
+  autor User? @relation(fields: [autorId], references: [id])
+
+  @@index([piezaId, createdAt])
+}
+
+/// En qué quedó la auditoría de una versión. Los tres son estados distintos y
+/// se muestran distinto (docs/plan-h2-produccion-auditoria.md, D2 y D3):
+///   PENDIENTE     — se subió y todavía no corrió.
+///   COMPLETA      — corrió y dejó sus hallazgos, aunque sean cero.
+///   NO_DISPONIBLE — el proveedor falló. NO es "sin hallazgos": no miró nada,
+///                   y por eso no cuenta en las métricas de acierto.
+enum AuditoriaEstado {
+  PENDIENTE
+  COMPLETA
+  NO_DISPONIBLE
+}
+
+/// Qué clase de cosa encontró la auditoría. La distinción es el corazón del
+/// informe: HECHO se compara contra una verdad conocida —el texto congelado— y
+/// muestra los dos lados; JUICIO es una opinión del mismo tipo que el Critic.
+/// Mezclarlos en una sola lista destruye la confianza en el primero.
+///   MEDIDAS — la pieza no mide lo que pedía el canal. Es un hecho, y no
+///             bloquea: se sube igual y alguien decide (estado límite 4).
+///   ILEGIBLE — no se pudo leer un texto. NO significa que esté mal.
+enum HallazgoTipo {
+  HECHO
+  JUICIO
+  MEDIDAS
+  ILEGIBLE
+}
+
+/// Qué hizo la persona con el hallazgo. Guardarlo es obligatorio y es la razón
+/// por la que D2 puede, algún día, darle autoridad a la auditoría: sin esta
+/// columna nunca se sabría si acierta.
+enum HallazgoDecision {
+  PENDIENTE
+  ACEPTADO
+  CORREGIDO
+}
+
+/// Cada entrega de una pieza. Son versiones y no una sola fila porque devolver
+/// a diseño y volver a subir es el camino normal, y el informe de la v1 tiene
+/// que sobrevivir a la v2: es lo que permite ver si el hallazgo se corrigió.
+model PiezaVersion {
+  id                 String          @id @default(uuid())
+  piezaId            String
+  numero             Int
+  /// `piezas/originales/…` — lo borra a los 90 días la regla de ciclo de vida
+  /// del bucket (D6). Por eso puede quedar en NULL sin que la fila mienta.
+  claveOriginal      String?
+  /// `piezas/snapshots/…` — JPG de 1.600 px de lado largo, permanente. Pesa
+  /// ~1 % del original y se paga solo dos veces: es también la miniatura del
+  /// tablero.
+  claveSnapshot      String?
+  anchoPx            Int?
+  altoPx             Int?
+  pesoBytes          Int?
+  contentType        String?
+  estadoAuditoria    AuditoriaEstado @default(PENDIENTE)
+  /// Por qué no corrió, cuando el estado es NO_DISPONIBLE.
+  motivoNoDisponible String?
+  auditadaAt         DateTime?
+  /// Costo de auditar esta versión, medido como una etapa más del motor.
+  costoUsd           Decimal?        @db.Decimal(12, 6)
+  modelo             String?
+  subidaPorId        String
+  createdAt          DateTime        @default(now())
+
+  pieza     Pieza      @relation(fields: [piezaId], references: [id], onDelete: Cascade)
+  subidaPor User       @relation(fields: [subidaPorId], references: [id])
+  hallazgos Hallazgo[]
+
+  @@unique([piezaId, numero])
+  @@index([piezaId, createdAt])
+}
+
+model Hallazgo {
+  id             String           @id @default(uuid())
+  piezaVersionId String
+  tipo           HallazgoTipo
+  /// Contra qué slot se encontró, cuando aplica. Un juicio de marca sobre la
+  /// pieza entera no tiene slot.
+  slot           String?
+  slotLabel      String?
+  /// Solo en HECHO: los dos lados de la comparación, para mostrarlos juntos.
+  esperado       String?
+  encontrado     String?
+  detalle        String
+  decision       HallazgoDecision @default(PENDIENTE)
+  notaDecision   String?
+  decididoPorId  String?
+  decididoAt     DateTime?
+
+  version     PiezaVersion @relation(fields: [piezaVersionId], references: [id], onDelete: Cascade)
+  decididoPor User?        @relation(fields: [decididoPorId], references: [id])
+
+  @@index([piezaVersionId])
+}

@@ -2,7 +2,8 @@
 
 Estado: vigente · 2026-11-19 (reemplaza la propuesta del 2026-10-28) · Base: PostgreSQL + Prisma, una sola
 base (decisión 12) · Decisión 28 cierra lo que quedaba abierto.
-Fuente de lo actual: `server/prisma/schema.prisma` (26 modelos al 2026-11-19).
+Fuente de lo actual: `server/prisma/schema/`, un archivo por módulo (`base`, `comun`, `myvoice`, `portal`,
+`produccion`; CDM e Implementación suman el suyo), 26 modelos al 2026-11-19.
 
 Una sola base con las tablas repartidas en cinco módulos: parte común, CDM, My Voice, Producción e
 Implementación. F1 a F5 suman unas 15 tablas, todas aditivas.
@@ -135,7 +136,8 @@ Las dos deudas se pagan antes de F4, cuando el copy empieza a llegar por línea.
 |---|---|---|
 | Hecho (2026-11-19) | `Workspace.plataformaPorProcesos`, `User.superAdmin` | Parte común |
 | F1 | `FuncionEquipo` + `ESTRATEGIA`, `PLANNING`, `TRAFFICKER` (un `ALTER TYPE … ADD VALUE` por sentencia); `User.ultimaRuta`; `ModuloDeMarca` | Parte común |
-| F2 | **Primero se parte `schema.prisma` por módulo** (`prismaSchemaFolder`, decisión 28); después `Medio`, `Formato`, `FormatoVersion`, `Ubicacion`, `CampoDeTexto`, `CargaDePlanilla`, `MediosDeMarca`, `MedioDeMarcaFormato` | CDM |
+| Hecho (2026-11-19) | `schema.prisma` partido por módulo en `server/prisma/schema/` (`prismaSchemaFolder`, decisión 28). Sin migración: el esquema es idéntico | Todos |
+| F2 | `cdm.prisma` con `Medio`, `Formato`, `FormatoVersion`, `Ubicacion`, `CampoDeTexto`, `CargaDePlanilla`, `MediosDeMarca`, `MedioDeMarcaFormato` | CDM |
 | F3 | `Planning`, `LineaDePlanning`; `RondaRevision` + `SABANA`, `ReviewSessionItem.lineaDePlanningId`; `Project` + fechas; `CampanaAudiencia` | CDM, portal, parte común |
 | F4 | `EncargoRecibido`, `LineaDeEncargo`, `FormatoUsado`; `SavedVariation.lineaId`; `Notificacion` + `modulo`, `campanaId`, `destino` | My Voice, parte común |
 | F5 | `Anuncio`, `AnuncioEvento`. El historial de aprobaciones es una vista de lectura, sin tabla (decisión 28) | Implementación |

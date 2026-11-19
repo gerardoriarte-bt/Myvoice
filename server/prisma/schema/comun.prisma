@@ -1,0 +1,431 @@
+// Parte común: workspace, personas, marca y ADN, campaña, funciones y avisos.
+
+/// Un workspace = una empresa (tenant). Toda la data de negocio cuelga de acá y
+/// el acceso se otorga exclusivamente por Membership: no hay pertenencia
+/// implícita por dominio de email ni por columna en User.
+model Workspace {
+  id                    String             @id @default(uuid())
+  name                  String
+  slug                  String             @unique
+  plan                  String             @default("agency")
+  aiProvider            String?
+  /// Cifrada en reposo con AES-256-GCM (ver lib/crypto.ts). Formato
+  /// `v1:iv:tag:ciphertext`; las filas anteriores a A0.6 pueden estar en texto
+  /// plano y se recifran al leerlas. Descifrarla solo desde
+  /// lib/workspaceSecret.ts.
+  aiApiKey              String?
+  aiModel               String?
+  /// Dominios de email a los que se puede invitar. **Vacío = apagado**, que es
+  /// el estado normal y no necesita una bandera aparte.
+  ///
+  /// NO es alta por dominio: tener un email `@empresa.com` no da acceso a
+  /// nada, y eso el H1 lo eliminó a propósito. Esto solo evita el dedazo de
+  /// invitar a un Gmail personal — que en una herramienta donde el invitado ve
+  /// todas las marcas del workspace no es un error menor.
+  dominiosPermitidos    String[]           @default([])
+  /// El marco de la plataforma por procesos (docs/plan-plataforma-por-procesos.md): encabezado en dos
+  /// filas, rutas y menú por paso. Apagado, el workspace ve la app como hoy. Elige el marco, no duplica
+  /// pantallas; se prende primero en «LoBueno · Capacitación».
+  plataformaPorProcesos Boolean            @default(false)
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @default(now()) @updatedAt
+  clients               Client[]
+  projects              Project[]
+  users                 User[]
+  memberships           Membership[]
+  invites               WorkspaceInvite[]
+  reviewSessions        ReviewSession[]
+  presets               GenerationPreset[]
+  generationLogs        GenerationLog[]
+  usagePeriods          UsagePeriod[]
+  Pieza                 Pieza[]
+  MiembroFuncion        MiembroFuncion[]
+  notificaciones        Notificacion[]
+}
+
+model User {
+  id                    String            @id @default(uuid())
+  email                 String            @unique
+  passwordHash          String
+  name                  String
+  /// LEGACY. Ya no autoriza nada: el rol efectivo vive en Membership.role y se
+  /// resuelve por workspace activo. Se conserva para no romper seeds y para el
+  /// backfill; eliminar en una migración posterior.
+  role                  Role              @default(CLIENT)
+  /// LEGACY. Ya no confina la lectura: un usuario ve todas las marcas de los
+  /// workspaces donde tiene membresía.
+  clientId              String?
+  /// Decisión 27: está por encima de los workspaces. Ve y controla todos (interruptores, usuarios, gasto de
+  /// IA) sin ser miembro, y es el único que ve costos. No es un rol de Membership: se asigna con
+  /// `npm run superadmin`, nunca desde la pantalla, y se verifica contra la base en cada request.
+  superAdmin            Boolean           @default(false)
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+  /// Workspace ACTIVO de la sesión, no una relación de pertenencia. Solo es
+  /// válido si existe la Membership correspondiente; el middleware lo verifica
+  /// en cada request y nunca confía en este campo por sí solo.
+  workspaceId           String?
+  /// Ids de `novedades.ts` (frontend) que esta persona ya vio. En el servidor y
+  /// no en el navegador: el localStorage se borra cada vez que vence la sesión,
+  /// y el aviso volvería a aparecer cada 24 h.
+  novedadesVistas       String[]          @default([])
+  client                Client?           @relation(fields: [clientId], references: [id])
+  workspace             Workspace?        @relation(fields: [workspaceId], references: [id])
+  memberships           Membership[]
+  invitesSent           WorkspaceInvite[] @relation("InviteAuthor")
+  createdReviewSessions ReviewSession[]
+  funciones             MiembroFuncion[]
+  piezasAsignadas       Pieza[]           @relation("PiezaAsignada")
+  piezasCreadas         Pieza[]           @relation("PiezaAutor")
+  eventosDePieza        PiezaEvento[]
+  versionesSubidas      PiezaVersion[]
+  hallazgosDecididos    Hallazgo[]
+  notificaciones        Notificacion[]
+  campanasAResponder    Project[]         @relation("ResponsableDeAprobacion")
+  copyAprobado          SavedVariation[]  @relation("CopyAprobadoPor")
+}
+
+/// La única fuente de verdad de "quién puede entrar a qué workspace".
+/// Un usuario puede tener membresía en varios workspaces (p. ej. un admin de
+/// agencia invitado a los workspaces de sus clientes).
+model Membership {
+  id          String        @id @default(uuid())
+  userId      String
+  workspaceId String
+  role        WorkspaceRole @default(MEMBER)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @default(now()) @updatedAt
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace   Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, workspaceId])
+  @@index([workspaceId])
+}
+
+/// Invitación por email a un workspace. Reemplaza el auto-aprovisionamiento por
+/// dominio: nadie entra a un workspace sin una invitación aceptada.
+model WorkspaceInvite {
+  id          String        @id @default(uuid())
+  workspaceId String
+  email       String
+  role        WorkspaceRole @default(MEMBER)
+  token       String        @unique @default(uuid())
+  expiresAt   DateTime
+  acceptedAt  DateTime?
+  createdById String
+  createdAt   DateTime      @default(now())
+  workspace   Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdBy   User          @relation("InviteAuthor", fields: [createdById], references: [id])
+
+  @@index([workspaceId])
+  @@index([email])
+}
+
+model Client {
+  id                        String              @id @default(uuid())
+  name                      String
+  industry                  String
+  logoUrl                   String?
+  createdAt                 DateTime            @default(now())
+  brandVoiceGuidelines      String?
+  /// LEGACY. Ya no limita nada: la cuota se evalúa contra UsagePeriod. Se
+  /// conserva un ciclo de despliegue porque durante el rolling deploy conviven
+  /// contenedores viejos que la seleccionan; se dropea en una migración
+  /// posterior junto con seedLobueno.ts y shared/lobuenoBrand.ts.
+  quotaLimit                Int                 @default(100)
+  /// LEGACY. Contador de por vida sin periodo: su valor no es convertible a
+  /// consumo del periodo vigente y no se migra a ningún lado.
+  quotaUsed                 Int                 @default(0)
+  /// Override del límite del plan para esta marca. NULL = se aplica el del plan
+  /// del workspace. No se backfillea desde quotaLimit: ese número cuenta
+  /// generaciones, no dólares, y convertirlo sería inventar una tarifa.
+  quotaCostUsdOverride      Decimal?            @db.Decimal(12, 6)
+  /// Techo secundario en tokens. Sostiene el límite cuando el modelo no está en
+  /// MODEL_PRICING y el proveedor no reporta costo: ahí computeCost registra 0
+  /// USD y una cuota medida solo en dinero quedaría abierta.
+  quotaTokensOverride       Int?
+  valueProposition          String?
+  voice                     String?
+  brandGuidelinePdfUrl      String?
+  brandGuidelineFileName    String?
+  brandGuidelineExtractedAt DateTime?
+  brandKeywords             String?
+  brandProhibitions         String?
+  brandFingerprint          Json?
+  brandFingerprintAt        DateTime?
+  workspaceId               String
+  workspace                 Workspace           @relation(fields: [workspaceId], references: [id])
+  /// La marca de la que esta es complementaria (docs/plan-marcas-relacionadas.md).
+  /// Un solo nivel: una madre no es complementaria de otra. Solo ordena el
+  /// selector y Marcas: no hereda ADN, campañas, responsables ni cuota. Borrar la
+  /// madre suelta a sus complementarias en vez de arrastrarlas.
+  marcaMadreId              String?
+  marcaMadre                Client?             @relation("MarcaMadre", fields: [marcaMadreId], references: [id], onDelete: SetNull)
+  complementarias           Client[]            @relation("MarcaMadre")
+  dnaProfiles               ContentDNAProfile[]
+  generationLogs            GenerationLog[]
+  negativeFeedbacks         NegativeFeedback[]
+  variations                SavedVariation[]
+  users                     User[]
+  usagePeriods              UsagePeriod[]
+  piezas                    Pieza[]
+  funciones                 MiembroFuncion[]
+  notificaciones            Notificacion[]
+  campanas                  Project[]
+  seccionesAdn              SeccionAdn[]
+  audiencias                AudienciaDeMarca[]
+  versionesAdn              AdnVersion[]
+  /// Cuándo se confirmó el ADN de esta marca (docs/plan-revision-adn.md). Una submarca hereda de su
+  /// madre solo si la madre lo tiene: confirmar es lo que enciende la herencia de la familia.
+  adnConfirmadoEn           DateTime?
+  adnConfirmadoPorId        String?
+  /// Tú, vos o usted (src/comun/adn/tratamiento.ts). NULL = no lo eligió: rige el default del país. Una
+  /// submarca sin tratamiento toma el de su madre, si el ADN de la madre está confirmado.
+  tratamiento               Tratamiento?
+
+  @@index([marcaMadreId])
+}
+
+/// Una sección del ADN de una marca (decisión 16, spec-plataforma § 5b; ADN 2.0, docs/plan-adn-2.md).
+/// Las que tienen columna en `Client` (voz, propuesta de valor, reglas de estilo, keywords,
+/// prohibiciones, tratamiento) la usan de espejo para la pantalla de v1; la sección es la fuente. Las
+/// claves, sus modos y la forma de su contenido viven en `src/comun/adn/secciones.ts`. Lo que se hereda
+/// no se copia: se resuelve al leer.
+model SeccionAdn {
+  id              String         @id @default(uuid())
+  clientId        String
+  client          Client         @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  clave           String
+  /// Lo propio de esta marca, `{ texto }`. En `SUMA` es la parte que se agrega a la de la madre.
+  contenido       Json
+  /// Frente a la madre. En una marca sin madre no se mira.
+  modo            ModoSeccionAdn @default(PROPIA)
+  /// Revisada en la revisión del ADN antes de heredar. Vuelve a NULL si cambia el texto de una madre
+  /// que todavía no confirmó.
+  revisadaEn      DateTime?
+  revisadaPorId   String?
+  /// De quién es el contenido vigente: PERSONA, o IA_CONFIRMADA si una persona aceptó lo que propuso la
+  /// IA. Nunca IA_PROPUESTA: lo propuesto espera en `propuesta` y no llega al motor (ADN-7).
+  origen          OrigenSeccion  @default(PERSONA)
+  /// Lo que propone la IA, con la misma forma que `contenido`. NULL = no hay nada que revisar.
+  propuesta       Json?
+  /// 'pdf' | 'copy-aprobado' | 'url' | 'entrevista'.
+  propuestaFuente String?
+  propuestaEn     DateTime?
+  autorId         String?
+  actualizadaEn   DateTime       @updatedAt
+
+  @@unique([clientId, clave])
+}
+
+/// PERSONA: la escribió alguien. IA_PROPUESTA: la propuso la IA y nadie la confirmó (no cuenta para el
+/// mínimo ni llega al motor). IA_CONFIRMADA: la propuso la IA y una persona la aceptó.
+enum OrigenSeccion {
+  PERSONA
+  IA_PROPUESTA
+  IA_CONFIRMADA
+}
+
+/// Las audiencias de una marca: una lista fija que todas sus campañas reutilizan (ADN-1). Una submarca
+/// en «igual» usa la de su madre confirmada. Una audiencia usada no se borra: se archiva.
+model AudienciaDeMarca {
+  id            String        @id @default(uuid())
+  clientId      String
+  client        Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  nombre        String
+  /// `{ quienEs, queLeImporta, queLaFrena, comoHabla }`.
+  descriptores  Json
+  origen        OrigenSeccion @default(PERSONA)
+  fuente        String?
+  orden         Int           @default(0)
+  archivada     Boolean       @default(false)
+  autorId       String?
+  creadaEn      DateTime      @default(now())
+  actualizadaEn DateTime      @updatedAt
+
+  @@index([clientId])
+}
+
+/// Cómo le habla la marca a su público (feedback de pruebas del 2026-11-05, punto 2).
+enum Tratamiento {
+  TU
+  VOS
+  USTED
+}
+
+/// HEREDA: igual que la madre. PROPIA: la de esta marca. SUMA: la de la madre más la propia.
+enum ModoSeccionAdn {
+  HEREDA
+  PROPIA
+  SUMA
+}
+
+/// Cada versión guardada del ADN de una marca: una foto de sus secciones propias y de la versión de
+/// la madre con que se resolvió. Un cambio en la madre crea una versión nueva en cada submarca.
+model AdnVersion {
+  id           String   @id @default(uuid())
+  clientId     String
+  client       Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  version      Int
+  /// La madre y su versión vigente al guardar. NULL = marca sin madre. Va el id porque la submarca
+  /// puede cambiar de familia y la versión sola no diría de qué madre era.
+  madreId      String?
+  versionMadre Int?
+  /// `{ [clave]: { modo, contenido } }`, igual que las filas de SeccionAdn en ese momento.
+  secciones    Json
+  /// Qué la creó: 'adn' (se editó esta marca), 'madre' (cambió la madre), 'familia' (cambió de
+  /// madre) o 'inicial' (el backfill).
+  motivo       String
+  autorId      String?
+  creadaEn     DateTime @default(now())
+
+  @@unique([clientId, version])
+}
+
+model Project {
+  id                      String             @id @default(uuid())
+  name                    String
+  createdAt               DateTime           @default(now())
+  workspaceId             String
+  /// LEGADO desde 2026-10-13: ya no se lee ni se escribe. Si el cliente ve el
+  /// arte lo dice `modoAprobacion`. Se dropea en una migración posterior.
+  /// Era: D3 de H2.E. Apagado —el valor por defecto— la campaña se comporta como
+  /// siempre: la pieza llega a Lista y ahí termina. Vive en la campaña y no en
+  /// el workspace porque una agencia tiene clientes que quieren ver el arte y
+  /// clientes que no, y esa diferencia es por campaña.
+  pideAprobacionDeCliente Boolean            @default(false)
+  /// La marca de la campaña. Nullable por las campañas viejas que mezclaban
+  /// copy de varias marcas; las nuevas siempre la traen.
+  clientId                String?
+  /// El brief del que sale. Único: la campaña que se elige en Generar es la
+  /// misma donde cae el copy al guardar.
+  dnaProfileId            String?            @unique
+  /// Cómo se aprueba el copy antes de producir. Siempre hay una aprobación.
+  modoAprobacion          ModoAprobacion     @default(INTERNA)
+  /// Quien aprueba (interna) o quien responde por la aprobación del cliente.
+  /// Sin responsable el copy de la campaña no avanza.
+  responsableId           String?
+  /// La versión del ADN con que trabaja la campaña. NULL = sigue la vigente (todas las de v1: fijarla
+  /// sin la pantalla para pasarla a la nueva dejaría la campaña atrapada en un ADN viejo).
+  adnVersion              Int?
+  workspace               Workspace          @relation(fields: [workspaceId], references: [id])
+  client                  Client?            @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  dnaProfile              ContentDNAProfile? @relation(fields: [dnaProfileId], references: [id], onDelete: SetNull)
+  responsable             User?              @relation("ResponsableDeAprobacion", fields: [responsableId], references: [id], onDelete: SetNull)
+  variations              SavedVariation[]
+  piezas                  Pieza[]
+
+  @@index([clientId])
+}
+
+/// INTERNA: aprueba el responsable. CLIENTE: aprueba el cliente desde el
+/// enlace de revisión, y el responsable es quien se lo manda.
+enum ModoAprobacion {
+  INTERNA
+  CLIENTE
+}
+
+/// LEGACY: rol global del usuario. Conservado solo para el backfill.
+enum Role {
+  ADMIN
+  CLIENT
+}
+
+/// Rol dentro de UN workspace. OWNER y ADMIN administran; MEMBER genera y
+/// consulta pero no gestiona marcas, usuarios ni configuración.
+enum WorkspaceRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+/// Qué hace una persona en el workspace, que es un eje DISTINTO de cuánto puede
+/// administrar (`Membership.role`). Mezclarlos en una sola lista de roles
+/// parece más simple hasta el primer «un ADMIN que además diseña».
+///
+/// **No restringe nada** (D2 del plan): sin la función de Aprobación igual se
+/// puede aceptar una pieza. Lo que cambia es a quién le llega el aviso y quién
+/// aparece primero al asignar. Si restringiera, el día que el aprobador está de
+/// vacaciones habría que cambiar roles para destrabar una pieza, y todos
+/// terminarían siendo aprobadores «por las dudas».
+///
+/// Ver docs/plan-h3d-funciones-notificaciones.md.
+enum FuncionEquipo {
+  COPY
+  DISENO
+  APROBACION
+  /// F1 (decisión 22): ① Marca · ADN.
+  ESTRATEGIA
+  /// F1: ② CDM · Plannings y biblioteca.
+  PLANNING
+  /// F1: ⑤ Implementación · anuncios.
+  TRAFFICKER
+}
+
+model MiembroFuncion {
+  id          String        @id @default(uuid())
+  workspaceId String
+  userId      String
+  funcion     FuncionEquipo
+  /// NULL = todas las marcas del workspace, que es el caso normal. La marca no
+  /// acota lo que la persona VE —eso sigue siendo todo el workspace— sino a
+  /// quién le llega el aviso: con tres marcas y seis aprobadores, avisarles a
+  /// todos por cada entrega es el ruido que esto viene a evitar.
+  clientId    String?
+  createdAt   DateTime      @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  client    Client?   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  /// Postgres admite varios NULL en un unique, así que la fila «todas las
+  /// marcas» convive con las acotadas y sigue siendo única por función.
+  @@unique([workspaceId, userId, funcion, clientId])
+  @@index([workspaceId, funcion])
+}
+
+/// La bandeja: los avisos que le esperan a una persona dentro de la herramienta.
+///
+/// Append-only: una notificación leída no se borra, se marca. El historial de
+/// qué se avisó y cuándo es lo primero que hace falta el día que alguien dice
+/// «a mí nunca me avisaron».
+///
+/// Solo dos tipos (D4 del plan): ASIGNACION y ENTREGA. La lista corta es la
+/// decisión, no una etapa: en cuanto la herramienta avisa de todo, el equipo
+/// filtra sus correos y se pierden también los dos que importan.
+model Notificacion {
+  id          String    @id @default(uuid())
+  workspaceId String
+  /// A quién le toca. Siempre una persona: no hay notificaciones «al equipo».
+  userId      String
+  /// ASIGNACION · ENTREGA
+  tipo        String
+  /// De qué marca es el aviso. Es la columna por la que se agrupa un lote: sin
+  /// ella, dos campañas de marcas distintas repartidas la misma tarde caen en
+  /// un mismo «te asignaron 5 piezas» que ya no dice nada.
+  clientId    String?
+  /// La pieza que lo originó. Queda en NULL en cuanto el aviso agrupa más de
+  /// una: el destino de un lote es el tablero de esa marca, no una tarjeta.
+  piezaId     String?
+  /// Cuántas piezas agrupa. Asignar cinco de una campaña deja un aviso con
+  /// cantidad 5, no cinco avisos (D4, regla 2).
+  cantidad    Int       @default(1)
+  titulo      String
+  detalle     String?
+  /// NULL = sin leer. Es la columna que cuenta la campana.
+  leidaAt     DateTime?
+  createdAt   DateTime  @default(now())
+  /// Se mueve cuando el aviso agrupa una pieza más, y es por la que ordena la
+  /// bandeja: un lote que sigue creciendo tiene que quedar arriba. `createdAt`
+  /// no se toca — decir que el aviso nació después sería mentirle al historial.
+  updatedAt   DateTime  @default(now()) @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  client    Client?   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  pieza     Pieza?    @relation(fields: [piezaId], references: [id], onDelete: SetNull)
+
+  /// El índice de la campana: las no leídas de una persona, más recientes primero.
+  @@index([userId, leidaAt, updatedAt])
+  @@index([workspaceId, tipo, updatedAt])
+}

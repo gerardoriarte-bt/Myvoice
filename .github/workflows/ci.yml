@@ -187,16 +187,16 @@ jobs:
         working-directory: server
 
       # El esquema que describen las migraciones tiene que ser el mismo que
-      # declara schema.prisma. Un drift acá significa que alguien editó el
-      # schema sin migración, o al revés.
-      - name: Sin drift entre migraciones y schema.prisma
+      # declaran los archivos de prisma/schema/ (uno por módulo, decisión 28).
+      # Un drift acá significa que alguien editó el schema sin migración, o al revés.
+      - name: Sin drift entre migraciones y el esquema
         run: |
           salida=$(npx prisma migrate diff \
             --from-url "$DATABASE_URL" \
-            --to-schema-datamodel prisma/schema.prisma)
+            --to-schema-datamodel prisma/schema)
           echo "$salida"
           if ! echo "$salida" | grep -q "No difference detected"; then
-            echo "::error::schema.prisma y las migraciones describen esquemas distintos."
+            echo "::error::prisma/schema/ y las migraciones describen esquemas distintos."
             exit 1
           fi
         working-directory: server

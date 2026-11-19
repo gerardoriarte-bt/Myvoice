@@ -1,0 +1,200 @@
+// My Voice: el copy, su generación, su costo y la cuota.
+
+/// Una fila por generación. Además del rastro de auditoría, es la tabla de
+/// telemetría de costo: hasta B0 el costo que calcula services/pricing.ts se
+/// emitía al frontend y quedaba enterrado dentro de outputJson, así que
+/// responder "cuánto gastó el workspace X este mes" exigía abrir un JSON fila
+/// por fila.
+model GenerationLog {
+  id               String   @id @default(uuid())
+  clientId         String
+  userId           String
+  dnaProfileId     String
+  platforms        String[]
+  promptTokens     Int?
+  completionTokens Int?
+  createdAt        DateTime @default(now())
+  funnelStage      String?
+  spineJson        Json?
+  outputJson       Json?
+
+  /// Denormalizado desde Client: una marca puede moverse de empresa, y el gasto
+  /// ya incurrido no se muda con ella. Además evita un join en cada reporte.
+  /// NULLABLE de forma TRANSITORIA: la migración lo rellena para todas las
+  /// filas existentes, pero el SET NOT NULL queda para una migración posterior
+  /// (esta tanda es puramente aditiva). Toda escritura nueva debe pasarlo.
+  workspaceId      String?
+  /// NUMERIC y no Float: son montos que se suman en reportes de facturación y
+  /// el error de punto flotante se acumula fila a fila.
+  costUsd          Decimal? @db.Decimal(12, 6)
+  cachedTokens     Int?
+  cacheWriteTokens Int?
+  /// Modelo del writer (resolveModel(config, false)). El mini se deriva del
+  /// provider salvo override por AI_MODEL_MINI; el detalle por llamada vive en
+  /// stageBreakdown.
+  model            String?
+  provider         String?
+  /// NULL = no se sabe (fila anterior a la telemetría), distinto de false = el
+  /// proveedor reportó el cobro real.
+  costEstimated    Boolean?
+  durationMs       Int?
+  /// UsageTotal.byStage tal cual lo produce services/pricing.ts.
+  stageBreakdown   Json?
+  /// La versión del ADN de la marca con que se generó (AdnVersion.version). NULL = antes del ADN
+  /// por capas, o una marca a la que todavía no se le corrió `backfill:adn`.
+  adnVersion       Int?
+
+  client    Client     @relation(fields: [clientId], references: [id])
+  workspace Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+
+  /// Los dos ejes de consulta del reporte: gasto de un workspace en un periodo
+  /// y gasto de una marca en un periodo.
+  @@index([workspaceId, createdAt])
+  @@index([clientId, createdAt])
+}
+
+/// Consumo de una marca en un periodo. Reemplaza el contador de por vida
+/// Client.quotaUsed, que nunca se reiniciaba. No hay cron ni job de reinicio:
+/// la fila del periodo vigente se crea con un upsert en el primer uso, y un
+/// periodo sin consumo simplemente no tiene fila. Las filas viejas quedan como
+/// histórico facturable, así que "reiniciar la cuota" nunca es una escritura
+/// destructiva.
+///
+/// Esta tabla mide consumo COBRABLE, no gasto bruto: una generación que falló
+/// en todos los canales gastó plata real (la etapa director corre antes del
+/// fan-out) pero no escribe acá. Ese gasto queda visible en GenerationLog.
+/// La diferencia entre las dos es intencional; no "arreglarla" cuadrándolas.
+model UsagePeriod {
+  id          String    @id @default(uuid())
+  workspaceId String
+  clientId    String
+  /// Medianoche UTC del primer día del mes. Se construye SIEMPRE con
+  /// Date.UTC(y, m, 1): un `new Date(y, m, 1)` local corre la fila un mes
+  /// entero en zonas negativas como la de Bogotá. Es TIMESTAMP y no DATE
+  /// porque el cast de timestamp a date en Postgres depende del TimeZone de la
+  /// sesión, y ahí el día 1 puede caer en el periodo anterior.
+  periodStart DateTime
+  /// Métrica secundaria: se reporta, no limita. Una regeneración de un canal y
+  /// una campaña de catorce cuentan igual acá, y por eso no puede ser el
+  /// límite.
+  generations Int       @default(0)
+  costUsd     Decimal   @default(0) @db.Decimal(12, 6)
+  /// promptTokens + completionTokens. Es el techo que sí se puede aplicar
+  /// cuando el modelo no está en MODEL_PRICING y el proveedor no reporta costo:
+  /// en ese caso pricing.ts registra 0 USD y una cuota medida solo en dinero
+  /// quedaría abierta.
+  tokens      Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @default(now()) @updatedAt
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  client      Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  /// Hace atómico el upsert: dos generaciones simultáneas de la misma marca en
+  /// un periodo recién estrenado no pueden crear dos filas.
+  @@unique([clientId, periodStart])
+  /// Techo por plan: suma del consumo de todas las marcas del workspace en el
+  /// periodo, una agregación por generación.
+  @@index([workspaceId, periodStart])
+}
+
+model ContentDNAProfile {
+  id                   String   @id @default(uuid())
+  clientId             String
+  name                 String
+  voice                String
+  goal                 String
+  product              String
+  targetAudience       String
+  theme                String
+  keywords             String
+  brandVoiceGuidelines String
+  valueProposition     String
+  primaryCTA           String
+  createdAt            DateTime @default(now())
+  feedbackExamples     Json?
+  prohibitions         String?
+  campaignConcept      String?
+  client               Client   @relation(fields: [clientId], references: [id])
+  /// La campaña operativa de este brief: donde cae el copy que genera y quien
+  /// lo aprueba. Una a una, ver docs/plan-aprobacion-por-campana.md.
+  campana              Project?
+}
+
+model SavedVariation {
+  id                String              @id @default(uuid())
+  clientId          String
+  projectId         String?
+  platform          String
+  type              String
+  /// Procedencia de la pieza: el id de slot que emitió el writer
+  /// (p. ej. "slidesBody"). NULLABLE sin default a propósito: NULL significa
+  /// "no sabemos", que es la verdad para las filas anteriores a esta migración.
+  /// Un default '' las volvería indistinguibles de un dato real.
+  slot              String?
+  /// Etiqueta legible del slot, resuelta SIEMPRE en el servidor contra
+  /// channels/registry.ts. Nunca se copia del body: el cliente no puede
+  /// inventar la etiqueta de un slot.
+  slotLabel         String?
+  /// Cuál de las N variaciones del slot es. No es deducible para las filas
+  /// viejas: el backfill lo deja en NULL en vez de numerar por fecha, que
+  /// refleja el orden en que un humano fue clickeando "guardar".
+  variationIndex    Int?
+  /// La pieza de su generación (docs/plan-piezas-por-medio.md): todos los textos de una pieza comparten
+  /// `conjuntoId` y se guardan, aprueban y producen juntos. NULL = guardado con el modelo anterior.
+  conjuntoId        String?
+  piezaIndex        Int?
+  /// Marca las filas cuyo slot lo dedujo el backfill heurístico por conteo de
+  /// unidades contra el ChannelSpec. Es columna aparte y no un sufijo en
+  /// slotLabel porque tiene que sobrevivir a cualquier edición del texto y ser
+  /// consultable desde SQL. NOT NULL con default false: es una afirmación sobre
+  /// el origen del dato y siempre hay una respuesta correcta.
+  slotInferred      Boolean             @default(false)
+  content           String
+  charCount         Int
+  tags              String[]
+  previousVersions  Json                @default("[]")
+  /// Aprobado según la regla de SU campaña. Desde la app solo lo escribe
+  /// services/aprobacion.ts (y la respuesta del cliente); no está en la lista
+  /// blanca de PUT /saved/:id.
+  isApproved        Boolean             @default(false)
+  approvalNote      String?
+  /// Quién aprobó. En una campaña interna, el responsable (id y nombre); en una
+  /// del cliente, el nombre que dejó en el enlace y el id en NULL. Las filas
+  /// aprobadas antes de 2026-10-13 quedan sin dato: no se inventa un aprobador.
+  aprobadoPorId     String?
+  aprobadoPorNombre String?
+  aprobadoEn        DateTime?
+  aprobadoVia       ModoAprobacion?
+  aprobadoPor       User?               @relation("CopyAprobadoPor", fields: [aprobadoPorId], references: [id], onDelete: SetNull)
+  savedAt           DateTime            @default(now())
+  client            Client              @relation(fields: [clientId], references: [id])
+  project           Project?            @relation(fields: [projectId], references: [id])
+  reviewItems       ReviewSessionItem[]
+  piezaSlots        PiezaSlot[]
+
+  /// La consulta de H2.A: todos los slots de un canal para una marca. Es el
+  /// primer índice de la tabla.
+  @@index([conjuntoId])
+  @@index([clientId, platform, slot])
+}
+
+model NegativeFeedback {
+  id        String   @id @default(uuid())
+  clientId  String
+  platform  String
+  content   String
+  reason    String
+  createdAt DateTime @default(now())
+  client    Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+}
+
+model GenerationPreset {
+  id          String    @id @default(uuid())
+  name        String
+  workspaceId String
+  clientId    String?
+  parameters  Json
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+}
