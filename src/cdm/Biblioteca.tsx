@@ -5,6 +5,7 @@ import { cdmApi } from '../../services/api';
 import type { MedioDetalle, MedioResumen } from '../../types';
 import CargarPlanilla from './CargarPlanilla';
 import GuiaVisual from './GuiaVisual';
+import { CLASES, ClaseDeMedio, nombreDeClase } from './clases';
 
 /**
  * La biblioteca de medios de la agencia (F2b; en el `.pen`, B1 el catálogo y B2 un medio por pieza).
@@ -12,7 +13,8 @@ import GuiaVisual from './GuiaVisual';
  * maestras (decisión 18). La ve cualquiera; Planning (o un admin) carga planillas y activa los medios.
  */
 
-type Filtro = 'todos' | 'activos' | 'borrador' | 'porConfirmar';
+/** Por clase (decisión 29): «Todos» las muestra en secciones, una por clase. */
+type Filtro = 'todos' | ClaseDeMedio;
 
 // La fecha de la guía es un día, guardado a medianoche UTC: en Colombia (UTC−5) se leía como el día anterior.
 const fecha = (iso: string) => new Date(iso).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', timeZone: 'UTC' });
@@ -65,18 +67,47 @@ export default function Biblioteca({ puedeEditar }: { puedeEditar: boolean }) {
   if (!medios) return <div className="h-48" />;
 
   const piezas = medios.reduce((s, m) => s + m.formatos, 0);
-  const cuentas: Record<Filtro, number> = {
-    todos: medios.length,
-    activos: medios.filter(m => m.estado === 'ACTIVO').length,
-    borrador: medios.filter(m => m.estado === 'BORRADOR').length,
-    porConfirmar: medios.filter(m => m.porConfirmar > 0).length,
-  };
-  const lista = medios.filter(
-    m =>
-      filtro === 'todos' ||
-      (filtro === 'activos' && m.estado === 'ACTIVO') ||
-      (filtro === 'borrador' && m.estado === 'BORRADOR') ||
-      (filtro === 'porConfirmar' && m.porConfirmar > 0)
+  const deClase = (c: ClaseDeMedio) => medios.filter(m => m.clase === c);
+  const secciones = CLASES.filter(c => filtro === 'todos' || filtro === c.id).map(c => ({ ...c, medios: deClase(c.id) }));
+  const tarjeta = (m: MedioResumen) => (
+    <button
+      key={m.id}
+      type="button"
+      onClick={() => setAbierto(m.id)}
+      className="flex flex-col rounded-[12px] border border-[rgba(0,0,0,0.08)] bg-white p-4 text-left hover:border-[rgba(0,0,0,0.2)]"
+    >
+      <div className="flex items-center gap-2.5">
+        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-ink text-[13px] font-bold text-white">{m.nombre[0]?.toUpperCase()}</span>
+        <div className="min-w-0">
+          <div className="text-[14px] font-bold text-[#1D1D1F]">{m.nombre}</div>
+          <div className="text-[12px] text-[#6E6E73]">
+            {m.formatos} {m.formatos === 1 ? 'pieza' : 'piezas'} · {m.ubicaciones} {m.ubicaciones === 1 ? 'ubicación' : 'ubicaciones'}
+          </div>
+        </div>
+      </div>
+      {m.plataformas.length > 0 && <p className="mt-2 text-[12px] text-[#6E6E73] line-clamp-2">{m.plataformas.join(' · ')}</p>}
+      {m.proporciones.length > 0 && (
+        <div className="mt-2 flex flex-wrap gap-1">
+          {m.proporciones.map(p => (
+            <span key={p} className="rounded bg-[#F5F5F7] px-1.5 py-0.5 text-[11px] text-[#3A3A3C]">
+              {p}
+            </span>
+          ))}
+        </div>
+      )}
+      <div className="mt-auto flex flex-wrap items-center gap-2 pt-3">
+        <span className={`rounded px-1.5 py-0.5 text-[11px] font-semibold ${ESTADO[m.estado].clase}`}>{ESTADO[m.estado].texto}</span>
+        {m.porConfirmar > 0 && <span className="text-[11.5px] text-amber-700">{m.porConfirmar} por confirmar</span>}
+        {m.sinCampos && <span className="text-[11.5px] text-[#86868B]">sin campos de texto</span>}
+        <span className="ml-auto text-[12px] font-semibold text-[#047857]">Ver →</span>
+      </div>
+      {m.actualizado && (
+        <p className="mt-1.5 text-[11px] text-[#86868B]">
+          actualizado: {m.actualizado.fuente ? `${m.actualizado.fuente} · ` : ''}
+          {fecha(m.actualizado.fecha)}
+        </p>
+      )}
+    </button>
   );
 
   return (
@@ -104,77 +135,42 @@ export default function Biblioteca({ puedeEditar }: { puedeEditar: boolean }) {
       </div>
 
       <div className="flex flex-wrap gap-2">
-        {(
-          [
-            ['todos', 'Todos'],
-            ['activos', 'Activos'],
-            ['borrador', 'En borrador'],
-            ['porConfirmar', 'Con algo por confirmar'],
-          ] as [Filtro, string][]
-        ).map(([id, nombre]) => (
-          <button
-            key={id}
-            type="button"
-            aria-pressed={filtro === id}
-            onClick={() => setFiltro(id)}
-            className={`px-3 py-1.5 rounded-full text-[12.5px] font-semibold border border-[rgba(0,0,0,0.08)] ${
-              filtro === id ? 'bg-ink text-white' : 'bg-white text-[#3A3A3C] hover:bg-[#F5F5F7]'
-            }`}
-          >
-            {nombre} · {cuentas[id]}
-          </button>
-        ))}
+        {([['todos', 'Todos', medios.length], ...CLASES.map(c => [c.id, c.nombre, deClase(c.id).length])] as [Filtro, string, number][]).map(
+          ([id, nombre, n]) => (
+            <button
+              key={id}
+              type="button"
+              aria-pressed={filtro === id}
+              onClick={() => setFiltro(id)}
+              className={`px-3 py-1.5 rounded-full text-[12.5px] font-semibold border border-[rgba(0,0,0,0.08)] ${
+                filtro === id ? 'bg-ink text-white' : 'bg-white text-[#3A3A3C] hover:bg-[#F5F5F7]'
+              }`}
+            >
+              {nombre} · {n}
+            </button>
+          )
+        )}
       </div>
 
-      {lista.length === 0 ? (
+      {medios.length === 0 ? (
         <div className="rounded-[10px] border border-[rgba(0,0,0,0.08)] bg-white p-10 text-center text-[13px] text-[#86868B]">
-          {medios.length === 0 ? 'Todavía no hay medios en la biblioteca. Planning los carga desde la planilla de cada medio.' : 'Ningún medio con ese filtro.'}
+          Todavía no hay medios en la biblioteca. Planning los carga desde la planilla de cada medio.
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
-          {lista.map(m => (
-            <button
-              key={m.id}
-              type="button"
-              onClick={() => setAbierto(m.id)}
-              className="flex flex-col rounded-[12px] border border-[rgba(0,0,0,0.08)] bg-white p-4 text-left hover:border-[rgba(0,0,0,0.2)]"
-            >
-              <div className="flex items-center gap-2.5">
-                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-ink text-[13px] font-bold text-white">
-                  {m.nombre[0]?.toUpperCase()}
-                </span>
-                <div className="min-w-0">
-                  <div className="text-[14px] font-bold text-[#1D1D1F]">{m.nombre}</div>
-                  <div className="text-[12px] text-[#6E6E73]">
-                    {m.formatos} {m.formatos === 1 ? 'pieza' : 'piezas'} · {m.ubicaciones} {m.ubicaciones === 1 ? 'ubicación' : 'ubicaciones'}
-                  </div>
-                </div>
-              </div>
-              {m.plataformas.length > 0 && <p className="mt-2 text-[12px] text-[#6E6E73] line-clamp-2">{m.plataformas.join(' · ')}</p>}
-              {m.proporciones.length > 0 && (
-                <div className="mt-2 flex flex-wrap gap-1">
-                  {m.proporciones.map(p => (
-                    <span key={p} className="rounded bg-[#F5F5F7] px-1.5 py-0.5 text-[11px] text-[#3A3A3C]">
-                      {p}
-                    </span>
-                  ))}
-                </div>
+        secciones.map(c =>
+          c.medios.length === 0 && filtro === 'todos' ? null : (
+            <section key={c.id} className="space-y-2">
+              <h3 className="text-[13px] font-bold text-[#1D1D1F]">
+                {c.nombre} <span className="font-normal text-[#86868B]">· al final, {c.alFinal}</span>
+              </h3>
+              {c.medios.length === 0 ? (
+                <p className="text-[12.5px] text-[#86868B]">Ningún medio de esta clase todavía.</p>
+              ) : (
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">{c.medios.map(tarjeta)}</div>
               )}
-              <div className="mt-auto flex flex-wrap items-center gap-2 pt-3">
-                <span className={`rounded px-1.5 py-0.5 text-[11px] font-semibold ${ESTADO[m.estado].clase}`}>{ESTADO[m.estado].texto}</span>
-                {m.porConfirmar > 0 && <span className="text-[11.5px] text-amber-700">{m.porConfirmar} por confirmar</span>}
-                {m.sinCampos && <span className="text-[11.5px] text-[#86868B]">sin campos de texto</span>}
-                <span className="ml-auto text-[12px] font-semibold text-[#047857]">Ver →</span>
-              </div>
-              {m.actualizado && (
-                <p className="mt-1.5 text-[11px] text-[#86868B]">
-                  actualizado: {m.actualizado.fuente ? `${m.actualizado.fuente} · ` : ''}
-                  {fecha(m.actualizado.fecha)}
-                </p>
-              )}
-            </button>
-          ))}
-        </div>
+            </section>
+          )
+        )
       )}
     </div>
   );
@@ -204,6 +200,16 @@ function Medio({
   if (!medio) return <div className="h-48" />;
   if (guia) return <GuiaVisual medio={medio} onVolver={() => setGuia(false)} />;
 
+  const cambiarClase = async (clase: ClaseDeMedio) => {
+    setAviso(null);
+    try {
+      await cdmApi.cambiarClase(medio.id, clase);
+      setMedio({ ...medio, clase });
+    } catch (err) {
+      setAviso(err instanceof Error ? err.message : 'No se pudo cambiar la clase');
+    }
+  };
+
   const cambiarEstado = async (estado: MedioDetalle['estado']) => {
     setAviso(null);
     try {
@@ -229,6 +235,22 @@ function Medio({
         <div className="flex items-center gap-2">
           <h2 className="text-[22px] font-bold text-[#1D1D1F] tracking-[-0.01em]">{medio.nombre}</h2>
           <span className={`rounded px-1.5 py-0.5 text-[11px] font-semibold ${ESTADO[medio.estado].clase}`}>{ESTADO[medio.estado].texto}</span>
+          {puedeEditar ? (
+            <select
+              aria-label="Clase del medio"
+              value={medio.clase}
+              onChange={e => void cambiarClase(e.target.value as ClaseDeMedio)}
+              className="rounded-md border border-[rgba(0,0,0,0.12)] bg-white px-1.5 py-0.5 text-[12px] text-[#3A3A3C]"
+            >
+              {CLASES.map(c => (
+                <option key={c.id} value={c.id}>
+                  {c.nombre}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <span className="rounded bg-[#F5F5F7] px-1.5 py-0.5 text-[11px] text-[#3A3A3C]">{nombreDeClase(medio.clase)}</span>
+          )}
         </div>
         <p className="text-[13px] text-[#6E6E73] mt-0.5">
           {plataformas.join(' · ')} · {ubicaciones} {ubicaciones === 1 ? 'ubicación' : 'ubicaciones'} en {medio.formatos.length}{' '}

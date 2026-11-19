@@ -1,4 +1,4 @@
-import { Prisma, TipoDeArchivo, ZonaDeCampo } from '@prisma/client';
+import { ClaseDeMedio, Prisma, TipoDeArchivo, ZonaDeCampo } from '@prisma/client';
 import { prisma } from '../../lib/prisma.js';
 
 /**
@@ -18,6 +18,8 @@ import { prisma } from '../../lib/prisma.js';
 
 export interface PlanillaDeMedio {
   medio: string;
+  /** La clase del medio (decisión 29). Solo cuenta al crearlo: uno que ya existe conserva la suya. */
+  clase?: ClaseDeMedio;
   fuente: string;
   /** AAAA-MM-DD: la fecha de la guía. Con la fuente, es la versión (meta.md, regla 5). */
   fecha: string;
@@ -68,7 +70,7 @@ export interface FormatoPlaneado {
 }
 
 export interface PlanDeCarga {
-  medio: { nombre: string; nuevo: boolean };
+  medio: { nombre: string; nuevo: boolean; clase: ClaseDeMedio };
   formatos: {
     nombre: string;
     ubicaciones: number;
@@ -295,7 +297,7 @@ const planificarCon = async (db: Db, workspaceId: string, p: PlanillaDeMedio, le
   const medio = await db.medio.findUnique({ where: { workspaceId_nombre: { workspaceId, nombre: p.medio } } });
   const ubicaciones = leida.formatos.flatMap(f => f.ubicaciones.map(() => f.tipoArchivo));
   const plan: PlanDeCarga = {
-    medio: { nombre: p.medio, nuevo: !medio },
+    medio: { nombre: p.medio, nuevo: !medio, clase: medio?.clase ?? p.clase ?? ClaseDeMedio.PAGOS },
     formatos: [],
     leidas: { imagen: ubicaciones.filter(t => t === 'IMAGEN').length, video: ubicaciones.filter(t => t === 'VIDEO').length },
     alertas: (p.alertas ?? []).map(a => ({ numero: Number(a.numero), ubicacion: `${a.formato} · ${a.ubicacion}`, inconsistencia: a.inconsistencia, accion: a.accion })),
@@ -335,7 +337,7 @@ export const aplicarCarga = async (workspaceId: string, p: PlanillaDeMedio, auto
     const { plan, leida } = await planificarCon(tx, workspaceId, p);
     const medio = await tx.medio.upsert({
       where: { workspaceId_nombre: { workspaceId, nombre: p.medio } },
-      create: { workspaceId, nombre: p.medio },
+      create: { workspaceId, nombre: p.medio, clase: p.clase ?? ClaseDeMedio.PAGOS },
       update: {},
     });
     const carga = await tx.cargaDePlanilla.create({

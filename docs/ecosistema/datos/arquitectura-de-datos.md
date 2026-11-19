@@ -46,7 +46,7 @@ Implementación. F1 a F5 suman unas 15 tablas, todas aditivas.
 
 | Tabla | Qué guarda | Entrega |
 |---|---|---|
-| `Medio` | Meta, Google, programática… con su estado | F2 |
+| `Medio` | Meta, Google, programática… con su estado y su **clase** (Pagos, Redes sociales, Propios, Tradicional; decisión 29) | F2 |
 | `Formato` | La **pieza maestra**: tipo de archivo y proporción (decisión 18) | F2 |
 | `FormatoVersion` | Medidas y guía visual como datos (lienzo, zona segura, dónde va cada texto) | F2 |
 | `Ubicacion` | Las ubicaciones que cubre la pieza, con sus largos y la alerta «por confirmar» | F2 |

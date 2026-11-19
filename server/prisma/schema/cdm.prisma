@@ -8,6 +8,15 @@ enum EstadoMedio {
   OCULTO
 }
 
+/// Decisión 29: el proceso es el mismo para todas; cambia quién publica al final (⑤): el trafficker monta los
+/// pagos, el community manager publica lo orgánico, lo propio se programa en el CRM, lo tradicional se entrega.
+enum ClaseDeMedio {
+  PAGOS
+  REDES_SOCIALES
+  PROPIOS
+  TRADICIONAL
+}
+
 enum TipoDeArchivo {
   IMAGEN
   VIDEO
@@ -24,12 +33,14 @@ enum ZonaDeCampo {
 
 /// Meta, Google, TikTok… El nombre es único dentro de la agencia.
 model Medio {
-  id          String      @id @default(uuid())
+  id          String       @id @default(uuid())
   workspaceId String
   nombre      String
-  estado      EstadoMedio @default(BORRADOR)
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  /// La clase del medio (decisión 29). Los medios cargados antes de la decisión son pagos (Meta Ads).
+  clase       ClaseDeMedio @default(PAGOS)
+  estado      EstadoMedio  @default(BORRADOR)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   formatos  Formato[]

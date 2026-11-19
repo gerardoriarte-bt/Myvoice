@@ -3,13 +3,14 @@
  *
  *   npm run cdm:importar -- <slug> <planilla.json>            → dry-run: qué es nuevo, qué cambia, qué falla
  *   npm run cdm:importar -- <slug> <planilla.json> --apply    → lo escribe, en una transacción
+ *   --clase=REDES_SOCIALES                                     → la clase de un medio nuevo (decisión 29; por defecto PAGOS)
  *
  * La planilla va en JSON (`node scripts/planilla-a-json.cjs` desde la raíz convierte el .xlsx): el servidor
  * no abre planillas. Primer caso: docs/ecosistema/cdm/biblioteca/meta-especificaciones-2026-11-09.json.
  */
 
 import { readFileSync } from 'node:fs';
-import { PrismaClient } from '@prisma/client';
+import { ClaseDeMedio, PrismaClient } from '@prisma/client';
 import { aplicarCarga, planificarCarga, PlanillaDeMedio, PlanDeCarga } from '../src/cdm/biblioteca/cargarPlanilla.js';
 
 const prisma = new PrismaClient();
@@ -18,7 +19,7 @@ const APPLY = args.includes('--apply');
 const [slug, archivo] = args.filter(a => !a.startsWith('--'));
 
 const mostrar = (plan: PlanDeCarga) => {
-  console.log(`Medio «${plan.medio.nombre}»${plan.medio.nuevo ? ' (nuevo, en borrador)' : ''}`);
+  console.log(`Medio «${plan.medio.nombre}» · ${plan.medio.clase}${plan.medio.nuevo ? ' (nuevo, en borrador)' : ''}`);
   for (const f of plan.formatos) {
     const que = f.accion === 'nuevo' ? 'nuevo, versión 1' : f.accion === 'version' ? `cambia → versión ${f.version}` : `igual (versión ${f.version})`;
     console.log(`  ${f.nombre.padEnd(14)} ${String(f.ubicaciones).padStart(2)} ubicaciones · ${que}`);
@@ -34,6 +35,11 @@ async function main() {
   const ws = await prisma.workspace.findUnique({ where: { slug }, select: { id: true, name: true } });
   if (!ws) throw new Error(`No hay un workspace con el slug «${slug}»`);
   const planilla = JSON.parse(readFileSync(archivo, 'utf8')) as PlanillaDeMedio;
+  const clase = args.find(a => a.startsWith('--clase='))?.slice('--clase='.length);
+  if (clase) {
+    if (!(Object.values(ClaseDeMedio) as string[]).includes(clase)) throw new Error(`Clase desconocida: ${clase}`);
+    planilla.clase = clase as ClaseDeMedio;
+  }
   if (!APPLY) {
     mostrar(await planificarCarga(ws.id, planilla));
     console.log('\nDry-run: no se escribió nada. Agrega --apply para cargarlo.');

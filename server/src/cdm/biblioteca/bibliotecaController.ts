@@ -1,4 +1,5 @@
 import { Response } from 'express';
+import { ClaseDeMedio } from '@prisma/client';
 import { AuthRequest, handleTenantError } from '../../middleware/auth.js';
 import { prisma } from '../../lib/prisma.js';
 import { exigirPlanning } from '../../comun/permisos.js';
@@ -36,6 +37,7 @@ export const listarMedios = async (req: AuthRequest, res: Response) => {
         return {
           id: m.id,
           nombre: m.nombre,
+          clase: m.clase,
           estado: m.estado,
           formatos: m.formatos.length,
           ubicaciones: ubicaciones.length,
@@ -64,6 +66,7 @@ export const detalleDeMedio = async (req: AuthRequest, res: Response) => {
     res.json({
       id: medio.id,
       nombre: medio.nombre,
+      clase: medio.clase,
       estado: medio.estado,
       formatos: medio.formatos
         .filter(f => f.versiones[0])
@@ -122,6 +125,8 @@ export const detalleDeMedio = async (req: AuthRequest, res: Response) => {
   }
 };
 
+const CLASES = Object.values(ClaseDeMedio) as string[];
+
 /** Lo mínimo que tiene que traer una planilla para leerla; el resto lo valida `leerPlanilla` fila por fila. */
 const planillaValida = (b: unknown): b is PlanillaDeMedio => {
   const p = b as Partial<PlanillaDeMedio> | null;
@@ -136,6 +141,7 @@ const planillaValida = (b: unknown): b is PlanillaDeMedio => {
       /^\d{4}-\d{2}-\d{2}$/.test(p.fecha) &&
       Array.isArray(p.especificaciones) &&
       p.especificaciones.length <= 2000 &&
+      (p.clase === undefined || CLASES.includes(p.clase)) &&
       (p.zonasSeguras === undefined || Array.isArray(p.zonasSeguras)) &&
       (p.alertas === undefined || Array.isArray(p.alertas))
   );
@@ -184,5 +190,19 @@ export const cambiarEstadoDeMedio = async (req: AuthRequest, res: Response) => {
     res.json(actualizado);
   } catch (error) {
     handleTenantError(error, res, 'Error al cambiar el estado del medio');
+  }
+};
+
+/** Cambiar la clase de un medio (decisión 29): decide quién lo publica al final y cómo se agrupa. */
+export const cambiarClaseDeMedio = async (req: AuthRequest, res: Response) => {
+  const { clase } = (req.body ?? {}) as { clase?: unknown };
+  if (typeof clase !== 'string' || !CLASES.includes(clase)) return res.status(400).json({ error: 'Clase inválida' });
+  try {
+    const medio = await prisma.medio.findUnique({ where: { id: req.params.id }, select: { id: true, workspaceId: true } });
+    if (!medio || medio.workspaceId !== req.tenant!.workspaceId) return res.status(404).json({ error: 'Medio no encontrado' });
+    await exigirPlanning(req.tenant!);
+    res.json(await prisma.medio.update({ where: { id: medio.id }, data: { clase: clase as ClaseDeMedio }, select: { id: true, clase: true } }));
+  } catch (error) {
+    handleTenantError(error, res, 'Error al cambiar la clase del medio');
   }
 };
