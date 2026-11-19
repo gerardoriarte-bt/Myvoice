@@ -37,7 +37,9 @@ import Isotipo from './components/ui/Isotipo';
 import Marco from './src/plataforma/Marco';
 import Control from './src/plataforma/Control';
 import Panorama from './src/plataforma/Panorama';
-import { armarRuta, leerRuta, pantallaDeEntrada } from './src/plataforma/rutas';
+import { PASOS, actuaEn, armarRuta, leerRuta, pantallaDeEntrada } from './src/plataforma/rutas';
+import AdnDeMarca from './components/adn/AdnDeMarca';
+import { madreDe } from './marcas';
 
 const MOCK_CLIENTS: Client[] = [
   { id: 'c-lobueno', name: 'LoBueno', industry: 'Agencia creativa y de contenido', logo: '', createdAt: Date.now() },
@@ -1113,6 +1115,30 @@ const App: React.FC = () => {
       )}
       {activeTab === 'analytics' && isAdmin && <Analytics />}
       {activeTab === 'control' && superAdmin && <Control />}
+      {activeTab === 'adn' && plataforma && activeClient && (
+        <div className="space-y-4">
+          <div>
+            <h2 className="text-[20px] font-semibold text-[#1D1D1F]">
+              {SCREENS.adn.name} <span className="text-gray-400">· {activeClient.name}</span>
+            </h2>
+            <p className="mt-0.5 text-[12px] text-gray-500">{SCREENS.adn.description}</p>
+          </div>
+          <AdnDeMarca
+            key={activeClient.id}
+            clientId={activeClient.id}
+            marca={activeClient.name}
+            madreDeclarada={(() => {
+              const m = madreDe(activeClient, clients);
+              return m ? { id: m.id, name: m.name } : null;
+            })()}
+            submarcas={activeClient.conteos?.complementarias ?? 0}
+            pideRevision={Boolean(activeClient.adnPorRevisar)}
+            onAbrirMarca={setActiveClientId}
+            onCambio={() => void recargarMarcas()}
+            soloLectura={!actuaEn(currentUser, isAdmin, PASOS[0], activeClient.id)}
+          />
+        </div>
+      )}
       {activeTab === 'panorama' && isAdmin && plataforma && (
         <Panorama
           onAbrir={(campana, pantalla) => {

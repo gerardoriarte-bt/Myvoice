@@ -188,12 +188,21 @@ la regla: el front solo esconde.
 - La franja «Solo lectura» lleva a lo propio.
 - Equipo asigna las seis funciones.
 
-**F1b, lo que falta:**
-- `soloLectura` en las pantallas, para esconder los botones de acción.
-- Abrir el ADN a quien tiene Estrategia: hoy sus rutas son `asManager`, y abrirlas en modo observar
-  ampliaría el acceso en producción.
-- `User.ultimaRuta`.
-- `verify:permisos`.
+**F1b (2026-11-19), hecho:**
+- **El ADN para Estrategia.** Las 7 rutas que escriben el ADN y las audiencias pasan de `asManager` a
+  `exigirPaso(…, 'ADN', …)`. Esa regla decide siempre, sin modo observar: así solo entra quien un admin
+  nombró en Equipo.
+- **La pantalla ADN** (`/marca/adn`) es la entrada de Estrategia y la ve cualquier miembro. `AdnDeMarca`
+  tiene `soloLectura`: sin función, se ve sin botones.
+- **Casos de permisos en `verify:isolation`** (5 casos nuevos), en lugar de un `verify:permisos` aparte:
+  - sin función, no escribe el ADN pero sí lo lee;
+  - con la función de otra marca, no escribe;
+  - en su marca, sí escribe;
+  - en otro workspace, recibe 404.
+
+**Sin hacer, a propósito:**
+- `soloLectura` en Copy: sus acciones ya son de admin o del responsable.
+- `User.ultimaRuta`: el entorno por función alcanza mientras nadie tenga dos.
 
 **Verificación**: `npm run verify:permisos` (nuevo, en CI junto a `verify:isolation`): para cada fila
 de la matriz, crea a la persona con su función y prueba que puede leer todos los pasos y actuar solo en

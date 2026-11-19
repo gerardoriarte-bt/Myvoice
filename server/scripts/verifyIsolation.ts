@@ -1469,6 +1469,30 @@ async function main() {
     }
     await expectAllowed('GET /clients/:id/proceso propio', `/clients/${B.client.id}/proceso?campana=${B.project.id}`, B.token);
     await expectAllowed('GET /clients/:id/adn propio', `/clients/${B.client.id}/adn`, B.token);
+
+    // Permisos por función (F1, decisión 22): el ADN lo escribe un admin o quien tiene Estrategia en la
+    // marca. Ver lo ve cualquier miembro. Esto no pasa por el modo observar: antes era solo de admin.
+    {
+      const estratega = await nuevoMiembro(B.workspace.id, 'estrategia');
+      const otraMarca = await prisma.client.create({ data: { name: 'Otra de B', industry: 'Test', workspaceId: B.workspace.id } });
+      const escribir = (clientId: string) =>
+        api(`/clients/${clientId}/adn/secciones/productos`, estratega.token, {
+          method: 'PUT',
+          body: JSON.stringify({ contenido: { texto: 'Producto de prueba' } }),
+        });
+      const sinFuncion = await escribir(B.client.id);
+      record('Un MEMBER sin Estrategia no escribe el ADN (403)', sinFuncion.status === 403, `respondió ${sinFuncion.status}`);
+      await expectAllowed('Un MEMBER sin Estrategia sí lee el ADN', `/clients/${B.client.id}/adn`, estratega.token);
+      await prisma.miembroFuncion.create({
+        data: { workspaceId: B.workspace.id, userId: estratega.user.id, funcion: 'ESTRATEGIA', clientId: otraMarca.id },
+      });
+      const deOtra = await escribir(B.client.id);
+      record('Estrategia de otra marca no escribe este ADN (403)', deOtra.status === 403, `respondió ${deOtra.status}`);
+      const enLaSuya = await escribir(otraMarca.id);
+      record('Estrategia escribe el ADN de su marca', enLaSuya.status >= 200 && enLaSuya.status < 300, `respondió ${enLaSuya.status}`);
+      const deA = await escribir(A.client.id);
+      record('Estrategia no escribe el ADN de otro workspace (404)', deA.status === 404, `respondió ${deA.status}`);
+    }
     await expectAllowed('GET /clients/:id/adn/revision propio', `/clients/${B.client.id}/adn/revision`, B.token);
     await expectAllowed('GET /clients/:id/audiencias propio', `/clients/${B.client.id}/audiencias`, B.token);
     await expectAllowed('PUT /saved/:id propio', `/saved/${B.variation.id}`, B.token, {

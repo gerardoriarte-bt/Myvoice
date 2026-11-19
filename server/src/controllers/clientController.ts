@@ -21,6 +21,7 @@ import { resolverAdn } from '../comun/adn/resolverAdn.js';
 import { COLUMNAS_ADN, SECCIONES_DE_REVISION } from '../comun/adn/secciones.js';
 import { completitudAdn, conPropuesta } from '../comun/adn/completitudAdn.js';
 import { campanasEnProceso, procesoDeCampana } from '../comun/proceso.js';
+import { exigirPaso } from '../comun/permisos.js';
 import { guardarSeccion, confirmarPropuesta, descartarPropuesta, marcarRevisada } from '../comun/adn/guardarAdn.js';
 import { actualizarAudiencia, crearAudiencia, listarAudiencias } from '../comun/adn/audiencias.js';
 import { esTratamiento } from '../comun/adn/tratamiento.js';
@@ -316,6 +317,7 @@ export const putSeccionAdn = async (req: AuthRequest, res: Response) => {
   const { id, clave } = req.params;
   try {
     await assertClientInWorkspace(req.tenant!, id);
+    await exigirPaso(req.tenant!, 'ADN', id);
     const body = req.body ?? {};
     if (!('contenido' in body) && !('modo' in body))
       return res.status(400).json({ error: 'Falta contenido o modo' });
@@ -332,6 +334,7 @@ export const postSeccionRevisada = async (req: AuthRequest, res: Response) => {
   const { id, clave } = req.params;
   try {
     await assertClientInWorkspace(req.tenant!, id);
+    await exigirPaso(req.tenant!, 'ADN', id);
     await marcarRevisada(id, clave, req.tenant!.userId);
     res.json({ ok: true });
   } catch (error) {
@@ -344,6 +347,7 @@ export const postPropuestaAdn = async (req: AuthRequest, res: Response) => {
   const { id, clave, accion } = req.params;
   try {
     await assertClientInWorkspace(req.tenant!, id);
+    await exigirPaso(req.tenant!, 'ADN', id);
     if (accion === 'confirmar') {
       const r = await confirmarPropuesta(id, clave, req.tenant!.userId);
       return res.json(r);
@@ -371,6 +375,7 @@ export const getAudiencias = async (req: AuthRequest, res: Response) => {
 export const postAudiencia = async (req: AuthRequest, res: Response) => {
   try {
     await assertClientInWorkspace(req.tenant!, req.params.id);
+    await exigirPaso(req.tenant!, 'ADN', req.params.id);
     const body = req.body ?? {};
     res.status(201).json(
       await crearAudiencia(req.params.id, { nombre: body.nombre, descriptores: body.descriptores }, { autorId: req.tenant!.userId })
@@ -383,6 +388,7 @@ export const postAudiencia = async (req: AuthRequest, res: Response) => {
 export const putAudiencia = async (req: AuthRequest, res: Response) => {
   try {
     await assertClientInWorkspace(req.tenant!, req.params.id);
+    await exigirPaso(req.tenant!, 'ADN', req.params.id);
     const { nombre, descriptores, orden, archivada, confirmar } = req.body ?? {};
     res.json(
       await actualizarAudiencia(
@@ -411,6 +417,7 @@ export const getRevisionAdn = async (req: AuthRequest, res: Response) => {
 export const postRevisarSeccion = async (req: AuthRequest, res: Response) => {
   try {
     await assertClientInWorkspace(req.tenant!, req.params.id);
+    await exigirPaso(req.tenant!, 'ADN', req.params.id);
     const texto = req.body && 'texto' in req.body ? req.body.texto : undefined;
     res.json(await revisarSeccion(req.tenant!, req.params.id, req.params.clave, texto));
   } catch (error) {
@@ -421,6 +428,7 @@ export const postRevisarSeccion = async (req: AuthRequest, res: Response) => {
 export const postConfirmarAdn = async (req: AuthRequest, res: Response) => {
   try {
     await assertClientInWorkspace(req.tenant!, req.params.id);
+    await exigirPaso(req.tenant!, 'ADN', req.params.id);
     res.json(await confirmarAdn(req.tenant!, req.params.id));
   } catch (error) {
     handleTenantError(error, res, 'Error al confirmar el ADN');

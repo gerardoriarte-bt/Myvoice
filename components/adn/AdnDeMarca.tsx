@@ -32,6 +32,11 @@ interface Props {
   onCambio: () => void;
   /** Cambia cuando algo de afuera tocó el ADN (la revisión de la madre): se vuelve a pedir. */
   recarga?: number;
+  /**
+   * Quien no tiene Estrategia en la marca lo ve todo y no cambia nada (F1, decisión 22): sin botones de
+   * edición, de «Está bien» ni de propuestas. El servidor lo vuelve a decidir (`comun/permisos.ts`).
+   */
+  soloLectura?: boolean;
 }
 
 type Edicion =
@@ -75,7 +80,7 @@ const Anillo: React.FC<{ porcentaje: number; minimo: number; apta: boolean }> = 
   );
 };
 
-const AdnDeMarca: React.FC<Props> = ({ clientId, marca, madreDeclarada, submarcas, pideRevision, onAbrirMarca, onCambio, recarga }) => {
+const AdnDeMarca: React.FC<Props> = ({ clientId, marca, madreDeclarada, submarcas, pideRevision, onAbrirMarca, onCambio, recarga, soloLectura }) => {
   const [adn, setAdn] = React.useState<Adn | null>(null);
   const [error, setError] = React.useState<string | null>(null);
   const [edicion, setEdicion] = React.useState<Edicion | null>(null);
@@ -198,7 +203,12 @@ const AdnDeMarca: React.FC<Props> = ({ clientId, marca, madreDeclarada, submarca
               <Lock className="h-2.5 w-2.5" /> Suma
             </span>
           )}
-          {madre && !fija && (
+          {madre && !fija && soloLectura && (
+            <span className="shrink-0 rounded-md bg-gray-100 px-1.5 py-0.5 text-[10.5px] text-gray-600">
+              {hereda ? `= ${madre.name}` : 'Propia'}
+            </span>
+          )}
+          {madre && !fija && !soloLectura && (
             <div className="flex shrink-0 rounded-md bg-gray-100 p-[2px] text-[10.5px]">
               <button
                 onClick={() => !hereda && hacer(s.clave, () => clientApi.guardarSeccionAdn(clientId, s.clave, { modo: 'HEREDA' })).catch(() => {})}
@@ -263,7 +273,13 @@ const AdnDeMarca: React.FC<Props> = ({ clientId, marca, madreDeclarada, submarca
           )}
           <Info texto={ayuda} arriba />
           <span className="flex-1" />
-          {ev.propuestaPendiente ? (
+          {soloLectura ? (
+            hereda ? (
+              <button onClick={() => onAbrirMarca(madre!.id)} className="inline-flex items-center gap-0.5 text-[11.5px] text-blue-600 hover:text-blue-800">
+                Ver en {madre!.name} <ArrowUpRight className="h-3 w-3" />
+              </button>
+            ) : null
+          ) : ev.propuestaPendiente ? (
             <button
               onClick={() => setEdicion({ tipo: 'propuesta', clave: s.clave })}
               className="rounded-lg bg-blue-600 px-2.5 py-1 text-[11.5px] font-semibold text-white hover:bg-blue-700"
@@ -377,7 +393,7 @@ const AdnDeMarca: React.FC<Props> = ({ clientId, marca, madreDeclarada, submarca
                 <span>● {conteo.vacias} vacías</span>
               </>
             )}
-            {pendientes.length > 0 && (
+            {pendientes.length > 0 && !soloLectura && (
               <button onClick={() => setEdicion({ tipo: 'propuesta', clave: pendientes[0] })} className="text-blue-700 hover:underline">
                 ● {pendientes.length} sin confirmar
               </button>
