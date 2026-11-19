@@ -14,6 +14,7 @@ import UserHeader from './components/UserHeader';
 import NotificationSystem, { Notification, NotificationType } from './components/NotificationSystem';
 import { CopyParameters, CopyVariation, ReviewSession, SavedVariation, BrandConfig, Client, User, WorkspaceMember, WorkspaceSummary, canManageWorkspace, ContentDNAProfile } from './types';
 import TableroProduccion from './components/produccion/TableroProduccion';
+import CrearPiezasModal from './components/produccion/CrearPiezasModal';
 import Bandeja, { DestinoAviso } from './components/Bandeja';
 import { NAV_STAGES, SCREENS, ScreenId, puedeVer } from './screens';
 import { VOICES, GOALS } from './constants';
@@ -207,8 +208,9 @@ const App: React.FC = () => {
   // al diseñador sin el tablero donde está su pieza. La pestaña de arranque
   // (Marcas) es de administración, así que se lo lleva a la primera suya.
   React.useEffect(() => {
-    if (currentUser && !puedeVer(SCREENS[activeTab], quien)) setActiveTab(isAdmin ? 'saved' : 'produccion');
-  }, [currentUser, isAdmin, superAdmin, activeTab]);
+    // Quien no administra entra a sus piezas: «Lo mío» con la plataforma por procesos, el tablero sin ella.
+    if (currentUser && !puedeVer(SCREENS[activeTab], quien)) setActiveTab(isAdmin ? 'saved' : plataforma ? 'loMio' : 'produccion');
+  }, [currentUser, isAdmin, superAdmin, plataforma, activeTab]);
   const workspaces: WorkspaceSummary[] = currentUser?.workspaces || [];
   const activeClient = clients.find(c => c.id === activeClientId);
 
@@ -691,7 +693,7 @@ const App: React.FC = () => {
     : undefined;
   const marcaDeLoGenerado = clients.find(c => c.id === (lastParams?.clientId || activeClientId));
 
-  const pantallaConMarca = !['clients', 'users', 'settings', 'help', 'analytics', 'novedades', 'control', 'panorama'].includes(activeTab);
+  const pantallaConMarca = !['clients', 'users', 'settings', 'help', 'analytics', 'novedades', 'control', 'panorama', 'loMio'].includes(activeTab);
 
   /*
    * La novedad a avisar al entrar. Se espera a que la sesión venga del
@@ -1052,9 +1054,10 @@ const App: React.FC = () => {
           addNotification={addNotification}
           onIrA={setActiveTab}
           campanaDelEncabezado={plataforma ? campanaId : undefined}
+          crearPiezas={props => <CrearPiezasModal {...props} />}
         />
       )}
-      {activeTab === 'produccion' && (
+      {(activeTab === 'produccion' || activeTab === 'loMio') && (
         <TableroProduccion
           clients={clients}
           clientId={activeClientId}
@@ -1064,6 +1067,8 @@ const App: React.FC = () => {
           onDestinoAtendido={() => setDestinoProduccion(null)}
           onIrACopyAprobado={() => setActiveTab('saved')}
           campanaId={plataforma ? campanaId : undefined}
+          vista={plataforma ? (activeTab === 'loMio' ? 'mias' : 'marca') : undefined}
+          onVista={plataforma ? v => setActiveTab(v === 'mias' ? 'loMio' : 'produccion') : undefined}
         />
       )}
       {activeTab === 'history' && isAdmin && (
