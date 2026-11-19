@@ -8,7 +8,7 @@ de CDM: reemplaza los datos SUPUESTO de las pantallas «§ Catálogo · …» de
 
 | Hoja | Qué tiene |
 |---|---|
-| Especificaciones | 33 ubicaciones (16 de imagen, 17 de video) en Facebook, Instagram, Audience Network y Messenger: proporción, resolución, archivo, peso, largos de texto, medidas mínimas, tolerancia, duración, video, subtítulos, sonido, URL de Meta |
+| Especificaciones | 34 ubicaciones (17 de imagen, 17 de video; el conteo de 33 era un error, 2026-11-19) en Facebook, Instagram, Audience Network y Messenger: proporción, resolución, archivo, peso, largos de texto, medidas mínimas, tolerancia, duración, video, subtítulos, sonido, URL de Meta |
 | Zonas seguras | Márgenes sin texto ni logo en Stories y Reels (14 % arriba, 35 % abajo, 6 % a los lados; Messenger 14 % / 20 %) |
 | Ubicaciones | Dónde aparece cada una y si admite imagen, video o los dos |
 | Alertas y notas | 10 casos donde la guía de Meta se contradice, con la acción sugerida |
@@ -16,7 +16,7 @@ de CDM: reemplaza los datos SUPUESTO de las pantallas «§ Catálogo · …» de
 ## Se organiza por pieza a producir (decisión 18)
 
 Diseño produce por proporción; Planning planea por ubicación. La unidad de la biblioteca es la **pieza
-maestra**: un tipo de archivo y una proporción, con las ubicaciones que cubre. Las 33 ubicaciones quedan
+maestra**: un tipo de archivo y una proporción, con las ubicaciones que cubre. Las 34 ubicaciones quedan
 en **6 piezas**:
 
 | Pieza | Ubicaciones | Resolución | Texto principal | Título | Descripción | Alertas |
@@ -62,3 +62,19 @@ produce: así nadie hace una 1,91:1 ni una 16:9 aparte. Un formato puede pedir o
 | 8 | Video · Marketplace | Solo título (25) | Confirmar el texto |
 | 9 | Reels de FB | Título (55) más largo que el texto (40) | Confirmar en vista previa |
 | 10 | Video · Messenger Stories | Zona inferior 14 % contra 20 % en imagen | Usar 20 % |
+
+## En la base (F2a, 2026-11-19)
+
+- **Convertir la planilla:** `meta-especificaciones-2026-11-09.json` es la planilla convertida con
+  `node scripts/planilla-a-json.cjs`. El servidor no abre `.xlsx`.
+- **Cargarla:** `npm run cdm:importar -- <slug> <json>` (en `server/`). Por defecto solo muestra qué haría;
+  `--apply` lo escribe en una transacción.
+- **Agrupar por pieza:** `server/src/cdm/biblioteca/cargarPlanilla.ts` agrupa con `piezaDe`, la regla de
+  arriba: 9:16 manda; 1,91:1 no pide pieza aparte; entre 1:1 y 4:5 gana la primera que nombra la guía.
+- **Qué guarda cada pieza:**
+  - el lienzo, que es la resolución recomendada más común;
+  - la zona segura más conservadora de sus ubicaciones;
+  - cada ubicación con sus largos como campos de texto de plataforma y su alerta, que la deja «por
+    confirmar».
+- **Versiones:** cargar dos veces lo mismo no crea una versión. Un largo que cambia crea una nueva solo
+  en esa pieza.

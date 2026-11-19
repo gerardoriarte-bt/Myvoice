@@ -121,7 +121,7 @@ nueva que diga qué cambió y por qué.
 
 18. **La unidad de la biblioteca es la pieza maestra**: un tipo de archivo y una proporción (imagen 9:16,
     video 4:5…), con las ubicaciones que cubre. Diseño produce por proporción y Planning planea por
-    ubicación: las 33 ubicaciones de Meta quedan en 6 piezas
+    ubicación: las 34 ubicaciones de Meta (decía 33: error de conteo, corregido el 2026-11-19) quedan en 6 piezas
     ([cdm/biblioteca/meta.md](./cdm/biblioteca/meta.md)). El largo de cada texto lo fija la **línea del
     cuadro**: el más corto entre las ubicaciones que eligió, no entre todas las de la pieza. Una ubicación
     con alerta de la guía queda «por confirmar». Fuente: la planilla de Meta del 2026-11-09, versionada en
