@@ -11,6 +11,8 @@ export default {
     './components/**/*.{ts,tsx}',
     './services/**/*.{ts,tsx}',
     './shared/**/*.{ts,tsx}',
+    // El marco de la plataforma por procesos (F0): sin esta línea sus clases no se generan.
+    './src/**/*.{ts,tsx}',
   ],
   theme: {
     extend: {
