@@ -1,0 +1,147 @@
+// CDM (F2): la biblioteca de medios. Es de la agencia (el workspace), general para todas sus marcas
+// (decisiones 25 y 28). Ver docs/ecosistema/datos/arquitectura-de-datos.md y docs/ecosistema/cdm/biblioteca/.
+
+/// Un medio queda en BORRADOR hasta que Planning lo activa; en borrador no se elige en un planning.
+enum EstadoMedio {
+  BORRADOR
+  ACTIVO
+  OCULTO
+}
+
+enum TipoDeArchivo {
+  IMAGEN
+  VIDEO
+  AUDIO
+  TEXTO
+  HTML
+}
+
+/// Dónde va un texto: en la pieza (lo diseña Producción) o en la plataforma (lo pone el trafficker).
+enum ZonaDeCampo {
+  PIEZA
+  PLATAFORMA
+}
+
+/// Meta, Google, TikTok… El nombre es único dentro de la agencia.
+model Medio {
+  id          String      @id @default(uuid())
+  workspaceId String
+  nombre      String
+  estado      EstadoMedio @default(BORRADOR)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  formatos  Formato[]
+
+  @@unique([workspaceId, nombre])
+}
+
+/// La **pieza maestra** (decisión 18): un tipo de archivo y una proporción, con las ubicaciones que cubre.
+/// Diseño produce por pieza; Planning planea por ubicación. Lo que cambia vive en sus versiones.
+model Formato {
+  id          String        @id @default(uuid())
+  workspaceId String
+  medioId     String
+  /// «Imagen 9:16». Único dentro del medio.
+  nombre      String
+  tipoArchivo TipoDeArchivo
+  proporcion  String?
+  /// El puente con My Voice: el valor de `Platform` cuando el formato es uno de los 14 canales de hoy.
+  canal       String?
+  createdAt   DateTime      @default(now())
+
+  medio     Medio            @relation(fields: [medioId], references: [id], onDelete: Cascade)
+  versiones FormatoVersion[]
+
+  @@unique([medioId, nombre])
+  @@index([workspaceId])
+}
+
+/// Una versión congela medidas, archivo, guía, ubicaciones y campos de texto. Cambiar cualquiera crea otra;
+/// lo ya escrito sigue con la suya (regla 4 de la arquitectura).
+model FormatoVersion {
+  id          String    @id @default(uuid())
+  formatoId   String
+  numero      Int
+  anchoPx     Int?
+  altoPx      Int?
+  /// «JPG o PNG», tal como lo dice la guía del medio.
+  archivos    String?
+  pesoMaximo  String?
+  /// Lienzo y zona segura como datos, para dibujarla a escala (Producción, auditoría).
+  guia        Json?
+  /// De dónde salió: la planilla o la guía, con su fecha.
+  fuente      String?
+  fuenteFecha DateTime?
+  cargaId     String?
+  createdAt   DateTime  @default(now())
+
+  formato     Formato          @relation(fields: [formatoId], references: [id], onDelete: Cascade)
+  carga       CargaDePlanilla? @relation(fields: [cargaId], references: [id], onDelete: SetNull)
+  ubicaciones Ubicacion[]
+  campos      CampoDeTexto[]
+
+  @@unique([formatoId, numero])
+}
+
+/// Dónde aparece la pieza (Feed de Instagram, Facebook Reels…), con lo que la guía dice de cada una.
+model Ubicacion {
+  id               String  @id @default(uuid())
+  formatoVersionId String
+  plataforma       String
+  nombre           String
+  orden            Int
+  /// Lo que pide la guía, como lo dice: «1,91:1 a 1:1».
+  proporcion       String
+  resolucion       String?
+  /// Mínimos, tolerancia, duración, video, subtítulos, sonido y otras indicaciones de la guía.
+  detalles         Json?
+  zonaSegura       Json?
+  urlFuente        String?
+  /// Una ubicación con alerta queda «por confirmar» hasta que alguien la pruebe (meta.md, regla 3).
+  alerta           Int?
+  alertaTexto      String?
+  porConfirmar     Boolean @default(false)
+
+  version FormatoVersion @relation(fields: [formatoVersionId], references: [id], onDelete: Cascade)
+  campos  CampoDeTexto[]
+
+  @@index([formatoVersionId])
+}
+
+/// Un texto que lleva la pieza o la plataforma. Con `ubicacionId`, su largo es el de esa ubicación: el
+/// planning escribe para el más corto entre las que eligió la línea (decisión 18).
+model CampoDeTexto {
+  id               String      @id @default(uuid())
+  formatoVersionId String
+  ubicacionId      String?
+  clave            String
+  nombre           String
+  zona             ZonaDeCampo
+  unidad           String      @default("caracteres")
+  minimo           Int?
+  maximo           Int?
+  repeticiones     Int         @default(1)
+
+  version   FormatoVersion @relation(fields: [formatoVersionId], references: [id], onDelete: Cascade)
+  ubicacion Ubicacion?     @relation(fields: [ubicacionId], references: [id], onDelete: Cascade)
+
+  @@index([formatoVersionId])
+}
+
+/// Cada carga de una planilla, con lo que creó y cambió: el historial de la biblioteca.
+model CargaDePlanilla {
+  id          String   @id @default(uuid())
+  workspaceId String
+  archivo     String
+  medio       String
+  resumen     Json
+  autorId     String?
+  createdAt   DateTime @default(now())
+
+  workspace Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  versiones FormatoVersion[]
+
+  @@index([workspaceId])
+}

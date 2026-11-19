@@ -41,6 +41,9 @@ model Workspace {
   Pieza                 Pieza[]
   MiembroFuncion        MiembroFuncion[]
   notificaciones        Notificacion[]
+  /// CDM: la biblioteca de medios de la agencia (decisión 28).
+  medios                Medio[]
+  cargasDePlanilla      CargaDePlanilla[]
 }
 
 model User {

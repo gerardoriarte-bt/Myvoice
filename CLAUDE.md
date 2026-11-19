@@ -44,6 +44,7 @@ npm run backfill:slots        # infers slot/slotLabel on saved copy (heuristic)
 npm run backfill:adn          # brand DNA columns → SeccionAdn + version 1; lists what changes for each submarca
 npm run recrypt:keys          # encrypts any aiApiKey still stored in plaintext
 npm run superadmin            # lists super admins; `-- <email> [--quitar] --apply` names one (decision 27)
+npm run cdm:importar          # loads a medium's spec sheet (JSON) into a workspace's CDM library; `-- <slug> <json> --apply`
 npm run plataforma            # lists workspaces; `-- <slug> --encender|--apagar --apply` flips the process frame (F0)
 npm run verify:isolation      # cross-tenant isolation suite; needs the API running
 npm run verify:resiliencia    # retry/backoff/timeout against a fake client; spends no API credit
@@ -52,7 +53,7 @@ npm run verify:calidad        # copy quality vs the writing manual, judged per r
 npm run calidad:caso -- <dnaProfileId>   # exports a real case to server/.calidad/ (gitignored: client data)
 ```
 
-The writing scripts (`backfill:*`, `recrypt:keys`, `plataforma`, `superadmin`) are **dry-run by default** and only
+The writing scripts (`backfill:*`, `recrypt:keys`, `plataforma`, `superadmin`, `cdm:importar`) are **dry-run by default** and only
 write with `-- --apply`, inside a single transaction.
 
 **Typechecking is the only gate, and it takes three commands.** `npm run build` uses esbuild

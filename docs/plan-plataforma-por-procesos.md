@@ -210,6 +210,19 @@ el suyo, y que el admin actúa en todos. Con `observar` no bloquea y lo registra
 
 ### F2 · Biblioteca de medios y medios de la marca (CDM, configuración)
 
+**F2a (2026-11-19), hecho:**
+- **Las tablas:** `cdm.prisma`, con `Medio`, `Formato` (la pieza maestra), `FormatoVersion`, `Ubicacion`,
+  `CampoDeTexto` y `CargaDePlanilla`, en una migración aditiva.
+- **El importador** `cdm/biblioteca/cargarPlanilla.ts`:
+  - planifica y aplica en una transacción;
+  - versiona solo lo que cambió;
+  - deja las filas con errores afuera.
+- **El script** `npm run cdm:importar`.
+- **Meta cargada en local:** 6 piezas, 34 ubicaciones, 13 por confirmar.
+
+**Pasa a F2b:** los 14 canales como formatos (con las decisiones de B8 en el `.pen`), las rutas y las
+pantallas.
+
 El modelo de datos de F1 a F5 está en [ecosistema/datos/arquitectura-de-datos.md](./ecosistema/datos/arquitectura-de-datos.md)
 (vigente desde el 2026-11-19, decisión 28). El esquema ya está partido por módulo (`server/prisma/schema/`):
 las tablas de CDM van en `cdm.prisma`.
@@ -227,7 +240,7 @@ las tablas de CDM van en `cdm.prisma`.
   calculado al leer (como el ADN). «Agregar a la biblioteca» desde M1 crea el formato en la biblioteca y lo
   suma a la marca en la misma transacción.
 - **Carga desde planilla**: `cdm/biblioteca/cargarPlanilla.ts`, en seco por defecto, con la planilla de
-  Meta del repo como primer caso (33 ubicaciones → 6 piezas, 10 alertas).
+  Meta del repo como primer caso (34 ubicaciones → 6 piezas, 10 alertas).
 - **Los 14 canales** se cargan como formatos con `canal` = el valor de `Platform`: es el puente que deja
   a My Voice generar una línea con su spec de hoy hasta que el motor lea los campos del formato.
 - Editar la biblioteca es del paso CDM: Planning, sin pedir admin (decisión 25). Guards de tenencia en cada `:id`;
