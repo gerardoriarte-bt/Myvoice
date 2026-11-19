@@ -49,4 +49,4 @@ Módulos: parte común · My Voice · CDM   (los que se tocaron)
 - [2026-10-28](./2026-10-28.md) · Del plan del Adaptador al ecosistema CDM + My Voice.
 - [2026-11-12](./2026-11-12.md) · ADN 2.0 en pantalla y el aviso en v1 (F2 y F3).
 - [2026-11-17](./2026-11-17.md) · La plataforma como proceso, diseñada y auditada; sin voseo en producción.
-- [2026-11-19](./2026-11-19.md) · F0a: el marco de la plataforma por procesos, detrás del interruptor.
+- [2026-11-19](./2026-11-19.md) · De F0 a F3a: el marco, el super admin, CDM y el planning, en producción.
