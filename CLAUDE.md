@@ -44,7 +44,8 @@ npm run backfill:slots        # infers slot/slotLabel on saved copy (heuristic)
 npm run backfill:adn          # brand DNA columns → SeccionAdn + version 1; lists what changes for each submarca
 npm run recrypt:keys          # encrypts any aiApiKey still stored in plaintext
 npm run superadmin            # lists super admins; `-- <email> [--quitar] --apply` names one (decision 27)
-npm run cdm:canales           # loads the 14 My Voice channels into a workspace's CDM library, each in its class's medium (decision 29); `-- <slug> --apply`
+npm run cdm:canales           # in production: `[APLICAR=1] bash deploy/cdm-canales.sh <slug>…` (disposable Node on the backend's network)
+#                              loads the 14 My Voice channels into a workspace's CDM library, each in its class's medium (decision 29); `-- <slug> --apply`
 npm run cdm:importar          # loads a medium's spec sheet (JSON) into a workspace's CDM library; `-- <slug> <json> --apply`
 npm run plataforma            # lists workspaces; `-- <slug> --encender|--apagar --apply` flips the process frame (F0)
 npm run verify:isolation      # cross-tenant isolation suite; needs the API running
