@@ -48,16 +48,6 @@ export interface Novedad {
 
 export const NOVEDADES: Novedad[] = [
   {
-    id: 'costos-y-tu',
-    fecha: '2026-11-19',
-    titulo: 'Los costos de IA ya no se muestran en el equipo',
-    cambios: [
-      'Métricas, Historial, Generar, el informe de auditoría y el Excel ya no muestran cuánto costó cada generación: el gasto de IA lo lleva la administración de la plataforma.',
-      'Si un workspace llega al tope de IA del mes, el aviso lo dice sin montos.',
-      'En Copy y en Producción, cuando la aprobación es tuya, ahora dice «Tú».',
-    ],
-  },
-  {
     id: 'modelos-claude-5-5',
     fecha: '2026-11-12',
     titulo: 'El motor escribe con una versión más nueva de Claude',
