@@ -29,6 +29,7 @@ export const RUTAS: Record<ScreenId, string> = {
   loMio: '/produccion/lo-mio',
   adn: '/marca/adn',
   biblioteca: '/cdm/biblioteca',
+  plannings: '/cdm/plannings',
 };
 
 export interface Ubicacion {
@@ -75,8 +76,11 @@ export const PASOS: PasoDef[] = [
     nombre: 'CDM',
     tema: 'Planning',
     color: '#047857',
-    // Plannings, Medios de la marca y Destinos llegan con F2c y F3; la biblioteca es de la agencia.
-    grupos: [{ titulo: 'De la agencia', pantallas: ['biblioteca'] }],
+    // Medios de la marca y Destinos llegan después; la biblioteca es de la agencia (decisión 20).
+    grupos: [
+      { titulo: 'Trabajo', pantallas: ['plannings'] },
+      { titulo: 'De la agencia', pantallas: ['biblioteca'] },
+    ],
     trabajo: 'CDM',
     funcion: 'PLANNING',
   },

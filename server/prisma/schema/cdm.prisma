@@ -64,8 +64,9 @@ model Formato {
   canal       String?
   createdAt   DateTime      @default(now())
 
-  medio     Medio            @relation(fields: [medioId], references: [id], onDelete: Cascade)
-  versiones FormatoVersion[]
+  medio            Medio             @relation(fields: [medioId], references: [id], onDelete: Cascade)
+  versiones        FormatoVersion[]
+  lineasDePlanning LineaDePlanning[]
 
   @@unique([medioId, nombre])
   @@index([workspaceId])
@@ -90,10 +91,11 @@ model FormatoVersion {
   cargaId     String?
   createdAt   DateTime  @default(now())
 
-  formato     Formato          @relation(fields: [formatoId], references: [id], onDelete: Cascade)
-  carga       CargaDePlanilla? @relation(fields: [cargaId], references: [id], onDelete: SetNull)
-  ubicaciones Ubicacion[]
-  campos      CampoDeTexto[]
+  formato          Formato           @relation(fields: [formatoId], references: [id], onDelete: Cascade)
+  carga            CargaDePlanilla?  @relation(fields: [cargaId], references: [id], onDelete: SetNull)
+  ubicaciones      Ubicacion[]
+  campos           CampoDeTexto[]
+  lineasDePlanning LineaDePlanning[]
 
   @@unique([formatoId, numero])
 }
@@ -159,4 +161,91 @@ model CargaDePlanilla {
   versiones FormatoVersion[]
 
   @@index([workspaceId])
+}
+
+// ------------------------------------------------------------------------------------------ planning (F3)
+
+/// Las etapas del funnel en que sale una línea (decisión 19). My Voice las lee como `FunnelStage` (F4).
+enum EtapaDeFunnel {
+  RECONOCIMIENTO
+  CONSIDERACION
+  CONVERSION
+  RETENCION
+}
+
+/// Sin enviar (en armado o devuelto), por aprobar o aprobado (decisión 20: el menú cuenta los dos últimos).
+enum EstadoPlanning {
+  EN_ARMADO
+  POR_APROBAR
+  DEVUELTO
+  APROBADO
+}
+
+/// El planning de una campaña (P1 a P5): uno por campaña, que se crea antes (decisión 24). Cada envío sube la
+/// versión; las líneas se editan solo sin enviar o devuelto, y un planning aprobado se reabre como versión nueva.
+model Planning {
+  id          String          @id @default(uuid())
+  workspaceId String
+  clientId    String
+  campanaId   String          @unique
+  version     Int             @default(1)
+  estado      EstadoPlanning  @default(EN_ARMADO)
+  desde       DateTime?
+  hasta       DateTime?
+  etapas      EtapaDeFunnel[]
+  creadoPorId String
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  campana Project            @relation(fields: [campanaId], references: [id], onDelete: Cascade)
+  lineas  LineaDePlanning[]
+  eventos EventoDePlanning[]
+
+  @@index([workspaceId, clientId])
+}
+
+/// Una línea de la sábana = un formato en una etapa, con sus piezas (decisión 19). Su `id` es el `lineaId`
+/// estable entre versiones: My Voice compara por él (F4).
+model LineaDePlanning {
+  id               String        @id @default(uuid())
+  planningId       String
+  formatoId        String
+  /// La versión del formato con que se planeó: lo escrito después sigue con ella (regla 4).
+  formatoVersionId String
+  etapa            EtapaDeFunnel
+  piezas           Int
+  desde            DateTime?
+  hasta            DateTime?
+  /// Las ubicaciones que eligió la línea (P4b, F3b): el largo para My Voice es el más corto entre ellas.
+  ubicacionIds     String[]      @default([])
+  orden            Int           @default(0)
+
+  planning Planning       @relation(fields: [planningId], references: [id], onDelete: Cascade)
+  formato  Formato        @relation(fields: [formatoId], references: [id])
+  version  FormatoVersion @relation(fields: [formatoVersionId], references: [id])
+
+  @@unique([planningId, formatoId, etapa])
+}
+
+enum TipoEventoPlanning {
+  CREADO
+  ENVIADO
+  APROBADO
+  DEVUELTO
+  REABIERTO
+}
+
+/// El historial del planning: no se edita (regla 5 del plan). Un «devuelto» lleva su comentario.
+model EventoDePlanning {
+  id         String             @id @default(uuid())
+  planningId String
+  tipo       TipoEventoPlanning
+  version    Int
+  autorId    String
+  comentario String?
+  createdAt  DateTime           @default(now())
+
+  planning Planning @relation(fields: [planningId], references: [id], onDelete: Cascade)
+
+  @@index([planningId])
 }

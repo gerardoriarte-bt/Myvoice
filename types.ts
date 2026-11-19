@@ -841,3 +841,50 @@ export interface PlanDeCarga {
   alertas: { numero: number; ubicacion: string; inconsistencia: string; accion: string }[];
   errores: string[];
 }
+
+/** F3 · Las etapas del funnel de un planning (decisión 19). */
+export type EtapaDeFunnel = 'RECONOCIMIENTO' | 'CONSIDERACION' | 'CONVERSION' | 'RETENCION';
+export type EstadoPlanning = 'EN_ARMADO' | 'POR_APROBAR' | 'DEVUELTO' | 'APROBADO';
+
+/** P1: un planning en la lista de la marca. */
+export interface PlanningResumen {
+  id: string;
+  campana: { id: string; nombre: string };
+  estado: EstadoPlanning;
+  version: number;
+  desde: string | null;
+  hasta: string | null;
+  aprueba: { id: string; name: string } | null;
+  ultimo: { tipo: string; fecha: string; comentario: string | null } | null;
+  medios: number;
+  formatos: number;
+  lineas: number;
+  piezas: number;
+}
+
+/** P3 a P5: el planning con su sábana. */
+export interface PlanningDetalle {
+  id: string;
+  clientId: string;
+  campana: { id: string; nombre: string; modoAprobacion: 'INTERNA' | 'CLIENTE' };
+  aprueba: { id: string; name: string } | null;
+  estado: EstadoPlanning;
+  version: number;
+  desde: string | null;
+  hasta: string | null;
+  etapas: EtapaDeFunnel[];
+  lineas: {
+    id: string;
+    formato: { id: string; nombre: string; canal: string | null; tipoArchivo: string };
+    medio: { id: string; nombre: string; clase: MedioResumen['clase'] };
+    medidas: string | null;
+    etapa: EtapaDeFunnel;
+    piezas: number;
+    desde: string | null;
+    hasta: string | null;
+    textos: { clave: string; nombre: string; maximo: number | null; repeticiones: number }[];
+  }[];
+  resumen: { medios: number; formatos: number; lineas: number; piezas: number };
+  eventos: { tipo: string; version: number; autor: string | null; comentario: string | null; fecha: string }[];
+  puedo: { editar: boolean; enviar: boolean; decidir: boolean; reabrir: boolean };
+}

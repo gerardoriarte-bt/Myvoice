@@ -243,6 +243,16 @@ async function main() {
       const listaB = await api('/cdm/biblioteca', B.token);
       record('GET /cdm/biblioteca no trae medios de A', !JSON.stringify(listaB.body).includes(medioA.id), `status ${listaB.status}`);
       await expectAllowed('GET /cdm/biblioteca/medios/:id propio', `/cdm/biblioteca/medios/${medioA.id}`, A.token);
+      // El planning de una campaña (F3): ni se lee ni se decide desde otro workspace.
+      const planA = await prisma.planning.create({
+        data: { workspaceId: A.workspace.id, clientId: A.client.id, campanaId: A.project.id, etapas: ['RECONOCIMIENTO'], creadoPorId: A.user.id },
+      });
+      await expectDenied('GET /cdm/plannings/:id de A', `/cdm/plannings/${planA.id}`, B.token);
+      await expectDenied('GET /cdm/plannings?clientId de A', `/cdm/plannings?clientId=${A.client.id}`, B.token);
+      await expectDenied('POST /cdm/plannings/:id/aprobar de A', `/cdm/plannings/${planA.id}/aprobar`, B.token, { method: 'POST', body: '{}' });
+      await expectDenied('PUT /cdm/plannings/:id/lineas de A', `/cdm/plannings/${planA.id}/lineas`, B.token, { method: 'PUT', body: JSON.stringify({ lineas: [] }) });
+      await expectDenied('POST /cdm/plannings sobre una campaña de A', '/cdm/plannings', B.token, { method: 'POST', body: JSON.stringify({ campanaId: A.project.id, etapas: ['RECONOCIMIENTO'] }) });
+      await expectAllowed('GET /cdm/plannings/:id propio', `/cdm/plannings/${planA.id}`, A.token);
       await expectDenied('PUT /cdm/biblioteca/medios/:id/estado de A', `/cdm/biblioteca/medios/${medioA.id}/estado`, B.token, { method: 'PUT', body: JSON.stringify({ estado: 'OCULTO' }) });
       // Editar la biblioteca es de Planning o de un admin: un MEMBER sin la función no carga planillas.
       const sinPlanning = await nuevoMiembro(B.workspace.id, 'sin-planning');

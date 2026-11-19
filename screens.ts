@@ -24,6 +24,7 @@ import {
   Gauge,
   Layers,
   Inbox,
+  ListChecks,
   Map as MapIcon,
   History,
   LayoutGrid,
@@ -50,7 +51,8 @@ export type ScreenId =
   | 'panorama'
   | 'loMio'
   | 'adn'
-  | 'biblioteca';
+  | 'biblioteca'
+  | 'plannings';
 
 /**
  * Cinco etapas, no cuatro: cuando entra la pieza, «producir» dejaba de
@@ -201,6 +203,19 @@ export const SCREENS: Record<ScreenId, ScreenDef> = {
     // No depende del rol en el workspace activo: el super admin puede ser MEMBER donde está parado.
     adminOnly: false,
     superAdmin: true,
+  },
+  /**
+   * Los plannings de la marca (F3; P1 a P5 en el `.pen`): el trabajo de cada campaña en CDM, de los medios a la
+   * sábana aprobada. La entrada de Planning.
+   */
+  plannings: {
+    id: 'plannings',
+    name: 'Plannings',
+    description: 'El trabajo de cada campaña: medios, sábana y aprobación.',
+    icon: ListChecks,
+    stage: 'preparar',
+    adminOnly: false,
+    soloPorProcesos: true,
   },
   /**
    * La biblioteca de medios de la agencia (F2b; B1 y B2 en el `.pen`): todos los medios y sus piezas, para

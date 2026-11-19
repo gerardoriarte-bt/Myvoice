@@ -9,6 +9,9 @@ import type {
   MedioDetalle,
   MedioResumen,
   PlanDeCarga,
+  PlanningDetalle,
+  PlanningResumen,
+  EtapaDeFunnel,
   PlanillaDeMedio,
   CampanaEnProceso,
   UsuarioDeControl,
@@ -120,6 +123,21 @@ export const controlApi = {
 
 /** CDM (F2b): la biblioteca de medios de la agencia. Leerla es de todos; editarla, de Planning. */
 export const cdmApi = {
+  /** F3: los plannings de una marca y el de una campaña. */
+  plannings: (clientId: string): Promise<PlanningResumen[]> => apiRequest(`/cdm/plannings?clientId=${encodeURIComponent(clientId)}`),
+  crearPlanning: (datos: { campanaId: string; desde: string | null; hasta: string | null; etapas: EtapaDeFunnel[] }): Promise<{ id: string }> =>
+    apiRequest('/cdm/plannings', { method: 'POST', body: JSON.stringify(datos) }),
+  planning: (id: string): Promise<PlanningDetalle> => apiRequest(`/cdm/plannings/${id}`),
+  actualizarPlanning: (id: string, datos: { desde?: string | null; hasta?: string | null; etapas?: EtapaDeFunnel[] }): Promise<PlanningDetalle> =>
+    apiRequest(`/cdm/plannings/${id}`, { method: 'PUT', body: JSON.stringify(datos) }),
+  guardarLineas: (id: string, lineas: { formatoId: string; etapa: EtapaDeFunnel; piezas: number }[]): Promise<PlanningDetalle> =>
+    apiRequest(`/cdm/plannings/${id}/lineas`, { method: 'PUT', body: JSON.stringify({ lineas }) }),
+  enviarPlanning: (id: string): Promise<PlanningDetalle> => apiRequest(`/cdm/plannings/${id}/enviar`, { method: 'POST' }),
+  aprobarPlanning: (id: string, comentario?: string): Promise<PlanningDetalle> =>
+    apiRequest(`/cdm/plannings/${id}/aprobar`, { method: 'POST', body: JSON.stringify({ comentario }) }),
+  devolverPlanning: (id: string, comentario: string): Promise<PlanningDetalle> =>
+    apiRequest(`/cdm/plannings/${id}/devolver`, { method: 'POST', body: JSON.stringify({ comentario }) }),
+  reabrirPlanning: (id: string): Promise<PlanningDetalle> => apiRequest(`/cdm/plannings/${id}/reabrir`, { method: 'POST' }),
   medios: (): Promise<MedioResumen[]> => apiRequest('/cdm/biblioteca'),
   medio: (id: string): Promise<MedioDetalle> => apiRequest(`/cdm/biblioteca/medios/${id}`),
   /** Sin `aplicar`, en seco: qué haría la carga. */
