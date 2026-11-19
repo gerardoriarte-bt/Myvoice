@@ -80,7 +80,7 @@ const QuienAprueba: React.FC<Props> = ({ personas, detalle, soyYo, sinNadie, com
         ) : (
           <>
             <span className="flex -space-x-1">{personas.slice(0, 3).map(p => <Cara key={p.id} p={p} chica />)}</span>
-            <span className="truncate font-medium text-gray-700">{soyYo ? 'Vos' : lista(personas)}</span>
+            <span className="truncate font-medium text-gray-700">{soyYo ? 'Tú' : lista(personas)}</span>
           </>
         )}
       </p>
@@ -97,7 +97,7 @@ const QuienAprueba: React.FC<Props> = ({ personas, detalle, soyYo, sinNadie, com
       <div className="min-w-0 flex-1">
         <p className="text-[9px] font-bold uppercase tracking-wide text-gray-400">{soyYo ? 'Te toca aprobar' : rotulo}</p>
         <p className="text-[12px] font-semibold leading-snug text-gray-900">
-          {vacio ? 'Nadie todavía' : soyYo ? 'Vos' : lista(personas)}
+          {vacio ? 'Nadie todavía' : soyYo ? 'Tú' : lista(personas)}
         </p>
         {detalle && <p className="text-[10.5px] leading-snug text-gray-500">{detalle}</p>}
       </div>
