@@ -318,6 +318,8 @@ model Project {
   responsable             User?              @relation("ResponsableDeAprobacion", fields: [responsableId], references: [id], onDelete: SetNull)
   variations              SavedVariation[]
   piezas                  Pieza[]
+  /// CDM (F3): el planning de la campaña, uno solo.
+  planning                Planning?
 
   @@index([clientId])
 }

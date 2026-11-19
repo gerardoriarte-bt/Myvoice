@@ -293,6 +293,28 @@ las tablas de CDM van en `cdm.prisma`.
 
 ### F3 · Planning y sábana (P1 a P5)
 
+**F3a (2026-11-19), hecho:**
+- **Tablas** en `cdm.prisma`:
+  - `Planning`, uno por campaña, con versión y estado (`EN_ARMADO`, `POR_APROBAR`, `DEVUELTO`, `APROBADO`);
+  - `LineaDePlanning`, formato × etapa × piezas, con su `id` como `lineaId` estable y la versión del formato
+    fijada;
+  - `EventoDePlanning`, el historial, que no se edita.
+- **Las reglas viven en `cdm/planning/planningService.ts`:**
+  - lo arma Planning o un admin;
+  - solo se usan medios activos;
+  - se edita sin enviar o devuelto;
+  - lo aprueba o lo devuelve, con comentario, el responsable de la campaña;
+  - aprobado, se reabre como versión nueva.
+- **Las pantallas** en `src/cdm/Plannings.tsx`: P1 a la lista, P2 nuevo sobre una campaña existente sin pedir
+  nombre, P3 medios con piezas por etapa, P4 la sábana con los textos y largos para My Voice, P5 aprobar.
+- **El paso ②** queda hecho con la sábana aprobada, y si no, dice en qué va y quién lo debe.
+
+**F3b, lo que falta:**
+- Que cada línea elija sus ubicaciones (P4b).
+- La aprobación del cliente por enlace (`RondaRevision.SABANA`), en las campañas con cliente.
+- Los avisos y el correo al enviar y al decidir.
+- Que My Voice espere a la sábana aprobada en las marcas con CDM (regla 2), junto con F4.
+
 - `Planning` y `LineaDePlanning` (en la arquitectura, `Cuadro` y `LineaDeCuadro`; se nombran como dice
   el equipo, decisión 20). Una línea = formato × etapa × piezas (decisión 19), con fechas, las
   ubicaciones elegidas y `lineaId` estable entre versiones. El **largo para My Voice** se calcula al leer:

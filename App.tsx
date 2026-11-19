@@ -38,6 +38,7 @@ import Marco from './src/plataforma/Marco';
 import Control from './src/plataforma/Control';
 import Panorama from './src/plataforma/Panorama';
 import Biblioteca from './src/cdm/Biblioteca';
+import Plannings from './src/cdm/Plannings';
 import { PASOS, actuaEn, armarRuta, leerRuta, pantallaDeEntrada } from './src/plataforma/rutas';
 import AdnDeMarca from './components/adn/AdnDeMarca';
 import { madreDe } from './marcas';
@@ -1116,6 +1117,15 @@ const App: React.FC = () => {
       )}
       {activeTab === 'analytics' && isAdmin && <Analytics />}
       {activeTab === 'control' && superAdmin && <Control />}
+      {activeTab === 'plannings' && plataforma && activeClient && (
+        <Plannings
+          key={activeClient.id}
+          marcaId={activeClient.id}
+          marcaNombre={activeClient.name}
+          campanaId={campanaId}
+          onAviso={m => addNotification(m, 'success')}
+        />
+      )}
       {activeTab === 'biblioteca' && plataforma && (
         // La edita Planning o un admin (decisión 25); el servidor lo vuelve a decidir (`exigirPlanning`).
         <Biblioteca puedeEditar={isAdmin || Boolean(currentUser.funciones?.some(f => f.funcion === 'PLANNING'))} />

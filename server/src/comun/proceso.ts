@@ -45,17 +45,39 @@ const conCdm = (clientId: string) =>
   prisma.moduloDeMarca.findUnique({ where: { clientId_modulo: { clientId, modulo: 'CDM' } }, select: { id: true } }).then(Boolean);
 
 /**
- * ② CDM, mientras no exista el planning (F3): la campaña todavía no tiene sábana. Cuando llegue F3, el paso
- * queda hecho con la sábana aprobada.
+ * ② CDM según el planning de la campaña (F3): hecho con la sábana aprobada; mientras tanto, en qué va y quién
+ * lo debe. Lee la tabla del planning y no el servicio de CDM: la parte común no importa un módulo.
  */
-const PASO_CDM: Paso = { paso: 'cdm', estado: 'pendiente', texto: 'Sin planning todavía', falta: 'Armar el planning' };
+const pasoCdm = async (campanaId: string): Promise<Paso> => {
+  const p = await prisma.planning.findUnique({
+    where: { campanaId },
+    select: {
+      estado: true,
+      lineas: { select: { piezas: true } },
+      campana: { select: { responsable: { select: { id: true, name: true } } } },
+    },
+  });
+  if (!p) return { paso: 'cdm', estado: 'pendiente', texto: 'Sin planning todavía', falta: 'Armar el planning' };
+  const piezas = p.lineas.reduce((s, l) => s + l.piezas, 0);
+  const quien = p.campana.responsable ? { id: p.campana.responsable.id, nombre: p.campana.responsable.name } : undefined;
+  switch (p.estado) {
+    case 'APROBADO':
+      return { paso: 'cdm', estado: 'hecho', texto: `Sábana aprobada · ${piezas} piezas` };
+    case 'POR_APROBAR':
+      return { paso: 'cdm', estado: 'activo', texto: 'Sábana por aprobar', falta: 'Aprobar la sábana', quien };
+    case 'DEVUELTO':
+      return { paso: 'cdm', estado: 'activo', texto: 'Sábana devuelta', falta: 'Ajustar lo que pidió el responsable' };
+    default:
+      return { paso: 'cdm', estado: 'activo', texto: `Planning en armado · ${piezas} piezas`, falta: 'Enviar la sábana a aprobación' };
+  }
+};
 
 /** `clientId` y `campanaId` ya pasaron por la guarda de tenancy: acá no se vuelve a mirar el workspace. */
 export const procesoDeCampana = async (clientId: string, campanaId: string | null): Promise<Paso[]> => {
   const cdm = await conCdm(clientId);
   const pasos = await pasosDeCampana(clientId, campanaId);
   if (!cdm) return pasos;
-  return [pasos[0], campanaId ? PASO_CDM : { paso: 'cdm', estado: 'neutro' }, ...pasos.slice(1)];
+  return [pasos[0], campanaId ? await pasoCdm(campanaId) : { paso: 'cdm', estado: 'neutro' }, ...pasos.slice(1)];
 };
 
 const pasosDeCampana = async (clientId: string, campanaId: string | null): Promise<Paso[]> => {

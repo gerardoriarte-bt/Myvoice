@@ -14,6 +14,7 @@ import * as notificacionController from '../controllers/notificacionController.j
 import { authenticateToken, requireWorkspace, requireManager, requireSuperAdmin } from '../middleware/auth.js';
 import * as controlController from '../controllers/controlController.js';
 import * as bibliotecaController from '../cdm/biblioteca/bibliotecaController.js';
+import * as planningController from '../cdm/planning/planningController.js';
 
 const router = Router();
 const pdfUpload = multer({
@@ -167,6 +168,16 @@ router.get('/cdm/biblioteca/medios/:id', ...inWorkspace, bibliotecaController.de
 router.post('/cdm/biblioteca/cargas', ...inWorkspace, bibliotecaController.cargarPlanilla);
 router.put('/cdm/biblioteca/medios/:id/estado', ...inWorkspace, bibliotecaController.cambiarEstadoDeMedio);
 router.put('/cdm/biblioteca/medios/:id/clase', ...inWorkspace, bibliotecaController.cambiarClaseDeMedio);
+// El planning de una campaña (F3): lo arma Planning; lo aprueba el responsable de la campaña.
+router.get('/cdm/plannings', ...inWorkspace, planningController.listar);
+router.post('/cdm/plannings', ...inWorkspace, planningController.crear);
+router.get('/cdm/plannings/:id', ...inWorkspace, planningController.detalle);
+router.put('/cdm/plannings/:id', ...inWorkspace, planningController.actualizar);
+router.put('/cdm/plannings/:id/lineas', ...inWorkspace, planningController.lineas);
+router.post('/cdm/plannings/:id/enviar', ...inWorkspace, planningController.enviar);
+router.post('/cdm/plannings/:id/aprobar', ...inWorkspace, planningController.aprobar);
+router.post('/cdm/plannings/:id/devolver', ...inWorkspace, planningController.devolver);
+router.post('/cdm/plannings/:id/reabrir', ...inWorkspace, planningController.reabrir);
 
 // ------------------------------------------------------------------ control
 /**
