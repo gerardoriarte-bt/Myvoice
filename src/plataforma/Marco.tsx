@@ -5,7 +5,7 @@ import type { CampanaEnProceso, Client, PasoDeProceso, Project, User } from '../
 import { clientApi, libraryApi } from '../../services/api';
 import SelectorDeMarca from '../../components/SelectorDeMarca';
 import Isotipo from '../../components/ui/Isotipo';
-import { PASOS, PasoDef, actuaEn, pantallaDeEntrada, pasoDe } from './rutas';
+import { PASOS, PasoDef, actuaEn, pantallaDeEntrada, pasoDe, pasosDeMarca } from './rutas';
 import { FUNCION_LABELS } from '../../types';
 
 /**
@@ -98,7 +98,9 @@ export default function Marco(props: Props) {
 
   const deLaMarca = (campanas ?? []).filter(c => c.clientId === marcaId);
   const aqui = pasoDe(pantalla);
-  const numero = (paso: PasoDef) => PASOS.indexOf(paso) + 1;
+  // CDM aparece solo si la marca lo tiene prendido; los números siguen el orden que se ve.
+  const visibles = pasosDeMarca(marcas.find(m => m.id === marcaId));
+  const numero = (paso: PasoDef) => visibles.indexOf(paso) + 1;
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: '#F5F5F7' }}>
@@ -155,7 +157,7 @@ export default function Marco(props: Props) {
             </select>
           </label>
           <ol className="flex items-stretch gap-1 flex-1 min-w-0">
-            {PASOS.map((paso, i) => {
+            {visibles.map((paso, i) => {
               const estado = pasos.find(p => p.paso === paso.id);
               const destino = primeraDe(paso);
               const esAqui = aqui?.id === paso.id;
@@ -191,7 +193,7 @@ export default function Marco(props: Props) {
       </header>
 
       <div className="flex flex-1 min-h-0">
-        <Menu {...props} aqui={aqui} numero={aqui ? numero(aqui) : null} visible={visible} />
+        <Menu {...props} aqui={aqui} numero={aqui && numero(aqui) > 0 ? numero(aqui) : null} visible={visible} />
         {/* El encabezado mide dos filas: lo que se queda fijo al bajar (el formulario de Generar) va más abajo. */}
         <main className="flex-1 min-w-0 p-7" style={{ ['--tope-fijo' as string]: '133px' }}>
           {aqui && !actuaEn(usuario, administra, aqui, marcaId) && (
@@ -267,9 +269,12 @@ function Menu({
   return (
     <aside className="w-[216px] shrink-0 border-r border-[rgba(0,0,0,0.06)] flex flex-col sticky top-[105px] h-[calc(100vh-105px)]">
       <nav className="flex-1 px-3 py-4 overflow-y-auto">
-        {aqui && numero && (
+        {/* Sin número cuando el paso no está en el encabezado de la marca: la biblioteca es de la agencia y se
+            abre también desde una marca sin CDM. */}
+        {aqui && (
           <div className="px-3 pb-3 text-[10px] font-semibold uppercase tracking-[0.08em]" style={{ color: aqui.color }}>
-            {numero} · {aqui.nombre} · {aqui.tema}
+            {numero ? `${numero} · ` : ''}
+            {aqui.nombre} · {aqui.tema}
           </div>
         )}
         {grupos.map((grupo, i) => {

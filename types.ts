@@ -134,7 +134,7 @@ export interface UsuarioDeControl {
  * (`server/src/comun/proceso.ts`). `neutro` = sin campaña: el paso solo navega.
  */
 export interface PasoDeProceso {
-  paso: 'marca' | 'myvoice' | 'produccion';
+  paso: 'marca' | 'cdm' | 'myvoice' | 'produccion';
   estado: 'hecho' | 'activo' | 'pendiente' | 'bloqueado' | 'neutro';
   texto?: string;
   falta?: string;
@@ -223,6 +223,8 @@ export interface WorkspaceInvite {
 export interface Client {
   id: string;
   name: string;
+  /** Los módulos prendidos para la marca (F2b): CDM agrega el paso ② al encabezado. */
+  modulos?: ('CDM' | 'IMPLEMENTACION')[];
   industry: string;
   logo: string; // Base64
   voice?: string;
@@ -738,4 +740,51 @@ export interface PiezaAConfirmar {
   titulo: string;
   savedVariationIds: string[];
   hermanaDe?: number;
+}
+
+/** B1: un medio de la biblioteca de CDM, como lo dice su tarjeta. */
+export interface MedioResumen {
+  id: string;
+  nombre: string;
+  estado: 'BORRADOR' | 'ACTIVO' | 'OCULTO';
+  formatos: number;
+  ubicaciones: number;
+  plataformas: string[];
+  proporciones: string[];
+  porConfirmar: number;
+  sinCampos: boolean;
+  actualizado: { fuente: string | null; fecha: string } | null;
+}
+
+/** B2: un medio con cada pieza maestra en su última versión. */
+export interface MedioDetalle {
+  id: string;
+  nombre: string;
+  estado: MedioResumen['estado'];
+  formatos: {
+    id: string;
+    nombre: string;
+    tipoArchivo: string;
+    proporcion: string | null;
+    version: number;
+    anchoPx: number | null;
+    altoPx: number | null;
+    archivos: string | null;
+    pesoMaximo: string | null;
+    guia: { zonaSegura?: { superior: number | null; inferior: number | null; lados: number | null } | null } | null;
+    fuente: string | null;
+    fuenteFecha: string | null;
+    ubicaciones: { id: string; plataforma: string; nombre: string; proporcion: string; porConfirmar: boolean; alertaTexto: string | null }[];
+    campos: { clave: string; nombre: string; desde: number | null; hasta: number | null; masCortoEn: string | null; enUbicaciones: number }[];
+  }[];
+}
+
+/** Una marca vista desde Control, con sus módulos. */
+export interface MarcaDeControl {
+  id: string;
+  name: string;
+  submarca: boolean;
+  workspaceId: string;
+  workspaceName: string;
+  modulos: ('CDM' | 'IMPLEMENTACION')[];
 }

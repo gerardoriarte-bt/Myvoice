@@ -1,6 +1,6 @@
 # Dependencias entre módulos (generado)
 
-Generado el 2026-11-19 desde el commit `2396a1c` con `bash scripts/mapa/actualizar.sh`. **No se edita a mano**: se corrige `scripts/mapa/modulos.json` y se vuelve a generar.
+Generado el 2026-11-19 desde el commit `3c52003` con `bash scripts/mapa/actualizar.sh`. **No se edita a mano**: se corrige `scripts/mapa/modulos.json` y se vuelve a generar.
 
 Cada fila es un archivo que usa algo de otro archivo de **otro módulo** (importa, llama o referencia un tipo). Módulos según la decisión 12; reglas en [spec-plataforma.md](./spec-plataforma.md) § 2.
 
@@ -8,14 +8,14 @@ Cada fila es un archivo que usa algo de otro archivo de **otro módulo** (import
 
 | Desde \ Hacia | Plataforma | Parte común | My Voice | Producción | CDM | Compartido |
 |---|---|---|---|---|---|---|
-| **Plataforma** | · | 22 | 20 | 6 | · | 28 |
+| **Plataforma** | · | 22 | 20 | 6 | 2 | 28 |
 | **Parte común** | · | · | · | · | · | 46 |
 | **My Voice** | · | 37 | · | · | · | 119 |
 | **Producción** | · | 11 | 2 | · | · | 25 |
-| **CDM** | · | · | · | · | · | 1 |
+| **CDM** | · | 1 | · | · | · | 5 |
 | **Compartido** | · | · | · | · | · | · |
 
-- **Hay que invertir**: 0 · **pasan por el contrato**: 50 · **permitidas**: 267
+- **Hay que invertir**: 0 · **pasan por el contrato**: 51 · **permitidas**: 273
 
 ## Hay que invertir (0)
 
@@ -23,12 +23,13 @@ Rompen la regla: la parte común o la infraestructura dependen de un módulo, o 
 
 Ninguna.
 
-## Pasan por el contrato (50)
+## Pasan por el contrato (51)
 
 Un módulo lee la parte común. Está bien, pero solo por `contrato/`: esta lista es lo que `contrato/` tiene que exponer.
 
 | Desde | Archivo | Hacia | Archivo | Qué usa |
 |---|---|---|---|---|
+| CDM | `server/src/cdm/biblioteca/bibliotecaController.ts` | Parte común | `server/src/middleware/auth.ts` | AuthRequest, auth.ts, handleTenantError() |
 | My Voice | `components/ParameterForm.tsx` | Parte común | `marcas.ts` | marcas.ts, nombreConMadre() |
 | My Voice | `components/ResultadosPorPieza.tsx` | Parte común | `components/QuienAprueba.tsx` | PersonaQueAprueba, QuienAprueba(), QuienAprueba.tsx |
 | My Voice | `components/SavedManager.tsx` | Parte común | `components/QuienAprueba.tsx` | QuienAprueba(), QuienAprueba.tsx |
@@ -80,15 +81,16 @@ Un módulo lee la parte común. Está bien, pero solo por `contrato/`: esta list
 | Producción | `server/src/services/auditoriaService.ts` | My Voice | `server/src/channels/registry.ts` | registry.ts, zonaDe() |
 | Producción | `server/src/services/piezaService.ts` | My Voice | `server/src/channels/registry.ts` | esFormatoValido(), esSlotDeInstruccion(), formatoPorDefecto(), getChannelSpec() |
 
-## Permitidas (267)
+## Permitidas (273)
 
 El arranque importa de todos, y todos usan la infraestructura compartida.
 
 | Desde | Hacia | Pares |
 |---|---|---|
-| CDM | Compartido | 1 |
+| CDM | Compartido | 5 |
 | Parte común | Compartido | 46 |
 | My Voice | Compartido | 119 |
+| Plataforma | CDM | 2 |
 | Plataforma | Compartido | 28 |
 | Plataforma | Parte común | 22 |
 | Plataforma | My Voice | 20 |

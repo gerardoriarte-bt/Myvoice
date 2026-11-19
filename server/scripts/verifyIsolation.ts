@@ -233,7 +233,17 @@ async function main() {
     await expectDenied('PUT /control/workspaces/:id/plataforma de A sin ser super admin', `/control/workspaces/${A.workspace.id}/plataforma`, B.token, { method: 'PUT', body: JSON.stringify({ encendida: true }) });
     await expectDenied('PUT /control/membresias hacia A sin ser super admin', '/control/membresias', B.token, { method: 'PUT', body: JSON.stringify({ userId: B.user.id, workspaceId: A.workspace.id, role: 'OWNER' }) });
     await expectDenied('GET /analytics/usage (los costos ya no son del OWNER)', '/analytics/usage', B.token);
+    await expectDenied('GET /control/marcas sin ser super admin', '/control/marcas', B.token);
+    await expectDenied('PUT /control/marcas/:id/modulos sin ser super admin', `/control/marcas/${B.client.id}/modulos`, B.token, { method: 'PUT', body: JSON.stringify({ modulo: 'CDM', encendido: true }) });
     await expectDenied('GET /clients/:id/campanas/proceso de A', `/clients/${A.client.id}/campanas/proceso`, B.token);
+    {
+      // La biblioteca de CDM es de cada agencia: un medio de A no se ve desde B.
+      const medioA = await prisma.medio.create({ data: { workspaceId: A.workspace.id, nombre: `Medio de A ${Date.now()}` } });
+      await expectDenied('GET /cdm/biblioteca/medios/:id de A', `/cdm/biblioteca/medios/${medioA.id}`, B.token);
+      const listaB = await api('/cdm/biblioteca', B.token);
+      record('GET /cdm/biblioteca no trae medios de A', !JSON.stringify(listaB.body).includes(medioA.id), `status ${listaB.status}`);
+      await expectAllowed('GET /cdm/biblioteca/medios/:id propio', `/cdm/biblioteca/medios/${medioA.id}`, A.token);
+    }
     await expectDenied('GET /clients/:id/proceso de A', `/clients/${A.client.id}/proceso`, B.token);
     await expectDenied('GET /clients/:id/proceso con la campaña de A', `/clients/${B.client.id}/proceso?campana=${A.project.id}`, B.token);
     await expectDenied('GET /clients/:id/adn de A', `/clients/${A.client.id}/adn`, B.token);

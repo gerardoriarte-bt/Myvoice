@@ -2,7 +2,7 @@ import React from 'react';
 import { SCREENS } from '../../screens';
 import { controlApi } from '../../services/api';
 import { GastoDeIA } from '../../components/Analytics';
-import { WORKSPACE_ROLE_LABELS, type UsuarioDeControl, type WorkspaceDeControl, type WorkspaceRole } from '../../types';
+import { WORKSPACE_ROLE_LABELS, type MarcaDeControl, type UsuarioDeControl, type WorkspaceDeControl, type WorkspaceRole } from '../../types';
 
 /**
  * Control, la pantalla del super admin (decisión 27; en el `.pen`, «§ Marco · Control»). Está por encima de
@@ -10,7 +10,7 @@ import { WORKSPACE_ROLE_LABELS, type UsuarioDeControl, type WorkspaceDeControl, 
  * IA. Es la única pantalla que muestra costos. El servidor responde 404 a quien no es super admin.
  */
 
-type Pestana = 'workspaces' | 'usuarios' | 'gasto';
+type Pestana = 'workspaces' | 'marcas' | 'usuarios' | 'gasto';
 const ROLES: WorkspaceRole[] = ['OWNER', 'ADMIN', 'MEMBER'];
 const contar = (n: number, uno: string, varios: string) => `${n} ${n === 1 ? uno : varios}`;
 const usd = (n: number) => `USD ${n.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -19,14 +19,16 @@ export default function Control() {
   const [pestana, setPestana] = React.useState<Pestana>('workspaces');
   const [workspaces, setWorkspaces] = React.useState<WorkspaceDeControl[] | null>(null);
   const [usuarios, setUsuarios] = React.useState<UsuarioDeControl[] | null>(null);
+  const [marcas, setMarcas] = React.useState<MarcaDeControl[]>([]);
   const [error, setError] = React.useState<string | null>(null);
   const [gastoDe, setGastoDe] = React.useState('');
 
   const cargar = React.useCallback(async () => {
     try {
-      const [ws, us] = await Promise.all([controlApi.workspaces(), controlApi.usuarios()]);
+      const [ws, us, ms] = await Promise.all([controlApi.workspaces(), controlApi.usuarios(), controlApi.marcas()]);
       setWorkspaces(ws.workspaces);
       setUsuarios(us);
+      setMarcas(ms);
       setGastoDe(prev => prev || ws.workspaces[0]?.id || '');
       setError(null);
     } catch (err) {
@@ -68,6 +70,7 @@ export default function Control() {
           {(
             [
               ['workspaces', 'Workspaces'],
+              ['marcas', 'Marcas'],
               ['usuarios', 'Usuarios'],
               ['gasto', 'Gasto de IA'],
             ] as [Pestana, string][]
@@ -139,6 +142,39 @@ export default function Control() {
                   <div className="text-[12px] text-[#86868B] mt-1">
                     {pct} % de {usd(w.cuotaUsd)}
                   </div>
+                </td>
+              </tr>
+            );
+          })}
+        </Tabla>
+      )}
+
+      {pestana === 'marcas' && (
+        <Tabla columnas={['Marca', 'Workspace', 'CDM']}>
+          {marcas.map(m => {
+            const cdm = m.modulos.includes('CDM');
+            return (
+              <tr key={m.id} className="border-t border-[rgba(0,0,0,0.06)]">
+                <td className="px-4 py-3 text-[13.5px] font-bold text-[#1D1D1F]">
+                  {m.name}
+                  {m.submarca && <span className="ml-2 text-[11px] font-normal text-[#86868B]">submarca</span>}
+                </td>
+                <td className="px-4 py-3 text-[13px] text-[#3A3A3C]">{m.workspaceName}</td>
+                <td className="px-4 py-3">
+                  {/* CDM por marca (ModuloDeMarca): sin él, el paso ② no aparece y el copy se genera como hoy. */}
+                  <label className="inline-flex items-center gap-2 cursor-pointer">
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={cdm}
+                      aria-label={`CDM en ${m.name}`}
+                      onClick={() => void hacer(() => controlApi.cambiarModulo(m.id, 'CDM', !cdm))}
+                      className={`relative w-[34px] h-5 rounded-full transition-colors ${cdm ? 'bg-emerald-500' : 'bg-[#D1D1D6]'}`}
+                    >
+                      <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${cdm ? 'translate-x-[14px]' : ''}`} />
+                    </button>
+                    <span className={`text-[12.5px] font-semibold ${cdm ? 'text-emerald-700' : 'text-[#86868B]'}`}>{cdm ? 'Prendido' : 'Apagado'}</span>
+                  </label>
                 </td>
               </tr>
             );

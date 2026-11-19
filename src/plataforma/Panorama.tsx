@@ -104,7 +104,7 @@ export default function Panorama({ onAbrir }: Props) {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex gap-1">
-                        {PASOS.map((def, i) => {
+                        {PASOS.filter(def => c.pasos.some(x => x.paso === def.id)).map((def, i) => {
                           const p = c.pasos.find(x => x.paso === def.id);
                           const estado = p?.estado ?? 'neutro';
                           return (

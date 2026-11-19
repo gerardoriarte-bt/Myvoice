@@ -8,13 +8,14 @@ import { resolverAdn } from './adn/resolverAdn.js';
  * copy y de las piezas, y un estado guardado tendría que mantenerse desde cada uno de esos lugares.
  *
  * Sin campaña («Todas las campañas») los pasos solo navegan: no hay avance que contar (decisión 24).
- * CDM (②) e Implementación (⑤) no aparecen hasta que existan: un paso que no se puede abrir no se muestra.
+ * CDM (②) aparece solo en las marcas que lo tienen prendido (`ModuloDeMarca`); Implementación (⑤), cuando
+ * exista. Un paso que no se puede abrir no se muestra.
  *
  * Lee las tablas con `prisma` y no los servicios de My Voice: la parte común no importa un módulo
  * (`npm run fronteras`). Son conteos; las reglas de quién aprueba siguen en `aprobacion.ts`.
  */
 
-export type PasoId = 'marca' | 'myvoice' | 'produccion';
+export type PasoId = 'marca' | 'cdm' | 'myvoice' | 'produccion';
 
 /**
  * hecho = ✓ · activo = en curso · pendiente = no empezó · bloqueado = espera algo de otro paso ·
@@ -40,8 +41,24 @@ const NEUTROS: Paso[] = [
   { paso: 'produccion', estado: 'neutro' },
 ];
 
+const conCdm = (clientId: string) =>
+  prisma.moduloDeMarca.findUnique({ where: { clientId_modulo: { clientId, modulo: 'CDM' } }, select: { id: true } }).then(Boolean);
+
+/**
+ * ② CDM, mientras no exista el planning (F3): la campaña todavía no tiene sábana. Cuando llegue F3, el paso
+ * queda hecho con la sábana aprobada.
+ */
+const PASO_CDM: Paso = { paso: 'cdm', estado: 'pendiente', texto: 'Sin planning todavía', falta: 'Armar el planning' };
+
 /** `clientId` y `campanaId` ya pasaron por la guarda de tenancy: acá no se vuelve a mirar el workspace. */
 export const procesoDeCampana = async (clientId: string, campanaId: string | null): Promise<Paso[]> => {
+  const cdm = await conCdm(clientId);
+  const pasos = await pasosDeCampana(clientId, campanaId);
+  if (!cdm) return pasos;
+  return [pasos[0], campanaId ? PASO_CDM : { paso: 'cdm', estado: 'neutro' }, ...pasos.slice(1)];
+};
+
+const pasosDeCampana = async (clientId: string, campanaId: string | null): Promise<Paso[]> => {
   if (!campanaId) return NEUTROS;
 
   const [adn, campana, copy, piezas] = await Promise.all([

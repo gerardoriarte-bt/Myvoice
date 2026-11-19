@@ -37,6 +37,7 @@ import Isotipo from './components/ui/Isotipo';
 import Marco from './src/plataforma/Marco';
 import Control from './src/plataforma/Control';
 import Panorama from './src/plataforma/Panorama';
+import Biblioteca from './src/cdm/Biblioteca';
 import { PASOS, actuaEn, armarRuta, leerRuta, pantallaDeEntrada } from './src/plataforma/rutas';
 import AdnDeMarca from './components/adn/AdnDeMarca';
 import { madreDe } from './marcas';
@@ -702,7 +703,7 @@ const App: React.FC = () => {
     : undefined;
   const marcaDeLoGenerado = clients.find(c => c.id === (lastParams?.clientId || activeClientId));
 
-  const pantallaConMarca = !['clients', 'users', 'settings', 'help', 'analytics', 'novedades', 'control', 'panorama', 'loMio'].includes(activeTab);
+  const pantallaConMarca = !['clients', 'users', 'settings', 'help', 'analytics', 'novedades', 'control', 'panorama', 'loMio', 'biblioteca'].includes(activeTab);
 
   /*
    * La novedad a avisar al entrar. Se espera a que la sesión venga del
@@ -1115,6 +1116,7 @@ const App: React.FC = () => {
       )}
       {activeTab === 'analytics' && isAdmin && <Analytics />}
       {activeTab === 'control' && superAdmin && <Control />}
+      {activeTab === 'biblioteca' && plataforma && <Biblioteca />}
       {activeTab === 'adn' && plataforma && activeClient && (
         <div className="space-y-4">
           <div>
