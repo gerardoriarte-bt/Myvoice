@@ -384,7 +384,7 @@ export const aplicarCarga = async (workspaceId: string, p: PlanillaDeMedio, auto
         });
         if (u.campos.length) {
           await tx.campoDeTexto.createMany({
-            data: u.campos.map(c => ({ formatoVersionId: version.id, ubicacionId: ubicacion.id, ...c })),
+            data: u.campos.map((c, orden) => ({ formatoVersionId: version.id, ubicacionId: ubicacion.id, ...c, orden })),
           });
         }
       }

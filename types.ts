@@ -776,7 +776,7 @@ export interface MedioDetalle {
     altoPx: number | null;
     archivos: string | null;
     pesoMaximo: string | null;
-    guia: { zonaSegura?: { superior: number | null; inferior: number | null; lados: number | null } | null } | null;
+    guia: { zonaSegura?: { superior: number | null; inferior: number | null; lados: number | null } | null; medidas?: string[] } | null;
     fuente: string | null;
     fuenteFecha: string | null;
     ubicaciones: {
@@ -790,6 +790,18 @@ export interface MedioDetalle {
       zonaSegura: { superior: number | null; inferior: number | null; lados: number | null; restriccion?: string | null } | null;
     }[];
     campos: { clave: string; nombre: string; desde: number | null; hasta: number | null; masCortoEn: string | null; enUbicaciones: number }[];
+    /** Los campos que no dependen de una ubicación: los de los canales de My Voice (F2c). */
+    camposDelFormato: {
+      clave: string;
+      nombre: string;
+      zona: 'PIEZA' | 'PLATAFORMA' | 'INDICACION';
+      unidad: string;
+      minimo: number | null;
+      maximo: number | null;
+      repeticiones: number;
+    }[];
+    /** El canal de My Voice que escribe este formato (`Platform`), cuando viene de ahí. */
+    canal: string | null;
   }[];
 }
 

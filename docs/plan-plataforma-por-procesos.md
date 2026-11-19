@@ -247,8 +247,25 @@ el suyo, y que el admin actúa en todos. Con `observar` no bloquea y lo registra
 - La clase se elige al cargar una planilla y Planning la puede cambiar después.
 - Nueva función `COMMUNITY` (community manager), que actúa en ⑤ junto al trafficker.
 
-**F2c:** los 14 canales como formatos, cada uno en el medio de su clase («Instagram» en Redes sociales y no
-dentro de Meta) (con las decisiones de B8 en el `.pen`), las rutas y las
+**F2c (2026-11-19), los 14 canales como formatos, hecho:**
+- **`npm run cdm:canales -- <slug> [--apply]`** lee `channels/specs` y lleva cada canal al medio de su
+  clase:
+
+  | Clase | Medios |
+  |---|---|
+  | Redes sociales | Instagram, TikTok, YouTube |
+  | Pagos | Google |
+  | Propios | CRM y web |
+  | Tradicional | Radio |
+
+  - `Formato.canal` es el puente con el motor.
+  - Correrlo dos veces no crea versiones.
+- **Las cantidades de B8 ya estaban resueltas en el código.** Desde el 2026-11-05, `porPieza` dice cuántos
+  textos lleva una pieza: push, email, WhatsApp, pop up y rich media llevan uno; el reel, 3 textos en
+  pantalla; Google, 10 + 4 + 4.
+- **Campos de texto:** se suma la zona `INDICACION` (para Diseño, no se publica) y `orden` (el del spec).
+- **B2:** muestra los campos de un formato agrupados por zona, con «N ×» cuando la pieza lleva varios.
+- **Es un script y no código de CDM:** lee los specs de My Voice, y CDM no importa My Voice. (con las decisiones de B8 en el `.pen`), las rutas y las
 pantallas.
 
 El modelo de datos de F1 a F5 está en [ecosistema/datos/arquitectura-de-datos.md](./ecosistema/datos/arquitectura-de-datos.md)

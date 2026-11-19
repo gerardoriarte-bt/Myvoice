@@ -25,10 +25,12 @@ enum TipoDeArchivo {
   HTML
 }
 
-/// Dónde va un texto: en la pieza (lo diseña Producción) o en la plataforma (lo pone el trafficker).
+/// Dónde va un texto: en la pieza (lo diseña Producción), en la plataforma (lo pone quien publica) o es una
+/// indicación para Diseño que no se publica (la idea visual, la estructura de un reel).
 enum ZonaDeCampo {
   PIEZA
   PLATAFORMA
+  INDICACION
 }
 
 /// Meta, Google, TikTok… El nombre es único dentro de la agencia.
@@ -134,6 +136,8 @@ model CampoDeTexto {
   minimo           Int?
   maximo           Int?
   repeticiones     Int         @default(1)
+  /// El orden en que se escriben y se muestran: el del spec o la planilla («Slide 2» antes que «Slide 10»).
+  orden            Int         @default(0)
 
   version   FormatoVersion @relation(fields: [formatoVersionId], references: [id], onDelete: Cascade)
   ubicacion Ubicacion?     @relation(fields: [ubicacionId], references: [id], onDelete: Cascade)
