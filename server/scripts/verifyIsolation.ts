@@ -233,6 +233,7 @@ async function main() {
     await expectDenied('PUT /control/workspaces/:id/plataforma de A sin ser super admin', `/control/workspaces/${A.workspace.id}/plataforma`, B.token, { method: 'PUT', body: JSON.stringify({ encendida: true }) });
     await expectDenied('PUT /control/membresias hacia A sin ser super admin', '/control/membresias', B.token, { method: 'PUT', body: JSON.stringify({ userId: B.user.id, workspaceId: A.workspace.id, role: 'OWNER' }) });
     await expectDenied('GET /analytics/usage (los costos ya no son del OWNER)', '/analytics/usage', B.token);
+    await expectDenied('GET /clients/:id/campanas/proceso de A', `/clients/${A.client.id}/campanas/proceso`, B.token);
     await expectDenied('GET /clients/:id/proceso de A', `/clients/${A.client.id}/proceso`, B.token);
     await expectDenied('GET /clients/:id/proceso con la campaña de A', `/clients/${B.client.id}/proceso?campana=${A.project.id}`, B.token);
     await expectDenied('GET /clients/:id/adn de A', `/clients/${A.client.id}/adn`, B.token);
@@ -1459,6 +1460,13 @@ async function main() {
     await expectAllowed('GET /control/workspaces como super admin', '/control/workspaces', A.token);
     await expectAllowed('GET /control/gasto de B como super admin', `/control/gasto?workspaceId=${B.workspace.id}`, A.token);
     await prisma.user.update({ where: { id: A.user.id }, data: { superAdmin: false } });
+    await expectAllowed('GET /panorama propio', '/panorama', B.token);
+    {
+      // El Panorama cruza las marcas del workspace, nunca los workspaces.
+      const panorama = await api('/panorama', B.token);
+      const texto = JSON.stringify(panorama.body);
+      record('GET /panorama no trae campañas de A', !texto.includes(A.project.id) && !texto.includes(A.client.id), `status ${panorama.status}`);
+    }
     await expectAllowed('GET /clients/:id/proceso propio', `/clients/${B.client.id}/proceso?campana=${B.project.id}`, B.token);
     await expectAllowed('GET /clients/:id/adn propio', `/clients/${B.client.id}/adn`, B.token);
     await expectAllowed('GET /clients/:id/adn/revision propio', `/clients/${B.client.id}/adn/revision`, B.token);

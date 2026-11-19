@@ -1,7 +1,7 @@
 import React from 'react';
 import { Check, ChevronDown, Lock, LogOut } from 'lucide-react';
-import { SCREENS, ScreenId, puedeVer } from '../../screens';
-import type { Client, PasoDeProceso, Project, User } from '../../types';
+import { SCREENS, ScreenId, nombreEn, puedeVer } from '../../screens';
+import type { CampanaEnProceso, Client, PasoDeProceso, Project, User } from '../../types';
 import { clientApi, libraryApi } from '../../services/api';
 import SelectorDeMarca from '../../components/SelectorDeMarca';
 import Isotipo from '../../components/ui/Isotipo';
@@ -40,14 +40,16 @@ interface Props {
   children: React.ReactNode;
 }
 
-const PANTALLAS_DE_CUENTA: ScreenId[] = ['control', 'users', 'settings', 'help', 'novedades'];
+const PANTALLAS_DE_CUENTA: ScreenId[] = ['panorama', 'control', 'users', 'settings', 'help', 'novedades'];
 
 export default function Marco(props: Props) {
   const { usuario, administra, marcas, marcaId, pantalla, campanaId, onIr } = props;
   const [campanas, setCampanas] = React.useState<Project[] | null>(null);
   const [pasos, setPasos] = React.useState<PasoDeProceso[]>([]);
+  /** Las de la marca activa con el paso en que va cada una (decisión 26: el selector lo dice). */
+  const [enProceso, setEnProceso] = React.useState<CampanaEnProceso[]>([]);
 
-  const visible = (id: ScreenId) => puedeVer(SCREENS[id], { administra, superAdmin: Boolean(usuario.superAdmin) });
+  const visible = (id: ScreenId) => puedeVer(SCREENS[id], { administra, superAdmin: Boolean(usuario.superAdmin), porProcesos: true });
   const primeraDe = (paso: PasoDef) => paso.grupos.flatMap(g => g.pantallas).find(visible) ?? null;
 
   // Las campañas del workspace, una vez: así una campaña de otra marca (un enlace, un aviso) se reconoce.
@@ -80,6 +82,18 @@ export default function Marco(props: Props) {
       vigente = false;
     };
   }, [marcaId, campanaId, pantalla]);
+
+  React.useEffect(() => {
+    if (!marcaId) return setEnProceso([]);
+    let vigente = true;
+    clientApi
+      .campanasEnProceso(marcaId)
+      .then(c => vigente && setEnProceso(c))
+      .catch(() => vigente && setEnProceso([]));
+    return () => {
+      vigente = false;
+    };
+  }, [marcaId, pantalla]);
 
   const deLaMarca = (campanas ?? []).filter(c => c.clientId === marcaId);
   const aqui = pasoDe(pantalla);
@@ -127,11 +141,16 @@ export default function Marco(props: Props) {
               onChange={e => props.onElegirCampana(e.target.value || null)}
             >
               <option value="">Todas las campañas</option>
-              {deLaMarca.map(c => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
+              {deLaMarca.map(c => {
+                const paso = enProceso.find(e => e.id === c.id);
+                const def = paso?.enCurso ? PASOS.find(p => p.id === paso.enCurso!.paso) : null;
+                return (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                    {paso ? (def ? ` · ${numero(def)} ${def.nombre}` : ' · al día') : ''}
+                  </option>
+                );
+              })}
             </select>
           </label>
           <ol className="flex items-stretch gap-1 flex-1 min-w-0">
@@ -244,7 +263,7 @@ function Menu({
                     }`}
                   >
                     <Icono className={`w-[15px] h-[15px] shrink-0 ${activa ? 'text-[#1D1D1F]' : 'text-[#86868B]'}`} strokeWidth={1.75} />
-                    <span className="flex-1">{SCREENS[id].name}</span>
+                    <span className="flex-1">{nombreEn(SCREENS[id], true)}</span>
                     {id === 'collaboration' && respuestasNuevas > 0 && !activa && (
                       <span
                         title="Respuestas del cliente sin ver"
@@ -314,6 +333,11 @@ function Cuenta({ usuario, administra, onIr, onSalir, onCambiarWorkspace }: Prop
             <div className="text-[13px] font-medium text-[#1D1D1F] truncate">{usuario.name}</div>
             <div className="text-[11px] text-[#86868B] truncate">{usuario.email}</div>
           </div>
+          {administra && (
+            <button type="button" className={`${item} font-medium`} onClick={() => ir('panorama')}>
+              {SCREENS.panorama.name}
+            </button>
+          )}
           {usuario.superAdmin && (
             <button type="button" className={`${item} font-medium`} onClick={() => ir('control')}>
               {SCREENS.control.name}

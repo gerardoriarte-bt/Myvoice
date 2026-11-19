@@ -5,6 +5,7 @@ import type {
   PiezaAConfirmar,
   PiezaDetalle,
   PasoDeProceso,
+  CampanaEnProceso,
   UsuarioDeControl,
   WorkspaceDeControl,
   PropuestaDePiezas,
@@ -212,6 +213,10 @@ export const clientApi = {
   confirmarAdn: (id: string) => apiRequest(`/clients/${id}/adn/confirmar`, { method: 'POST' }),
   /** ADN 2.0 (docs/plan-adn-2.md): el ADN resuelto con su completitud y lo de cada sección. */
   adn: (id: string) => apiRequest(`/clients/${id}/adn`),
+  /** Las campañas de la marca con el paso en que va cada una (el selector del encabezado). */
+  campanasEnProceso: (id: string): Promise<CampanaEnProceso[]> => apiRequest(`/clients/${id}/campanas/proceso`),
+  /** El Panorama (decisión 24): las campañas en curso de todas las marcas. Solo OWNER/ADMIN. */
+  panorama: (): Promise<CampanaEnProceso[]> => apiRequest('/panorama'),
   /** Cómo va una campaña en los pasos del encabezado (F0). Sin campaña, los pasos solo navegan. */
   proceso: (id: string, campanaId?: string | null): Promise<PasoDeProceso[]> =>
     apiRequest(`/clients/${id}/proceso${campanaId ? `?campana=${encodeURIComponent(campanaId)}` : ''}`),

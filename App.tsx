@@ -35,6 +35,7 @@ import { LOBUENO_DNA_PROFILES, LOBUENO_APPROVED_EXAMPLES } from './shared/lobuen
 import Isotipo from './components/ui/Isotipo';
 import Marco from './src/plataforma/Marco';
 import Control from './src/plataforma/Control';
+import Panorama from './src/plataforma/Panorama';
 import { armarRuta, leerRuta } from './src/plataforma/rutas';
 
 const MOCK_CLIENTS: Client[] = [
@@ -167,7 +168,6 @@ const App: React.FC = () => {
   // cambia al cambiar de workspace.
   const isAdmin = canManageWorkspace(currentUser?.role);
   const superAdmin = Boolean(currentUser?.superAdmin);
-  const quien = { administra: isAdmin, superAdmin };
 
   /**
    * El marco de la plataforma por procesos (F0, docs/plan-plataforma-por-procesos.md), si el workspace lo
@@ -175,6 +175,7 @@ const App: React.FC = () => {
    * Encendido, la pantalla y la campaña viven en la ruta (`src/plataforma/rutas.ts`).
    */
   const plataforma = Boolean(currentUser?.plataformaPorProcesos);
+  const quien = { administra: isAdmin, superAdmin, porProcesos: plataforma };
   const [campanaId, setCampanaId] = React.useState<string | null>(() => leerRuta(window.location.pathname).campanaId);
   React.useEffect(() => {
     if (!plataforma) {
@@ -391,7 +392,8 @@ const App: React.FC = () => {
         // ya fue llevado a Producción. Un enlace de correo (?pieza=) ya eligió.
         if (!inicioElegido.current) {
           inicioElegido.current = true;
-          if (isAdmin) setActiveTab(prev => (prev === 'clients' && normalizedClients.length > 0 ? 'saved' : prev));
+          // Con la plataforma por procesos, la entrada de quien administra es el Panorama (decisión 24).
+          if (isAdmin) setActiveTab(prev => (prev === 'clients' && normalizedClients.length > 0 ? (plataforma ? 'panorama' : 'saved') : prev));
         }
 
         addNotification('Datos sincronizados con éxito', 'success');
@@ -689,7 +691,7 @@ const App: React.FC = () => {
     : undefined;
   const marcaDeLoGenerado = clients.find(c => c.id === (lastParams?.clientId || activeClientId));
 
-  const pantallaConMarca = !['clients', 'users', 'settings', 'help', 'analytics', 'novedades', 'control'].includes(activeTab);
+  const pantallaConMarca = !['clients', 'users', 'settings', 'help', 'analytics', 'novedades', 'control', 'panorama'].includes(activeTab);
 
   /*
    * La novedad a avisar al entrar. Se espera a que la sesión venga del
@@ -1049,6 +1051,7 @@ const App: React.FC = () => {
           onRefreshSaved={refrescarCopy}
           addNotification={addNotification}
           onIrA={setActiveTab}
+          campanaDelEncabezado={plataforma ? campanaId : undefined}
         />
       )}
       {activeTab === 'produccion' && (
@@ -1060,6 +1063,7 @@ const App: React.FC = () => {
           destino={destinoProduccion}
           onDestinoAtendido={() => setDestinoProduccion(null)}
           onIrACopyAprobado={() => setActiveTab('saved')}
+          campanaId={plataforma ? campanaId : undefined}
         />
       )}
       {activeTab === 'history' && isAdmin && (
@@ -1097,6 +1101,15 @@ const App: React.FC = () => {
       )}
       {activeTab === 'analytics' && isAdmin && <Analytics />}
       {activeTab === 'control' && superAdmin && <Control />}
+      {activeTab === 'panorama' && isAdmin && plataforma && (
+        <Panorama
+          onAbrir={(campana, pantalla) => {
+            setActiveClientId(campana.marca.id);
+            setCampanaId(campana.id);
+            setActiveTab(pantalla);
+          }}
+        />
+      )}
       {activeTab === 'collaboration' && isAdmin && (
         <CollaborationHub
           clients={clients}

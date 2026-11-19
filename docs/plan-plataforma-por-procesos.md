@@ -131,15 +131,18 @@ una vez. Gerardo decidió (2026-11-17):
     montan. Con el interruptor apagado, la app es la de hoy.
   - Los pasos que se ven son ① Marca, ② My Voice y ③ Producción, numerados en el orden en que se ven.
     CDM e Implementación se suman cuando existan.
-- **F0b, lo que falta de F0:**
-  - Panorama (`GET /panorama`).
-  - Producción como módulo propio en `modulos.json`, y el menú de Producción por pestañas (Lo mío, Por
-    revisar…), que hoy son pestañas del tablero.
-  - Que la campaña del encabezado filtre Copy y Producción (hoy cada pantalla conserva su propio filtro de
-    campaña).
-  - El paso en que va cada campaña dentro del selector.
-  - Renombrar «Generar» a «Generar suelto» y «Revisiones» a «Con el cliente» en `screens.ts`, junto con
-    el marco, para no cambiar los nombres del marco de hoy antes de tiempo.
+- **F0b (2026-11-19):**
+  - Panorama (`GET /panorama`, OWNER/ADMIN): es la entrada de quien administra. Muestra las campañas en
+    curso de todas las marcas con sus pasos y qué espera a quién; «Abrir» lleva a la campaña en su paso.
+  - El selector dice en qué paso va cada campaña (`GET /clients/:id/campanas/proceso`).
+  - La campaña del encabezado filtra Copy y «Por marca» de Producción, y Copy esconde su selector propio.
+  - «Generar suelto» y «Con el cliente» quedan como `nombrePorProcesos` en `screens.ts`: el marco de hoy
+    conserva sus nombres.
+  - «En qué va» una campaña (`pasoEnCurso`) es el primer paso del trabajo sin hacer. El ADN cuenta solo al
+    final, porque sin CDM avisa y no frena. Si no, todas las campañas de una marca con el ADN a medias
+    dirían «en Marca».
+- **F0c, lo que falta de F0:** Producción como módulo propio en `modulos.json` (leer el copy por contrato, no
+  de las tablas de My Voice) y su menú por pestañas.
 
 ### F1 · Funciones, entrada por función y modo lectura (decisión 22)
 
