@@ -24,6 +24,7 @@ export const RUTAS: Record<ScreenId, string> = {
   help: '/guia',
   novedades: '/novedades',
   control: '/control',
+  panorama: '/panorama',
 };
 
 export interface Ubicacion {

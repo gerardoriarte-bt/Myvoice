@@ -94,6 +94,15 @@ export interface User {
   superAdmin?: boolean;
 }
 
+/** Una campaña con su proceso (`server/src/comun/proceso.ts`): el selector del encabezado y el Panorama. */
+export interface CampanaEnProceso {
+  id: string;
+  nombre: string;
+  marca: { id: string; nombre: string };
+  pasos: PasoDeProceso[];
+  enCurso: PasoDeProceso | null;
+}
+
 /** Un workspace visto desde Control: su interruptor, su gente y su gasto de IA del mes contra el plan. */
 export interface WorkspaceDeControl {
   id: string;

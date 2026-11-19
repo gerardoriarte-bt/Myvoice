@@ -20,7 +20,7 @@ import { guardarAdnDesdeColumnas } from '../comun/adn/guardarAdn.js';
 import { resolverAdn } from '../comun/adn/resolverAdn.js';
 import { COLUMNAS_ADN, SECCIONES_DE_REVISION } from '../comun/adn/secciones.js';
 import { completitudAdn, conPropuesta } from '../comun/adn/completitudAdn.js';
-import { procesoDeCampana } from '../comun/proceso.js';
+import { campanasEnProceso, procesoDeCampana } from '../comun/proceso.js';
 import { guardarSeccion, confirmarPropuesta, descartarPropuesta, marcarRevisada } from '../comun/adn/guardarAdn.js';
 import { actualizarAudiencia, crearAudiencia, listarAudiencias } from '../comun/adn/audiencias.js';
 import { esTratamiento } from '../comun/adn/tratamiento.js';
@@ -689,5 +689,28 @@ export const getProceso = async (req: AuthRequest, res: Response) => {
     res.json(await procesoDeCampana(id, campanaId));
   } catch (error) {
     handleTenantError(error, res, 'Error al calcular el proceso de la campaña');
+  }
+};
+
+/** Las campañas de la marca con el paso en que va cada una: alimenta el selector de campaña del encabezado. */
+export const getCampanasEnProceso = async (req: AuthRequest, res: Response) => {
+  try {
+    await assertClientInWorkspace(req.tenant!, req.params.id);
+    res.json(await campanasEnProceso(req.tenant!.workspaceId, req.params.id));
+  } catch (error) {
+    handleTenantError(error, res, 'Error al leer las campañas de la marca');
+  }
+};
+
+/**
+ * El Panorama (decisión 24): las campañas de todas las marcas del workspace, en qué paso va cada una y qué
+ * espera a quién. Es la entrada de quien administra; las que terminaron todos los pasos no aparecen.
+ */
+export const getPanorama = async (req: AuthRequest, res: Response) => {
+  try {
+    const campanas = await campanasEnProceso(req.tenant!.workspaceId);
+    res.json(campanas.filter(c => c.enCurso));
+  } catch (error) {
+    handleTenantError(error, res, 'Error al armar el Panorama');
   }
 };

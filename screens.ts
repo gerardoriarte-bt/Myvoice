@@ -21,6 +21,7 @@ import {
   Building2,
   ClipboardCheck,
   Gauge,
+  Map as MapIcon,
   History,
   LayoutGrid,
   Library,
@@ -42,7 +43,8 @@ export type ScreenId =
   | 'settings'
   | 'help'
   | 'novedades'
-  | 'control';
+  | 'control'
+  | 'panorama';
 
 /**
  * Cinco etapas, no cuatro: cuando entra la pieza, «producir» dejaba de
@@ -64,11 +66,24 @@ export interface ScreenDef {
   adminOnly: boolean;
   /** Solo visible para el super admin (decisión 27), que está por encima de los workspaces. */
   superAdmin?: boolean;
+  /**
+   * El nombre con la plataforma por procesos, cuando cambia (diseño del 2026-11-17): dentro del paso My Voice,
+   * «Generar» es lo suelto y «Revisiones» es lo que está con el cliente. El marco de hoy sigue con `name`.
+   */
+  nombrePorProcesos?: string;
+  /** Existe solo con la plataforma por procesos: el marco de hoy no la muestra. */
+  soloPorProcesos?: boolean;
 }
 
+/** El nombre que muestra cada marco. */
+export const nombreEn = (pantalla: ScreenDef, porProcesos: boolean) =>
+  (porProcesos && pantalla.nombrePorProcesos) || pantalla.name;
+
 /** Si alguien ve una pantalla en el menú. El servidor vuelve a decidirlo en cada ruta. */
-export const puedeVer = (pantalla: ScreenDef, quien: { administra: boolean; superAdmin: boolean }) =>
-  (!pantalla.adminOnly || quien.administra) && (!pantalla.superAdmin || quien.superAdmin);
+export const puedeVer = (pantalla: ScreenDef, quien: { administra: boolean; superAdmin: boolean; porProcesos: boolean }) =>
+  (!pantalla.adminOnly || quien.administra) &&
+  (!pantalla.superAdmin || quien.superAdmin) &&
+  (!pantalla.soloPorProcesos || quien.porProcesos);
 
 export const SCREENS: Record<ScreenId, ScreenDef> = {
   clients: {
@@ -82,6 +97,7 @@ export const SCREENS: Record<ScreenId, ScreenDef> = {
   generator: {
     id: 'generator',
     name: 'Generar',
+    nombrePorProcesos: 'Generar suelto',
     description: 'Elige marca, campaña y canales. El motor arma el concepto y escribe cada canal.',
     icon: Sparkles,
     stage: 'escribir',
@@ -112,6 +128,7 @@ export const SCREENS: Record<ScreenId, ScreenDef> = {
   collaboration: {
     id: 'collaboration',
     name: 'Revisiones',
+    nombrePorProcesos: 'Con el cliente',
     description: 'Lo que se le mandó al cliente y lo que respondió.',
     icon: ClipboardCheck,
     stage: 'aprobar',
@@ -177,6 +194,19 @@ export const SCREENS: Record<ScreenId, ScreenDef> = {
     // No depende del rol en el workspace activo: el super admin puede ser MEMBER donde está parado.
     adminOnly: false,
     superAdmin: true,
+  },
+  /**
+   * La entrada de quien administra con la plataforma por procesos (decisión 24): todas las campañas en curso
+   * de todas las marcas, en qué paso va cada una y qué espera a quién.
+   */
+  panorama: {
+    id: 'panorama',
+    name: 'Panorama',
+    description: 'Todas las campañas en curso, en qué paso va cada una y qué está esperando a quién.',
+    icon: MapIcon,
+    stage: 'administrar',
+    adminOnly: true,
+    soloPorProcesos: true,
   },
   novedades: {
     id: 'novedades',

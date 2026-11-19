@@ -43,6 +43,11 @@ interface Props {
   onDestinoAtendido?: () => void;
   /** El vacío tiene que poder llevar a donde se resuelve, no solo nombrarlo. */
   onIrACopyAprobado?: () => void;
+  /**
+   * La campaña del encabezado, con la plataforma por procesos (F0b): «Por marca» muestra solo sus piezas.
+   * `null` = todas las campañas; sin la prop (el marco de hoy), el tablero no filtra por campaña.
+   */
+  campanaId?: string | null;
 }
 
 export default function TableroProduccion({
@@ -53,9 +58,15 @@ export default function TableroProduccion({
   destino,
   onDestinoAtendido,
   onIrACopyAprobado,
+  campanaId,
 }: Props) {
   const [vista, setVista] = React.useState<'marca' | 'mias'>('marca');
-  const [piezas, setPiezas] = React.useState<Pieza[]>([]);
+  const [todas, setPiezas] = React.useState<Pieza[]>([]);
+  // «Lo mío» cruza marcas y campañas: la campaña del encabezado acota solo «Por marca».
+  const piezas = React.useMemo(
+    () => (campanaId && vista === 'marca' ? todas.filter(p => p.projectId === campanaId) : todas),
+    [todas, campanaId, vista]
+  );
   const [miembros, setMiembros] = React.useState<WorkspaceMember[]>([]);
   const [cargando, setCargando] = React.useState(true);
   const [abierta, setAbierta] = React.useState<string | null>(null);

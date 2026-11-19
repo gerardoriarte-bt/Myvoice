@@ -105,3 +105,41 @@ export const procesoDeCampana = async (clientId: string, campanaId: string | nul
 
   return [marca, myvoice, produccion];
 };
+
+/**
+ * «En qué va» la campaña: el primer paso del trabajo (My Voice, Producción) que no está hecho. El ADN no
+ * frena a una marca sin CDM —en v1 avisa y no bloquea—, así que cuenta solo cuando lo demás está hecho: si
+ * no, todas las campañas de una marca con el ADN a medias dirían «en Marca» aunque estén produciendo piezas.
+ * `null` = terminó los pasos que existen.
+ */
+export const pasoEnCurso = (pasos: Paso[]): Paso | null =>
+  pasos.find(p => p.paso !== 'marca' && p.estado !== 'hecho') ?? pasos.find(p => p.estado !== 'hecho') ?? null;
+
+export interface CampanaEnProceso {
+  id: string;
+  nombre: string;
+  marca: { id: string; nombre: string };
+  pasos: Paso[];
+  /** El paso en que va y, si espera algo, qué y a quién. */
+  enCurso: Paso | null;
+}
+
+/**
+ * Las campañas de una marca —o de todo el workspace, para el Panorama— con su proceso. Una consulta por
+ * campaña: alcanza para decenas; cuando sean cientos, el Panorama tiene que paginar.
+ */
+export const campanasEnProceso = async (workspaceId: string, clientId?: string): Promise<CampanaEnProceso[]> => {
+  const campanas = await prisma.project.findMany({
+    where: { workspaceId, clientId: clientId ?? { not: null } },
+    select: { id: true, name: true, client: { select: { id: true, name: true } } },
+    orderBy: { createdAt: 'desc' },
+  });
+  return Promise.all(
+    campanas
+      .filter(c => c.client)
+      .map(async c => {
+        const pasos = await procesoDeCampana(c.client!.id, c.id);
+        return { id: c.id, nombre: c.name, marca: { id: c.client!.id, nombre: c.client!.name }, pasos, enCurso: pasoEnCurso(pasos) };
+      })
+  );
+};

@@ -112,6 +112,9 @@ router.post('/clients/:id/adn/secciones/:clave/revisada', ...asManager, clientCo
 router.post('/clients/:id/adn/secciones/:clave/propuesta/:accion', ...asManager, clientController.postPropuestaAdn);
 // El estado de cada paso del encabezado (F0): lo lee cualquier miembro, como el ADN.
 router.get('/clients/:id/proceso', ...inWorkspace, clientController.getProceso);
+router.get('/clients/:id/campanas/proceso', ...inWorkspace, clientController.getCampanasEnProceso);
+// El Panorama (decisión 24): todas las marcas del workspace, solo para quien administra.
+router.get('/panorama', ...asManager, clientController.getPanorama);
 router.get('/clients/:id/audiencias', ...inWorkspace, clientController.getAudiencias);
 router.post('/clients/:id/audiencias', ...asManager, clientController.postAudiencia);
 router.put('/clients/:id/audiencias/:audienciaId', ...asManager, clientController.putAudiencia);

@@ -36,6 +36,12 @@ interface SavedManagerProps {
   onRefreshSaved: () => Promise<void> | void;
   addNotification: (message: string, type?: string) => void;
   onIrA: (pantalla: ScreenId) => void;
+  /**
+   * La campaña del encabezado, con la plataforma por procesos (F0b): manda sobre el filtro de campaña y el
+   * selector propio se esconde, para no tener dos. `null` = todas; sin la prop (el marco de hoy), el filtro es
+   * el de siempre.
+   */
+  campanaDelEncabezado?: string | null;
 }
 
 /** Lo que muestra la barra después de actuar, en vez de desaparecer. */
@@ -71,6 +77,7 @@ const SavedManager: React.FC<SavedManagerProps> = ({
   onRefreshSaved,
   addNotification,
   onIrA,
+  campanaDelEncabezado,
 }) => {
   const marca = clients.find(c => c.id === clientId);
   const [campanas, setCampanas] = React.useState<Project[]>([]);
@@ -102,6 +109,13 @@ const SavedManager: React.FC<SavedManagerProps> = ({
       .then((data: Project[]) => setCampanas(Array.isArray(data) ? data : []))
       .catch(() => setCampanas([]));
   }, [clientId]);
+
+  const conEncabezado = campanaDelEncabezado !== undefined;
+  React.useEffect(() => {
+    if (!conEncabezado) return;
+    setCampanaFiltro(campanaDelEncabezado ?? 'all');
+    setSeleccion(new Set());
+  }, [conEncabezado, campanaDelEncabezado, clientId]);
 
   const campanaPorId = React.useMemo(() => new Map(campanas.map(c => [c.id, c])), [campanas]);
   /** La campaña de un copy, con la versión más nueva si se editó acá. */
@@ -559,6 +573,7 @@ const SavedManager: React.FC<SavedManagerProps> = ({
             </div>
           </div>
           <div className="w-full md:w-80 space-y-2">
+            {!conEncabezado && (
             <select
               value={campanaFiltro}
               onChange={e => {
@@ -575,6 +590,7 @@ const SavedManager: React.FC<SavedManagerProps> = ({
               ))}
               {deLaMarca.some(v => !v.projectId) && <option value="none">Sin campaña</option>}
             </select>
+            )}
             {campanaElegida && (
               <AprobacionDeCampana
                 campana={campanaElegida}
