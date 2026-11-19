@@ -65,7 +65,7 @@ Cada función con su estado en las tres pistas. Se actualiza en el mismo PR que 
 | Planning | Paquetes de la marca | ○ | ○ | ○ | CD-6 |
 | Planning | Armar y enviar el cuadro | ◐ | ○ | ○ | CD-7 (una línea elige sus ubicaciones y su largo: diseñada) |
 | Planning, responsable | Cuadro rápido para campañas chicas | ○ | ○ | ○ | CD-11 |
-| Planning | Los 14 canales cargados en la biblioteca (carga con decisiones) | ◐ | ○ | ○ | CD-12 · cada canal va al medio de su clase (decisión 29): B8 se ajusta |
+| Planning | Los 14 canales cargados en la biblioteca | ◐ | ✓ | ✓ | CD-12 · F2c: `npm run cdm:canales`, cada canal en el medio de su clase; las cantidades de B8 ya las fija `porPieza` |
 | Planning | Clases de medio: Pagos, Redes sociales, Propios, Tradicional | ✓ | ✓ | ✓ | decisión 29 |
 | Planning | Estado por línea | ○ | ○ | ○ | CD-8 |
 | Planning | Portafolio | ○ | ○ | ○ | CD-9 |

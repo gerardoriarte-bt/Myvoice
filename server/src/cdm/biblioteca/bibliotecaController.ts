@@ -17,6 +17,8 @@ const ultimaVersion = {
     take: 1,
     include: {
       ubicaciones: { orderBy: { orden: 'asc' as const }, include: { campos: true } },
+      // Los campos del formato que no dependen de una ubicación: los de los canales de My Voice (F2c).
+      campos: { where: { ubicacionId: null }, orderBy: { orden: 'asc' as const } },
     },
   },
 };
@@ -44,7 +46,7 @@ export const listarMedios = async (req: AuthRequest, res: Response) => {
           plataformas: [...new Set(ubicaciones.map(u => u.plataforma))],
           proporciones: [...new Set(m.formatos.map(f => f.proporcion).filter((p): p is string => Boolean(p)))],
           porConfirmar: ubicaciones.filter(u => u.porConfirmar).length,
-          sinCampos: versiones.some(v => !v.ubicaciones.some(u => u.campos.length)),
+          sinCampos: versiones.some(v => !v.campos.length && !v.ubicaciones.some(u => u.campos.length)),
           actualizado: masNueva ? { fuente: masNueva.fuente, fecha: (masNueva.fuenteFecha ?? masNueva.createdAt).toISOString() } : null,
         };
       })
@@ -117,6 +119,16 @@ export const detalleDeMedio = async (req: AuthRequest, res: Response) => {
               zonaSegura: u.zonaSegura,
             })),
             campos,
+            camposDelFormato: v.campos.map(c => ({
+              clave: c.clave,
+              nombre: c.nombre,
+              zona: c.zona,
+              unidad: c.unidad,
+              minimo: c.minimo,
+              maximo: c.maximo,
+              repeticiones: c.repeticiones,
+            })),
+            canal: f.canal,
           };
         }),
     });

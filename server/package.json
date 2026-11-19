@@ -20,6 +20,7 @@
     "plataforma": "tsx scripts/plataforma.ts",
     "superadmin": "tsx scripts/superAdmin.ts",
     "cdm:importar": "tsx scripts/cdmImportar.ts",
+    "cdm:canales": "tsx scripts/cdmCanales.ts",
     "migrar:archivos": "tsx scripts/migrarArchivosAS3.ts",
     "verify:isolation": "tsx scripts/verifyIsolation.ts",
     "verify:calidad": "tsx scripts/verifyCalidad.ts",

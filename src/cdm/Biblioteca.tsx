@@ -81,7 +81,8 @@ export default function Biblioteca({ puedeEditar }: { puedeEditar: boolean }) {
         <div className="min-w-0">
           <div className="text-[14px] font-bold text-[#1D1D1F]">{m.nombre}</div>
           <div className="text-[12px] text-[#6E6E73]">
-            {m.formatos} {m.formatos === 1 ? 'pieza' : 'piezas'} · {m.ubicaciones} {m.ubicaciones === 1 ? 'ubicación' : 'ubicaciones'}
+            {m.formatos} {m.formatos === 1 ? 'pieza' : 'piezas'}
+            {m.ubicaciones > 0 ? ` · ${m.ubicaciones} ${m.ubicaciones === 1 ? 'ubicación' : 'ubicaciones'}` : ''}
           </div>
         </div>
       </div>
@@ -253,8 +254,11 @@ function Medio({
           )}
         </div>
         <p className="text-[13px] text-[#6E6E73] mt-0.5">
-          {plataformas.join(' · ')} · {ubicaciones} {ubicaciones === 1 ? 'ubicación' : 'ubicaciones'} en {medio.formatos.length}{' '}
-          {medio.formatos.length === 1 ? 'pieza' : 'piezas'}
+          {ubicaciones > 0
+            ? `${plataformas.join(' · ')} · ${ubicaciones} ${ubicaciones === 1 ? 'ubicación' : 'ubicaciones'} en ${medio.formatos.length} ${
+                medio.formatos.length === 1 ? 'pieza' : 'piezas'
+              }`
+            : `${medio.formatos.length} ${medio.formatos.length === 1 ? 'formato' : 'formatos'}`}
           {fuente?.fuenteFecha ? ` · ${fuente.fuente ?? 'guía'}, ${fecha(fuente.fuenteFecha)}` : ''}
         </p>
         {porConfirmar > 0 && (
@@ -272,7 +276,8 @@ function Medio({
           >
             Guía para Diseño
           </button>
-          {puedeEditar && (
+          {/* Los canales de My Voice no vienen de una planilla: se actualizan con `npm run cdm:canales`. */}
+          {puedeEditar && medio.formatos.some(f => !f.canal) && (
             <button
               type="button"
               onClick={onCargarVersion}
@@ -316,8 +321,13 @@ function Medio({
                 <div>
                   <h3 className="text-[15px] font-bold text-[#1D1D1F]">{f.nombre}</h3>
                   <p className="text-[12px] text-[#6E6E73]">
-                    {f.anchoPx && f.altoPx ? `${miles(f.anchoPx)} × ${miles(f.altoPx)} · ` : ''}
-                    {f.ubicaciones.length} {f.ubicaciones.length === 1 ? 'ubicación' : 'ubicaciones'} · versión {f.version}
+                    {f.guia?.medidas?.length
+                      ? `${f.guia.medidas.join(' · ')} · `
+                      : f.anchoPx && f.altoPx
+                        ? `${miles(f.anchoPx)} × ${miles(f.altoPx)} · `
+                        : ''}
+                    {f.ubicaciones.length > 0 ? `${f.ubicaciones.length} ${f.ubicaciones.length === 1 ? 'ubicación' : 'ubicaciones'} · ` : ''}
+                    versión {f.version}
                   </p>
                 </div>
                 {pendientes > 0 && <span className="rounded bg-amber-50 px-1.5 py-0.5 text-[11px] font-semibold text-amber-700">{pendientes} por confirmar</span>}
@@ -348,6 +358,8 @@ function Medio({
                   </ul>
                 </div>
               )}
+              {f.camposDelFormato.length > 0 && <CamposDelFormato campos={f.camposDelFormato} />}
+              {f.canal && <p className="mt-2 text-[11px] text-[#86868B]">Lo escribe My Voice como «{f.canal}».</p>}
               <p className="mt-2 text-[11.5px] text-[#86868B]">
                 {[f.archivos, f.pesoMaximo].filter(Boolean).join(' · ')}
                 {zona ? ` · Zona segura ${zona.superior ?? '–'} % · ${zona.inferior ?? '–'} % · ${zona.lados ?? '–'} %` : ''}
@@ -356,6 +368,43 @@ function Medio({
           );
         })}
       </div>
+    </div>
+  );
+}
+
+const ZONAS: { id: MedioDetalle['formatos'][number]['camposDelFormato'][number]['zona']; nombre: string }[] = [
+  { id: 'PIEZA', nombre: 'En la pieza' },
+  { id: 'PLATAFORMA', nombre: 'En la plataforma' },
+  { id: 'INDICACION', nombre: 'Para Diseño · no se publica' },
+];
+
+/** Los campos de un formato de My Voice (B6): dónde va cada texto, su largo y cuántos lleva la pieza. */
+function CamposDelFormato({ campos }: { campos: MedioDetalle['formatos'][number]['camposDelFormato'] }) {
+  return (
+    <div className="mt-3 space-y-2 border-t border-[rgba(0,0,0,0.06)] pt-2">
+      {ZONAS.map(z => {
+        const deZona = campos.filter(c => c.zona === z.id);
+        if (!deZona.length) return null;
+        return (
+          <div key={z.id}>
+            <div className="text-[10px] font-semibold uppercase tracking-[0.06em] text-[#86868B]">{z.nombre}</div>
+            <ul className="mt-1 space-y-0.5">
+              {deZona.map(c => (
+                <li key={c.clave} className="flex items-baseline justify-between gap-2 text-[12px]">
+                  <span className="text-[#3A3A3C]">
+                    {c.repeticiones > 1 ? `${c.repeticiones} × ` : ''}
+                    {c.nombre}
+                  </span>
+                  <span className="font-semibold text-[#1D1D1F] tabular-nums">
+                    {c.maximo == null ? '—' : c.minimo != null ? `${c.minimo} a ${c.maximo}` : c.maximo}
+                    {c.maximo != null && c.unidad === 'palabras' ? ' palabras' : ''}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        );
+      })}
     </div>
   );
 }
