@@ -887,6 +887,12 @@ enum FuncionEquipo {
   COPY
   DISENO
   APROBACION
+  /// F1 (decisión 22): ① Marca · ADN.
+  ESTRATEGIA
+  /// F1: ② CDM · Plannings y biblioteca.
+  PLANNING
+  /// F1: ⑤ Implementación · anuncios.
+  TRAFFICKER
 }
 
 model MiembroFuncion {

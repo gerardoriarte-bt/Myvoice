@@ -1,6 +1,6 @@
 # Dependencias entre módulos (generado)
 
-Generado el 2026-11-19 desde el commit `136ea32` con `bash scripts/mapa/actualizar.sh`. **No se edita a mano**: se corrige `scripts/mapa/modulos.json` y se vuelve a generar.
+Generado el 2026-11-19 desde el commit `c4ef40d` con `bash scripts/mapa/actualizar.sh`. **No se edita a mano**: se corrige `scripts/mapa/modulos.json` y se vuelve a generar.
 
 Cada fila es un archivo que usa algo de otro archivo de **otro módulo** (importa, llama o referencia un tipo). Módulos según la decisión 12; reglas en [spec-plataforma.md](./spec-plataforma.md) § 2.
 
@@ -8,14 +8,14 @@ Cada fila es un archivo que usa algo de otro archivo de **otro módulo** (import
 
 | Desde \ Hacia | Plataforma | Parte común | My Voice | Producción | CDM | Compartido |
 |---|---|---|---|---|---|---|
-| **Plataforma** | · | 20 | 20 | 6 | · | 27 |
-| **Parte común** | · | · | · | · | · | 45 |
-| **My Voice** | · | 35 | · | · | · | 119 |
+| **Plataforma** | · | 20 | 20 | 6 | · | 28 |
+| **Parte común** | · | · | · | · | · | 46 |
+| **My Voice** | · | 37 | · | · | · | 119 |
 | **Producción** | · | 11 | 2 | · | · | 25 |
 | **CDM** | · | · | · | · | · | · |
 | **Compartido** | · | · | · | · | · | · |
 
-- **Hay que invertir**: 0 · **pasan por el contrato**: 48 · **permitidas**: 262
+- **Hay que invertir**: 0 · **pasan por el contrato**: 50 · **permitidas**: 264
 
 ## Hay que invertir (0)
 
@@ -23,7 +23,7 @@ Rompen la regla: la parte común o la infraestructura dependen de un módulo, o 
 
 Ninguna.
 
-## Pasan por el contrato (48)
+## Pasan por el contrato (50)
 
 Un módulo lee la parte común. Está bien, pero solo por `contrato/`: esta lista es lo que `contrato/` tiene que exponer.
 
@@ -41,6 +41,7 @@ Un módulo lee la parte común. Está bien, pero solo por `contrato/`: esta list
 | My Voice | `server/src/channels/validators.ts` | Parte común | `server/src/comun/adn/tratamiento.ts` | Tratamiento, faltasDeTratamiento(), tratamiento.ts |
 | My Voice | `server/src/controllers/analyticsController.ts` | Parte común | `server/src/lib/tenancy.ts` | assertClientInWorkspace(), tenancy.ts |
 | My Voice | `server/src/controllers/analyticsController.ts` | Parte común | `server/src/middleware/auth.ts` | AuthRequest, auth.ts, handleTenantError() |
+| My Voice | `server/src/controllers/generateController.ts` | Parte común | `server/src/comun/permisos.ts` | assertPuedeActuar(), permisos.ts |
 | My Voice | `server/src/controllers/generateController.ts` | Parte común | `server/src/lib/tenancy.ts` | TenantContext, assertDnaProfileInWorkspace(), tenancy.ts |
 | My Voice | `server/src/controllers/generateController.ts` | Parte común | `server/src/lib/workspaceSecret.ts` | decryptWorkspaceApiKey(), workspaceSecret.ts |
 | My Voice | `server/src/controllers/generateController.ts` | Parte común | `server/src/middleware/auth.ts` | AuthRequest, auth.ts, handleTenantError() |
@@ -49,6 +50,7 @@ Un módulo lee la parte común. Está bien, pero solo por `contrato/`: esta list
 | My Voice | `server/src/controllers/refineController.ts` | Parte común | `server/src/lib/tenancy.ts` | assertClientInWorkspace(), tenancy.ts |
 | My Voice | `server/src/controllers/refineController.ts` | Parte común | `server/src/lib/workspaceSecret.ts` | decryptWorkspaceApiKey(), workspaceSecret.ts |
 | My Voice | `server/src/controllers/refineController.ts` | Parte común | `server/src/middleware/auth.ts` | AuthRequest, auth.ts, handleTenantError() |
+| My Voice | `server/src/controllers/savedController.ts` | Parte común | `server/src/comun/permisos.ts` | assertPuedeActuar(), permisos.ts |
 | My Voice | `server/src/controllers/savedController.ts` | Parte común | `server/src/lib/tenancy.ts` | TenantError, assertClientInWorkspace(), assertMemberOfWorkspace(), assertProjectInWorkspace() |
 | My Voice | `server/src/controllers/savedController.ts` | Parte común | `server/src/middleware/auth.ts` | AuthRequest, auth.ts, handleTenantError() |
 | My Voice | `server/src/services/aprobacion.ts` | Parte común | `server/src/lib/tenancy.ts` | TenantContext, TenantError, assertDnaProfileInWorkspace(), assertProjectInWorkspace() |
@@ -78,15 +80,15 @@ Un módulo lee la parte común. Está bien, pero solo por `contrato/`: esta list
 | Producción | `server/src/services/auditoriaService.ts` | My Voice | `server/src/channels/registry.ts` | registry.ts, zonaDe() |
 | Producción | `server/src/services/piezaService.ts` | My Voice | `server/src/channels/registry.ts` | esFormatoValido(), esSlotDeInstruccion(), formatoPorDefecto(), getChannelSpec() |
 
-## Permitidas (262)
+## Permitidas (264)
 
 El arranque importa de todos, y todos usan la infraestructura compartida.
 
 | Desde | Hacia | Pares |
 |---|---|---|
-| Parte común | Compartido | 45 |
+| Parte común | Compartido | 46 |
 | My Voice | Compartido | 119 |
-| Plataforma | Compartido | 27 |
+| Plataforma | Compartido | 28 |
 | Plataforma | Parte común | 20 |
 | Plataforma | My Voice | 20 |
 | Plataforma | Producción | 6 |

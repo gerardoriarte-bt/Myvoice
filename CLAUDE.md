@@ -192,6 +192,10 @@ Three middleware levels, composed in `routes/index.ts`:
   token's `workspaceId` is a preference, never a permission: revoking a membership takes
   effect immediately instead of waiting out the 24 h token.
 - `requireManager` — OWNER or ADMIN of the active workspace.
+- `comun/permisos.ts` (F1, decision 22) — who may ACT in each process step: OWNER/ADMIN or the step's
+  function (`MiembroFuncion`, per brand or all). Called as `assertPuedeActuar` after the tenancy guard (403).
+  It only logs unless `PERMISOS_POR_FUNCION=aplicar` **and** the workspace has `plataformaPorProcesos` on.
+  Seeing is never restricted.
 - `requireSuperAdmin` — `User.superAdmin`, read from the database on each request (decision 27). It sits
   **above** workspaces: the `/control/*` routes skip `requireWorkspace` and see every company. Only the
   `superadmin` script grants it.

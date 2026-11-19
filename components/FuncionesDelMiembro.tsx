@@ -19,17 +19,21 @@ import { funcionesApi } from '../services/api';
  * van en el color de su etapa del producto —azul el copy, violeta el diseño,
  * ámbar la aprobación—, separadas por una línea fina.
  *
- * Ninguna restringe nada: deciden a quién se le avisa y quién aparece primero
- * al asignar una pieza.
+ * Desde F1 (decisión 22) deciden en qué pasos actúa cada persona —ver, ve
+ * todos—, a quién se le avisa y quién aparece primero al asignar una pieza.
  */
 
 const COLOR: Record<FuncionEquipo, { fondo: string; texto: string; borde: string }> = {
+  ESTRATEGIA: { fondo: '#F5F5F7', texto: '#1D1D1F', borde: '#D2D2D7' },
+  PLANNING: { fondo: '#ECFDF5', texto: '#047857', borde: '#A7F3D0' },
+  TRAFFICKER: { fondo: '#ECFEFF', texto: '#0E7490', borde: '#A5F3FC' },
   COPY: { fondo: '#EFF6FF', texto: '#1D4ED8', borde: '#BFDBFE' },
   DISENO: { fondo: '#F5F3FF', texto: '#6D28D9', borde: '#DDD6FE' },
   APROBACION: { fondo: '#FFFBEB', texto: '#B45309', borde: '#FDE68A' },
 };
 
-const TODAS: FuncionEquipo[] = ['COPY', 'DISENO', 'APROBACION'];
+// En el orden del proceso: ① Estrategia, ② Planning, ③ Copy, ④ Diseño, ⑤ Trafficker; Aprobación cruza todos.
+const TODAS: FuncionEquipo[] = ['ESTRATEGIA', 'PLANNING', 'COPY', 'DISENO', 'TRAFFICKER', 'APROBACION'];
 
 interface Props {
   miembro: WorkspaceMember;
@@ -109,7 +113,7 @@ export default function FuncionesDelMiembro({ miembro, clients, puedeEditar, onC
           <div className="absolute right-0 top-7 z-20 w-72 rounded-xl border border-[rgba(0,0,0,0.08)] bg-white p-3 shadow-xl">
             <p className="text-[11px] font-semibold text-[#1D1D1F]">Qué hace {miembro.name.split(' ')[0]}</p>
             <p className="mt-0.5 text-[10px] text-[#86868B]">
-              No cambia sus permisos: decide a quién se le avisa.
+              Ve todo. La función decide en qué paso actúa y a quién se le avisa.
             </p>
 
             <div className="mt-2.5 space-y-2.5">

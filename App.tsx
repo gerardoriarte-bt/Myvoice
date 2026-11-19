@@ -37,7 +37,7 @@ import Isotipo from './components/ui/Isotipo';
 import Marco from './src/plataforma/Marco';
 import Control from './src/plataforma/Control';
 import Panorama from './src/plataforma/Panorama';
-import { armarRuta, leerRuta } from './src/plataforma/rutas';
+import { armarRuta, leerRuta, pantallaDeEntrada } from './src/plataforma/rutas';
 
 const MOCK_CLIENTS: Client[] = [
   { id: 'c-lobueno', name: 'LoBueno', industry: 'Agencia creativa y de contenido', logo: '', createdAt: Date.now() },
@@ -209,7 +209,10 @@ const App: React.FC = () => {
   // (Marcas) es de administración, así que se lo lleva a la primera suya.
   React.useEffect(() => {
     // Quien no administra entra a sus piezas: «Lo mío» con la plataforma por procesos, el tablero sin ella.
-    if (currentUser && !puedeVer(SCREENS[activeTab], quien)) setActiveTab(isAdmin ? 'saved' : plataforma ? 'loMio' : 'produccion');
+    if (currentUser && !puedeVer(SCREENS[activeTab], quien))
+      setActiveTab(
+        plataforma ? pantallaDeEntrada(currentUser, isAdmin, id => puedeVer(SCREENS[id], quien)) : isAdmin ? 'saved' : 'produccion'
+      );
   }, [currentUser, isAdmin, superAdmin, plataforma, activeTab]);
   const workspaces: WorkspaceSummary[] = currentUser?.workspaces || [];
   const activeClient = clients.find(c => c.id === activeClientId);
@@ -394,8 +397,12 @@ const App: React.FC = () => {
         // ya fue llevado a Producción. Un enlace de correo (?pieza=) ya eligió.
         if (!inicioElegido.current) {
           inicioElegido.current = true;
-          // Con la plataforma por procesos, la entrada de quien administra es el Panorama (decisión 24).
-          if (isAdmin) setActiveTab(prev => (prev === 'clients' && normalizedClients.length > 0 ? (plataforma ? 'panorama' : 'saved') : prev));
+          // Con la plataforma por procesos, cada uno entra a su paso según su función (decisión 22); sin
+          // función, quien administra entra al Panorama (decisión 24) y el resto a «Lo mío».
+          if (plataforma && currentUser && normalizedClients.length > 0) {
+            const entrada = pantallaDeEntrada(currentUser, isAdmin, id => puedeVer(SCREENS[id], quien));
+            setActiveTab(prev => (prev === 'clients' ? entrada : prev));
+          } else if (isAdmin) setActiveTab(prev => (prev === 'clients' && normalizedClients.length > 0 ? 'saved' : prev));
         }
 
         addNotification('Datos sincronizados con éxito', 'success');

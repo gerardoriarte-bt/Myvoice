@@ -10,6 +10,7 @@ import {
   pickFields,
   TenantError,
 } from '../lib/tenancy.js';
+import { assertPuedeActuar } from '../comun/permisos.js';
 import { prisma } from '../lib/prisma.js';
 import { resolveSlotLabel, zonaDe } from '../channels/registry.js';
 import { ModoAprobacion } from '@prisma/client';
@@ -78,6 +79,7 @@ export const saveVariation = async (req: AuthRequest, res: Response) => {
   try {
     const tenant = req.tenant!;
     await assertClientInWorkspace(tenant, clientId);
+    await assertPuedeActuar(tenant, 'COPY', clientId);
     let campanaId: string | null = null;
     if (projectId) {
       campanaId = (await assertCampanaDeLaMarca(tenant, projectId, clientId)).id;
@@ -137,6 +139,7 @@ export const updateVariation = async (req: AuthRequest, res: Response) => {
   try {
     const tenant = req.tenant!;
     const current = await assertVariationInWorkspace(tenant, id);
+    await assertPuedeActuar(tenant, 'COPY', current.clientId);
 
     const updates: Record<string, any> = pickFields(req.body, VARIATION_UPDATABLE);
     if (updates.projectId) await assertCampanaDeLaMarca(tenant, updates.projectId, current.clientId);

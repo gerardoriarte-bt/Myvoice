@@ -10,6 +10,7 @@
  */
 
 import type { ScreenId } from '../../screens';
+import type { FuncionEquipo, User } from '../../types';
 
 export const RUTAS: Record<ScreenId, string> = {
   clients: '/marca',
@@ -60,10 +61,13 @@ export interface PasoDef {
   tema: string;
   color: string;
   grupos: { titulo: string; pantallas: ScreenId[] }[];
+  /** El paso de trabajo del servidor (`comun/permisos.ts`) y la función que actúa en él (F1). */
+  trabajo: NonNullable<User['entorno']>;
+  funcion: FuncionEquipo;
 }
 
 export const PASOS: PasoDef[] = [
-  { id: 'marca', nombre: 'Marca', tema: 'ADN', color: '#1D1D1F', grupos: [{ titulo: 'Trabajo', pantallas: ['clients'] }] },
+  { id: 'marca', nombre: 'Marca', tema: 'ADN', color: '#1D1D1F', grupos: [{ titulo: 'Trabajo', pantallas: ['clients'] }], trabajo: 'ADN', funcion: 'ESTRATEGIA' },
   {
     id: 'myvoice',
     nombre: 'My Voice',
@@ -73,10 +77,32 @@ export const PASOS: PasoDef[] = [
       { titulo: 'Trabajo', pantallas: ['saved', 'generator', 'collaboration'] },
       { titulo: 'Seguimiento', pantallas: ['history', 'analytics'] },
     ],
+    trabajo: 'COPY',
+    funcion: 'COPY',
   },
-  { id: 'produccion', nombre: 'Producción', tema: 'Piezas', color: '#B45309', grupos: [{ titulo: 'Trabajo', pantallas: ['loMio', 'produccion'] }] },
+  { id: 'produccion', nombre: 'Producción', tema: 'Piezas', color: '#B45309', grupos: [{ titulo: 'Trabajo', pantallas: ['loMio', 'produccion'] }], trabajo: 'PRODUCCION', funcion: 'DISENO' },
 ];
 
 /** El paso de una pantalla; las de la cuenta (Equipo, Configuración, Guía, Novedades) no son de ninguno. */
 export const pasoDe = (pantalla: ScreenId): PasoDef | null =>
   PASOS.find(p => p.grupos.some(g => g.pantallas.includes(pantalla))) ?? null;
+
+/**
+ * Si la persona ACTÚA en un paso (F1, decisión 22): admin, o tiene la función del paso en esa marca o en
+ * todas. Es lo que el servidor decide en `comun/permisos.ts`; acá solo elige si se muestra la franja de
+ * lectura. Ver, ve todos los pasos.
+ */
+export const actuaEn = (usuario: User, administra: boolean, paso: PasoDef, marcaId: string) =>
+  administra || (usuario.funciones ?? []).some(f => f.funcion === paso.funcion && (!f.clientId || f.clientId === marcaId));
+
+/** Donde entra cada persona con la plataforma por procesos: la primera pantalla visible de su paso. */
+export const pantallaDeEntrada = (
+  usuario: User,
+  administra: boolean,
+  visible: (id: ScreenId) => boolean
+): ScreenId => {
+  const paso = PASOS.find(p => p.trabajo === usuario.entorno);
+  const suya = paso?.grupos.flatMap(g => g.pantallas).find(visible);
+  if (suya) return suya;
+  return administra ? 'panorama' : 'loMio';
+};

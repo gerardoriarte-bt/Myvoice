@@ -5,15 +5,13 @@
  * administrar una persona; la función dice qué hace. Una persona puede tener
  * varias, y cada una puede acotarse a marcas.
  *
- * **Ninguna función restringe nada** (D2 del plan). Sin la de Aprobación igual
- * se puede aceptar una pieza. Lo único que cambia es:
+ * **Ver no se restringe nunca; actuar, desde F1, sí** (decisión 22, que cambia
+ * D2). Quién actúa en cada paso lo decide `comun/permisos.ts`, y los admins
+ * actúan en todos para destrabar si alguien falta: es lo que conserva el
+ * espíritu de D2. Además, la función decide:
  *
- *   · a quién le llega el aviso (fase 3), y
+ *   · a quién le llega el aviso, y
  *   · quién aparece primero en «Asignar a…».
- *
- * Si restringiera, el día que el aprobador está de vacaciones habría que ir a
- * Equipo a cambiar roles para destrabar una pieza — y eso termina con todos
- * siendo aprobadores «por las dudas», que es peor que no tener funciones.
  *
  * Ver docs/plan-h3d-funciones-notificaciones.md.
  */

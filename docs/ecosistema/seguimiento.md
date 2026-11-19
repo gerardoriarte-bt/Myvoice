@@ -31,9 +31,10 @@ Cada función con su estado en las tres pistas. Se actualiza en el mismo PR que 
 | Super admin | Control: interruptores, usuarios de todas las empresas y gasto de IA; los costos solo para él (decisión 27) | ✓ | ✓ | ✓ | `User.superAdmin`, `npm run superadmin` |
 | — | Interruptor `Workspace.plataformaPorProcesos` (lo nuevo no se ve hasta encenderlo; `npm run plataforma`) | — | ✓ | ✓ | F0a · plan, «Convivencia con producción» |
 | Todos | La plataforma habla de tú (español de Colombia, sin voseo) | ● | ● | ● | #73, desplegado el 2026-11-17 |
+| Todos | Entrada por función y franja «Solo lectura» (decisión 22) | ✓ | ✓ | ✓ | F1a; esconder acciones y `verify:permisos`: F1b |
 | Todos | Mi cola | ✓ | ○ | ○ | PL-6 |
 | Todos | Avisos que llevan a la acción | ✓ | ○ | ◐ | PL-7 |
-| Super Admin | Funciones del equipo por marca | ● | ● | ● | PL-8 (suma Estrategia y Planning: ○) |
+| Super Admin | Funciones del equipo por marca | ● | ● | ● | PL-8 (Estrategia, Planning y Trafficker: ✓ en F1a) |
 
 ## My Voice
 
