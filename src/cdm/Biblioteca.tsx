@@ -3,11 +3,13 @@ import { AlertTriangle, ArrowLeft } from 'lucide-react';
 import { SCREENS } from '../../screens';
 import { cdmApi } from '../../services/api';
 import type { MedioDetalle, MedioResumen } from '../../types';
+import CargarPlanilla from './CargarPlanilla';
+import GuiaVisual from './GuiaVisual';
 
 /**
  * La biblioteca de medios de la agencia (F2b; en el `.pen`, B1 el catálogo y B2 un medio por pieza).
  * Abre con los medios, no con todos los formatos sueltos: una tarjeta por medio, y al abrirlo, sus piezas
- * maestras (decisión 18). Esta entrega es para leer; editarla (Planning) llega en la siguiente.
+ * maestras (decisión 18). La ve cualquiera; Planning (o un admin) carga planillas y activa los medios.
  */
 
 type Filtro = 'todos' | 'activos' | 'borrador' | 'porConfirmar';
@@ -22,17 +24,43 @@ const ESTADO: Record<MedioResumen['estado'], { texto: string; clase: string }> =
   OCULTO: { texto: 'Oculto', clase: 'bg-gray-100 text-gray-500' },
 };
 
-export default function Biblioteca() {
+export default function Biblioteca({ puedeEditar }: { puedeEditar: boolean }) {
   const [medios, setMedios] = React.useState<MedioResumen[] | null>(null);
   const [error, setError] = React.useState(false);
   const [filtro, setFiltro] = React.useState<Filtro>('todos');
   const [abierto, setAbierto] = React.useState<string | null>(null);
+  const [cargando, setCargando] = React.useState(false);
 
+  const leer = React.useCallback(() => cdmApi.medios().then(setMedios).catch(() => setError(true)), []);
   React.useEffect(() => {
-    cdmApi.medios().then(setMedios).catch(() => setError(true));
-  }, []);
+    void leer();
+  }, [leer]);
 
-  if (abierto) return <Medio id={abierto} onVolver={() => setAbierto(null)} />;
+  if (cargando)
+    return (
+      <CargarPlanilla
+        onVolver={() => setCargando(false)}
+        onCargado={async nombre => {
+          setCargando(false);
+          const lista = await cdmApi.medios();
+          setMedios(lista);
+          // Después de cargar, el medio: ahí se revisa y se activa.
+          setAbierto(lista.find(m => m.nombre === nombre)?.id ?? null);
+        }}
+      />
+    );
+  if (abierto)
+    return (
+      <Medio
+        id={abierto}
+        puedeEditar={puedeEditar}
+        onVolver={() => {
+          setAbierto(null);
+          void leer();
+        }}
+        onCargarVersion={() => setCargando(true)}
+      />
+    );
   if (error) return <p className="text-[13px] text-red-600">No se pudo leer la biblioteca. Recarga la página.</p>;
   if (!medios) return <div className="h-48" />;
 
@@ -56,12 +84,23 @@ export default function Biblioteca() {
       <div className="rounded-[10px] border border-emerald-100 bg-emerald-50 px-4 py-2.5 text-[12.5px] text-emerald-900">
         Biblioteca de la agencia: la comparten todas las marcas. Lo que se agregue o cambie aquí queda para todas.
       </div>
-      <div>
-        <h2 className="text-[22px] font-bold text-[#1D1D1F] tracking-[-0.01em]">{SCREENS.biblioteca.name}</h2>
-        <p className="text-[13px] text-[#6E6E73] mt-0.5">
-          {medios.length} {medios.length === 1 ? 'medio' : 'medios'} · {piezas} {piezas === 1 ? 'pieza' : 'piezas'} · la mantiene
-          Planning · My Voice y Producción la heredan
-        </p>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h2 className="text-[22px] font-bold text-[#1D1D1F] tracking-[-0.01em]">{SCREENS.biblioteca.name}</h2>
+          <p className="text-[13px] text-[#6E6E73] mt-0.5">
+            {medios.length} {medios.length === 1 ? 'medio' : 'medios'} · {piezas} {piezas === 1 ? 'pieza' : 'piezas'} · la mantiene
+            Planning · My Voice y Producción la heredan
+          </p>
+        </div>
+        {puedeEditar && (
+          <button
+            type="button"
+            onClick={() => setCargando(true)}
+            className="rounded-lg border border-[rgba(0,0,0,0.12)] bg-white px-3 py-1.5 text-[12.5px] font-semibold text-[#1D1D1F] hover:bg-[#F5F5F7]"
+          >
+            Cargar desde planilla
+          </button>
+        )}
       </div>
 
       <div className="flex flex-wrap gap-2">
@@ -142,15 +181,38 @@ export default function Biblioteca() {
 }
 
 /** B2: el medio por pieza a producir, cada una con sus ubicaciones y sus campos de texto. */
-function Medio({ id, onVolver }: { id: string; onVolver: () => void }) {
+function Medio({
+  id,
+  puedeEditar,
+  onVolver,
+  onCargarVersion,
+}: {
+  id: string;
+  puedeEditar: boolean;
+  onVolver: () => void;
+  onCargarVersion: () => void;
+}) {
   const [medio, setMedio] = React.useState<MedioDetalle | null>(null);
   const [error, setError] = React.useState(false);
+  const [guia, setGuia] = React.useState(false);
+  const [aviso, setAviso] = React.useState<string | null>(null);
   React.useEffect(() => {
     cdmApi.medio(id).then(setMedio).catch(() => setError(true));
   }, [id]);
 
   if (error) return <p className="text-[13px] text-red-600">No se pudo leer el medio.</p>;
   if (!medio) return <div className="h-48" />;
+  if (guia) return <GuiaVisual medio={medio} onVolver={() => setGuia(false)} />;
+
+  const cambiarEstado = async (estado: MedioDetalle['estado']) => {
+    setAviso(null);
+    try {
+      await cdmApi.cambiarEstado(medio.id, estado);
+      setMedio({ ...medio, estado });
+    } catch (err) {
+      setAviso(err instanceof Error ? err.message : 'No se pudo cambiar el estado');
+    }
+  };
 
   const ubicaciones = medio.formatos.reduce((s, f) => s + f.ubicaciones.length, 0);
   const porConfirmar = medio.formatos.reduce((s, f) => s + f.ubicaciones.filter(u => u.porConfirmar).length, 0);
@@ -162,6 +224,7 @@ function Medio({ id, onVolver }: { id: string; onVolver: () => void }) {
       <button type="button" onClick={onVolver} className="inline-flex items-center gap-1 text-[12.5px] text-[#6E6E73] hover:text-[#1D1D1F]">
         <ArrowLeft className="h-3.5 w-3.5" /> {SCREENS.biblioteca.name}
       </button>
+      <div className="flex flex-wrap items-start justify-between gap-3">
       <div>
         <div className="flex items-center gap-2">
           <h2 className="text-[22px] font-bold text-[#1D1D1F] tracking-[-0.01em]">{medio.nombre}</h2>
@@ -179,6 +242,47 @@ function Medio({ id, onVolver }: { id: string; onVolver: () => void }) {
           </p>
         )}
       </div>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => setGuia(true)}
+            className="rounded-lg border border-[rgba(0,0,0,0.12)] bg-white px-3 py-1.5 text-[12.5px] font-semibold text-[#1D1D1F] hover:bg-[#F5F5F7]"
+          >
+            Guía para Diseño
+          </button>
+          {puedeEditar && (
+            <button
+              type="button"
+              onClick={onCargarVersion}
+              className="rounded-lg border border-[rgba(0,0,0,0.12)] bg-white px-3 py-1.5 text-[12.5px] font-semibold text-[#1D1D1F] hover:bg-[#F5F5F7]"
+            >
+              Cargar versión nueva
+            </button>
+          )}
+          {puedeEditar && medio.estado !== 'ACTIVO' && (
+            <button
+              type="button"
+              onClick={() => void cambiarEstado('ACTIVO')}
+              className="rounded-lg bg-[#047857] px-3 py-1.5 text-[12.5px] font-semibold text-white"
+            >
+              Activar {medio.nombre}
+            </button>
+          )}
+          {puedeEditar && medio.estado === 'ACTIVO' && (
+            <button
+              type="button"
+              onClick={() => void cambiarEstado('OCULTO')}
+              className="rounded-lg border border-[rgba(0,0,0,0.12)] bg-white px-3 py-1.5 text-[12.5px] text-[#6E6E73] hover:bg-[#F5F5F7]"
+            >
+              Ocultar
+            </button>
+          )}
+        </div>
+      </div>
+      {aviso && <p className="text-[12.5px] text-red-600">{aviso}</p>}
+      {medio.estado === 'BORRADOR' && (
+        <p className="text-[12.5px] text-[#6E6E73]">En borrador: todavía no se puede elegir en un planning. Revísalo y actívalo.</p>
+      )}
 
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 xl:grid-cols-3">
         {medio.formatos.map(f => {

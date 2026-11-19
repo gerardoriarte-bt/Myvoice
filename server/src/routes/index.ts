@@ -163,6 +163,9 @@ router.get('/analytics', ...inWorkspace, analyticsController.getAnalytics);
 // La biblioteca de medios de la agencia (F2b): la lee cualquier miembro; editarla es de Planning.
 router.get('/cdm/biblioteca', ...inWorkspace, bibliotecaController.listarMedios);
 router.get('/cdm/biblioteca/medios/:id', ...inWorkspace, bibliotecaController.detalleDeMedio);
+// Editarla es de Planning o de un admin (`exigirPlanning`, decisión 25).
+router.post('/cdm/biblioteca/cargas', ...inWorkspace, bibliotecaController.cargarPlanilla);
+router.put('/cdm/biblioteca/medios/:id/estado', ...inWorkspace, bibliotecaController.cambiarEstadoDeMedio);
 
 // ------------------------------------------------------------------ control
 /**

@@ -774,7 +774,16 @@ export interface MedioDetalle {
     guia: { zonaSegura?: { superior: number | null; inferior: number | null; lados: number | null } | null } | null;
     fuente: string | null;
     fuenteFecha: string | null;
-    ubicaciones: { id: string; plataforma: string; nombre: string; proporcion: string; porConfirmar: boolean; alertaTexto: string | null }[];
+    ubicaciones: {
+      id: string;
+      plataforma: string;
+      nombre: string;
+      proporcion: string;
+      porConfirmar: boolean;
+      alertaTexto: string | null;
+      detalles: Record<string, string> | null;
+      zonaSegura: { superior: number | null; inferior: number | null; lados: number | null; restriccion?: string | null } | null;
+    }[];
     campos: { clave: string; nombre: string; desde: number | null; hasta: number | null; masCortoEn: string | null; enUbicaciones: number }[];
   }[];
 }
@@ -787,4 +796,30 @@ export interface MarcaDeControl {
   workspaceId: string;
   workspaceName: string;
   modulos: ('CDM' | 'IMPLEMENTACION')[];
+}
+
+/** Una planilla de un medio ya leída: las filas como vienen de cada hoja (server/src/cdm/biblioteca). */
+export interface PlanillaDeMedio {
+  medio: string;
+  fuente: string;
+  fecha: string;
+  especificaciones: Record<string, unknown>[];
+  zonasSeguras?: Record<string, unknown>[];
+  alertas?: { numero: number; formato: string; ubicacion: string; inconsistencia: string; accion: string }[];
+}
+
+/** B5: lo que haría (o hizo) cargar una planilla. */
+export interface PlanDeCarga {
+  medio: { nombre: string; nuevo: boolean };
+  formatos: {
+    nombre: string;
+    ubicaciones: number;
+    accion: 'nuevo' | 'version' | 'igual';
+    version: number;
+    porConfirmar: number;
+    textoPrincipal: { desde: number; hasta: number } | null;
+  }[];
+  leidas: { imagen: number; video: number };
+  alertas: { numero: number; ubicacion: string; inconsistencia: string; accion: string }[];
+  errores: string[];
 }

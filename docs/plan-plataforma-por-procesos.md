@@ -232,7 +232,16 @@ el suyo, y que el admin actúa en todos. Con `observar` no bloquea y lo registra
     responde 404.
   - Casos nuevos en `verify:isolation`.
 
-**Pasa a F2b, segunda parte:** los 14 canales como formatos (con las decisiones de B8 en el `.pen`), las rutas y las
+**F2b, segunda parte (2026-11-19), hecho:**
+- **Planning edita la biblioteca:** un admin o quien tiene Planning (`exigirPlanning`, sin modo observar).
+- **B5, cargar desde planilla.** El navegador lee el `.xlsx` (`src/cdm/leerPlanilla.ts`) y el servidor
+  revisa en seco antes de cargar en una transacción (`POST /cdm/biblioteca/cargas`). La revisión muestra
+  ubicaciones leídas, piezas, por confirmar, errores, cómo quedan agrupadas y las alertas.
+- **Activar u ocultar un medio** (`PUT …/estado`). Solo se activa si cada pieza tiene campos de texto.
+- **B4, la guía visual para Diseño:** un lienzo por proporción a escala, con su zona segura, dónde se usa,
+  mínimos, archivo, duración, las alertas y «antes de entregar».
+
+**Pasa a F2c, con una decisión pendiente:** los 14 canales como formatos (con las decisiones de B8 en el `.pen`), las rutas y las
 pantallas.
 
 El modelo de datos de F1 a F5 está en [ecosistema/datos/arquitectura-de-datos.md](./ecosistema/datos/arquitectura-de-datos.md)

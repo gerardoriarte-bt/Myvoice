@@ -243,6 +243,15 @@ async function main() {
       const listaB = await api('/cdm/biblioteca', B.token);
       record('GET /cdm/biblioteca no trae medios de A', !JSON.stringify(listaB.body).includes(medioA.id), `status ${listaB.status}`);
       await expectAllowed('GET /cdm/biblioteca/medios/:id propio', `/cdm/biblioteca/medios/${medioA.id}`, A.token);
+      await expectDenied('PUT /cdm/biblioteca/medios/:id/estado de A', `/cdm/biblioteca/medios/${medioA.id}/estado`, B.token, { method: 'PUT', body: JSON.stringify({ estado: 'OCULTO' }) });
+      // Editar la biblioteca es de Planning o de un admin: un MEMBER sin la función no carga planillas.
+      const sinPlanning = await nuevoMiembro(B.workspace.id, 'sin-planning');
+      const planilla = { medio: 'Prueba', fuente: 'prueba.xlsx', fecha: '2026-11-19', especificaciones: [] };
+      const carga = await api('/cdm/biblioteca/cargas', sinPlanning.token, { method: 'POST', body: JSON.stringify({ planilla }) });
+      record('Un MEMBER sin Planning no carga planillas (403)', carga.status === 403, `respondió ${carga.status}`);
+      await prisma.miembroFuncion.create({ data: { workspaceId: B.workspace.id, userId: sinPlanning.user.id, funcion: 'PLANNING' } });
+      const conPlanning = await api('/cdm/biblioteca/cargas', sinPlanning.token, { method: 'POST', body: JSON.stringify({ planilla }) });
+      record('Planning carga planillas (en seco)', conPlanning.status === 200, `respondió ${conPlanning.status}`);
     }
     await expectDenied('GET /clients/:id/proceso de A', `/clients/${A.client.id}/proceso`, B.token);
     await expectDenied('GET /clients/:id/proceso con la campaña de A', `/clients/${B.client.id}/proceso?campana=${A.project.id}`, B.token);

@@ -1,6 +1,8 @@
 import { Response } from 'express';
 import { AuthRequest, handleTenantError } from '../../middleware/auth.js';
 import { prisma } from '../../lib/prisma.js';
+import { exigirPlanning } from '../../comun/permisos.js';
+import { aplicarCarga, planificarCarga, PlanillaDeMedio } from './cargarPlanilla.js';
 
 /**
  * La biblioteca de medios para leer (F2b; en el `.pen`, B1 el catálogo y B2 un medio por pieza). Es de la
@@ -108,6 +110,8 @@ export const detalleDeMedio = async (req: AuthRequest, res: Response) => {
               proporcion: u.proporcion,
               porConfirmar: u.porConfirmar,
               alertaTexto: u.alertaTexto,
+              detalles: u.detalles,
+              zonaSegura: u.zonaSegura,
             })),
             campos,
           };
@@ -115,5 +119,70 @@ export const detalleDeMedio = async (req: AuthRequest, res: Response) => {
     });
   } catch (error) {
     handleTenantError(error, res, 'Error al leer el medio');
+  }
+};
+
+/** Lo mínimo que tiene que traer una planilla para leerla; el resto lo valida `leerPlanilla` fila por fila. */
+const planillaValida = (b: unknown): b is PlanillaDeMedio => {
+  const p = b as Partial<PlanillaDeMedio> | null;
+  return Boolean(
+    p &&
+      typeof p.medio === 'string' &&
+      p.medio.trim().length > 0 &&
+      p.medio.length <= 80 &&
+      typeof p.fuente === 'string' &&
+      p.fuente.length <= 200 &&
+      typeof p.fecha === 'string' &&
+      /^\d{4}-\d{2}-\d{2}$/.test(p.fecha) &&
+      Array.isArray(p.especificaciones) &&
+      p.especificaciones.length <= 2000 &&
+      (p.zonasSeguras === undefined || Array.isArray(p.zonasSeguras)) &&
+      (p.alertas === undefined || Array.isArray(p.alertas))
+  );
+};
+
+/**
+ * B5: cargar la planilla de un medio. Sin `aplicar`, en seco: devuelve qué haría. Con `aplicar`, lo escribe en
+ * una transacción. La planilla llega ya leída por el navegador: el servidor no abre .xlsx.
+ */
+export const cargarPlanilla = async (req: AuthRequest, res: Response) => {
+  const { planilla, aplicar } = (req.body ?? {}) as { planilla?: unknown; aplicar?: unknown };
+  if (!planillaValida(planilla)) return res.status(400).json({ error: 'La planilla no se pudo leer: falta el medio, la fecha o las filas' });
+  try {
+    await exigirPlanning(req.tenant!);
+    const p = { ...planilla, medio: planilla.medio.trim() };
+    res.json(aplicar === true ? await aplicarCarga(req.tenant!.workspaceId, p, req.tenant!.userId) : await planificarCarga(req.tenant!.workspaceId, p));
+  } catch (error) {
+    handleTenantError(error, res, 'Error al cargar la planilla');
+  }
+};
+
+const ESTADOS = ['BORRADOR', 'ACTIVO', 'OCULTO'] as const;
+
+/**
+ * Activar, ocultar o volver a borrador un medio. Solo se activa con campos de texto en cada pieza: en
+ * borrador no se elige en un planning (spec-cdm § 2).
+ */
+export const cambiarEstadoDeMedio = async (req: AuthRequest, res: Response) => {
+  const { estado } = (req.body ?? {}) as { estado?: unknown };
+  if (!ESTADOS.includes(estado as (typeof ESTADOS)[number])) return res.status(400).json({ error: 'Estado inválido' });
+  try {
+    const medio = await prisma.medio.findUnique({
+      where: { id: req.params.id },
+      include: { formatos: { include: { versiones: { orderBy: { numero: 'desc' }, take: 1, include: { campos: { select: { id: true }, take: 1 } } } } } },
+    });
+    if (!medio || medio.workspaceId !== req.tenant!.workspaceId) return res.status(404).json({ error: 'Medio no encontrado' });
+    await exigirPlanning(req.tenant!);
+    if (estado === 'ACTIVO' && (medio.formatos.length === 0 || medio.formatos.some(f => !f.versiones[0]?.campos.length))) {
+      return res.status(409).json({ error: 'Para activarlo, cada pieza necesita al menos un campo de texto' });
+    }
+    const actualizado = await prisma.medio.update({
+      where: { id: medio.id },
+      data: { estado: estado as (typeof ESTADOS)[number] },
+      select: { id: true, estado: true },
+    });
+    res.json(actualizado);
+  } catch (error) {
+    handleTenantError(error, res, 'Error al cambiar el estado del medio');
   }
 };

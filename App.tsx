@@ -1116,7 +1116,10 @@ const App: React.FC = () => {
       )}
       {activeTab === 'analytics' && isAdmin && <Analytics />}
       {activeTab === 'control' && superAdmin && <Control />}
-      {activeTab === 'biblioteca' && plataforma && <Biblioteca />}
+      {activeTab === 'biblioteca' && plataforma && (
+        // La edita Planning o un admin (decisión 25); el servidor lo vuelve a decidir (`exigirPlanning`).
+        <Biblioteca puedeEditar={isAdmin || Boolean(currentUser.funciones?.some(f => f.funcion === 'PLANNING'))} />
+      )}
       {activeTab === 'adn' && plataforma && activeClient && (
         <div className="space-y-4">
           <div>

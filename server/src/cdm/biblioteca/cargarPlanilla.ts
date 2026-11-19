@@ -69,7 +69,18 @@ export interface FormatoPlaneado {
 
 export interface PlanDeCarga {
   medio: { nombre: string; nuevo: boolean };
-  formatos: { nombre: string; ubicaciones: number; accion: 'nuevo' | 'version' | 'igual'; version: number }[];
+  formatos: {
+    nombre: string;
+    ubicaciones: number;
+    accion: 'nuevo' | 'version' | 'igual';
+    version: number;
+    porConfirmar: number;
+    /** El rango del texto principal entre sus ubicaciones: lo que la revisión muestra por pieza (B5). */
+    textoPrincipal: { desde: number; hasta: number } | null;
+  }[];
+  /** Lo leído, para el resumen de la revisión: ubicaciones por tipo y las alertas de la guía. */
+  leidas: { imagen: number; video: number };
+  alertas: { numero: number; ubicacion: string; inconsistencia: string; accion: string }[];
   errores: string[];
 }
 
@@ -282,7 +293,14 @@ type Db = Prisma.TransactionClient | typeof prisma;
 
 const planificarCon = async (db: Db, workspaceId: string, p: PlanillaDeMedio, leida = leerPlanilla(p)) => {
   const medio = await db.medio.findUnique({ where: { workspaceId_nombre: { workspaceId, nombre: p.medio } } });
-  const plan: PlanDeCarga = { medio: { nombre: p.medio, nuevo: !medio }, formatos: [], errores: leida.errores };
+  const ubicaciones = leida.formatos.flatMap(f => f.ubicaciones.map(() => f.tipoArchivo));
+  const plan: PlanDeCarga = {
+    medio: { nombre: p.medio, nuevo: !medio },
+    formatos: [],
+    leidas: { imagen: ubicaciones.filter(t => t === 'IMAGEN').length, video: ubicaciones.filter(t => t === 'VIDEO').length },
+    alertas: (p.alertas ?? []).map(a => ({ numero: Number(a.numero), ubicacion: `${a.formato} · ${a.ubicacion}`, inconsistencia: a.inconsistencia, accion: a.accion })),
+    errores: leida.errores,
+  };
   for (const f of leida.formatos) {
     const formato = medio
       ? await db.formato.findUnique({
@@ -292,11 +310,14 @@ const planificarCon = async (db: Db, workspaceId: string, p: PlanillaDeMedio, le
       : null;
     const ultima = formato?.versiones[0];
     const accion = !ultima ? 'nuevo' : desdeLaBase(ultima) === huella(f) ? 'igual' : 'version';
+    const principal = f.ubicaciones.flatMap(u => u.campos.filter(c => c.clave === 'textoPrincipal').map(c => c.maximo)).filter((x): x is number => x != null);
     plan.formatos.push({
       nombre: f.nombre,
       ubicaciones: f.ubicaciones.length,
       accion,
       version: accion === 'igual' ? ultima!.numero : (ultima?.numero ?? 0) + 1,
+      porConfirmar: f.ubicaciones.filter(u => u.porConfirmar).length,
+      textoPrincipal: principal.length ? { desde: Math.min(...principal), hasta: Math.max(...principal) } : null,
     });
   }
   return { plan, leida, medio };
