@@ -436,5 +436,8 @@ audiences as a brand list, the campaign pinning its DNA version; six phases, des
 `docs/plan-plataforma-por-procesos.md` (2026-11-17): the platform as a process — the header ① Marca ›
 ② CDM › ③ My Voice › ④ Implementación, each function in its own environment with the rest read-only
 (decision 22), CDM planning and sábana, copy requests in My Voice and the trafficker; six deliveries, F0–F5.
+`docs/ecosistema/datos/arquitectura-de-datos.md` (2026-11-19, decision 28): the data model for F1–F5 — one base,
+tables owned by five modules, what each module reads from the others, and the migration order. Read it
+before adding a table.
 `docs/diseno-sistema.md` holds the design decisions — screen names live in `screens.ts`, colors
 in `tailwind.config.js`; the `.pen` source file is local-only and gitignored.

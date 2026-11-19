@@ -263,6 +263,19 @@ dónde se está (marca, campaña, paso) se contradecía entre pantallas. Gerardo
       Métricas queda con la aprobación. El aviso de cuota dice «llegó al tope de IA de su plan», sin montos.
       Se siguen registrando igual: solo cambia quién los ve.
 
+## 2026-11-19 · Lo que quedaba abierto de la arquitectura de datos
+
+28. **Cinco respuestas para la base de F2 a F5** (Gerardo, 2026-11-19; detalle en
+    [datos/arquitectura-de-datos.md](./datos/arquitectura-de-datos.md)):
+    - **La biblioteca es general**, de la agencia, para todas las marcas. El caso Terpel, si tiene workspace
+      propio o necesita algo suyo, se plantea con Terpel antes de F2.
+    - **El historial de aprobaciones es una vista de lectura** que une lo que ya existe (copy, piezas,
+      portal), sin tabla nueva: lo más simple mientras nadie pida otra cosa.
+    - **El brief de v1 (`ContentDNAProfile`) se deja de escribir** cuando la campaña nace desde Planning
+      (F3). No le aporta al ADN 2.0, y queda solo para leer lo histórico.
+    - **Sin CDM, el anuncio cuelga de la pieza**, con `lineaId` vacío.
+    - **`schema.prisma` se parte por módulo al empezar F2**, antes de sumar las tablas de CDM.
+
 ## Antes (2026-10-27), siguen vigentes con los nombres nuevos
 
 - La marca, su ADN y sus audiencias son la fuente de verdad (ahora en la parte común, decisión 7).
