@@ -8,6 +8,8 @@ import type {
   MarcaDeControl,
   MedioDetalle,
   MedioResumen,
+  PlanDeCarga,
+  PlanillaDeMedio,
   CampanaEnProceso,
   UsuarioDeControl,
   WorkspaceDeControl,
@@ -120,6 +122,11 @@ export const controlApi = {
 export const cdmApi = {
   medios: (): Promise<MedioResumen[]> => apiRequest('/cdm/biblioteca'),
   medio: (id: string): Promise<MedioDetalle> => apiRequest(`/cdm/biblioteca/medios/${id}`),
+  /** Sin `aplicar`, en seco: qué haría la carga. */
+  cargar: (planilla: PlanillaDeMedio, aplicar: boolean): Promise<PlanDeCarga> =>
+    apiRequest('/cdm/biblioteca/cargas', { method: 'POST', body: JSON.stringify({ planilla, aplicar }) }),
+  cambiarEstado: (id: string, estado: 'BORRADOR' | 'ACTIVO' | 'OCULTO') =>
+    apiRequest(`/cdm/biblioteca/medios/${id}/estado`, { method: 'PUT', body: JSON.stringify({ estado }) }),
 };
 
 export const analyticsApi = {

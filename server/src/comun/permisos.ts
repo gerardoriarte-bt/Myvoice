@@ -84,6 +84,19 @@ export const exigirPaso = async (tenant: TenantContext, paso: PasoDeTrabajo, cli
 };
 
 /**
+ * La biblioteca de medios es de la agencia, no de una marca (decisión 25): la edita un admin o quien tiene
+ * Planning, en cualquier marca o en todas. Decide siempre, sin modo observar: antes no se podía editar.
+ */
+export const exigirPlanning = async (tenant: TenantContext) => {
+  if (canManage(tenant.role)) return;
+  const fila = await prisma.miembroFuncion.findFirst({
+    where: { workspaceId: tenant.workspaceId, userId: tenant.userId, funcion: FuncionEquipo.PLANNING },
+    select: { id: true },
+  });
+  if (!fila) throw new TenantError('Para cambiar la biblioteca hace falta la función Planning en Equipo', 403);
+};
+
+/**
  * El paso donde entra cada persona: el de su primera función en el orden del proceso. `null` = no tiene
  * función de un paso (un admin, o solo Aprobación): el marco decide (Panorama, Mi cola).
  */

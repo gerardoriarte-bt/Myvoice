@@ -58,10 +58,10 @@ Cada función con su estado en las tres pistas. Se actualiza en el mismo PR que 
 
 | Usuario | Función | Diseño | Front | Back | Requisito |
 |---|---|---|---|---|---|
-| Planning | Biblioteca organizable | ✓ | ◐ | ◐ | CD-1, CD-2 · F2a: tablas; F2b: catálogo (B1) y medio por pieza (B2) para leer |
+| Planning | Biblioteca organizable | ✓ | ◐ | ◐ | CD-1, CD-2 · F2b: catálogo (B1), medio por pieza (B2), guía visual (B4), activar; falta «organizar por» |
 | Planning | Detalle de un formato y versiones | ✓ | ○ | ○ | CD-1, CD-5 (Meta, por pieza: decisión 18) |
 | Planning | Agregar un medio con sus formatos | ✓ | ○ | ○ | CD-3 (Meta desde la planilla) |
-| Planning | Cargar desde planilla | ◐ | ○ | ✓ | CD-4 · F2a: importador y `npm run cdm:importar` (Meta, 6 piezas) |
+| Planning | Cargar desde planilla | ◐ | ✓ | ✓ | CD-4 · F2a: importador; F2b: pantalla B5 (el navegador lee el .xlsx, el servidor revisa en seco) |
 | Planning | Paquetes de la marca | ○ | ○ | ○ | CD-6 |
 | Planning | Armar y enviar el cuadro | ◐ | ○ | ○ | CD-7 (una línea elige sus ubicaciones y su largo: diseñada) |
 | Planning, responsable | Cuadro rápido para campañas chicas | ○ | ○ | ○ | CD-11 |
