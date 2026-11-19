@@ -4,6 +4,7 @@ import type {
   PiezaDetalle as _PiezaDetalle,
   PiezaAConfirmar,
   PiezaDetalle,
+  PasoDeProceso,
   PropuestaDePiezas,
 } from '../types';
 
@@ -197,6 +198,9 @@ export const clientApi = {
   confirmarAdn: (id: string) => apiRequest(`/clients/${id}/adn/confirmar`, { method: 'POST' }),
   /** ADN 2.0 (docs/plan-adn-2.md): el ADN resuelto con su completitud y lo de cada sección. */
   adn: (id: string) => apiRequest(`/clients/${id}/adn`),
+  /** Cómo va una campaña en los pasos del encabezado (F0). Sin campaña, los pasos solo navegan. */
+  proceso: (id: string, campanaId?: string | null): Promise<PasoDeProceso[]> =>
+    apiRequest(`/clients/${id}/proceso${campanaId ? `?campana=${encodeURIComponent(campanaId)}` : ''}`),
   /** `contenido`, `modo` o los dos. */
   guardarSeccionAdn: (id: string, clave: string, cambios: { contenido?: unknown; modo?: string }) =>
     apiRequest(`/clients/${id}/adn/secciones/${clave}`, { method: 'PUT', body: JSON.stringify(cambios) }),

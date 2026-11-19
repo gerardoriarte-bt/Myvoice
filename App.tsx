@@ -33,6 +33,8 @@ import GenerationHistory from './components/GenerationHistory';
 import WorkflowHelpSidebar from './components/WorkflowHelpSidebar';
 import { LOBUENO_DNA_PROFILES, LOBUENO_APPROVED_EXAMPLES } from './shared/lobuenoBrand';
 import Isotipo from './components/ui/Isotipo';
+import Marco from './src/plataforma/Marco';
+import { armarRuta, leerRuta } from './src/plataforma/rutas';
 
 const MOCK_CLIENTS: Client[] = [
   { id: 'c-lobueno', name: 'LoBueno', industry: 'Agencia creativa y de contenido', logo: '', createdAt: Date.now() },
@@ -90,7 +92,8 @@ const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = React.useState(false);
   // La lista de pantallas vive en screens.ts y en ningún otro lado: repetirla
   // acá como unión literal ya dejó una pantalla fuera al agregarla.
-  const [activeTab, setActiveTab] = React.useState<ScreenId>('clients');
+  // Con la plataforma por procesos, la ruta ya dice dónde abrir (`/myvoice/copy`); sin ella la ruta es «/».
+  const [activeTab, setActiveTab] = React.useState<ScreenId>(() => leerRuta(window.location.pathname).pantalla ?? 'clients');
   /**
    * A qué pieza saltar cuando se abre un aviso de la bandeja. Vive acá porque
    * el que cambia de pestaña es este componente; el tablero lo consume una vez
@@ -152,7 +155,7 @@ const App: React.FC = () => {
     try { if (activeClientId) localStorage.setItem('vt_marca_activa', activeClientId); } catch { /* sin storage */ }
   }, [activeClientId]);
   /** El inicio se decide una vez, cuando llegan los datos; después manda la persona. */
-  const inicioElegido = React.useRef(false);
+  const inicioElegido = React.useRef(Boolean(leerRuta(window.location.pathname).pantalla));
   const [customVoices, setCustomVoices] = React.useState<BrandConfig[]>([]);
   const [customGoals, setCustomGoals] = React.useState<BrandConfig[]>([]);
   const [isLoading, setIsLoading] = React.useState(false);
@@ -163,6 +166,37 @@ const App: React.FC = () => {
   // El rol ya no es global: es el rol del usuario EN EL WORKSPACE ACTIVO, y
   // cambia al cambiar de workspace.
   const isAdmin = canManageWorkspace(currentUser?.role);
+
+  /**
+   * El marco de la plataforma por procesos (F0, docs/plan-plataforma-por-procesos.md), si el workspace lo
+   * tiene encendido. Elige el marco y nada más: las pantallas de abajo son las mismas en los dos.
+   * Encendido, la pantalla y la campaña viven en la ruta (`src/plataforma/rutas.ts`).
+   */
+  const plataforma = Boolean(currentUser?.plataformaPorProcesos);
+  const [campanaId, setCampanaId] = React.useState<string | null>(() => leerRuta(window.location.pathname).campanaId);
+  React.useEffect(() => {
+    if (!plataforma) {
+      // Recién apagado (la sesión guardada todavía decía encendido): la ruta vuelve a «/».
+      if (leerRuta(window.location.pathname).pantalla) window.history.replaceState({}, '', '/' + window.location.search);
+      return;
+    }
+    // Atrás y adelante del navegador.
+    const desdeLaRuta = () => {
+      const { pantalla, campanaId: campana } = leerRuta(window.location.pathname);
+      if (pantalla) setActiveTab(pantalla);
+      setCampanaId(campana);
+    };
+    window.addEventListener('popstate', desdeLaRuta);
+    return () => window.removeEventListener('popstate', desdeLaRuta);
+  }, [plataforma]);
+  React.useEffect(() => {
+    if (!plataforma) return;
+    const ruta = armarRuta({ pantalla: activeTab, campanaId });
+    if (ruta === window.location.pathname) return;
+    // Entrar por «/» no deja una entrada en el historial: «atrás» no tiene que volver a una página vacía.
+    const cambio = leerRuta(window.location.pathname).pantalla ? 'pushState' : 'replaceState';
+    window.history[cambio]({}, '', ruta + window.location.search);
+  }, [plataforma, activeTab, campanaId]);
 
   // Quien no administra entra a la misma herramienta, con el menú recortado por
   // `adminOnly`. Antes se lo desviaba entero a ClientPortal —una vista de solo
@@ -215,6 +249,7 @@ const App: React.FC = () => {
       setSpine(null);
       setCoherence(null);
       setActiveClientId('');
+      setCampanaId(null);
       setIsDataReady(false);
       const [apiClients, apiSaved] = await Promise.all([
         clientApi.list(),
@@ -701,20 +736,457 @@ const App: React.FC = () => {
   }
 
 
-  return (
-    <div className="min-h-screen flex" style={{ background: '#F5F5F7' }}>
-      <NotificationSystem notifications={notifications} onDismiss={dismissNotification} />
-      {avisoVisible && (
-        <AvisoDeNovedad
-          novedad={avisoVisible}
-          administra={isAdmin}
-          onVista={irA => marcarAvisoVisto(avisoVisible, irA)}
-          onCerrar={() => {
-            setAvisoReabierto(null);
-            setAvisoCerradoEnSesion(true);
+  /** Lo que ve cada pantalla. Es lo mismo con los dos marcos: el interruptor no duplica pantallas. */
+  const contenido = (
+    <>
+      {/* Generar queda montada aunque se vaya a otra pantalla: si no, al volver el formulario
+          perdía el pedido (campaña, etapa, medio, cantidad). */}
+      {isAdmin && (
+        <div className={`grid grid-cols-1 lg:grid-cols-12 gap-8 items-start ${activeTab === 'generator' ? '' : 'hidden'}`}>
+          <div className={`lg:col-span-3 lg:sticky lg:top-[var(--tope-fijo,76px)] ${eligiendo ? 'hidden' : ''}`}>
+            <ParameterForm
+              onSubmit={p => {
+                setEligiendo(true);
+                void handleGenerate(p);
+              }}
+              limpiarMedio={limpiarMedio}
+              isLoading={isLoading} 
+              clients={clients} 
+              dnaProfiles={dnaProfiles}
+              defaultClientId={activeClientId}
+              onClientChange={setActiveClientId}
+              onNavigateToClients={() => setActiveTab('clients')}
+              onIrAlAdn={clientId => {
+                setRevisarAdnDe(clientId);
+                setActiveTab('clients');
+              }}
+              miembros={users}
+              puedeEditarAprobacion={isAdmin}
+              onError={m => addNotification(m, 'error')}
+            />
+          </div>
+          <div className={`${eligiendo ? 'lg:col-span-12' : 'lg:col-span-9'} space-y-6`}>
+            {isLoading && (
+              <GenerationProgress
+                selectedPlatforms={progressPlatforms}
+                spineDone={progressSpineDone}
+                channelStatus={progressChannelStatus}
+                channelMeta={progressChannelMeta}
+                coherenceStatus={
+                  progressPlatforms.every(p => progressChannelStatus[p] === 'done' || progressChannelStatus[p] === 'error')
+                    ? (coherence ? 'done' : 'active')
+                    : 'pending'
+                }
+              />
+            )}
+            {Object.keys(failedChannels).length > 0 && (
+              <FailedChannelsPanel
+                canales={failedChannels}
+                onReintentar={handleRegenerateChannel}
+                disabled={isLoading || !spine}
+              />
+            )}
+            {variations.length > 0 && variations.some(v => v.piezaIndex) ? (
+              <ResultadosPorPieza
+                variations={variations}
+                spine={spine}
+                platform={String(lastParams?.platforms?.[0] ?? variations[0].platform)}
+                slides={lastParams?.slides}
+                dnaProfileId={lastParams?.dnaProfileId}
+                savedContentList={savedVariations.map(s => s.content)}
+                savedConjuntos={savedVariations.map(s => s.conjuntoId).filter((c): c is string => !!c)}
+                onGuardar={async textos => {
+                  let count = 0;
+                  for (const v of textos) if (await handleSaveVariation(v, true)) count++;
+                  if (count > 0) addNotification('Guardado en Copy, por aprobar', 'success');
+                }}
+                onOtra={async (texto, deLaPieza) => {
+                  if (!lastParams?.dnaProfileId || !spine) return;
+                  try {
+                    const r = await generationApi.regenerarTexto({
+                      dnaProfileId: lastParams.dnaProfileId,
+                      platform: String(texto.platform),
+                      existingSpine: spine,
+                      // Las slides del carrusel salen de sus textos: Historial no las guarda.
+                      params: {
+                        ...lastParams,
+                        slides:
+                          lastParams.slides ??
+                          Math.max(0, ...deLaPieza.map(t => Number(/^slide(\d+)$/.exec(t.slot ?? '')?.[1]) || 0)) ??
+                          undefined,
+                      },
+                      pieza: texto.piezaIndex,
+                      slot: texto.slot,
+                      variationIndex: texto.variationIndex,
+                      conjuntoId: texto.conjuntoId,
+                      textos: deLaPieza.map(t => ({ slot: t.slot, slotLabel: t.slotLabel, content: t.content, variationIndex: t.variationIndex })),
+                    });
+                    if (r?.variation) setVariations(prev => prev.map(v => (v.id === texto.id ? r.variation : v)));
+                  } catch (err: any) {
+                    addNotification(err?.message || 'No se pudo reescribir el texto', 'error');
+                  }
+                }}
+                onAjustar={() => setEligiendo(false)}
+                onOtroMedio={() => {
+                  setEligiendo(false);
+                  setLimpiarMedio(n => n + 1);
+                }}
+              />
+            ) : variations.length > 0 ? (
+              <ResultsTable
+                variations={variations}
+                activeClient={marcaDeLoGenerado}
+                campanaNombre={campanaDeLoGenerado}
+                onSave={v => { void handleSaveVariation(v); }}
+                savedContentList={savedVariations.map(s => s.content)}
+                coherence={coherence}
+                spine={spine}
+                usage={usage}
+                onRegenerate={handleRegenerate}
+                onRegenerateChannel={spine ? handleRegenerateChannel : undefined}
+                onRefine={handleRefine}
+                isLoading={isLoading}
+                onBulkSave={async (vars) => {
+                  let count = 0;
+                  for (const v of vars) if (await handleSaveVariation(v, true)) count++;
+                  if (count > 0) addNotification(`${count} guardado${count === 1 ? '' : 's'} en la campaña, por aprobar`, 'success');
+                }}
+              />
+            ) : !isLoading ? (
+              <div className="apple-card overflow-hidden">
+                <div className="px-8 py-10 grid grid-cols-1 md:grid-cols-3 gap-8 items-center">
+                  <div className="md:col-span-2 space-y-4">
+                    <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-100">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      <span className="text-[11px] font-medium text-emerald-700 tracking-tight">Motor listo</span>
+                    </div>
+                    <h3 className="text-[22px] font-semibold text-[#1D1D1F] tracking-[-0.02em] leading-tight">
+                      Genera una campaña en minutos.
+                    </h3>
+                    <p className="text-[13px] text-[#6E6E73] leading-relaxed max-w-md">
+                      Elige marca, campaña y un medio, y cuántas piezas. La IA arma el concepto, escribe cada pieza con su ángulo y la revisa.
+                    </p>
+                    <div className="grid grid-cols-2 gap-2.5 max-w-xs pt-1">
+                      {[
+                        { n: '1', t: 'Marca + ADN' },
+                        { n: '2', t: 'Etapa del funnel' },
+                        { n: '3', t: 'Medio y cuántos' },
+                        { n: '4', t: 'Generar' },
+                      ].map(s => (
+                        <div key={s.n} className="flex items-center gap-2.5 text-[12px] text-[#1D1D1F]">
+                          <span className="w-5 h-5 rounded-full bg-ink text-white text-[10px] font-semibold flex items-center justify-center shrink-0">{s.n}</span>
+                          <span>{s.t}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="hidden md:flex items-center justify-center">
+                    <div className="relative">
+                      <div className="absolute inset-0 bg-gradient-to-br from-blue-100 via-purple-50 to-orange-50 blur-2xl opacity-80 rounded-3xl" />
+                      <div className="relative bg-ink text-white rounded-2xl p-6 w-44 shadow-2xl">
+                        <div className="text-[9px] font-semibold uppercase tracking-[0.15em] text-white/40 mb-2">Concepto</div>
+                        <p className="text-[13px] font-medium leading-snug">"Una vez al año bajamos el precio. Hoy."</p>
+                        <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between">
+                          <span className="text-[10px] text-white/40">14 medios</span>
+                          <span className="text-[11px] font-semibold text-emerald-400">9.2/10</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : null}
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'clients' && isAdmin && (
+        <ClientManager 
+          clients={clients} 
+          dnaProfiles={dnaProfiles}
+          voices={customVoices}
+          goals={customGoals}
+          onUpdateVoices={setCustomVoices}
+          onUpdateGoals={setCustomGoals}
+          onResetDefaults={() => {
+            setCustomVoices(VOICES.map((v, i) => ({ id: `v${i}`, name: v })));
+            setCustomGoals(GOALS.map((g, i) => ({ id: `g${i}`, name: g })));
+          }}
+          onAdd={async c => {
+            try {
+              await clientApi.create(c);
+              await recargarMarcas();
+              addNotification('Marca registrada con éxito', 'success');
+            } catch (err) {
+              addNotification(err instanceof Error ? err.message : 'Error al registrar marca', 'error');
+            }
+          }} 
+          onUpdate={async (id, u) => {
+            try {
+              const updated = await clientApi.update(id, u);
+              // El nombre y la madre cambian lo que se calcula sobre todas las
+              // marcas; el resto (que se edita tecla a tecla) se aplica solo.
+              if ('name' in u || 'marcaMadreId' in u) await recargarMarcas();
+              else setClients(prev => prev.map(c => (c.id === id ? { ...c, ...updated, logo: updated.logoUrl || c.logo, createdAt: c.createdAt } : c)));
+              addNotification('Marca actualizada', 'success');
+            } catch (err) {
+              // El motivo del servidor importa acá: «ya es parte de otra marca»
+              // dice qué hacer; «Error al actualizar» no.
+              addNotification(err instanceof Error ? err.message : 'Error al actualizar marca', 'error');
+            }
+          }} 
+          onRemove={async id => {
+            if (window.confirm('¿Eliminar esta marca y todo su ADN asociado?')) {
+              try {
+                await clientApi.delete(id);
+                await recargarMarcas();
+                addNotification('Marca eliminada', 'success');
+              } catch (err) {
+                addNotification('Error al eliminar marca', 'error');
+              }
+            }
+          }}
+          savedVariations={savedVariations}
+          onUnir={async (origenId, destinoId) => {
+            try {
+              await clientApi.unir(origenId, destinoId);
+              // Quien tenía elegida la que se borró pasa a la que queda. Y se
+              // recarga todo: briefs y copy de la que se borró ahora son de la otra.
+              setActiveClientId(prev => (prev === origenId ? destinoId : prev));
+              setRecarga(n => n + 1);
+              addNotification('Marcas unidas: todo quedó en la que elegiste', 'success');
+            } catch (err) {
+              addNotification(err instanceof Error ? err.message : 'No se pudieron fusionar las marcas', 'error');
+              throw err;
+            }
+          }}
+          onAbrirMarca={setActiveClientId}
+          espacios={ESPACIOS_DE_MARCA}
+          revisarAdnDe={revisarAdnDe}
+          onRevisionAbierta={() => setRevisarAdnDe(null)}
+          onAdnCorregido={() => recargarMarcas()}
+          onAdnConfirmado={() => {
+            recargarMarcas();
+            addNotification('ADN confirmado: sus submarcas ya lo heredan', 'success');
+          }}
+          onSaveProfile={handleSaveDNAProfile}
+          onUpdateProfile={handleUpdateDNAProfile}
+          onDeleteProfile={handleDeleteDNAProfile}
+          onDuplicateProfile={copy => {
+            const normalized = {
+              ...copy,
+              createdAt: typeof copy.createdAt === 'string' ? new Date(copy.createdAt).getTime() : copy.createdAt,
+            };
+            setDnaProfiles(prev => [...prev, normalized]);
+            setClients(prev => prev.map(c =>
+              c.id === copy.clientId
+                ? { ...c, dnaProfiles: [...(c.dnaProfiles || []), normalized] }
+                : c
+            ));
           }}
         />
       )}
+      {activeTab === 'users' && isAdmin && (
+        <UserManager
+          members={users}
+          clients={clients}
+          workspaceName={currentUser?.workspaceName || 'este workspace'}
+          currentUserId={currentUser?.id}
+          onRefresh={async () => setUsers(await workspaceApi.members())}
+          addNotification={addNotification}
+          onInvite={async (email, role) => {
+            const result = await workspaceApi.invite(email, role);
+            setUsers(await workspaceApi.members());
+            addNotification(
+              result.added
+                ? `${email} ya tenía cuenta: quedó agregado al workspace`
+                : `Invitación enviada a ${email}`,
+              'success'
+            );
+          }}
+          onChangeRole={async (userId, role) => {
+            await workspaceApi.updateMemberRole(userId, role);
+            setUsers(await workspaceApi.members());
+            addNotification('Rol actualizado', 'success');
+          }}
+          onRemove={async userId => {
+            if (!window.confirm('¿Quitar a esta persona del workspace?')) return;
+            await workspaceApi.removeMember(userId);
+            setUsers(await workspaceApi.members());
+            addNotification('Miembro removido del workspace', 'success');
+          }}
+        />
+      )}
+      {activeTab === 'saved' && (
+        <SavedManager
+          saved={savedVariations}
+          clients={clients}
+          clientId={activeClientId}
+          currentUserId={currentUser.id}
+          isAdmin={isAdmin}
+          miembros={users}
+          onRemove={async id => {
+            if (window.confirm('¿Eliminar este copy?')) {
+              try {
+                await libraryApi.deleteVariation(id);
+                setSavedVariations(prev => prev.filter(v => v.id !== id));
+                addNotification('Copy eliminado', 'success');
+              } catch (err: any) {
+                addNotification(err?.message || 'No se pudo eliminar el copy', 'error');
+              }
+            }
+          }}
+          onUpdate={async (id, u) => {
+            try {
+              await libraryApi.updateVariation(id, u);
+              // Se relee la lista en vez de parchear la fila: editar el texto
+              // de un aprobado lo devuelve a «por aprobar», y el paso de cada
+              // copy lo calcula el servidor.
+              await refrescarCopy();
+              addNotification('Copy actualizado', 'success');
+            } catch (err: any) {
+              addNotification(err?.message || 'No se pudo actualizar el copy', 'error');
+            }
+          }}
+          onRefreshSaved={refrescarCopy}
+          addNotification={addNotification}
+          onIrA={setActiveTab}
+        />
+      )}
+      {activeTab === 'produccion' && (
+        <TableroProduccion
+          clients={clients}
+          clientId={activeClientId}
+          onCambiarMarca={setActiveClientId}
+          addNotification={addNotification}
+          destino={destinoProduccion}
+          onDestinoAtendido={() => setDestinoProduccion(null)}
+          onIrACopyAprobado={() => setActiveTab('saved')}
+        />
+      )}
+      {activeTab === 'history' && isAdmin && (
+        <GenerationHistory
+          clients={clients}
+          dnaProfiles={dnaProfiles}
+          initialClientId={activeClientId}
+          onRestore={(log) => {
+            if (log.spineJson) setSpine(log.spineJson);
+            const restoredVars = Array.isArray(log.outputJson)
+              ? log.outputJson
+              : Array.isArray((log.outputJson as any)?.variations)
+                ? (log.outputJson as any).variations
+                : [];
+            if (restoredVars.length > 0) setVariations(restoredVars);
+            // Una generación por piezas se reabre en «Elegir», con el formulario plegado.
+            setEligiendo(restoredVars.some((v: CopyVariation) => v.piezaIndex));
+            // La marca de la generación pasa a ser la activa: antes se
+            // restauraba el copy de una marca con otra seleccionada, y al
+            // guardarlo caía en la equivocada.
+            setActiveClientId(log.clientId);
+            setLastParams({
+              clientId: log.clientId,
+              dnaProfileId: log.dnaProfileId,
+              platforms: log.platforms as any,
+              voice: '', goal: '', theme: '', product: '',
+              targetAudience: '', keywords: '', brandVoiceGuidelines: '',
+              valueProposition: '', primaryCTA: '',
+              funnelStage: log.funnelStage as any,
+            });
+            setActiveTab('generator');
+            addNotification('Generación restaurada en el editor', 'success');
+          }}
+        />
+      )}
+      {activeTab === 'analytics' && isAdmin && <Analytics />}
+      {activeTab === 'collaboration' && isAdmin && (
+        <CollaborationHub
+          clients={clients}
+          clientId={activeClientId}
+          addNotification={addNotification}
+          onSessionsLoaded={() => {
+            try { localStorage.setItem('vt_revisiones_vistas', String(Date.now())); } catch { /* sin storage */ }
+            setRespuestasNuevas(0);
+          }}
+          onIrACopy={() => setActiveTab('saved')}
+        />
+      )}
+      {activeTab === 'settings' && isAdmin && (
+        <div className="apple-card p-8">
+          <AISettings />
+        </div>
+      )}
+      {activeTab === 'help' && (
+        <div className="apple-card p-8">
+          <HelpGuide />
+        </div>
+      )}
+      {activeTab === 'novedades' && (
+        <Novedades vistas={currentUser.novedadesVistas ?? []} onVerAviso={setAvisoReabierto} />
+      )}
+    </>
+  );
+
+  const bandeja = (
+    <Bandeja
+      onIr={destino => {
+        setDestinoProduccion(destino);
+        setActiveTab('produccion');
+      }}
+      onIrAlTablero={() => setActiveTab('produccion')}
+      onIrAlAdn={clientId => {
+        setRevisarAdnDe(clientId);
+        setActiveTab('clients');
+      }}
+    />
+  );
+
+  const capas = (
+    <>
+    <NotificationSystem notifications={notifications} onDismiss={dismissNotification} />
+    {avisoVisible && (
+      <AvisoDeNovedad
+        novedad={avisoVisible}
+        administra={isAdmin}
+        onVista={irA => marcarAvisoVisto(avisoVisible, irA)}
+        onCerrar={() => {
+          setAvisoReabierto(null);
+          setAvisoCerradoEnSesion(true);
+        }}
+      />
+    )}
+    </>
+  );
+
+  if (plataforma) {
+    return (
+      <>
+        {capas}
+        <Marco
+          usuario={currentUser}
+          administra={isAdmin}
+          onCambiarWorkspace={handleSwitchWorkspace}
+          onSalir={handleLogout}
+          marcas={clients}
+          marcaId={activeClientId}
+          onElegirMarca={setActiveClientId}
+          pantalla={activeTab}
+          onIr={setActiveTab}
+          campanaId={campanaId}
+          onElegirCampana={setCampanaId}
+          onAviso={m => addNotification(m, 'info')}
+          bandeja={bandeja}
+          novedadPendiente={Boolean(pendiente)}
+          respuestasNuevas={respuestasNuevas}
+        >
+          {contenido}
+        </Marco>
+      </>
+    );
+  }
+
+  return (
+    <div className="min-h-screen flex" style={{ background: '#F5F5F7' }}>
+      {capas}
 
       {/* SIDEBAR — Apple macOS style */}
       <aside className="apple-sidebar w-[216px] fixed top-0 bottom-0 left-0 flex flex-col z-50">
@@ -857,405 +1329,10 @@ const App: React.FC = () => {
           </div>
           {/* La campana vive en el header y no en la nav: el aviso no es una
               pantalla más, es algo que interrumpe estés donde estés. */}
-          <Bandeja
-            onIr={destino => {
-              setDestinoProduccion(destino);
-              setActiveTab('produccion');
-            }}
-            onIrAlTablero={() => setActiveTab('produccion')}
-            onIrAlAdn={clientId => {
-              setRevisarAdnDe(clientId);
-              setActiveTab('clients');
-            }}
-          />
+          {bandeja}
         </header>
 
-        <main className="flex-1 p-7">
-          {/* Generar queda montada aunque se vaya a otra pantalla: si no, al volver el formulario
-              perdía el pedido (campaña, etapa, medio, cantidad). */}
-          {isAdmin && (
-            <div className={`grid grid-cols-1 lg:grid-cols-12 gap-8 items-start ${activeTab === 'generator' ? '' : 'hidden'}`}>
-              <div className={`lg:col-span-3 lg:sticky lg:top-[76px] ${eligiendo ? 'hidden' : ''}`}>
-                <ParameterForm
-                  onSubmit={p => {
-                    setEligiendo(true);
-                    void handleGenerate(p);
-                  }}
-                  limpiarMedio={limpiarMedio}
-                  isLoading={isLoading} 
-                  clients={clients} 
-                  dnaProfiles={dnaProfiles}
-                  defaultClientId={activeClientId}
-                  onClientChange={setActiveClientId}
-                  onNavigateToClients={() => setActiveTab('clients')}
-                  onIrAlAdn={clientId => {
-                    setRevisarAdnDe(clientId);
-                    setActiveTab('clients');
-                  }}
-                  miembros={users}
-                  puedeEditarAprobacion={isAdmin}
-                  onError={m => addNotification(m, 'error')}
-                />
-              </div>
-              <div className={`${eligiendo ? 'lg:col-span-12' : 'lg:col-span-9'} space-y-6`}>
-                {isLoading && (
-                  <GenerationProgress
-                    selectedPlatforms={progressPlatforms}
-                    spineDone={progressSpineDone}
-                    channelStatus={progressChannelStatus}
-                    channelMeta={progressChannelMeta}
-                    coherenceStatus={
-                      progressPlatforms.every(p => progressChannelStatus[p] === 'done' || progressChannelStatus[p] === 'error')
-                        ? (coherence ? 'done' : 'active')
-                        : 'pending'
-                    }
-                  />
-                )}
-                {Object.keys(failedChannels).length > 0 && (
-                  <FailedChannelsPanel
-                    canales={failedChannels}
-                    onReintentar={handleRegenerateChannel}
-                    disabled={isLoading || !spine}
-                  />
-                )}
-                {variations.length > 0 && variations.some(v => v.piezaIndex) ? (
-                  <ResultadosPorPieza
-                    variations={variations}
-                    spine={spine}
-                    platform={String(lastParams?.platforms?.[0] ?? variations[0].platform)}
-                    slides={lastParams?.slides}
-                    dnaProfileId={lastParams?.dnaProfileId}
-                    savedContentList={savedVariations.map(s => s.content)}
-                    savedConjuntos={savedVariations.map(s => s.conjuntoId).filter((c): c is string => !!c)}
-                    onGuardar={async textos => {
-                      let count = 0;
-                      for (const v of textos) if (await handleSaveVariation(v, true)) count++;
-                      if (count > 0) addNotification('Guardado en Copy, por aprobar', 'success');
-                    }}
-                    onOtra={async (texto, deLaPieza) => {
-                      if (!lastParams?.dnaProfileId || !spine) return;
-                      try {
-                        const r = await generationApi.regenerarTexto({
-                          dnaProfileId: lastParams.dnaProfileId,
-                          platform: String(texto.platform),
-                          existingSpine: spine,
-                          // Las slides del carrusel salen de sus textos: Historial no las guarda.
-                          params: {
-                            ...lastParams,
-                            slides:
-                              lastParams.slides ??
-                              Math.max(0, ...deLaPieza.map(t => Number(/^slide(\d+)$/.exec(t.slot ?? '')?.[1]) || 0)) ??
-                              undefined,
-                          },
-                          pieza: texto.piezaIndex,
-                          slot: texto.slot,
-                          variationIndex: texto.variationIndex,
-                          conjuntoId: texto.conjuntoId,
-                          textos: deLaPieza.map(t => ({ slot: t.slot, slotLabel: t.slotLabel, content: t.content, variationIndex: t.variationIndex })),
-                        });
-                        if (r?.variation) setVariations(prev => prev.map(v => (v.id === texto.id ? r.variation : v)));
-                      } catch (err: any) {
-                        addNotification(err?.message || 'No se pudo reescribir el texto', 'error');
-                      }
-                    }}
-                    onAjustar={() => setEligiendo(false)}
-                    onOtroMedio={() => {
-                      setEligiendo(false);
-                      setLimpiarMedio(n => n + 1);
-                    }}
-                  />
-                ) : variations.length > 0 ? (
-                  <ResultsTable
-                    variations={variations}
-                    activeClient={marcaDeLoGenerado}
-                    campanaNombre={campanaDeLoGenerado}
-                    onSave={v => { void handleSaveVariation(v); }}
-                    savedContentList={savedVariations.map(s => s.content)}
-                    coherence={coherence}
-                    spine={spine}
-                    usage={usage}
-                    onRegenerate={handleRegenerate}
-                    onRegenerateChannel={spine ? handleRegenerateChannel : undefined}
-                    onRefine={handleRefine}
-                    isLoading={isLoading}
-                    onBulkSave={async (vars) => {
-                      let count = 0;
-                      for (const v of vars) if (await handleSaveVariation(v, true)) count++;
-                      if (count > 0) addNotification(`${count} guardado${count === 1 ? '' : 's'} en la campaña, por aprobar`, 'success');
-                    }}
-                  />
-                ) : !isLoading ? (
-                  <div className="apple-card overflow-hidden">
-                    <div className="px-8 py-10 grid grid-cols-1 md:grid-cols-3 gap-8 items-center">
-                      <div className="md:col-span-2 space-y-4">
-                        <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-100">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                          <span className="text-[11px] font-medium text-emerald-700 tracking-tight">Motor listo</span>
-                        </div>
-                        <h3 className="text-[22px] font-semibold text-[#1D1D1F] tracking-[-0.02em] leading-tight">
-                          Genera una campaña en minutos.
-                        </h3>
-                        <p className="text-[13px] text-[#6E6E73] leading-relaxed max-w-md">
-                          Elige marca, campaña y un medio, y cuántas piezas. La IA arma el concepto, escribe cada pieza con su ángulo y la revisa.
-                        </p>
-                        <div className="grid grid-cols-2 gap-2.5 max-w-xs pt-1">
-                          {[
-                            { n: '1', t: 'Marca + ADN' },
-                            { n: '2', t: 'Etapa del funnel' },
-                            { n: '3', t: 'Medio y cuántos' },
-                            { n: '4', t: 'Generar' },
-                          ].map(s => (
-                            <div key={s.n} className="flex items-center gap-2.5 text-[12px] text-[#1D1D1F]">
-                              <span className="w-5 h-5 rounded-full bg-ink text-white text-[10px] font-semibold flex items-center justify-center shrink-0">{s.n}</span>
-                              <span>{s.t}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                      <div className="hidden md:flex items-center justify-center">
-                        <div className="relative">
-                          <div className="absolute inset-0 bg-gradient-to-br from-blue-100 via-purple-50 to-orange-50 blur-2xl opacity-80 rounded-3xl" />
-                          <div className="relative bg-ink text-white rounded-2xl p-6 w-44 shadow-2xl">
-                            <div className="text-[9px] font-semibold uppercase tracking-[0.15em] text-white/40 mb-2">Concepto</div>
-                            <p className="text-[13px] font-medium leading-snug">"Una vez al año bajamos el precio. Hoy."</p>
-                            <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between">
-                              <span className="text-[10px] text-white/40">14 medios</span>
-                              <span className="text-[11px] font-semibold text-emerald-400">9.2/10</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ) : null}
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'clients' && isAdmin && (
-            <ClientManager 
-              clients={clients} 
-              dnaProfiles={dnaProfiles}
-              voices={customVoices}
-              goals={customGoals}
-              onUpdateVoices={setCustomVoices}
-              onUpdateGoals={setCustomGoals}
-              onResetDefaults={() => {
-                setCustomVoices(VOICES.map((v, i) => ({ id: `v${i}`, name: v })));
-                setCustomGoals(GOALS.map((g, i) => ({ id: `g${i}`, name: g })));
-              }}
-              onAdd={async c => {
-                try {
-                  await clientApi.create(c);
-                  await recargarMarcas();
-                  addNotification('Marca registrada con éxito', 'success');
-                } catch (err) {
-                  addNotification(err instanceof Error ? err.message : 'Error al registrar marca', 'error');
-                }
-              }} 
-              onUpdate={async (id, u) => {
-                try {
-                  const updated = await clientApi.update(id, u);
-                  // El nombre y la madre cambian lo que se calcula sobre todas las
-                  // marcas; el resto (que se edita tecla a tecla) se aplica solo.
-                  if ('name' in u || 'marcaMadreId' in u) await recargarMarcas();
-                  else setClients(prev => prev.map(c => (c.id === id ? { ...c, ...updated, logo: updated.logoUrl || c.logo, createdAt: c.createdAt } : c)));
-                  addNotification('Marca actualizada', 'success');
-                } catch (err) {
-                  // El motivo del servidor importa acá: «ya es parte de otra marca»
-                  // dice qué hacer; «Error al actualizar» no.
-                  addNotification(err instanceof Error ? err.message : 'Error al actualizar marca', 'error');
-                }
-              }} 
-              onRemove={async id => {
-                if (window.confirm('¿Eliminar esta marca y todo su ADN asociado?')) {
-                  try {
-                    await clientApi.delete(id);
-                    await recargarMarcas();
-                    addNotification('Marca eliminada', 'success');
-                  } catch (err) {
-                    addNotification('Error al eliminar marca', 'error');
-                  }
-                }
-              }}
-              savedVariations={savedVariations}
-              onUnir={async (origenId, destinoId) => {
-                try {
-                  await clientApi.unir(origenId, destinoId);
-                  // Quien tenía elegida la que se borró pasa a la que queda. Y se
-                  // recarga todo: briefs y copy de la que se borró ahora son de la otra.
-                  setActiveClientId(prev => (prev === origenId ? destinoId : prev));
-                  setRecarga(n => n + 1);
-                  addNotification('Marcas unidas: todo quedó en la que elegiste', 'success');
-                } catch (err) {
-                  addNotification(err instanceof Error ? err.message : 'No se pudieron fusionar las marcas', 'error');
-                  throw err;
-                }
-              }}
-              onAbrirMarca={setActiveClientId}
-              espacios={ESPACIOS_DE_MARCA}
-              revisarAdnDe={revisarAdnDe}
-              onRevisionAbierta={() => setRevisarAdnDe(null)}
-              onAdnCorregido={() => recargarMarcas()}
-              onAdnConfirmado={() => {
-                recargarMarcas();
-                addNotification('ADN confirmado: sus submarcas ya lo heredan', 'success');
-              }}
-              onSaveProfile={handleSaveDNAProfile}
-              onUpdateProfile={handleUpdateDNAProfile}
-              onDeleteProfile={handleDeleteDNAProfile}
-              onDuplicateProfile={copy => {
-                const normalized = {
-                  ...copy,
-                  createdAt: typeof copy.createdAt === 'string' ? new Date(copy.createdAt).getTime() : copy.createdAt,
-                };
-                setDnaProfiles(prev => [...prev, normalized]);
-                setClients(prev => prev.map(c =>
-                  c.id === copy.clientId
-                    ? { ...c, dnaProfiles: [...(c.dnaProfiles || []), normalized] }
-                    : c
-                ));
-              }}
-            />
-          )}
-          {activeTab === 'users' && isAdmin && (
-            <UserManager
-              members={users}
-              clients={clients}
-              workspaceName={currentUser?.workspaceName || 'este workspace'}
-              currentUserId={currentUser?.id}
-              onRefresh={async () => setUsers(await workspaceApi.members())}
-              addNotification={addNotification}
-              onInvite={async (email, role) => {
-                const result = await workspaceApi.invite(email, role);
-                setUsers(await workspaceApi.members());
-                addNotification(
-                  result.added
-                    ? `${email} ya tenía cuenta: quedó agregado al workspace`
-                    : `Invitación enviada a ${email}`,
-                  'success'
-                );
-              }}
-              onChangeRole={async (userId, role) => {
-                await workspaceApi.updateMemberRole(userId, role);
-                setUsers(await workspaceApi.members());
-                addNotification('Rol actualizado', 'success');
-              }}
-              onRemove={async userId => {
-                if (!window.confirm('¿Quitar a esta persona del workspace?')) return;
-                await workspaceApi.removeMember(userId);
-                setUsers(await workspaceApi.members());
-                addNotification('Miembro removido del workspace', 'success');
-              }}
-            />
-          )}
-          {activeTab === 'saved' && (
-            <SavedManager
-              saved={savedVariations}
-              clients={clients}
-              clientId={activeClientId}
-              currentUserId={currentUser.id}
-              isAdmin={isAdmin}
-              miembros={users}
-              onRemove={async id => {
-                if (window.confirm('¿Eliminar este copy?')) {
-                  try {
-                    await libraryApi.deleteVariation(id);
-                    setSavedVariations(prev => prev.filter(v => v.id !== id));
-                    addNotification('Copy eliminado', 'success');
-                  } catch (err: any) {
-                    addNotification(err?.message || 'No se pudo eliminar el copy', 'error');
-                  }
-                }
-              }}
-              onUpdate={async (id, u) => {
-                try {
-                  await libraryApi.updateVariation(id, u);
-                  // Se relee la lista en vez de parchear la fila: editar el texto
-                  // de un aprobado lo devuelve a «por aprobar», y el paso de cada
-                  // copy lo calcula el servidor.
-                  await refrescarCopy();
-                  addNotification('Copy actualizado', 'success');
-                } catch (err: any) {
-                  addNotification(err?.message || 'No se pudo actualizar el copy', 'error');
-                }
-              }}
-              onRefreshSaved={refrescarCopy}
-              addNotification={addNotification}
-              onIrA={setActiveTab}
-            />
-          )}
-          {activeTab === 'produccion' && (
-            <TableroProduccion
-              clients={clients}
-              clientId={activeClientId}
-              onCambiarMarca={setActiveClientId}
-              addNotification={addNotification}
-              destino={destinoProduccion}
-              onDestinoAtendido={() => setDestinoProduccion(null)}
-              onIrACopyAprobado={() => setActiveTab('saved')}
-            />
-          )}
-          {activeTab === 'history' && isAdmin && (
-            <GenerationHistory
-              clients={clients}
-              dnaProfiles={dnaProfiles}
-              initialClientId={activeClientId}
-              onRestore={(log) => {
-                if (log.spineJson) setSpine(log.spineJson);
-                const restoredVars = Array.isArray(log.outputJson)
-                  ? log.outputJson
-                  : Array.isArray((log.outputJson as any)?.variations)
-                    ? (log.outputJson as any).variations
-                    : [];
-                if (restoredVars.length > 0) setVariations(restoredVars);
-                // Una generación por piezas se reabre en «Elegir», con el formulario plegado.
-                setEligiendo(restoredVars.some((v: CopyVariation) => v.piezaIndex));
-                // La marca de la generación pasa a ser la activa: antes se
-                // restauraba el copy de una marca con otra seleccionada, y al
-                // guardarlo caía en la equivocada.
-                setActiveClientId(log.clientId);
-                setLastParams({
-                  clientId: log.clientId,
-                  dnaProfileId: log.dnaProfileId,
-                  platforms: log.platforms as any,
-                  voice: '', goal: '', theme: '', product: '',
-                  targetAudience: '', keywords: '', brandVoiceGuidelines: '',
-                  valueProposition: '', primaryCTA: '',
-                  funnelStage: log.funnelStage as any,
-                });
-                setActiveTab('generator');
-                addNotification('Generación restaurada en el editor', 'success');
-              }}
-            />
-          )}
-          {activeTab === 'analytics' && isAdmin && <Analytics />}
-          {activeTab === 'collaboration' && isAdmin && (
-            <CollaborationHub
-              clients={clients}
-              clientId={activeClientId}
-              addNotification={addNotification}
-              onSessionsLoaded={() => {
-                try { localStorage.setItem('vt_revisiones_vistas', String(Date.now())); } catch { /* sin storage */ }
-                setRespuestasNuevas(0);
-              }}
-              onIrACopy={() => setActiveTab('saved')}
-            />
-          )}
-          {activeTab === 'settings' && isAdmin && (
-            <div className="apple-card p-8">
-              <AISettings />
-            </div>
-          )}
-          {activeTab === 'help' && (
-            <div className="apple-card p-8">
-              <HelpGuide />
-            </div>
-          )}
-          {activeTab === 'novedades' && (
-            <Novedades vistas={currentUser.novedadesVistas ?? []} onVerAviso={setAvisoReabierto} />
-          )}
-        </main>
+        <main className="flex-1 p-7">{contenido}</main>
       </div>
     </div>
   );

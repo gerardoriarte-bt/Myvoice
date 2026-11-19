@@ -88,6 +88,21 @@ export interface User {
   createdAt?: string;
   /** Ids de `novedades.ts` que ya vio. Vive en el servidor, no en el navegador. */
   novedadesVistas?: string[];
+  /** El workspace activo usa el marco de la plataforma por procesos (F0). Apagado, la app de siempre. */
+  plataformaPorProcesos?: boolean;
+}
+
+/**
+ * Un paso del encabezado y cómo va en la campaña elegida, calculado por el servidor
+ * (`server/src/comun/proceso.ts`). `neutro` = sin campaña: el paso solo navega.
+ */
+export interface PasoDeProceso {
+  paso: 'marca' | 'myvoice' | 'produccion';
+  estado: 'hecho' | 'activo' | 'pendiente' | 'bloqueado' | 'neutro';
+  texto?: string;
+  falta?: string;
+  quien?: { id: string; nombre: string };
+  avance?: { hechas: number; total: number };
 }
 
 /** Miembro de un workspace, tal como lo devuelve GET /workspace/members. */

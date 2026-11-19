@@ -226,6 +226,8 @@ async function main() {
         existingSpine: { concept: 'x', angles: [{ name: 'a', premise: 'b', register: 'c' }] },
       }),
     });
+    await expectDenied('GET /clients/:id/proceso de A', `/clients/${A.client.id}/proceso`, B.token);
+    await expectDenied('GET /clients/:id/proceso con la campaña de A', `/clients/${B.client.id}/proceso?campana=${A.project.id}`, B.token);
     await expectDenied('GET /clients/:id/adn de A', `/clients/${A.client.id}/adn`, B.token);
     await expectDenied('GET /clients/:id/adn?version de A', `/clients/${A.client.id}/adn?version=1`, B.token);
     await expectDenied('GET /clients/:id/adn/revision de A', `/clients/${A.client.id}/adn/revision`, B.token);
@@ -1445,6 +1447,7 @@ async function main() {
       method: 'PUT',
       body: JSON.stringify({ name: 'Marca B renombrada' }),
     });
+    await expectAllowed('GET /clients/:id/proceso propio', `/clients/${B.client.id}/proceso?campana=${B.project.id}`, B.token);
     await expectAllowed('GET /clients/:id/adn propio', `/clients/${B.client.id}/adn`, B.token);
     await expectAllowed('GET /clients/:id/adn/revision propio', `/clients/${B.client.id}/adn/revision`, B.token);
     await expectAllowed('GET /clients/:id/audiencias propio', `/clients/${B.client.id}/audiencias`, B.token);

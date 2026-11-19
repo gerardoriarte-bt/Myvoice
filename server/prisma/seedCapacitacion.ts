@@ -388,7 +388,8 @@ async function main() {
       await borrarWorkspaceAnterior(tx);
 
       const ws = await tx.workspace.create({
-        data: { name: 'LoBueno · Capacitación', slug: SLUG, plan: 'agency' },
+        // El piloto de la plataforma por procesos (F0): se prende acá antes que en el workspace real.
+        data: { name: 'LoBueno · Capacitación', slug: SLUG, plan: 'agency', plataformaPorProcesos: true },
       });
 
       // -- El equipo

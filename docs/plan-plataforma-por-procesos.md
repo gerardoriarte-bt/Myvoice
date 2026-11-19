@@ -114,6 +114,33 @@ una vez. Gerardo decidió (2026-11-17):
 - **Riesgo**: `App.tsx` concentra el estado (~1000 líneas). Se muda de a una pantalla (spec § 7), con
   el estado que cada una necesita, y nunca hay dos versiones vivas de la misma pantalla.
 
+**F0 va en dos PRs.**
+
+- **F0a (2026-11-19), el marco:**
+  - El interruptor `Workspace.plataformaPorProcesos` (migración aditiva) viaja en la sesión
+    (`plataformaPorProcesos` en `/auth/me`). Lo prende o apaga **un script, no un botón**:
+    `npm run plataforma -- <slug> --encender --apply`. En producción hay muchos ADMIN, y el workspace real
+    lo decide Gerardo. `seed:capacitacion` lo deja prendido.
+  - `GET /clients/:id/proceso[?campana=]` está en `server/src/comun/proceso.ts`. Cuenta el ADN, el copy y
+    las piezas leyendo las tablas, porque la parte común no importa My Voice. Una campaña de otra marca
+    responde 404, y `verify:isolation` lo cubre.
+  - Front en `src/plataforma/`:
+    - `rutas.ts`: rutas propias, sin librería, porque nginx y Vite ya devuelven `index.html`.
+    - `Marco.tsx`: la barra, el proceso con el selector de campaña, el menú del paso y el menú de la cuenta.
+  - `App.tsx` arma las pantallas una sola vez (`contenido`), y el interruptor elige en qué marco se
+    montan. Con el interruptor apagado, la app es la de hoy.
+  - Los pasos que se ven son ① Marca, ② My Voice y ③ Producción, numerados en el orden en que se ven.
+    CDM e Implementación se suman cuando existan.
+- **F0b, lo que falta de F0:**
+  - Panorama (`GET /panorama`).
+  - Producción como módulo propio en `modulos.json`, y el menú de Producción por pestañas (Lo mío, Por
+    revisar…), que hoy son pestañas del tablero.
+  - Que la campaña del encabezado filtre Copy y Producción (hoy cada pantalla conserva su propio filtro de
+    campaña).
+  - El paso en que va cada campaña dentro del selector.
+  - Renombrar «Generar» a «Generar suelto» y «Revisiones» a «Con el cliente» en `screens.ts`, junto con
+    el marco, para no cambiar los nombres del marco de hoy antes de tiempo.
+
 ### F1 · Funciones, entrada por función y modo lectura (decisión 22)
 
 **Esquema** (aditivo): `enum FuncionEquipo` suma `ESTRATEGIA`, `PLANNING` y `TRAFFICKER`

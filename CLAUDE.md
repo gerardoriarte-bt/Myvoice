@@ -43,6 +43,7 @@ npm run backfill:telemetria   # fills cost/tokens on historical rows from output
 npm run backfill:slots        # infers slot/slotLabel on saved copy (heuristic)
 npm run backfill:adn          # brand DNA columns → SeccionAdn + version 1; lists what changes for each submarca
 npm run recrypt:keys          # encrypts any aiApiKey still stored in plaintext
+npm run plataforma            # lists workspaces; `-- <slug> --encender|--apagar --apply` flips the process frame (F0)
 npm run verify:isolation      # cross-tenant isolation suite; needs the API running
 npm run verify:resiliencia    # retry/backoff/timeout against a fake client; spends no API credit
 npm run verify:adn            # layered DNA end to end against a throwaway DATABASE_URL (CI runs it)
@@ -50,7 +51,7 @@ npm run verify:calidad        # copy quality vs the writing manual, judged per r
 npm run calidad:caso -- <dnaProfileId>   # exports a real case to server/.calidad/ (gitignored: client data)
 ```
 
-The four writing scripts (`backfill:*`, `recrypt:keys`) are **dry-run by default** and only
+The writing scripts (`backfill:*`, `recrypt:keys`, `plataforma`) are **dry-run by default** and only
 write with `-- --apply`, inside a single transaction.
 
 **Typechecking is the only gate, and it takes three commands.** `npm run build` uses esbuild
@@ -253,6 +254,13 @@ after reading, so a refresh does not reopen an old piece).
 **The active brand is one, app-wide**: `activeClientId` in `App.tsx`, chosen in the header and
 persisted in `localStorage` (`vt_marca_activa`). Copy, Revisiones, Producción («Por marca»),
 Generar and Historial read it instead of keeping their own selector; only «Lo mío» (Producción) crosses brands.
+
+**Two frames, one set of screens** (F0, `docs/plan-plataforma-por-procesos.md`): with
+`Workspace.plataformaPorProcesos` on (it travels in the session), `App.tsx` mounts the same `contenido` inside
+`src/plataforma/Marco.tsx` — a two-row header with the campaign and the steps (state from
+`GET /clients/:id/proceso`, `server/src/comun/proceso.ts`) and a menu per step — and the screen and campaign
+live in the path (`src/plataforma/rutas.ts`: `/campana/:id/myvoice/copy`). Off, the sidebar of `NAV_STAGES`
+and no routes, as before. Never build a second version of a screen for the new frame.
 
 **`screens.ts` is the single source of screen names and of the stage order**, and the stages are
 the process: Preparar · Escribir · Aprobar · Producir · Medir · Administrar. They were reordered
