@@ -148,7 +148,7 @@ export interface PasoDeProceso {
  * (`WorkspaceRole`). Desde F1 (decisión 22) decide en qué pasos ACTÚA —ver,
  * ve todos— además de a quién se le avisa y quién aparece primero al asignar.
  */
-export type FuncionEquipo = 'ESTRATEGIA' | 'PLANNING' | 'COPY' | 'DISENO' | 'TRAFFICKER' | 'APROBACION';
+export type FuncionEquipo = 'ESTRATEGIA' | 'PLANNING' | 'COPY' | 'DISENO' | 'TRAFFICKER' | 'COMMUNITY' | 'APROBACION';
 
 export interface FuncionAsignada {
   id: string;
@@ -162,6 +162,7 @@ export const FUNCION_LABELS: Record<FuncionEquipo, string> = {
   ESTRATEGIA: 'Estrategia',
   PLANNING: 'Planning',
   TRAFFICKER: 'Trafficker',
+  COMMUNITY: 'Community manager',
   COPY: 'Copy',
   DISENO: 'Diseño',
   APROBACION: 'Aprobación',
@@ -170,7 +171,8 @@ export const FUNCION_LABELS: Record<FuncionEquipo, string> = {
 export const FUNCION_HINTS: Record<FuncionEquipo, string> = {
   ESTRATEGIA: 'Escribe y confirma el ADN de la marca',
   PLANNING: 'Arma el planning y la biblioteca de medios',
-  TRAFFICKER: 'Monta los anuncios',
+  TRAFFICKER: 'Monta los anuncios pagos',
+  COMMUNITY: 'Publica lo orgánico en las redes de la marca',
   COPY: 'Escribe y manda a producción',
   DISENO: 'Recibe piezas asignadas',
   APROBACION: 'Acepta o devuelve piezas',
@@ -746,6 +748,8 @@ export interface PiezaAConfirmar {
 export interface MedioResumen {
   id: string;
   nombre: string;
+  /** Decisión 29: Pagos, Redes sociales, Propios o Tradicional. */
+  clase: 'PAGOS' | 'REDES_SOCIALES' | 'PROPIOS' | 'TRADICIONAL';
   estado: 'BORRADOR' | 'ACTIVO' | 'OCULTO';
   formatos: number;
   ubicaciones: number;
@@ -760,6 +764,7 @@ export interface MedioResumen {
 export interface MedioDetalle {
   id: string;
   nombre: string;
+  clase: MedioResumen['clase'];
   estado: MedioResumen['estado'];
   formatos: {
     id: string;
@@ -801,6 +806,7 @@ export interface MarcaDeControl {
 /** Una planilla de un medio ya leída: las filas como vienen de cada hoja (server/src/cdm/biblioteca). */
 export interface PlanillaDeMedio {
   medio: string;
+  clase?: MedioResumen['clase'];
   fuente: string;
   fecha: string;
   especificaciones: Record<string, unknown>[];
@@ -810,7 +816,7 @@ export interface PlanillaDeMedio {
 
 /** B5: lo que haría (o hizo) cargar una planilla. */
 export interface PlanDeCarga {
-  medio: { nombre: string; nuevo: boolean };
+  medio: { nombre: string; nuevo: boolean; clase: MedioResumen['clase'] };
   formatos: {
     nombre: string;
     ubicaciones: number;

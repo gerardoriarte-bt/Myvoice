@@ -27,13 +27,15 @@ const COLOR: Record<FuncionEquipo, { fondo: string; texto: string; borde: string
   ESTRATEGIA: { fondo: '#F5F5F7', texto: '#1D1D1F', borde: '#D2D2D7' },
   PLANNING: { fondo: '#ECFDF5', texto: '#047857', borde: '#A7F3D0' },
   TRAFFICKER: { fondo: '#ECFEFF', texto: '#0E7490', borde: '#A5F3FC' },
+  COMMUNITY: { fondo: '#FDF2F8', texto: '#BE185D', borde: '#FBCFE8' },
   COPY: { fondo: '#EFF6FF', texto: '#1D4ED8', borde: '#BFDBFE' },
   DISENO: { fondo: '#F5F3FF', texto: '#6D28D9', borde: '#DDD6FE' },
   APROBACION: { fondo: '#FFFBEB', texto: '#B45309', borde: '#FDE68A' },
 };
 
-// En el orden del proceso: ① Estrategia, ② Planning, ③ Copy, ④ Diseño, ⑤ Trafficker; Aprobación cruza todos.
-const TODAS: FuncionEquipo[] = ['ESTRATEGIA', 'PLANNING', 'COPY', 'DISENO', 'TRAFFICKER', 'APROBACION'];
+// En el orden del proceso: ① Estrategia, ② Planning, ③ Copy, ④ Diseño, ⑤ Trafficker y Community manager
+// (decisión 29); Aprobación cruza todos.
+const TODAS: FuncionEquipo[] = ['ESTRATEGIA', 'PLANNING', 'COPY', 'DISENO', 'TRAFFICKER', 'COMMUNITY', 'APROBACION'];
 
 interface Props {
   miembro: WorkspaceMember;

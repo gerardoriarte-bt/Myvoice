@@ -125,6 +125,8 @@ export const cdmApi = {
   /** Sin `aplicar`, en seco: qué haría la carga. */
   cargar: (planilla: PlanillaDeMedio, aplicar: boolean): Promise<PlanDeCarga> =>
     apiRequest('/cdm/biblioteca/cargas', { method: 'POST', body: JSON.stringify({ planilla, aplicar }) }),
+  cambiarClase: (id: string, clase: MedioResumen['clase']) =>
+    apiRequest(`/cdm/biblioteca/medios/${id}/clase`, { method: 'PUT', body: JSON.stringify({ clase }) }),
   cambiarEstado: (id: string, estado: 'BORRADOR' | 'ACTIVO' | 'OCULTO') =>
     apiRequest(`/cdm/biblioteca/medios/${id}/estado`, { method: 'PUT', body: JSON.stringify({ estado }) }),
 };

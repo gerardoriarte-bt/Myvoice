@@ -241,7 +241,14 @@ el suyo, y que el admin actúa en todos. Con `observar` no bloquea y lo registra
 - **B4, la guía visual para Diseño:** un lienzo por proporción a escala, con su zona segura, dónde se usa,
   mínimos, archivo, duración, las alertas y «antes de entregar».
 
-**Pasa a F2c, con una decisión pendiente:** los 14 canales como formatos (con las decisiones de B8 en el `.pen`), las rutas y las
+**Clases de medio (decisión 29, 2026-11-19), hecho:**
+- `Medio.clase`, que puede ser `PAGOS`, `REDES_SOCIALES`, `PROPIOS` o `TRADICIONAL`.
+- La biblioteca se agrupa y filtra por clase, y dice quién publica al final.
+- La clase se elige al cargar una planilla y Planning la puede cambiar después.
+- Nueva función `COMMUNITY` (community manager), que actúa en ⑤ junto al trafficker.
+
+**F2c:** los 14 canales como formatos, cada uno en el medio de su clase («Instagram» en Redes sociales y no
+dentro de Meta) (con las decisiones de B8 en el `.pen`), las rutas y las
 pantallas.
 
 El modelo de datos de F1 a F5 está en [ecosistema/datos/arquitectura-de-datos.md](./ecosistema/datos/arquitectura-de-datos.md)

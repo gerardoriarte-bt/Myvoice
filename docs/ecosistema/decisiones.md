@@ -276,6 +276,27 @@ dónde se está (marca, campaña, paso) se contradecía entre pantallas. Gerardo
     - **Sin CDM, el anuncio cuelga de la pieza**, con `lineaId` vacío.
     - **`schema.prisma` se parte por módulo al empezar F2**, antes de sumar las tablas de CDM.
 
+## 2026-11-19 · Cuatro clases de medio, un solo proceso
+
+29. **Los medios se organizan en cuatro clases y el proceso es el mismo para todas** (Gerardo, 2026-11-19):
+
+    | Clase | Medios | En Implementación (⑤) |
+    |---|---|---|
+    | **Pagos** | Meta Ads, Google (búsqueda y display), TikTok Ads, programática | el trafficker **monta** |
+    | **Redes sociales** (orgánico) | Instagram (post, historia, carrusel, reel), TikTok, YouTube | el community manager **publica** |
+    | **Propios** | Email, WhatsApp, push, pop up web, rich media | se **programa** en el CRM de la marca |
+    | **Tradicional** | Radio, exterior | se **entrega** al medio |
+
+    - **Meta es Meta Ads** y tiene sus 6 piezas maestras (decisión 18). Las publicaciones de Instagram son otro
+      medio, en Redes sociales. Así se resuelve el choque de B8: los 14 canales de My Voice van a su clase y no
+      se mezclan con las piezas de Meta.
+    - **Lo orgánico lo publica el community manager**, una función nueva en Equipo (`COMMUNITY`). El paso ⑤ es
+      el mismo y cambia la acción según la clase.
+    - **La sábana mezcla clases** y agrupa sus líneas por clase. El flujo no cambia: planning → copy → pieza →
+      implementación.
+    - **En la base:** `Medio.clase` (`PAGOS`, `REDES_SOCIALES`, `PROPIOS`, `TRADICIONAL`). La biblioteca agrupa
+      y filtra por clase.
+
 ## Antes (2026-10-27), siguen vigentes con los nombres nuevos
 
 - La marca, su ADN y sus audiencias son la fuente de verdad (ahora en la parte común, decisión 7).

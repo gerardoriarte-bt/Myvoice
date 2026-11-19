@@ -4,6 +4,7 @@ import { SCREENS } from '../../screens';
 import { cdmApi } from '../../services/api';
 import type { PlanDeCarga, PlanillaDeMedio } from '../../types';
 import { leerPlanilla } from './leerPlanilla';
+import { CLASES, ClaseDeMedio, nombreDeClase } from './clases';
 
 /**
  * B5 · Cargar un medio desde su planilla (en el `.pen`, «§ CDM · Biblioteca · cargar Meta desde la planilla»).
@@ -29,6 +30,7 @@ export default function CargarPlanilla({ onVolver, onCargado }: { onVolver: () =
   const [archivo, setArchivo] = React.useState<File | null>(null);
   const [medio, setMedio] = React.useState('');
   const [fecha, setFecha] = React.useState(hoy());
+  const [clase, setClase] = React.useState<ClaseDeMedio>('PAGOS');
   const [planilla, setPlanilla] = React.useState<PlanillaDeMedio | null>(null);
   const [plan, setPlan] = React.useState<PlanDeCarga | null>(null);
   const [ocupado, setOcupado] = React.useState(false);
@@ -51,7 +53,7 @@ export default function CargarPlanilla({ onVolver, onCargado }: { onVolver: () =
     setOcupado(true);
     setError(null);
     try {
-      const leida = await leerPlanilla(archivo, medio.trim(), fecha);
+      const leida = { ...(await leerPlanilla(archivo, medio.trim(), fecha)), clase };
       if (!leida.especificaciones.length) throw new Error('La planilla no tiene la hoja «Especificaciones» o está vacía');
       setPlanilla(leida);
       setPlan(await cdmApi.cargar(leida, false));
@@ -94,7 +96,7 @@ export default function CargarPlanilla({ onVolver, onCargado }: { onVolver: () =
       </div>
 
       <section className="rounded-[12px] border border-[rgba(0,0,0,0.08)] bg-white p-4">
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_200px_160px_auto] md:items-end">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_180px_160px_160px_auto] md:items-end">
           <label className="block">
             <span className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[#86868B]">Planilla (.xlsx)</span>
             <input
@@ -115,6 +117,23 @@ export default function CargarPlanilla({ onVolver, onCargado }: { onVolver: () =
               placeholder="Meta, Google…"
               className="mt-1 w-full rounded-md border border-[rgba(0,0,0,0.12)] px-2.5 py-1.5 text-[13px]"
             />
+          </label>
+          <label className="block">
+            <span className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[#86868B]">Clase</span>
+            <select
+              value={clase}
+              onChange={e => {
+                setClase(e.target.value as ClaseDeMedio);
+                setPlan(null);
+              }}
+              className="mt-1 w-full rounded-md border border-[rgba(0,0,0,0.12)] bg-white px-2 py-1.5 text-[13px]"
+            >
+              {CLASES.map(c => (
+                <option key={c.id} value={c.id}>
+                  {c.nombre}
+                </option>
+              ))}
+            </select>
           </label>
           <label className="block">
             <span className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[#86868B]">Fecha de la guía</span>
@@ -217,7 +236,7 @@ export default function CargarPlanilla({ onVolver, onCargado }: { onVolver: () =
             <p className="text-[12.5px] text-[#3A3A3C]">
               {cambia === 0
                 ? `${plan.medio.nombre} ya está así en la biblioteca: no hay nada que cargar.`
-                : `${plan.medio.nuevo ? `Medio nuevo: ${plan.medio.nombre}, en borrador` : plan.medio.nombre} · ${cambia} ${
+                : `${plan.medio.nuevo ? `Medio nuevo: ${plan.medio.nombre} (${nombreDeClase(plan.medio.clase)}), en borrador` : plan.medio.nombre} · ${cambia} ${
                     cambia === 1 ? 'pieza nueva o cambiada' : 'piezas nuevas o cambiadas'
                   }. Las ubicaciones por confirmar entran marcadas.`}
             </p>

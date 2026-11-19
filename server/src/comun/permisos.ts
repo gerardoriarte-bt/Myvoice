@@ -26,7 +26,8 @@ export const FUNCIONES_DEL_PASO: Record<PasoDeTrabajo, FuncionEquipo[]> = {
   CDM: [FuncionEquipo.PLANNING],
   COPY: [FuncionEquipo.COPY],
   PRODUCCION: [FuncionEquipo.DISENO],
-  IMPLEMENTACION: [FuncionEquipo.TRAFFICKER],
+  // Decisión 29: el trafficker monta los pagos y el community manager publica lo orgánico.
+  IMPLEMENTACION: [FuncionEquipo.TRAFFICKER, FuncionEquipo.COMMUNITY],
 };
 
 const NOMBRE_DEL_PASO: Record<PasoDeTrabajo, string> = {

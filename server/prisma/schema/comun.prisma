@@ -364,6 +364,8 @@ enum FuncionEquipo {
   PLANNING
   /// F1: ⑤ Implementación · anuncios.
   TRAFFICKER
+  /// Decisión 29: ⑤ Implementación · publica lo orgánico (redes sociales).
+  COMMUNITY
 }
 
 model MiembroFuncion {

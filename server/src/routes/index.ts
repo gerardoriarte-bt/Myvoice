@@ -166,6 +166,7 @@ router.get('/cdm/biblioteca/medios/:id', ...inWorkspace, bibliotecaController.de
 // Editarla es de Planning o de un admin (`exigirPlanning`, decisión 25).
 router.post('/cdm/biblioteca/cargas', ...inWorkspace, bibliotecaController.cargarPlanilla);
 router.put('/cdm/biblioteca/medios/:id/estado', ...inWorkspace, bibliotecaController.cambiarEstadoDeMedio);
+router.put('/cdm/biblioteca/medios/:id/clase', ...inWorkspace, bibliotecaController.cambiarClaseDeMedio);
 
 // ------------------------------------------------------------------ control
 /**
