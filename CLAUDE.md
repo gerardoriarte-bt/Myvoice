@@ -350,6 +350,10 @@ because the server image only copies `server/`; it must stay import-free too, an
   `Workspace.aiApiKey` (AES-256-GCM, `v1:iv:tag:ciphertext`): losing it means every tenant
   re-enters its own AI key. `lib/workspaceSecret.ts` is the single decryption point.
 - Prisma client is a singleton in `server/src/lib/prisma.ts` — import it, don't construct one.
+- **The schema is a folder, one file per module** (`server/prisma/schema/`: `base`, `comun`, `myvoice`, `portal`,
+  `produccion`; decision 28, `prismaSchemaFolder` preview, Prisma ≥ 5.22). `server/package.json` points the CLI
+  at it, so `prisma generate`/`migrate` need no `--schema`; migrations stay in `server/prisma/migrations`. A new
+  table goes in its owner module's file.
 - `SavedVariation` now persists `slot`, `slotLabel`, `variationIndex` and `slotInferred`.
   `slotInferred = true` means the heuristic backfill guessed the slot from unit counts, not
   that the writer reported it — don't treat those rows as ground truth. `slotLabel` comes
