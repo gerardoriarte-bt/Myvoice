@@ -143,7 +143,6 @@ export const listGenerationHistory = async (req: AuthRequest, res: Response) => 
         spineJson: true,
         outputJson: true,
         createdAt: true,
-        costUsd: true,
         model: true,
         provider: true,
         durationMs: true,
@@ -151,7 +150,14 @@ export const listGenerationHistory = async (req: AuthRequest, res: Response) => 
     });
     // Prisma serializa Decimal como string: sin esta conversión el frontend
     // recibe "0.012300" y cualquier toFixed concatena en vez de sumar.
-    res.json(logs.map(log => ({ ...log, costUsd: log.costUsd == null ? null : Number(log.costUsd) })));
+    // Sin costo: ni la columna ni el `usage` guardado dentro de outputJson (decisión 27).
+    res.json(
+      logs.map(({ outputJson, ...log }) => {
+        const salida = outputJson && typeof outputJson === 'object' && !Array.isArray(outputJson) ? { ...(outputJson as Record<string, unknown>) } : outputJson;
+        if (salida && typeof salida === 'object' && !Array.isArray(salida)) delete (salida as Record<string, unknown>).usage;
+        return { ...log, outputJson: salida };
+      })
+    );
   } catch (error) {
     console.error('listGenerationHistory error:', error);
     res.status(500).json({ error: 'Error al cargar el historial' });
@@ -196,7 +202,9 @@ export const generateCopy = async (req: AuthRequest, res: Response) => {
       adnVersion,
     });
 
-    res.json(result);
+    // El costo se queda en el servidor: solo el super admin lo ve, en Control (decisión 27).
+    const { usage: _usage, ...sinCosto } = result;
+    res.json(sinCosto);
   } catch (error: any) {
     if (error?.statusCode) {
       return res.status(error.statusCode).json({ error: error.message });
@@ -261,7 +269,8 @@ export const generateCopyStream = async (req: AuthRequest, res: Response) => {
       else if (event.type === 'channel') capturedVariations.push(...event.payload.variations);
       else if (event.type === 'coherence') capturedCoherence = event.payload;
       else if (event.type === 'usage') capturedUsage = event.payload;
-      res.write(`data: ${JSON.stringify(event)}\n\n`);
+      // El costo no viaja al navegador: solo el super admin lo ve, en Control (decisión 27).
+      if (event.type !== 'usage') res.write(`data: ${JSON.stringify(event)}\n\n`);
     }, { signal: abortoCliente.signal });
 
     const durationMs = Date.now() - t0;
@@ -387,7 +396,7 @@ export const regenerateChannel = async (req: AuthRequest, res: Response) => {
       adnVersion: ctx.adnVersion,
     });
 
-    res.json({ platform, variations, usage: usageTotal });
+    res.json({ platform, variations });
   } catch (error: any) {
     if (error?.statusCode) {
       return res.status(error.statusCode).json({ error: error.message });

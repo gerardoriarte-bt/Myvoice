@@ -18,6 +18,7 @@
     "backfill:adn": "tsx scripts/backfillAdn.ts",
     "recrypt:keys": "tsx scripts/recryptWorkspaceKeys.ts",
     "plataforma": "tsx scripts/plataforma.ts",
+    "superadmin": "tsx scripts/superAdmin.ts",
     "migrar:archivos": "tsx scripts/migrarArchivosAS3.ts",
     "verify:isolation": "tsx scripts/verifyIsolation.ts",
     "verify:calidad": "tsx scripts/verifyCalidad.ts",

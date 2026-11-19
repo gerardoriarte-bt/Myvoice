@@ -11,7 +11,8 @@ import * as presetController from '../controllers/presetController.js';
 import * as refineController from '../controllers/refineController.js';
 import * as piezaController from '../controllers/piezaController.js';
 import * as notificacionController from '../controllers/notificacionController.js';
-import { authenticateToken, requireWorkspace, requireManager } from '../middleware/auth.js';
+import { authenticateToken, requireWorkspace, requireManager, requireSuperAdmin } from '../middleware/auth.js';
+import * as controlController from '../controllers/controlController.js';
 
 const router = Router();
 const pdfUpload = multer({
@@ -150,9 +151,20 @@ router.post('/feedback/negative', ...inWorkspace, savedController.saveNegativeFe
 
 // ------------------------------------------------------------------ analytics
 router.get('/analytics', ...inWorkspace, analyticsController.getAnalytics);
-// Dato financiero del workspace: va con asManager, no con inWorkspace. La
-// pestaña Analytics del frontend ya está marcada adminOnly.
-router.get('/analytics/usage', ...asManager, analyticsController.getUsageAnalytics);
+// El gasto de IA ya no está acá: es del super admin, en `/control/gasto` (decisión 27).
+
+// ------------------------------------------------------------------ control
+/**
+ * El super admin (decisión 27): por encima de los workspaces, sin `requireWorkspace`. Es el único que ve
+ * costos; `/analytics/usage` dejó de existir para OWNER y ADMIN.
+ */
+const asSuperAdmin = [authenticateToken, requireSuperAdmin] as const;
+router.get('/control/workspaces', ...asSuperAdmin, controlController.listarWorkspaces);
+router.put('/control/workspaces/:id/plataforma', ...asSuperAdmin, controlController.cambiarPlataforma);
+router.get('/control/usuarios', ...asSuperAdmin, controlController.listarUsuarios);
+router.put('/control/membresias', ...asSuperAdmin, controlController.guardarMembresia);
+router.delete('/control/membresias/:userId/:workspaceId', ...asSuperAdmin, controlController.quitarMembresia);
+router.get('/control/gasto', ...asSuperAdmin, analyticsController.getUsageAnalytics);
 
 // -------------------------------------------------------------- revisiones
 // -------------------------------------------------------------- producción

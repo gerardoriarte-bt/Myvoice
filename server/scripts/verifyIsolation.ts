@@ -226,6 +226,13 @@ async function main() {
         existingSpine: { concept: 'x', angles: [{ name: 'a', premise: 'b', register: 'c' }] },
       }),
     });
+    // Control es del super admin (decisión 27): un OWNER que no lo es no ve ni toca nada, ni de otro workspace ni del suyo.
+    await expectDenied('GET /control/workspaces sin ser super admin', '/control/workspaces', B.token);
+    await expectDenied('GET /control/usuarios sin ser super admin', '/control/usuarios', B.token);
+    await expectDenied('GET /control/gasto de su propio workspace sin ser super admin', `/control/gasto?workspaceId=${B.workspace.id}`, B.token);
+    await expectDenied('PUT /control/workspaces/:id/plataforma de A sin ser super admin', `/control/workspaces/${A.workspace.id}/plataforma`, B.token, { method: 'PUT', body: JSON.stringify({ encendida: true }) });
+    await expectDenied('PUT /control/membresias hacia A sin ser super admin', '/control/membresias', B.token, { method: 'PUT', body: JSON.stringify({ userId: B.user.id, workspaceId: A.workspace.id, role: 'OWNER' }) });
+    await expectDenied('GET /analytics/usage (los costos ya no son del OWNER)', '/analytics/usage', B.token);
     await expectDenied('GET /clients/:id/proceso de A', `/clients/${A.client.id}/proceso`, B.token);
     await expectDenied('GET /clients/:id/proceso con la campaña de A', `/clients/${B.client.id}/proceso?campana=${A.project.id}`, B.token);
     await expectDenied('GET /clients/:id/adn de A', `/clients/${A.client.id}/adn`, B.token);
@@ -1447,6 +1454,11 @@ async function main() {
       method: 'PUT',
       body: JSON.stringify({ name: 'Marca B renombrada' }),
     });
+    // El super admin sí entra, aunque no sea miembro del workspace que mira. Se le quita al terminar.
+    await prisma.user.update({ where: { id: A.user.id }, data: { superAdmin: true } });
+    await expectAllowed('GET /control/workspaces como super admin', '/control/workspaces', A.token);
+    await expectAllowed('GET /control/gasto de B como super admin', `/control/gasto?workspaceId=${B.workspace.id}`, A.token);
+    await prisma.user.update({ where: { id: A.user.id }, data: { superAdmin: false } });
     await expectAllowed('GET /clients/:id/proceso propio', `/clients/${B.client.id}/proceso?campana=${B.project.id}`, B.token);
     await expectAllowed('GET /clients/:id/adn propio', `/clients/${B.client.id}/adn`, B.token);
     await expectAllowed('GET /clients/:id/adn/revision propio', `/clients/${B.client.id}/adn/revision`, B.token);

@@ -23,6 +23,7 @@ export const RUTAS: Record<ScreenId, string> = {
   settings: '/cuenta/configuracion',
   help: '/guia',
   novedades: '/novedades',
+  control: '/control',
 };
 
 export interface Ubicacion {

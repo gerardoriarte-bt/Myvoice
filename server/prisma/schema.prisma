@@ -62,6 +62,10 @@ model User {
   /// LEGACY. Ya no confina la lectura: un usuario ve todas las marcas de los
   /// workspaces donde tiene membresía.
   clientId              String?
+  /// Decisión 27: está por encima de los workspaces. Ve y controla todos (interruptores, usuarios, gasto de
+  /// IA) sin ser miembro, y es el único que ve costos. No es un rol de Membership: se asigna con
+  /// `npm run superadmin`, nunca desde la pantalla, y se verifica contra la base en cada request.
+  superAdmin            Boolean           @default(false)
   createdAt             DateTime          @default(now())
   updatedAt             DateTime          @updatedAt
   /// Workspace ACTIVO de la sesión, no una relación de pertenencia. Solo es

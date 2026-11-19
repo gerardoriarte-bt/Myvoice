@@ -20,6 +20,7 @@ import {
   BookOpen,
   Building2,
   ClipboardCheck,
+  Gauge,
   History,
   LayoutGrid,
   Library,
@@ -40,7 +41,8 @@ export type ScreenId =
   | 'users'
   | 'settings'
   | 'help'
-  | 'novedades';
+  | 'novedades'
+  | 'control';
 
 /**
  * Cinco etapas, no cuatro: cuando entra la pieza, «producir» dejaba de
@@ -60,7 +62,13 @@ export interface ScreenDef {
   stage: StageId;
   /** Solo visible para quien administra el workspace (OWNER o ADMIN). */
   adminOnly: boolean;
+  /** Solo visible para el super admin (decisión 27), que está por encima de los workspaces. */
+  superAdmin?: boolean;
 }
+
+/** Si alguien ve una pantalla en el menú. El servidor vuelve a decidirlo en cada ruta. */
+export const puedeVer = (pantalla: ScreenDef, quien: { administra: boolean; superAdmin: boolean }) =>
+  (!pantalla.adminOnly || quien.administra) && (!pantalla.superAdmin || quien.superAdmin);
 
 export const SCREENS: Record<ScreenId, ScreenDef> = {
   clients: {
@@ -112,7 +120,8 @@ export const SCREENS: Record<ScreenId, ScreenDef> = {
   analytics: {
     id: 'analytics',
     name: 'Métricas',
-    description: 'Consumo, costo y tasa de aprobación del workspace.',
+    // Sin costo desde la decisión 27: el gasto de IA es del super admin, en Control.
+    description: 'Tasa de aprobación y rechazos del workspace.',
     icon: BarChart3,
     stage: 'medir',
     adminOnly: true,
@@ -155,6 +164,20 @@ export const SCREENS: Record<ScreenId, ScreenDef> = {
    * Fuera de NAV_STAGES a propósito: no es un paso del proceso. Se llega por un
    * enlace chico al pie de la barra lateral. El registro vive en `novedades.ts`.
    */
+  /**
+   * Del super admin (decisión 27): los interruptores de cada workspace, los usuarios de todas las empresas
+   * y el gasto de IA. Es la única pantalla que muestra costos.
+   */
+  control: {
+    id: 'control',
+    name: 'Control',
+    description: 'Todos los workspaces: su interruptor, su gente y lo que gastan en IA.',
+    icon: Gauge,
+    stage: 'administrar',
+    // No depende del rol en el workspace activo: el super admin puede ser MEMBER donde está parado.
+    adminOnly: false,
+    superAdmin: true,
+  },
   novedades: {
     id: 'novedades',
     name: 'Novedades',
@@ -187,7 +210,7 @@ export const NAV_STAGES: { id: StageId; label: string; screens: ScreenId[] }[] =
   { id: 'aprobar', label: 'Aprobar', screens: ['saved', 'collaboration'] },
   { id: 'producir', label: 'Producir', screens: ['produccion'] },
   { id: 'medir', label: 'Medir', screens: ['analytics'] },
-  { id: 'administrar', label: 'Administrar', screens: ['users', 'settings', 'help'] },
+  { id: 'administrar', label: 'Administrar', screens: ['users', 'settings', 'help', 'control'] },
 ];
 
 /** Atajo para los componentes: `screenName('saved')` en vez de repetir el string. */

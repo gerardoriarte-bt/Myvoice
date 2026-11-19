@@ -5,6 +5,8 @@ import type {
   PiezaAConfirmar,
   PiezaDetalle,
   PasoDeProceso,
+  UsuarioDeControl,
+  WorkspaceDeControl,
   PropuestaDePiezas,
 } from '../types';
 
@@ -95,16 +97,28 @@ export const workspaceApi = {
     apiRequest('/workspace/ai-config', { method: 'PUT', body: JSON.stringify(data) }),
 };
 
+/** Control, la pantalla del super admin (decisión 27). Todo responde 404 a quien no lo es. */
+export const controlApi = {
+  workspaces: (): Promise<{ periodo: string; workspaces: WorkspaceDeControl[] }> => apiRequest('/control/workspaces'),
+  cambiarPlataforma: (workspaceId: string, encendida: boolean) =>
+    apiRequest(`/control/workspaces/${workspaceId}/plataforma`, { method: 'PUT', body: JSON.stringify({ encendida }) }),
+  usuarios: (): Promise<UsuarioDeControl[]> => apiRequest('/control/usuarios'),
+  guardarMembresia: (userId: string, workspaceId: string, role: string) =>
+    apiRequest('/control/membresias', { method: 'PUT', body: JSON.stringify({ userId, workspaceId, role }) }),
+  quitarMembresia: (userId: string, workspaceId: string) =>
+    apiRequest(`/control/membresias/${userId}/${workspaceId}`, { method: 'DELETE' }),
+};
+
 export const analyticsApi = {
   get: (clientId?: string) => apiRequest(`/analytics${clientId ? `?clientId=${encodeURIComponent(clientId)}` : ''}`),
-  /** Consumo y costo del workspace. Solo OWNER/ADMIN: el backend responde 403 al resto. */
-  getUsage: (params?: { from?: string; to?: string; clientId?: string; groupBy?: 'day' | 'week' | 'month' }) => {
-    const query = new URLSearchParams();
+  /** Consumo y costo de un workspace. Solo el super admin (decisión 27): al resto el backend le responde 404. */
+  getUsage: (workspaceId: string, params?: { from?: string; to?: string; clientId?: string; groupBy?: 'day' | 'week' | 'month' }) => {
+    const query = new URLSearchParams({ workspaceId });
     Object.entries(params ?? {}).forEach(([clave, valor]) => {
       if (valor) query.append(clave, valor);
     });
     const qs = query.toString();
-    return apiRequest(`/analytics/usage${qs ? `?${qs}` : ''}`);
+    return apiRequest(`/control/gasto?${qs}`);
   },
 };
 

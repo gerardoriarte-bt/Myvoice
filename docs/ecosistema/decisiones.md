@@ -237,6 +237,32 @@ dónde se está (marca, campaña, paso) se contradecía entre pantallas. Gerardo
     - En la revisión de una pieza, cada hallazgo se marca «pedir cambio» o «aceptar así», y un solo
       **Devolver** manda todos los cambios juntos.
 
+## 2026-11-19 · Un super admin por encima de todo, y los costos solo para él
+
+27. **El super admin controla los interruptores, los usuarios y el gasto de IA, y es el único que ve costos**
+    (Gerardo, 2026-11-19).
+    - **Es global, no un rol de workspace.** Es `User.superAdmin`. Ve y controla todas las empresas aunque no
+      sea miembro, y el servidor lo verifica en la base en cada ruta (`requireSuperAdmin`, que responde 404 a
+      quien no lo es).
+    - **Lo nombra un script**, `npm run superadmin`, nunca la pantalla: nadie se nombra desde la app, ni otro
+      super admin.
+    - **Su pantalla es Control** (en el `.pen`, «§ Marco · Control»). Está en el menú de la cuenta y tiene
+      tres pestañas:
+      - Workspaces: el interruptor de la plataforma por procesos, personas y marcas, gasto del mes contra
+        la cuota.
+      - Usuarios: todas las personas con su rol en cada empresa. Desde ahí se cambia el rol, se saca a
+        alguien de un workspace o se lo agrega. Un workspace nunca se queda sin OWNER.
+      - Gasto de IA: el detalle por marca, modelo y etapa.
+    - **Los costos no se ven en ningún otro lado, para nadie más, OWNER incluido.** El servidor deja de
+      mandarlos en:
+      - la generación (el evento `usage`)
+      - el Historial
+      - el informe de auditoría de una pieza
+      - el Excel exportado
+
+      Métricas queda con la aprobación. El aviso de cuota dice «llegó al tope de IA de su plan», sin montos.
+      Se siguen registrando igual: solo cambia quién los ve.
+
 ## Antes (2026-10-27), siguen vigentes con los nombres nuevos
 
 - La marca, su ADN y sus audiencias son la fuente de verdad (ahora en la parte común, decisión 7).

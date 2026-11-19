@@ -97,9 +97,9 @@ export const assertQuotaAvailable = async (tenant: TenantContext, client: MarcaC
   let motivo: string | null = null;
 
   if (costoWorkspace >= plan.costUsdPerPeriod) {
-    motivo = `el workspace consumió USD ${costoWorkspace.toFixed(2)} de USD ${plan.costUsdPerPeriod.toFixed(2)} del plan ${plan.label}`;
+    motivo = `el workspace llegó al tope de IA de su plan (${plan.label})`;
   } else if (tokensWorkspace >= plan.tokensPerPeriod) {
-    motivo = `el workspace consumió ${tokensWorkspace} de ${plan.tokensPerPeriod} tokens del plan ${plan.label}`;
+    motivo = `el workspace llegó al tope de IA de su plan (${plan.label})`;
   } else if (limites.origen === 'override') {
     const fila = await prisma.usagePeriod.findUnique({
       where: { clientId_periodStart: { clientId: client.id, periodStart } },
@@ -108,9 +108,9 @@ export const assertQuotaAvailable = async (tenant: TenantContext, client: MarcaC
     const costoMarca = aNumero(fila?.costUsd);
     const tokensMarca = fila?.tokens ?? 0;
     if (costoMarca >= limites.costUsd) {
-      motivo = `la marca consumió USD ${costoMarca.toFixed(2)} de USD ${limites.costUsd.toFixed(2)} asignados`;
+      motivo = 'la marca llegó al tope de IA que tiene asignado';
     } else if (tokensMarca >= limites.tokens) {
-      motivo = `la marca consumió ${tokensMarca} de ${limites.tokens} tokens asignados`;
+      motivo = 'la marca llegó al tope de IA que tiene asignado';
     }
   }
 

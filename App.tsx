@@ -15,7 +15,7 @@ import NotificationSystem, { Notification, NotificationType } from './components
 import { CopyParameters, CopyVariation, ReviewSession, SavedVariation, BrandConfig, Client, User, WorkspaceMember, WorkspaceSummary, canManageWorkspace, ContentDNAProfile } from './types';
 import TableroProduccion from './components/produccion/TableroProduccion';
 import Bandeja, { DestinoAviso } from './components/Bandeja';
-import { NAV_STAGES, SCREENS, ScreenId } from './screens';
+import { NAV_STAGES, SCREENS, ScreenId, puedeVer } from './screens';
 import { VOICES, GOALS } from './constants';
 import HomePage from './components/HomePage';
 import AISettings from './components/AISettings';
@@ -34,6 +34,7 @@ import WorkflowHelpSidebar from './components/WorkflowHelpSidebar';
 import { LOBUENO_DNA_PROFILES, LOBUENO_APPROVED_EXAMPLES } from './shared/lobuenoBrand';
 import Isotipo from './components/ui/Isotipo';
 import Marco from './src/plataforma/Marco';
+import Control from './src/plataforma/Control';
 import { armarRuta, leerRuta } from './src/plataforma/rutas';
 
 const MOCK_CLIENTS: Client[] = [
@@ -126,7 +127,6 @@ const App: React.FC = () => {
   const [variations, setVariations] = React.useState<CopyVariation[]>([]);
   const [coherence, setCoherence] = React.useState<any | null>(null);
   const [spine, setSpine] = React.useState<any | null>(null);
-  const [usage, setUsage] = React.useState<any | null>(null);
   const [lastParams, setLastParams] = React.useState<CopyParameters | null>(null);
   const [progressPlatforms, setProgressPlatforms] = React.useState<string[]>([]);
   const [progressSpineDone, setProgressSpineDone] = React.useState(false);
@@ -166,6 +166,8 @@ const App: React.FC = () => {
   // El rol ya no es global: es el rol del usuario EN EL WORKSPACE ACTIVO, y
   // cambia al cambiar de workspace.
   const isAdmin = canManageWorkspace(currentUser?.role);
+  const superAdmin = Boolean(currentUser?.superAdmin);
+  const quien = { administra: isAdmin, superAdmin };
 
   /**
    * El marco de la plataforma por procesos (F0, docs/plan-plataforma-por-procesos.md), si el workspace lo
@@ -204,8 +206,8 @@ const App: React.FC = () => {
   // al diseñador sin el tablero donde está su pieza. La pestaña de arranque
   // (Marcas) es de administración, así que se lo lleva a la primera suya.
   React.useEffect(() => {
-    if (currentUser && !isAdmin && SCREENS[activeTab].adminOnly) setActiveTab('produccion');
-  }, [currentUser, isAdmin, activeTab]);
+    if (currentUser && !puedeVer(SCREENS[activeTab], quien)) setActiveTab(isAdmin ? 'saved' : 'produccion');
+  }, [currentUser, isAdmin, superAdmin, activeTab]);
   const workspaces: WorkspaceSummary[] = currentUser?.workspaces || [];
   const activeClient = clients.find(c => c.id === activeClientId);
 
@@ -423,7 +425,6 @@ const App: React.FC = () => {
     setLastParams(params);
     setCoherence(null);
     setSpine(null);
-    setUsage(null);
 
     const lockedByKey = new Map<string, CopyVariation>();
     (lockedSnapshot || []).forEach(v => {
@@ -505,8 +506,6 @@ const App: React.FC = () => {
         } else if (event.type === 'coherence') {
           setCoherence(event.payload);
           setProgressCoherenceStatus('done');
-        } else if (event.type === 'usage') {
-          setUsage(event.payload);
         }
       });
 
@@ -690,7 +689,7 @@ const App: React.FC = () => {
     : undefined;
   const marcaDeLoGenerado = clients.find(c => c.id === (lastParams?.clientId || activeClientId));
 
-  const pantallaConMarca = !['clients', 'users', 'settings', 'help', 'analytics', 'novedades'].includes(activeTab);
+  const pantallaConMarca = !['clients', 'users', 'settings', 'help', 'analytics', 'novedades', 'control'].includes(activeTab);
 
   /*
    * La novedad a avisar al entrar. Se espera a que la sesión venga del
@@ -841,7 +840,6 @@ const App: React.FC = () => {
                 savedContentList={savedVariations.map(s => s.content)}
                 coherence={coherence}
                 spine={spine}
-                usage={usage}
                 onRegenerate={handleRegenerate}
                 onRegenerateChannel={spine ? handleRegenerateChannel : undefined}
                 onRefine={handleRefine}
@@ -1098,6 +1096,7 @@ const App: React.FC = () => {
         />
       )}
       {activeTab === 'analytics' && isAdmin && <Analytics />}
+      {activeTab === 'control' && superAdmin && <Control />}
       {activeTab === 'collaboration' && isAdmin && (
         <CollaborationHub
           clients={clients}
@@ -1221,7 +1220,7 @@ const App: React.FC = () => {
           {NAV_STAGES.map((etapa, i) => {
             const visibles = etapa.screens
               .map(id => SCREENS[id])
-              .filter(s => !s.adminOnly || isAdmin);
+              .filter(s => puedeVer(s, quien));
             if (visibles.length === 0) return null;
             return (
               <div key={etapa.id} className={i === 0 ? 'space-y-0.5' : 'mt-4 space-y-0.5'}>

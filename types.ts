@@ -90,6 +90,30 @@ export interface User {
   novedadesVistas?: string[];
   /** El workspace activo usa el marco de la plataforma por procesos (F0). Apagado, la app de siempre. */
   plataformaPorProcesos?: boolean;
+  /** Por encima de los workspaces (decisión 27): ve Control y los costos. El servidor lo verifica en cada ruta. */
+  superAdmin?: boolean;
+}
+
+/** Un workspace visto desde Control: su interruptor, su gente y su gasto de IA del mes contra el plan. */
+export interface WorkspaceDeControl {
+  id: string;
+  name: string;
+  slug: string;
+  plan: string;
+  plataformaPorProcesos: boolean;
+  personas: number;
+  marcas: number;
+  gastoUsd: number;
+  cuotaUsd: number;
+}
+
+export interface UsuarioDeControl {
+  id: string;
+  name: string;
+  email: string;
+  superAdmin: boolean;
+  createdAt: string;
+  membresias: { workspaceId: string; workspaceName: string; role: WorkspaceRole }[];
 }
 
 /**
@@ -552,7 +576,6 @@ export interface PiezaVersionResumen {
 export interface InformeAuditoria extends PiezaVersionResumen {
   motivoNoDisponible: string | null;
   auditadaAt: string | null;
-  costoUsd: string | number | null;
   modelo: string | null;
   createdAt: string;
   subidaPor?: { name: string } | null;
