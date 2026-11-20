@@ -63,7 +63,7 @@ Cada función con su estado en las tres pistas. Se actualiza en el mismo PR que 
 | Planning | Agregar un medio con sus formatos | ✓ | ○ | ○ | CD-3 (Meta desde la planilla) |
 | Planning | Cargar desde planilla | ◐ | ✓ | ✓ | CD-4 · F2a: importador; F2b: pantalla B5 (el navegador lee el .xlsx, el servidor revisa en seco) |
 | Planning | Paquetes de la marca | ○ | ○ | ○ | CD-6 |
-| Planning | Armar, enviar y aprobar la sábana (P1 a P5) | ✓ | ✓ | ✓ | CD-7 · F3a; ubicaciones por línea (P4b) y aprobación del cliente por enlace: F3b |
+| Planning | Armar, enviar y aprobar la sábana (P1 a P5) | ✓ | ✓ | ✓ | CD-7 · F3a; F3b: ubicaciones por línea (P4b) y avisos; falta la aprobación del cliente por enlace |
 | Planning, responsable | Cuadro rápido para campañas chicas | ○ | ○ | ○ | CD-11 |
 | Planning | Los 14 canales cargados en la biblioteca | ◐ | ✓ | ✓ | CD-12 · F2c: `npm run cdm:canales`, cada canal en el medio de su clase; las cantidades de B8 ya las fija `porPieza` |
 | Planning | Clases de medio: Pagos, Redes sociales, Propios, Tradicional | ✓ | ✓ | ✓ | decisión 29 |

@@ -1202,6 +1202,11 @@ const App: React.FC = () => {
         setRevisarAdnDe(clientId);
         setActiveTab('clients');
       }}
+      onIrAlPlanning={clientId => {
+        // Los avisos del planning (F3) llevan a los plannings de su marca: arriba está lo que pide atención.
+        setActiveClientId(clientId);
+        setActiveTab(plataforma ? 'plannings' : 'clients');
+      }}
     />
   );
 

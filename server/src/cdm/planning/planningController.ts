@@ -49,4 +49,8 @@ export const lineas = yDevolver(req => planning.guardarLineas(req.tenant!, req.p
 export const enviar = yDevolver(req => planning.enviarPlanning(req.tenant!, req.params.id), 'Error al enviar el planning');
 export const aprobar = yDevolver(req => planning.decidirPlanning(req.tenant!, req.params.id, 'aprobar', req.body?.comentario), 'Error al aprobar');
 export const devolver = yDevolver(req => planning.decidirPlanning(req.tenant!, req.params.id, 'devolver', req.body?.comentario), 'Error al devolver');
+export const ubicaciones = yDevolver(
+  req => planning.elegirUbicaciones(req.tenant!, req.params.id, req.params.lineaId, req.body?.ubicacionIds),
+  'Error al elegir las ubicaciones'
+);
 export const reabrir = yDevolver(req => planning.reabrirPlanning(req.tenant!, req.params.id), 'Error al reabrir el planning');

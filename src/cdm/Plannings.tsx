@@ -368,6 +368,7 @@ function Planning({ id, onVolver, onAviso }: { id: string; onVolver: () => void;
           onAprobar={comentario => hacer(() => cdmApi.aprobarPlanning(p.id, comentario), 'Sábana aprobada')}
           onDevolver={comentario => hacer(() => cdmApi.devolverPlanning(p.id, comentario), 'Sábana devuelta con tu comentario')}
           onReabrir={() => hacer(() => cdmApi.reabrirPlanning(p.id))}
+          onUbicaciones={(lineaId, ids) => hacer(() => cdmApi.elegirUbicaciones(p.id, lineaId, ids))}
         />
       )}
 
@@ -578,6 +579,7 @@ function Sabana({
   onAprobar,
   onDevolver,
   onReabrir,
+  onUbicaciones,
 }: {
   planning: PlanningDetalle;
   onMedios: () => void;
@@ -585,8 +587,10 @@ function Sabana({
   onAprobar: (comentario?: string) => void;
   onDevolver: (comentario: string) => void;
   onReabrir: () => void;
+  onUbicaciones: (lineaId: string, ubicacionIds: string[]) => void;
 }) {
   const [comentario, setComentario] = React.useState('');
+  const [abierta, setAbierta] = React.useState<string | null>(null);
   const textos = (l: PlanningDetalle['lineas'][number]) =>
     l.textos
       .map(t => `${t.repeticiones > 1 ? `${t.repeticiones} ` : ''}${t.nombre.toLowerCase()}${t.maximo ? ` ${t.maximo}` : ''}`)
@@ -606,7 +610,7 @@ function Sabana({
           <table className="w-full text-left text-[12.5px]">
             <thead className="bg-[#F5F5F7]">
               <tr>
-                {['Medio', 'Formato', 'Medidas', 'Etapa', 'Piezas', 'Fechas', 'Textos para My Voice'].map(c => (
+                {['Medio', 'Formato', 'Medidas', 'Etapa', 'Piezas', 'Fechas', 'Textos para My Voice', 'Estado'].map(c => (
                   <th key={c} className="px-3 py-2 text-[11px] font-bold uppercase tracking-[0.04em] text-[#86868B]">
                     {c}
                   </th>
@@ -615,15 +619,62 @@ function Sabana({
             </thead>
             <tbody>
               {p.lineas.map(l => (
-                <tr key={l.id} className="border-t border-[rgba(0,0,0,0.06)] align-top">
+                <React.Fragment key={l.id}>
+                <tr className="border-t border-[rgba(0,0,0,0.06)] align-top">
                   <td className="px-3 py-2 font-semibold text-[#1D1D1F]">{l.medio.nombre}</td>
-                  <td className="px-3 py-2 text-[#1D1D1F]">{l.formato.nombre}</td>
+                  <td className="px-3 py-2 text-[#1D1D1F]">
+                    {l.formato.nombre}
+                    {/* P4b: solo las piezas con varias ubicaciones (Meta) eligen dónde salen. */}
+                    {l.ubicaciones.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => setAbierta(abierta === l.id ? null : l.id)}
+                        className="mt-0.5 block text-[11.5px] font-semibold text-[#047857] hover:underline"
+                      >
+                        Ubicaciones · {l.ubicacionIds.length || l.ubicaciones.length} de {l.ubicaciones.length} {abierta === l.id ? '▴' : '▾'}
+                      </button>
+                    )}
+                  </td>
                   <td className="px-3 py-2 text-[#6E6E73]">{l.medidas ?? 'solo texto'}</td>
                   <td className="px-3 py-2 text-[#3A3A3C]">{nombreEtapa(l.etapa)}</td>
                   <td className="px-3 py-2 font-semibold tabular-nums">{l.piezas}</td>
                   <td className="px-3 py-2 text-[#6E6E73]">{rango(l.desde ?? p.desde, l.hasta ?? p.hasta)}</td>
                   <td className="px-3 py-2 text-[11.5px] text-[#6E6E73]">{textos(l)}</td>
+                  <td className="px-3 py-2 text-[11.5px]">
+                    {l.porConfirmar ? <span className="text-amber-700">Ubicación por confirmar</span> : <span className="text-[#047857]">Listo</span>}
+                  </td>
                 </tr>
+                {abierta === l.id && (
+                  <tr className="bg-[#FAFAFA]">
+                    <td colSpan={8} className="px-3 py-3">
+                      <p className="mb-2 text-[11.5px] text-[#6E6E73]">
+                        Dónde sale esta línea. El largo de cada texto para My Voice es el más corto entre las ubicaciones elegidas.
+                      </p>
+                      <div className="grid grid-cols-1 gap-1 md:grid-cols-2 xl:grid-cols-3">
+                        {l.ubicaciones.map(u => {
+                          const marcada = !l.ubicacionIds.length || l.ubicacionIds.includes(u.id);
+                          const actuales = l.ubicacionIds.length ? l.ubicacionIds : l.ubicaciones.map(x => x.id);
+                          return (
+                            <label key={u.id} className="flex items-start gap-2 text-[12px] text-[#3A3A3C]" title={u.alertaTexto ?? undefined}>
+                              <input
+                                type="checkbox"
+                                checked={marcada}
+                                disabled={!p.puedo.editar || (marcada && actuales.length === 1)}
+                                onChange={() => onUbicaciones(l.id, marcada ? actuales.filter(x => x !== u.id) : [...actuales, u.id])}
+                                className="mt-0.5"
+                              />
+                              <span>
+                                {u.nombre}
+                                {u.porConfirmar && <span className="ml-1 text-amber-700">· por confirmar</span>}
+                              </span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </td>
+                  </tr>
+                )}
+                </React.Fragment>
               ))}
             </tbody>
           </table>
