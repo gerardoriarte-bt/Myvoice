@@ -22,6 +22,7 @@
  * Ver docs/plan-h2e-aprobacion-de-pieza.md.
  */
 
+import { SELECT_APROBADORES, apruebaLaCampana } from '../comun/aprobadores.js';
 import { ModoAprobacion, PiezaEstado, Prisma, RondaRevision, ReviewDecision } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import { canManage, TenantContext, TenantError } from '../lib/tenancy.js';
@@ -57,10 +58,10 @@ export const piezasElegibles = async (tenant: TenantContext, piezaIds: string[])
         none: { reviewSession: { status: { not: 'COMPLETED' }, expiresAt: { gt: new Date() } } },
       },
     },
-    select: { id: true, clientId: true, project: { select: { responsableId: true } } },
+    select: { id: true, clientId: true, project: { select: SELECT_APROBADORES } },
   });
-  // Se la manda el responsable de su campaña, o quien administra.
-  return piezas.filter(p => canManage(tenant.role) || p.project?.responsableId === tenant.userId);
+  // Se la manda quien aprueba su campaña (responsable o sumado), o quien administra.
+  return piezas.filter(p => canManage(tenant.role) || apruebaLaCampana(tenant.userId, p.project));
 };
 
 export const crearSesionDePiezas = async (

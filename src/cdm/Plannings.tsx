@@ -1,3 +1,4 @@
+import SumarAprobador from '../comun/SumarAprobador';
 import React from 'react';
 import { ArrowLeft, Check, Minus, Plus } from 'lucide-react';
 import { SCREENS } from '../../screens';
@@ -17,6 +18,10 @@ export const ETAPAS: { id: EtapaDeFunnel; nombre: string }[] = [
   { id: 'CONVERSION', nombre: 'Conversión' },
   { id: 'RETENCION', nombre: 'Retención' },
 ];
+
+/** «Laura», «Laura o Gerardo»: quienes pueden decidir (decisión 30). */
+const nombres = (ps: { name: string }[]) =>
+  ps.length === 0 ? 'el responsable' : ps.length === 1 ? ps[0].name : `${ps.slice(0, -1).map(x => x.name).join(', ')} o ${ps[ps.length - 1].name}`;
 const nombreEtapa = (e: EtapaDeFunnel) => ETAPAS.find(x => x.id === e)?.nombre ?? e;
 
 const dia = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', timeZone: 'UTC' }) : '');
@@ -138,7 +143,7 @@ export default function Plannings({ marcaId, marcaNombre, campanaId, onAviso }: 
                       <div className="mt-0.5 text-[12px] text-amber-700">Devuelto: «{p.ultimo.comentario}»</div>
                     )}
                   </div>
-                  {p.estado === 'POR_APROBAR' && <span className="text-[12px] text-[#3A3A3C]">Espera a {p.aprueba?.name ?? 'el responsable'}</span>}
+                  {p.estado === 'POR_APROBAR' && <span className="text-[12px] text-[#3A3A3C]">Espera a {nombres(p.aprueban)}</span>}
                   {p.estado === 'CON_EL_CLIENTE' && <span className="text-[12px] text-[#3A3A3C]">Con el cliente</span>}
                   <span className="text-[12px] font-semibold text-[#047857]">{p.estado === 'APROBADO' ? 'Abrir' : 'Seguir'} →</span>
                 </button>
@@ -368,7 +373,8 @@ function Planning({ id, onVolver, onAviso }: { id: string; onVolver: () => void;
         <Sabana
           planning={p}
           onMedios={() => setVista('medios')}
-          onEnviar={() => hacer(() => cdmApi.enviarPlanning(p.id), `Enviada a ${p.aprueba?.name ?? 'aprobación'}`)}
+          onEnviar={() => hacer(() => cdmApi.enviarPlanning(p.id), `Enviada a ${nombres(p.aprueban)}`)}
+          onAprobadores={() => cdmApi.planning(p.id).then(setP).catch(() => undefined)}
           onAprobar={comentario => hacer(() => cdmApi.aprobarPlanning(p.id, comentario), 'Sábana aprobada')}
           onDevolver={comentario => hacer(() => cdmApi.devolverPlanning(p.id, comentario), 'Sábana devuelta con tu comentario')}
           onReabrir={() => hacer(() => cdmApi.reabrirPlanning(p.id))}
@@ -607,6 +613,7 @@ function Sabana({
   onReabrir,
   onUbicaciones,
   onEnlace,
+  onAprobadores,
 }: {
   planning: PlanningDetalle;
   onMedios: () => void;
@@ -616,6 +623,7 @@ function Sabana({
   onReabrir: () => void;
   onUbicaciones: (lineaId: string, ubicacionIds: string[]) => void;
   onEnlace: () => void;
+  onAprobadores: () => void;
 }) {
   const [comentario, setComentario] = React.useState('');
   const [abierta, setAbierta] = React.useState<string | null>(null);
@@ -721,16 +729,17 @@ function Sabana({
           <p className="mt-2 text-[11.5px] text-[#86868B]">Los pedidos de copy llegan a My Voice con la entrega siguiente (F4).</p>
         </div>
         <div className="rounded-[12px] border border-[rgba(0,0,0,0.08)] bg-white p-4">
-          <h3 className="text-[13px] font-bold text-[#1D1D1F]">La aprueba</h3>
+          <h3 className="text-[13px] font-bold text-[#1D1D1F]">{p.aprueban.length > 1 ? 'La aprueba cualquiera de ellos' : 'La aprueba'}</h3>
           <p className="mt-1 text-[12.5px] text-[#3A3A3C]">
-            {p.aprueba?.name ?? 'Falta el responsable de la campaña'}
+            {p.aprueba ? `${p.aprueba.name} · responsable` : 'Falta el responsable de la campaña'}
             {p.campana.modoAprobacion === 'CLIENTE' ? ' · después, el cliente por enlace' : ''}
           </p>
-          {p.estado === 'POR_APROBAR' && !p.puedo.decidir && <p className="mt-2 text-[12.5px] text-amber-700">Enviada: espera a {p.aprueba?.name}.</p>}
+          {p.aprueba && <SumarAprobador campanaId={p.campana.id} onCambio={onAprobadores} />}
+          {p.estado === 'POR_APROBAR' && !p.puedo.decidir && <p className="mt-2 text-[12.5px] text-amber-700">Enviada: espera a {nombres(p.aprueban)}.</p>}
           {p.estado === 'APROBADO' && <p className="mt-2 text-[12.5px] font-semibold text-[#047857]">Aprobada.</p>}
           {p.estado === 'CON_EL_CLIENTE' && (
             <p className="mt-2 text-[12.5px] text-amber-700">
-              {p.aprueba?.name} la aprobó. Falta el cliente: {p.enlace ? 'el enlace ya está creado.' : 'crea el enlace y compártelo.'}
+              El equipo la aprobó. Falta el cliente: {p.enlace ? 'el enlace ya está creado.' : 'crea el enlace y compártelo.'}
             </p>
           )}
         </div>

@@ -1,6 +1,7 @@
+import { SELECT_APROBADORES, apruebaLaCampana, nombresDe, quienesAprueban } from '../../comun/aprobadores.js';
 import { EstadoPlanning, EtapaDeFunnel, Prisma } from '@prisma/client';
 import { prisma } from '../../lib/prisma.js';
-import { assertProjectInWorkspace, TenantContext, TenantError } from '../../lib/tenancy.js';
+import { assertProjectInWorkspace, canManage, TenantContext, TenantError } from '../../lib/tenancy.js';
 import { exigirPaso, puedeActuar } from '../../comun/permisos.js';
 import { notifyAviso } from '../../services/notificationService.js';
 
@@ -23,7 +24,7 @@ const EDITABLE: EstadoPlanning[] = ['EN_ARMADO', 'DEVUELTO'];
 export const assertPlanningInWorkspace = async (tenant: TenantContext, id: string) => {
   const planning = await prisma.planning.findUnique({
     where: { id },
-    include: { campana: { select: { id: true, name: true, clientId: true, modoAprobacion: true, responsable: { select: { id: true, name: true } } } } },
+    include: { campana: { select: { id: true, name: true, clientId: true, modoAprobacion: true, ...SELECT_APROBADORES } } },
   });
   if (!planning || planning.workspaceId !== tenant.workspaceId) throw new TenantError('Planning no encontrado', 404);
   return planning;
@@ -98,7 +99,7 @@ export const listarPlannings = async (tenant: TenantContext, clientId: string) =
   const plannings = await prisma.planning.findMany({
     where: { workspaceId: tenant.workspaceId, clientId },
     include: {
-      campana: { select: { name: true, responsable: { select: { id: true, name: true } } } },
+      campana: { select: { name: true, ...SELECT_APROBADORES } },
       lineas: { select: { piezas: true, formatoId: true, formato: { select: { medio: { select: { id: true } } } } } },
       eventos: { orderBy: { createdAt: 'desc' }, take: 1 },
     },
@@ -112,6 +113,8 @@ export const listarPlannings = async (tenant: TenantContext, clientId: string) =
     desde: p.desde?.toISOString() ?? null,
     hasta: p.hasta?.toISOString() ?? null,
     aprueba: p.campana.responsable,
+    // Quienes deciden (decisión 30): el responsable y los sumados.
+    aprueban: quienesAprueban(p.campana),
     ultimo: p.eventos[0] ? { tipo: p.eventos[0].tipo, fecha: p.eventos[0].createdAt.toISOString(), comentario: p.eventos[0].comentario } : null,
     ...resumen(p.lineas),
   }));
@@ -131,12 +134,14 @@ export const detallePlanning = async (tenant: TenantContext, id: string) => {
     ])
   );
   const arma = await puedeActuar(tenant, 'CDM', p.clientId);
-  const esResponsable = base.campana.responsable?.id === tenant.userId;
+  // Decide quien aprueba la campaña: su responsable o un aprobador sumado (decisión 30).
+  const esResponsable = apruebaLaCampana(tenant.userId, base.campana);
   return {
     id: p.id,
     clientId: p.clientId,
     campana: { id: base.campana.id, nombre: base.campana.name, modoAprobacion: base.campana.modoAprobacion },
     aprueba: base.campana.responsable,
+    aprueban: quienesAprueban(base.campana),
     estado: p.estado,
     version: p.version,
     desde: p.desde?.toISOString() ?? null,
@@ -167,6 +172,8 @@ export const detallePlanning = async (tenant: TenantContext, id: string) => {
       decidir: esResponsable && p.estado === 'POR_APROBAR',
       reabrir: arma && p.estado === 'APROBADO',
       enviarAlCliente: (esResponsable || arma) && p.estado === 'CON_EL_CLIENTE',
+      // Para la urgencia: quien administra o quien ya aprueba suma a otro aprobador.
+      sumarAprobador: canManage(tenant.role) || esResponsable,
     },
     // El enlace abierto para el cliente, si ya se creó (F3b).
     enlace: await enlaceAbierto(p.id),
@@ -344,7 +351,7 @@ export const enviarPlanning = async (tenant: TenantContext, id: string) => {
     await evento(tx, id, 'ENVIADO', p.version, tenant.userId);
     return avisar(tx, tenant, p.clientId, {
       tipo: AVISOS_PLANNING.POR_APROBAR,
-      userIds: [p.campana.responsable!.id],
+      userIds: quienesAprueban(p.campana).map(a => a.id),
       titulo: 'Una sábana espera tu aprobación',
       detalle: `${p.campana.name} · ${marca?.name ?? ''}`,
     });
@@ -356,8 +363,8 @@ export const enviarPlanning = async (tenant: TenantContext, id: string) => {
 export const decidirPlanning = async (tenant: TenantContext, id: string, accion: 'aprobar' | 'devolver', comentario?: unknown) => {
   const p = await assertPlanningInWorkspace(tenant, id);
   if (p.estado !== 'POR_APROBAR') throw new TenantError('El planning no está esperando aprobación', 409);
-  if (p.campana.responsable?.id !== tenant.userId) {
-    throw new TenantError(`La sábana la aprueba ${p.campana.responsable?.name ?? 'el responsable de la campaña'}`, 403);
+  if (!apruebaLaCampana(tenant.userId, p.campana)) {
+    throw new TenantError(`La sábana la aprueba ${nombresDe(quienesAprueban(p.campana))}`, 403);
   }
   const texto = typeof comentario === 'string' ? comentario.trim().slice(0, 1000) : '';
   if (accion === 'devolver' && !texto) throw new TenantError('Para devolverla, di qué hay que cambiar', 400);
@@ -432,7 +439,7 @@ const enlaceAbierto = async (planningId: string) => {
  */
 export const enlaceParaElCliente = async (tenant: TenantContext, id: string) => {
   const p = await assertPlanningInWorkspace(tenant, id);
-  const puede = p.campana.responsable?.id === tenant.userId || (await puedeActuar(tenant, 'CDM', p.clientId));
+  const puede = apruebaLaCampana(tenant.userId, p.campana) || (await puedeActuar(tenant, 'CDM', p.clientId));
   if (!puede) throw new TenantError('El enlace lo manda el responsable de la campaña o Planning', 403);
   if (p.estado !== 'CON_EL_CLIENTE') throw new TenantError('La sábana todavía no está lista para el cliente', 409);
   const abierto = await enlaceAbierto(p.id);
@@ -516,7 +523,7 @@ export const aplicarRespuestaDelCliente = async (
 ) => {
   const p = await tx.planning.findUniqueOrThrow({
     where: { id: planningId },
-    include: { campana: { select: { id: true, name: true, responsableId: true, client: { select: { name: true } } } } },
+    include: { campana: { select: { id: true, name: true, ...SELECT_APROBADORES, client: { select: { name: true } } } } },
   });
   if (p.estado !== 'CON_EL_CLIENTE') throw new TenantError('Esta sábana ya no espera la respuesta del cliente', 409);
   await tx.planning.update({ where: { id: p.id }, data: { estado: aprueba ? 'APROBADO' : 'DEVUELTO' } });
@@ -525,9 +532,30 @@ export const aplicarRespuestaDelCliente = async (
   const tenant = { workspaceId: sesion.workspaceId, userId: '', role: 'MEMBER' } as TenantContext;
   const aviso = await avisar(tx, tenant, p.clientId, {
     tipo: aprueba ? AVISOS_PLANNING.APROBADO : AVISOS_PLANNING.DEVUELTO,
-    userIds: [...(await quienesLoArmaron(tx, p.id, p.creadoPorId)), ...(p.campana.responsableId ? [p.campana.responsableId] : [])],
+    userIds: [...(await quienesLoArmaron(tx, p.id, p.creadoPorId)), ...quienesAprueban(p.campana).map(a => a.id)],
     titulo: aprueba ? 'El cliente aprobó la sábana' : 'El cliente devolvió la sábana',
     detalle: aprueba ? `${p.campana.name} · ${p.campana.client?.name ?? ''}` : `${p.campana.name}: «${comentario}»`,
   });
   return () => enviarCorreos(aviso, p.campana.id, p.campana.client?.name ?? '');
+};
+
+/** Las sábanas que esperan la decisión de quien mira (decisión 30: «Por aprobar»). */
+export const sabanasPorAprobarDe = async (tenant: TenantContext) => {
+  const plannings = await prisma.planning.findMany({
+    where: {
+      workspaceId: tenant.workspaceId,
+      estado: 'POR_APROBAR',
+      campana: { OR: [{ responsableId: tenant.userId }, { aprobadores: { some: { userId: tenant.userId } } }] },
+    },
+    select: { id: true, clientId: true, campana: { select: { id: true, name: true, client: { select: { name: true } } } }, updatedAt: true },
+    orderBy: { updatedAt: 'asc' },
+  });
+  return plannings.map(p => ({
+    planningId: p.id,
+    campanaId: p.campana.id,
+    campana: p.campana.name,
+    clientId: p.clientId,
+    marca: p.campana.client?.name ?? null,
+    desde: p.updatedAt.toISOString(),
+  }));
 };

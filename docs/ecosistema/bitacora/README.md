@@ -50,4 +50,4 @@ Módulos: parte común · My Voice · CDM   (los que se tocaron)
 - [2026-11-12](./2026-11-12.md) · ADN 2.0 en pantalla y el aviso en v1 (F2 y F3).
 - [2026-11-17](./2026-11-17.md) · La plataforma como proceso, diseñada y auditada; sin voseo en producción.
 - [2026-11-19](./2026-11-19.md) · De F0 a F3a: el marco, el super admin, CDM y el planning, en producción.
-- [2026-11-20](./2026-11-20.md) · F3b sin el `.pen`: ubicaciones por línea, avisos y el cliente por enlace.
+- [2026-11-20](./2026-11-20.md) · F3b sin el `.pen`, y varios aprobadores con «Por aprobar» a la vista (decisión 30).

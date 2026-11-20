@@ -15,6 +15,7 @@ import NotificationSystem, { Notification, NotificationType } from './components
 import { CopyParameters, CopyVariation, ReviewSession, SavedVariation, BrandConfig, Client, User, WorkspaceMember, WorkspaceSummary, canManageWorkspace, ContentDNAProfile } from './types';
 import TableroProduccion from './components/produccion/TableroProduccion';
 import CrearPiezasModal from './components/produccion/CrearPiezasModal';
+import PorAprobar from './src/plataforma/PorAprobar';
 import Bandeja, { DestinoAviso } from './components/Bandeja';
 import { NAV_STAGES, SCREENS, ScreenId, puedeVer } from './screens';
 import { VOICES, GOALS } from './constants';
@@ -1210,6 +1211,33 @@ const App: React.FC = () => {
     />
   );
 
+  // Decisión 30: lo que espera tu aprobación, siempre a la vista junto a la campana.
+  const porAprobar = (
+    <PorAprobar
+      pulso={`${activeTab}·${activeClientId}`}
+      onSabana={(clientId, campana) => {
+        setActiveClientId(clientId);
+        setCampanaId(campana);
+        setActiveTab('plannings');
+      }}
+      onCopy={(clientId, campana) => {
+        if (clientId) setActiveClientId(clientId);
+        setCampanaId(campana);
+        setActiveTab('saved');
+      }}
+      onPieza={(clientId, piezaId) => {
+        setDestinoProduccion({ clientId, piezaId });
+        setActiveTab('produccion');
+      }}
+    />
+  );
+  const encabezado = (
+    <div className="flex items-center gap-1.5">
+      {porAprobar}
+      {bandeja}
+    </div>
+  );
+
   const capas = (
     <>
     <NotificationSystem notifications={notifications} onDismiss={dismissNotification} />
@@ -1244,7 +1272,7 @@ const App: React.FC = () => {
           campanaId={campanaId}
           onElegirCampana={setCampanaId}
           onAviso={m => addNotification(m, 'info')}
-          bandeja={bandeja}
+          bandeja={encabezado}
           novedadPendiente={Boolean(pendiente)}
           respuestasNuevas={respuestasNuevas}
         >
@@ -1399,7 +1427,7 @@ const App: React.FC = () => {
           </div>
           {/* La campana vive en el header y no en la nav: el aviso no es una
               pantalla más, es algo que interrumpe estés donde estés. */}
-          {bandeja}
+          {encabezado}
         </header>
 
         <main className="flex-1 p-7">{contenido}</main>

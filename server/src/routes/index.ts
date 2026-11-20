@@ -15,6 +15,8 @@ import { authenticateToken, requireWorkspace, requireManager, requireSuperAdmin 
 import * as controlController from '../controllers/controlController.js';
 import * as bibliotecaController from '../cdm/biblioteca/bibliotecaController.js';
 import * as planningController from '../cdm/planning/planningController.js';
+import * as aprobadoresController from '../comun/aprobadoresController.js';
+import { porAprobar } from '../plataforma/porAprobar.js';
 
 const router = Router();
 const pdfUpload = multer({
@@ -150,6 +152,11 @@ router.post('/saved/aprobacion', ...inWorkspace, savedController.decidirAprobaci
 router.put('/saved/:id', ...inWorkspace, savedController.updateVariation);
 router.delete('/saved/:id', ...inWorkspace, savedController.deleteVariation);
 router.get('/projects', ...inWorkspace, savedController.getProjects);
+// Decisión 30: aprobadores sumados a la campaña y todo lo que espera tu aprobación.
+router.get('/projects/:id/aprobadores', ...inWorkspace, aprobadoresController.listar);
+router.post('/projects/:id/aprobadores', ...inWorkspace, aprobadoresController.sumar);
+router.delete('/projects/:id/aprobadores/:userId', ...inWorkspace, aprobadoresController.quitar);
+router.get('/por-aprobar', ...inWorkspace, porAprobar);
 router.post('/projects', ...inWorkspace, savedController.createProject);
 router.get('/projects/de-brief/:dnaProfileId', ...inWorkspace, savedController.getCampanaDeBrief);
 router.patch('/projects/:id', ...inWorkspace, savedController.updateProject);

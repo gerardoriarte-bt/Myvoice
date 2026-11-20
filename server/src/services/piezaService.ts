@@ -20,6 +20,7 @@ import { createHash } from 'node:crypto';
 import { ModoAprobacion, Prisma, PiezaEstado, PiezaTipo, RondaRevision, WorkspaceRole } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import { TenantContext, TenantError } from '../lib/tenancy.js';
+import { SELECT_APROBADORES } from '../comun/aprobadores.js';
 import { guardarVersion, medidasDelFormato, urlDeSnapshot, ArchivoSubido } from './piezaArchivo.js';
 import { auditarEnSegundoPlano } from './auditoriaService.js';
 import { exigir, permisosDe, AccionConPermiso, Persona } from './permisosPieza.js';
@@ -147,8 +148,7 @@ const INCLUDE_PIEZA = {
       id: true,
       name: true,
       modoAprobacion: true,
-      responsableId: true,
-      responsable: { select: { id: true, name: true } },
+      ...SELECT_APROBADORES,
     },
   },
   /** La última entrega: de ahí salen la previa y el semáforo de la tarjeta. */
@@ -909,7 +909,7 @@ const piezaParaDecidir = async (tenant: TenantContext, piezaId: string) => {
   const pieza = await prisma.pieza.findUnique({
     where: { id: piezaId },
     include: {
-      project: { select: { name: true, modoAprobacion: true, responsableId: true, responsable: { select: { name: true, email: true } } } },
+      project: { select: { name: true, modoAprobacion: true, ...SELECT_APROBADORES } },
       versiones: { orderBy: { numero: 'desc' }, take: 1, include: { hallazgos: true } },
     },
   });
@@ -1325,4 +1325,36 @@ export const reauditar = async (tenant: TenantContext, piezaId: string) => {
   ]);
   auditarEnSegundoPlano(version.id, () => pasarARevision(tenant, piezaId, version.id));
   return leerUna(tenant, piezaId);
+};
+
+/**
+ * Las piezas que esperan la decisión de quien mira (decisión 30: «Por aprobar»): por revisar, y que sus
+ * permisos le dejen aceptarlas. Es la misma regla del tablero, así que no ofrece una que después niegue.
+ */
+export const piezasPorDecidirDe = async (tenant: TenantContext) => {
+  const piezas = await prisma.pieza.findMany({
+    where: { workspaceId: tenant.workspaceId, estado: PiezaEstado.POR_REVISAR, canceladaEn: null },
+    select: {
+      id: true,
+      tipo: true,
+      asignadaAId: true,
+      platform: true,
+      formato: true,
+      clientId: true,
+      client: { select: { name: true } },
+      project: { select: { id: true, name: true, ...SELECT_APROBADORES } },
+      versiones: { orderBy: { numero: 'desc' }, take: 1, select: { subidaPorId: true } },
+    },
+  });
+  const gestores = await gestoresDe(tenant);
+  return piezas
+    .filter(p => permisosDe(tenant, p, gestores).puedo.aceptar)
+    .map(p => ({
+      piezaId: p.id,
+      pieza: `${p.platform} ${p.formato}`,
+      campanaId: p.project?.id ?? null,
+      campana: p.project?.name ?? null,
+      clientId: p.clientId,
+      marca: p.client?.name ?? null,
+    }));
 };

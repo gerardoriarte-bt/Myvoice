@@ -857,6 +857,7 @@ export interface PlanningResumen {
   desde: string | null;
   hasta: string | null;
   aprueba: { id: string; name: string } | null;
+  aprueban: PersonaQueAprueba[];
   ultimo: { tipo: string; fecha: string; comentario: string | null } | null;
   medios: number;
   formatos: number;
@@ -892,7 +893,9 @@ export interface PlanningDetalle {
   }[];
   resumen: { medios: number; formatos: number; lineas: number; piezas: number };
   eventos: { tipo: string; version: number; autor: string | null; comentario: string | null; fecha: string }[];
-  puedo: { editar: boolean; enviar: boolean; decidir: boolean; reabrir: boolean; enviarAlCliente: boolean };
+  puedo: { editar: boolean; enviar: boolean; decidir: boolean; reabrir: boolean; enviarAlCliente: boolean; sumarAprobador: boolean };
+  /** El responsable y los aprobadores sumados (decisión 30): cualquiera decide. */
+  aprueban: PersonaQueAprueba[];
   /** El enlace abierto para el cliente (F3b), si ya se creó. */
   enlace: { url: string; venceEn: string } | null;
 }
@@ -907,4 +910,25 @@ export interface SabanaEnRevision {
   hasta: string | null;
   etapas: EtapaDeFunnel[];
   lineas: { id: string; medio: string; formato: string; medidas: string | null; etapa: EtapaDeFunnel; piezas: number; desde: string | null; hasta: string | null }[];
+}
+
+/** Quien aprueba una campaña: el responsable o un aprobador sumado (decisión 30). */
+export interface PersonaQueAprueba {
+  id: string;
+  name: string;
+  email?: string | null;
+}
+
+export interface AprobadoresDeCampana {
+  responsable: PersonaQueAprueba | null;
+  sumados: PersonaQueAprueba[];
+  puedoCambiar: boolean;
+}
+
+/** «Por aprobar» (decisión 30): lo que espera la decisión de quien mira, en los tres pasos. */
+export interface PorAprobar {
+  sabanas: { planningId: string; campanaId: string; campana: string; clientId: string; marca: string | null; desde: string }[];
+  copy: { campanaId: string; campana: string; clientId: string | null; marca: string | null; cantidad: number }[];
+  piezas: { piezaId: string; pieza: string; campanaId: string | null; campana: string | null; clientId: string; marca: string | null }[];
+  total: number;
 }
