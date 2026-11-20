@@ -26,10 +26,13 @@ model ReviewSessionItem {
   /// lo sostienen el servicio y un CHECK escrito a mano en la migración.
   savedVariationId String?
   piezaId          String?
+  /// F3b: en la ronda SABANA. Exactamente uno de los tres, por un CHECK de la migración.
+  planningId       String?
   sortOrder        Int             @default(0)
   reviewSession    ReviewSession   @relation(fields: [reviewSessionId], references: [id], onDelete: Cascade)
   savedVariation   SavedVariation? @relation(fields: [savedVariationId], references: [id], onDelete: Cascade)
   pieza            Pieza?          @relation(fields: [piezaId], references: [id], onDelete: Cascade)
+  planning         Planning?       @relation(fields: [planningId], references: [id], onDelete: Cascade)
 }
 
 model ReviewSubmission {
@@ -47,6 +50,7 @@ model ReviewItemFeedback {
   /// Igual que en el item: uno de los dos, según la ronda.
   savedVariationId   String?
   piezaId            String?
+  planningId         String?
   decision           ReviewDecision
   /// Era `comment`. En la ronda de copy TODO comentario es sobre copy, así que
   /// la columna ya significaba esto sin decirlo; se renombra en vez de agregar
@@ -71,6 +75,8 @@ enum ReviewSessionStatus {
 enum RondaRevision {
   COPY
   PIEZA
+  /// F3b: el cliente aprueba la sábana de un planning (campañas «con cliente», decisión 24).
+  SABANA
 }
 
 enum ReviewDecision {

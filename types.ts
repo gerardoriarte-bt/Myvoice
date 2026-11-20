@@ -473,7 +473,7 @@ export interface ReviewItemFeedbackDetail {
 }
 
 /** Qué se revisa. Una sesión es homogénea: o copy o piezas, nunca las dos. */
-export type RondaRevision = 'COPY' | 'PIEZA';
+export type RondaRevision = 'COPY' | 'PIEZA' | 'SABANA';
 
 /** Lo que el cliente ve de una pieza en la ronda 2. */
 export interface PiezaEnRevision {
@@ -511,6 +511,8 @@ export interface ReviewSession {
   items?: ReviewSessionItem[];
   /** Solo en la ronda 2: el portal recibe piezas en vez de items. */
   piezas?: PiezaEnRevision[];
+  /** Solo en la ronda SABANA (F3b): la sábana del planning, sin nada interno. */
+  sabana?: SabanaEnRevision;
   submission?: {
     submittedAt: string;
     reviewerName?: string | null;
@@ -844,7 +846,7 @@ export interface PlanDeCarga {
 
 /** F3 · Las etapas del funnel de un planning (decisión 19). */
 export type EtapaDeFunnel = 'RECONOCIMIENTO' | 'CONSIDERACION' | 'CONVERSION' | 'RETENCION';
-export type EstadoPlanning = 'EN_ARMADO' | 'POR_APROBAR' | 'DEVUELTO' | 'APROBADO';
+export type EstadoPlanning = 'EN_ARMADO' | 'POR_APROBAR' | 'DEVUELTO' | 'APROBADO' | 'CON_EL_CLIENTE';
 
 /** P1: un planning en la lista de la marca. */
 export interface PlanningResumen {
@@ -890,5 +892,19 @@ export interface PlanningDetalle {
   }[];
   resumen: { medios: number; formatos: number; lineas: number; piezas: number };
   eventos: { tipo: string; version: number; autor: string | null; comentario: string | null; fecha: string }[];
-  puedo: { editar: boolean; enviar: boolean; decidir: boolean; reabrir: boolean };
+  puedo: { editar: boolean; enviar: boolean; decidir: boolean; reabrir: boolean; enviarAlCliente: boolean };
+  /** El enlace abierto para el cliente (F3b), si ya se creó. */
+  enlace: { url: string; venceEn: string } | null;
+}
+
+/** Lo que el cliente ve de una sábana en el portal (F3b): campaña, fechas y líneas, nada interno. */
+export interface SabanaEnRevision {
+  id: string;
+  campana: string;
+  marca: string | null;
+  estado: EstadoPlanning;
+  desde: string | null;
+  hasta: string | null;
+  etapas: EtapaDeFunnel[];
+  lineas: { id: string; medio: string; formato: string; medidas: string | null; etapa: EtapaDeFunnel; piezas: number; desde: string | null; hasta: string | null }[];
 }

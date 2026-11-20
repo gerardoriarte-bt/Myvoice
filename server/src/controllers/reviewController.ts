@@ -4,6 +4,7 @@ import { filterVariationsInWorkspace, TenantError } from '../lib/tenancy.js';
 import { prisma } from '../lib/prisma.js';
 import { notifyReviewCompleted } from '../services/notificationService.js';
 import * as piezasRevision from '../services/revisionDePiezas.js';
+import * as planningCdm from '../cdm/planning/planningService.js';
 import { prepararAviso } from '../services/piezaService.js';
 import { AvisoEscrito, enviarEnSegundoPlano, notificar } from '../services/notificacionService.js';
 import { WorkspaceRole } from '@prisma/client';
@@ -231,6 +232,15 @@ export const getReviewByToken = async (req: Request, res: Response) => {
       return res.json({ ...cabecera, marca: piezas[0]?.marca ?? null, piezas });
     }
 
+    // La ronda de la sábana (F3b): la campaña, la marca, las fechas y las líneas. Nada interno.
+    if (session.ronda === 'SABANA') {
+      const planningId = session.items[0]?.planningId;
+      if (!planningId) return res.status(404).json({ error: 'Sesión de revisión no encontrada' });
+      const { items: _descartados, ...cabecera } = session;
+      const sabana = await planningCdm.presentarParaElCliente(planningId);
+      return res.json({ ...cabecera, marca: sabana.marca, sabana });
+    }
+
     /**
      * La marca, al nivel de la sesión. Desde que una revisión es de una sola
      * marca se puede afirmar sin recorrer los items — y el cliente necesita
@@ -258,13 +268,45 @@ export const submitReview = async (req: Request, res: Response) => {
       // respondió. Hasta H3.D esto iba a una casilla fija del entorno.
       include: {
         createdBy: { select: { email: true } },
-        items: { select: { piezaId: true, savedVariationId: true } },
+        items: { select: { piezaId: true, savedVariationId: true, planningId: true } },
       },
     });
 
     if (!session) return res.status(404).json({ error: 'Sesión de revisión no encontrada' });
     if (new Date() > session.expiresAt) return res.status(410).json({ error: 'Esta sesión de revisión ha expirado' });
     if (session.status === 'COMPLETED') return res.status(409).json({ error: 'Esta sesión ya fue enviada' });
+
+    // La sábana (F3b): una sola decisión sobre el planning de la sesión; devolverla pide comentario.
+    if (session.ronda === 'SABANA') {
+      const planningId = session.items[0]?.planningId;
+      const f = feedbacks.find((x: any) => x?.planningId === planningId);
+      if (!planningId || !f || !['APPROVED', 'REJECTED'].includes(f.decision)) {
+        return res.status(400).json({ error: 'Falta la decisión sobre la sábana' });
+      }
+      const comentario = typeof f.feedbackCopy === 'string' ? f.feedbackCopy.trim().slice(0, 1000) : '';
+      if (f.decision === 'REJECTED' && !comentario) return res.status(400).json({ error: 'Para devolverla, escribe qué hay que cambiar.' });
+      const cliente = typeof reviewerName === 'string' && reviewerName.trim() ? reviewerName.trim() : 'El cliente';
+      // Los correos salen después de la transacción; se guardan acá para no mandarlos si algo falla.
+      const despues: { correos?: () => void } = {};
+      try {
+        await prisma.$transaction(async tx => {
+          const entrega = await tx.reviewSubmission.create({
+            data: { reviewSessionId: session.id, reviewerName: reviewerName || null },
+            select: { id: true },
+          });
+          await tx.reviewItemFeedback.create({
+            data: { reviewSubmissionId: entrega.id, planningId, decision: f.decision, feedbackCopy: comentario || null },
+          });
+          despues.correos = await planningCdm.aplicarRespuestaDelCliente(tx, session, planningId, f.decision === 'APPROVED', comentario, cliente);
+          await tx.reviewSession.update({ where: { id: session.id }, data: { status: 'COMPLETED' } });
+        });
+      } catch (error: any) {
+        if (error?.statusCode === 409) return res.status(409).json({ error: error.message });
+        throw error;
+      }
+      despues.correos?.();
+      return res.json({ ok: true });
+    }
 
     if (session.ronda === 'PIEZA') {
       const deLaSesion = new Set(session.items.map(i => i.piezaId).filter((id): id is string => !!id));

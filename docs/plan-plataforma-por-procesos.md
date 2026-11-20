@@ -321,8 +321,15 @@ las tablas de CDM van en `cdm.prisma`.
   Los tipos son `PLANNING_POR_APROBAR`, `PLANNING_APROBADO` y `PLANNING_DEVUELTO`, y la campana lleva a los
   plannings de la marca.
 
-**F3b (2), lo que falta:**
-- La aprobación del cliente por enlace (`RondaRevision.SABANA`), en las campañas con cliente.
+**F3b (2) (2026-11-20): el cliente aprueba la sábana por enlace,** en las campañas «con cliente»:
+- Cuando el responsable la aprueba, el planning pasa a `CON_EL_CLIENTE` en vez de `APROBADO`.
+- El responsable o Planning crean el enlace (`POST …/enlace`, una sesión `RondaRevision.SABANA` de 14 días).
+  Si ya hay uno abierto, se devuelve ese.
+- El cliente ve la campaña, las fechas y las líneas por etapa, sin nada interno. Aprueba, o devuelve con
+  comentario: la sábana queda `APROBADO` o `DEVUELTO` y avisa a quien la armó y al responsable.
+- El CHECK del portal pasa de XOR a «exactamente uno» entre copy, pieza y planning.
+
+**Lo que falta:**
 - Que My Voice espere a la sábana aprobada en las marcas con CDM (regla 2), junto con F4.
 
 - `Planning` y `LineaDePlanning` (en la arquitectura, `Cuadro` y `LineaDeCuadro`; se nombran como dice

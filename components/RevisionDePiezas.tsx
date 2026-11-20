@@ -113,7 +113,7 @@ export default function RevisionDePiezas({ token, sesion, onEnviada, onError }: 
 
       <main className="mx-auto max-w-[1080px] space-y-5 px-6 py-7">
         <p className="text-[13px] text-[#6E6E73]">
-          Estas piezas ya las revisó el equipo. Miralas contra el copy aprobado, que va con cada una,
+          Estas piezas ya las revisó el equipo. Míralas contra el copy aprobado, que va con cada una,
           y marca tu decisión.
         </p>
 

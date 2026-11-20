@@ -63,6 +63,8 @@ const pasoCdm = async (campanaId: string): Promise<Paso> => {
   switch (p.estado) {
     case 'APROBADO':
       return { paso: 'cdm', estado: 'hecho', texto: `Sábana aprobada · ${piezas} piezas` };
+    case 'CON_EL_CLIENTE':
+      return { paso: 'cdm', estado: 'activo', texto: 'Sábana con el cliente', falta: 'Respuesta del cliente por enlace', quien };
     case 'POR_APROBAR':
       return { paso: 'cdm', estado: 'activo', texto: 'Sábana por aprobar', falta: 'Aprobar la sábana', quien };
     case 'DEVUELTO':

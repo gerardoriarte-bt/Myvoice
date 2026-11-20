@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ReviewSession, ReviewFeedback, ReviewDecision } from '../types';
 import { reviewApi } from '../services/api';
 import RevisionDePiezas from './RevisionDePiezas';
+import RevisionDeSabana from '../src/cdm/RevisionDeSabana';
 
 interface ReviewPortalProps {
   token: string;
@@ -82,6 +83,13 @@ export default function ReviewPortal({ token, onBack }: ReviewPortalProps) {
    * muestra es tan distinto que compartir el armado dejaría un componente
    * lleno de condicionales.
    */
+  // La ronda de la sábana (F3b) es de CDM: el portal es de la plataforma y compone las tres rondas.
+  if (phase === 'reviewing' && session?.ronda === 'SABANA' && session.sabana) {
+    return (
+      <RevisionDeSabana token={token} sesion={session} onEnviada={() => setPhase('submitted')} onError={() => setPhase('error')} />
+    );
+  }
+
   if (phase === 'reviewing' && session?.ronda === 'PIEZA') {
     return (
       <RevisionDePiezas
