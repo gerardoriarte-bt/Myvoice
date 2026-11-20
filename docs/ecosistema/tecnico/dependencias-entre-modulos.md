@@ -1,6 +1,6 @@
 # Dependencias entre módulos (generado)
 
-Generado el 2026-11-19 desde el commit `184994b` con `bash scripts/mapa/actualizar.sh`. **No se edita a mano**: se corrige `scripts/mapa/modulos.json` y se vuelve a generar.
+Generado el 2026-11-20 desde el commit `7633586` con `bash scripts/mapa/actualizar.sh`. **No se edita a mano**: se corrige `scripts/mapa/modulos.json` y se vuelve a generar.
 
 Cada fila es un archivo que usa algo de otro archivo de **otro módulo** (importa, llama o referencia un tipo). Módulos según la decisión 12; reglas en [spec-plataforma.md](./spec-plataforma.md) § 2.
 
@@ -12,10 +12,10 @@ Cada fila es un archivo que usa algo de otro archivo de **otro módulo** (import
 | **Parte común** | · | · | · | · | · | 46 |
 | **My Voice** | · | 37 | · | · | · | 119 |
 | **Producción** | · | 11 | 2 | · | · | 25 |
-| **CDM** | · | 6 | · | · | · | 14 |
+| **CDM** | · | 7 | · | · | · | 14 |
 | **Compartido** | · | · | · | · | · | · |
 
-- **Hay que invertir**: 0 · **pasan por el contrato**: 56 · **permitidas**: 284
+- **Hay que invertir**: 0 · **pasan por el contrato**: 57 · **permitidas**: 284
 
 ## Hay que invertir (0)
 
@@ -23,7 +23,7 @@ Rompen la regla: la parte común o la infraestructura dependen de un módulo, o 
 
 Ninguna.
 
-## Pasan por el contrato (56)
+## Pasan por el contrato (57)
 
 Un módulo lee la parte común. Está bien, pero solo por `contrato/`: esta lista es lo que `contrato/` tiene que exponer.
 
@@ -35,6 +35,7 @@ Un módulo lee la parte común. Está bien, pero solo por `contrato/`: esta list
 | CDM | `server/src/cdm/planning/planningController.ts` | Parte común | `server/src/middleware/auth.ts` | AuthRequest, auth.ts, handleTenantError() |
 | CDM | `server/src/cdm/planning/planningService.ts` | Parte común | `server/src/comun/permisos.ts` | exigirPaso(), permisos.ts, puedeActuar() |
 | CDM | `server/src/cdm/planning/planningService.ts` | Parte común | `server/src/lib/tenancy.ts` | TenantContext, TenantError, assertProjectInWorkspace(), tenancy.ts |
+| CDM | `server/src/cdm/planning/planningService.ts` | Parte común | `server/src/services/notificationService.ts` | notificationService.ts, notifyAviso() |
 | My Voice | `components/ParameterForm.tsx` | Parte común | `marcas.ts` | marcas.ts, nombreConMadre() |
 | My Voice | `components/ResultadosPorPieza.tsx` | Parte común | `components/QuienAprueba.tsx` | PersonaQueAprueba, QuienAprueba(), QuienAprueba.tsx |
 | My Voice | `components/SavedManager.tsx` | Parte común | `components/QuienAprueba.tsx` | QuienAprueba(), QuienAprueba.tsx |

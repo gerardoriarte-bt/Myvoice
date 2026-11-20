@@ -2,6 +2,7 @@ import { EstadoPlanning, EtapaDeFunnel, Prisma } from '@prisma/client';
 import { prisma } from '../../lib/prisma.js';
 import { assertProjectInWorkspace, TenantContext, TenantError } from '../../lib/tenancy.js';
 import { exigirPaso, puedeActuar } from '../../comun/permisos.js';
+import { notifyAviso } from '../../services/notificationService.js';
 
 /**
  * El planning de una campaña (F3; en el `.pen`, P1 a P5). Reglas:
@@ -55,6 +56,10 @@ const INCLUDE_LINEAS = {
           altoPx: true,
           guia: true,
           campos: { select: { clave: true, nombre: true, zona: true, maximo: true, repeticiones: true, ubicacionId: true, orden: true } },
+          ubicaciones: {
+            orderBy: { orden: 'asc' as const },
+            select: { id: true, plataforma: true, nombre: true, porConfirmar: true, alertaTexto: true },
+          },
         },
       },
     },
@@ -149,6 +154,10 @@ export const detallePlanning = async (tenant: TenantContext, id: string) => {
       desde: l.desde?.toISOString() ?? null,
       hasta: l.hasta?.toISOString() ?? null,
       textos: textosDe(l),
+      // P4b: las ubicaciones de la pieza y las que eligió la línea (vacío = todas).
+      ubicaciones: l.version.ubicaciones,
+      ubicacionIds: l.ubicacionIds,
+      porConfirmar: l.version.ubicaciones.some(u => u.porConfirmar && (!l.ubicacionIds.length || l.ubicacionIds.includes(u.id))),
     })),
     resumen: resumen(p.lineas),
     eventos: p.eventos.map(e => ({ tipo: e.tipo, version: e.version, autor: autores.get(e.autorId) ?? null, comentario: e.comentario, fecha: e.createdAt.toISOString() })),
@@ -162,6 +171,59 @@ export const detallePlanning = async (tenant: TenantContext, id: string) => {
 };
 
 // ---------------------------------------------------------------------------------------------- escribir
+
+/** Los avisos del planning: van a la campana y, después de la transacción, al correo. */
+export const AVISOS_PLANNING = {
+  POR_APROBAR: 'PLANNING_POR_APROBAR',
+  APROBADO: 'PLANNING_APROBADO',
+  DEVUELTO: 'PLANNING_DEVUELTO',
+} as const;
+
+interface AvisoDePlanning {
+  tipo: (typeof AVISOS_PLANNING)[keyof typeof AVISOS_PLANNING];
+  userIds: string[];
+  titulo: string;
+  detalle: string;
+}
+
+/** Se escriben en la misma transacción que mueve el planning: no queda un aviso de algo que no pasó. */
+const avisar = async (tx: Prisma.TransactionClient, tenant: TenantContext, clientId: string, a: AvisoDePlanning) => {
+  // Nunca se le avisa a quien hizo la acción.
+  const para = [...new Set(a.userIds)].filter(u => u !== tenant.userId);
+  if (para.length) {
+    await tx.notificacion.createMany({
+      data: para.map(userId => ({ workspaceId: tenant.workspaceId, userId, clientId, tipo: a.tipo, titulo: a.titulo, detalle: a.detalle })),
+    });
+  }
+  return { ...a, userIds: para };
+};
+
+/** El correo, sin bloquear la respuesta. Si falla, el aviso ya está en la campana. */
+const enviarCorreos = (aviso: Awaited<ReturnType<typeof avisar>>, campanaId: string, marca: string) => {
+  if (!aviso.userIds.length) return;
+  void (async () => {
+    try {
+      const gente = await prisma.user.findMany({ where: { id: { in: aviso.userIds } }, select: { email: true } });
+      const app = process.env.APP_URL || 'https://myvoice.lobueno.co';
+      await notifyAviso({
+        para: gente.map(g => g.email),
+        tipo: aviso.tipo,
+        titulo: aviso.titulo,
+        detalle: aviso.detalle,
+        marca,
+        url: `${app}/campana/${campanaId}/cdm/plannings`,
+      });
+    } catch (error) {
+      console.error('[Planning] No se pudo enviar el correo del aviso:', error);
+    }
+  })();
+};
+
+/** Quién armó y quién envió el planning: a ellos les llega la decisión. */
+const quienesLoArmaron = async (tx: Prisma.TransactionClient, planningId: string, creadoPorId: string) => {
+  const envios = await tx.eventoDePlanning.findMany({ where: { planningId, tipo: 'ENVIADO' }, select: { autorId: true } });
+  return [creadoPorId, ...envios.map(e => e.autorId)];
+};
 
 const evento = (tx: Prisma.TransactionClient, planningId: string, tipo: Prisma.EventoDePlanningCreateManyInput['tipo'], version: number, autorId: string, comentario?: string) =>
   tx.eventoDePlanning.create({ data: { planningId, tipo, version, autorId, comentario: comentario ?? null } });
@@ -273,10 +335,18 @@ export const enviarPlanning = async (tenant: TenantContext, id: string) => {
   if (!p.campana.responsable) throw new TenantError('La campaña no tiene responsable: asígnalo antes de enviar', 409);
   const lineas = await prisma.lineaDePlanning.count({ where: { planningId: id } });
   if (!lineas) throw new TenantError('La sábana está vacía', 409);
-  await prisma.$transaction(async tx => {
+  const marca = await prisma.client.findUnique({ where: { id: p.clientId }, select: { name: true } });
+  const aviso = await prisma.$transaction(async tx => {
     await tx.planning.update({ where: { id }, data: { estado: 'POR_APROBAR' } });
     await evento(tx, id, 'ENVIADO', p.version, tenant.userId);
+    return avisar(tx, tenant, p.clientId, {
+      tipo: AVISOS_PLANNING.POR_APROBAR,
+      userIds: [p.campana.responsable!.id],
+      titulo: 'Una sábana espera tu aprobación',
+      detalle: `${p.campana.name} · ${marca?.name ?? ''}`,
+    });
   });
+  enviarCorreos(aviso, p.campana.id, marca?.name ?? '');
 };
 
 /** P5: el responsable aprueba o devuelve. Devolver lleva comentario (decisión 24). */
@@ -288,10 +358,18 @@ export const decidirPlanning = async (tenant: TenantContext, id: string, accion:
   }
   const texto = typeof comentario === 'string' ? comentario.trim().slice(0, 1000) : '';
   if (accion === 'devolver' && !texto) throw new TenantError('Para devolverla, di qué hay que cambiar', 400);
-  await prisma.$transaction(async tx => {
+  const marca = await prisma.client.findUnique({ where: { id: p.clientId }, select: { name: true } });
+  const aviso = await prisma.$transaction(async tx => {
     await tx.planning.update({ where: { id }, data: { estado: accion === 'aprobar' ? 'APROBADO' : 'DEVUELTO' } });
     await evento(tx, id, accion === 'aprobar' ? 'APROBADO' : 'DEVUELTO', p.version, tenant.userId, texto || undefined);
+    return avisar(tx, tenant, p.clientId, {
+      tipo: accion === 'aprobar' ? AVISOS_PLANNING.APROBADO : AVISOS_PLANNING.DEVUELTO,
+      userIds: await quienesLoArmaron(tx, id, p.creadoPorId),
+      titulo: accion === 'aprobar' ? 'Aprobaron la sábana' : 'Devolvieron la sábana',
+      detalle: accion === 'aprobar' ? `${p.campana.name} · ${marca?.name ?? ''}` : `${p.campana.name}: «${texto}»`,
+    });
   });
+  enviarCorreos(aviso, p.campana.id, marca?.name ?? '');
 };
 
 /** Un planning aprobado se cambia como versión nueva: vuelve a armado y, al enviarlo, a aprobación. */
@@ -303,4 +381,23 @@ export const reabrirPlanning = async (tenant: TenantContext, id: string) => {
     await tx.planning.update({ where: { id }, data: { estado: 'EN_ARMADO', version: p.version + 1 } });
     await evento(tx, id, 'REABIERTO', p.version + 1, tenant.userId);
   });
+};
+
+/**
+ * P4b: una línea elige sus ubicaciones. El largo para My Voice pasa a ser el más corto entre las elegidas
+ * (decisión 18); sin elegir, cuentan todas. Solo ubicaciones de la versión con que se planeó la línea.
+ */
+export const elegirUbicaciones = async (tenant: TenantContext, id: string, lineaId: string, ubicacionIds: unknown) => {
+  const p = await editable(tenant, id);
+  if (!Array.isArray(ubicacionIds) || ubicacionIds.some(u => typeof u !== 'string')) throw new TenantError('Ubicaciones inválidas', 400);
+  const linea = await prisma.lineaDePlanning.findUnique({
+    where: { id: lineaId },
+    select: { planningId: true, version: { select: { ubicaciones: { select: { id: true } } } } },
+  });
+  if (!linea || linea.planningId !== p.id) throw new TenantError('Línea no encontrada', 404);
+  const validas = new Set(linea.version.ubicaciones.map(u => u.id));
+  const elegidas = [...new Set(ubicacionIds as string[])];
+  if (elegidas.some(u => !validas.has(u))) throw new TenantError('Esa ubicación no es de esta pieza', 400);
+  // Elegirlas todas es lo mismo que no elegir: se guarda vacío.
+  await prisma.lineaDePlanning.update({ where: { id: lineaId }, data: { ubicacionIds: elegidas.length === validas.size ? [] : elegidas } });
 };

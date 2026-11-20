@@ -883,6 +883,10 @@ export interface PlanningDetalle {
     desde: string | null;
     hasta: string | null;
     textos: { clave: string; nombre: string; maximo: number | null; repeticiones: number }[];
+    /** P4b: las ubicaciones de la pieza y las que eligió la línea (vacío = todas). */
+    ubicaciones: { id: string; plataforma: string; nombre: string; porConfirmar: boolean; alertaTexto: string | null }[];
+    ubicacionIds: string[];
+    porConfirmar: boolean;
   }[];
   resumen: { medios: number; formatos: number; lineas: number; piezas: number };
   eventos: { tipo: string; version: number; autor: string | null; comentario: string | null; fecha: string }[];

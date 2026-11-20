@@ -170,6 +170,10 @@ export const notifyAviso = async (payload: AvisoPayload): Promise<void> => {
       pie: 'Te llega porque eres responsable de la campaña, o porque la campaña todavía no tiene uno o tú administras o apruebas esta marca.',
     },
     RESPUESTA_CLIENTE: { rotulo: 'El cliente respondió', enlace: 'Ver la respuesta', pie: 'Te llega porque eres responsable de la campaña.' },
+    // F3: el planning de una campaña (CDM).
+    PLANNING_POR_APROBAR: { rotulo: 'Te toca aprobarla', enlace: 'Ver la sábana', pie: 'Te llega porque eres responsable de la campaña.' },
+    PLANNING_APROBADO: { rotulo: 'Sábana aprobada', enlace: 'Ver el planning', pie: 'Te llega porque armaste o enviaste este planning.' },
+    PLANNING_DEVUELTO: { rotulo: 'Vuelve a tus manos', enlace: 'Ver el comentario', pie: 'Te llega porque armaste o enviaste este planning.' },
   };
   const t = TEXTOS[payload.tipo] ?? TEXTOS.ENTREGA;
   await enviar(

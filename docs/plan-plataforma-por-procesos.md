@@ -309,10 +309,20 @@ las tablas de CDM van en `cdm.prisma`.
   nombre, P3 medios con piezas por etapa, P4 la sábana con los textos y largos para My Voice, P5 aprobar.
 - **El paso ②** queda hecho con la sábana aprobada, y si no, dice en qué va y quién lo debe.
 
-**F3b, lo que falta:**
-- Que cada línea elija sus ubicaciones (P4b).
+**F3b (1) (2026-11-20), hecho sin leer el `.pen`** (el acceso al diseño vuelve el 29-nov; se compara entonces):
+- **P4b.** Una línea elige sus ubicaciones con casillas (`PUT …/lineas/:lineaId/ubicaciones`).
+  - El largo para My Voice pasa a ser el más corto entre las elegidas. Elegirlas todas se guarda como
+    «todas».
+  - La sábana suma la columna Estado («Listo» o «Ubicación por confirmar»).
+- **Avisos y correo,** en la misma transacción que mueve el planning:
+  - al enviar, al responsable;
+  - al aprobar o devolver, a quien lo armó y lo envió.
+
+  Los tipos son `PLANNING_POR_APROBAR`, `PLANNING_APROBADO` y `PLANNING_DEVUELTO`, y la campana lleva a los
+  plannings de la marca.
+
+**F3b (2), lo que falta:**
 - La aprobación del cliente por enlace (`RondaRevision.SABANA`), en las campañas con cliente.
-- Los avisos y el correo al enviar y al decidir.
 - Que My Voice espere a la sábana aprobada en las marcas con CDM (regla 2), junto con F4.
 
 - `Planning` y `LineaDePlanning` (en la arquitectura, `Cuadro` y `LineaDeCuadro`; se nombran como dice

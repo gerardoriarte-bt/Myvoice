@@ -174,6 +174,7 @@ router.post('/cdm/plannings', ...inWorkspace, planningController.crear);
 router.get('/cdm/plannings/:id', ...inWorkspace, planningController.detalle);
 router.put('/cdm/plannings/:id', ...inWorkspace, planningController.actualizar);
 router.put('/cdm/plannings/:id/lineas', ...inWorkspace, planningController.lineas);
+router.put('/cdm/plannings/:id/lineas/:lineaId/ubicaciones', ...inWorkspace, planningController.ubicaciones);
 router.post('/cdm/plannings/:id/enviar', ...inWorkspace, planningController.enviar);
 router.post('/cdm/plannings/:id/aprobar', ...inWorkspace, planningController.aprobar);
 router.post('/cdm/plannings/:id/devolver', ...inWorkspace, planningController.devolver);

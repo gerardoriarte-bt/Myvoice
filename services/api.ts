@@ -132,6 +132,8 @@ export const cdmApi = {
     apiRequest(`/cdm/plannings/${id}`, { method: 'PUT', body: JSON.stringify(datos) }),
   guardarLineas: (id: string, lineas: { formatoId: string; etapa: EtapaDeFunnel; piezas: number }[]): Promise<PlanningDetalle> =>
     apiRequest(`/cdm/plannings/${id}/lineas`, { method: 'PUT', body: JSON.stringify({ lineas }) }),
+  elegirUbicaciones: (id: string, lineaId: string, ubicacionIds: string[]): Promise<PlanningDetalle> =>
+    apiRequest(`/cdm/plannings/${id}/lineas/${lineaId}/ubicaciones`, { method: 'PUT', body: JSON.stringify({ ubicacionIds }) }),
   enviarPlanning: (id: string): Promise<PlanningDetalle> => apiRequest(`/cdm/plannings/${id}/enviar`, { method: 'POST' }),
   aprobarPlanning: (id: string, comentario?: string): Promise<PlanningDetalle> =>
     apiRequest(`/cdm/plannings/${id}/aprobar`, { method: 'POST', body: JSON.stringify({ comentario }) }),
