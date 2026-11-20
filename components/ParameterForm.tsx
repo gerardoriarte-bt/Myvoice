@@ -1,7 +1,8 @@
 import React from 'react';
 import { Building2, Layers, Target, Radio, Zap, Check, Loader2, Sparkles, ChevronRight, BookOpen, X, Minus, Plus, Copy as CopyIcon } from 'lucide-react';
 import { CANTIDAD, SLIDES, acotar, esCarrusel, nombreDePiezas } from '../piezas';
-import { Platform, PLATFORM_GROUPS, FunnelStage, FUNNEL_STAGE_DESCRIPTIONS, CopyParameters, BrandConfig, Client, ContentDNAProfile, Project, WorkspaceMember, PedidoAEscribir, EtapaDeFunnel } from '../types';
+import { Platform, PLATFORM_GROUPS, FunnelStage, FUNNEL_STAGE_DESCRIPTIONS, CopyParameters, BrandConfig, Client, ContentDNAProfile, Project, WorkspaceMember } from '../types';
+import { parametrosDelBrief } from '../src/myvoice/parametrosDelBrief';
 import { PlatformIcon } from './ui/platformIcons';
 import { apiRequest, clientApi, libraryApi } from '../services/api';
 import AprobacionDeCampana from './AprobacionDeCampana';
@@ -24,18 +25,7 @@ interface ParameterFormProps {
   miembros?: WorkspaceMember[];
   puedeEditarAprobacion?: boolean;
   onError?: (mensaje: string) => void;
-  /** F4: el pedido de copy que se está escribiendo. Precarga marca, campaña, canal, etapa y piezas. */
-  pedido?: PedidoAEscribir | null;
-  onQuitarPedido?: () => void;
 }
-
-/** La etapa de la sábana de CDM, en la escala del motor. */
-const ETAPA_DEL_MOTOR: Record<EtapaDeFunnel, FunnelStage> = {
-  RECONOCIMIENTO: FunnelStage.AWARENESS,
-  CONSIDERACION: FunnelStage.CONSIDERATION,
-  CONVERSION: FunnelStage.CONVERSION,
-  RETENCION: FunnelStage.RETENTION,
-};
 
 const ParameterForm: React.FC<ParameterFormProps> = ({
   onSubmit,
@@ -50,8 +40,6 @@ const ParameterForm: React.FC<ParameterFormProps> = ({
   miembros = [],
   puedeEditarAprobacion = false,
   onError = () => {},
-  pedido = null,
-  onQuitarPedido,
 }) => {
 
 
@@ -67,16 +55,6 @@ const ParameterForm: React.FC<ParameterFormProps> = ({
     if (limpiarMedio) setSelectedPlatforms([]);
   }, [limpiarMedio]);
 
-  // F4: al llegar desde un pedido, el formulario queda listo para ese pedido. Se aplica una vez por pedido.
-  React.useEffect(() => {
-    if (!pedido) return;
-    setClientId(pedido.clientId);
-    if (pedido.dnaProfileId) setActiveProfileId(pedido.dnaProfileId);
-    setSelectedPlatforms([pedido.canal as Platform]);
-    setCantidad(acotar(pedido.piezas, CANTIDAD));
-    setFunnelStage(ETAPA_DEL_MOTOR[pedido.etapa]);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pedido?.lineaId]);
 
   const [dnaInsights, setDnaInsights] = React.useState<{approvedCount: number; negativeCount: number; topReasons: {reason: string; count: number}[]} | null>(null);
 
@@ -209,28 +187,10 @@ const ParameterForm: React.FC<ParameterFormProps> = ({
     const profile = dnaProfiles.find(p => p.id === activeProfileId);
     if (!profile || selectedPlatforms.length === 0 || !clientId) return null;
     return {
-      voice: profile.voice,
-      goal: profile.goal,
-      theme: profile.theme,
-      product: profile.product,
-      targetAudience: profile.targetAudience,
-      keywords: profile.keywords,
-      prohibitions: profile.prohibitions,
-      brandVoiceGuidelines: profile.brandVoiceGuidelines,
-      valueProposition: profile.valueProposition,
-      primaryCTA: profile.primaryCTA,
-      funnelStage,
-      feedbackExamples: profile.feedbackExamples,
-      platforms: selectedPlatforms.slice(0, 1),
-      cantidad,
-      ...(esCarrusel(medio) ? { slides } : {}),
+      ...parametrosDelBrief(profile, activeClient, { platform: selectedPlatforms[0], funnelStage, cantidad, slides }),
       clientId,
-      dnaProfileId: profile.id,
-      clientName: activeClient?.name,
-      clientIndustry: activeClient?.industry,
     };
   };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const p = buildParams();
@@ -248,25 +208,6 @@ const ParameterForm: React.FC<ParameterFormProps> = ({
       onSubmit={handleSubmit}
       className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden animate-in fade-in duration-300 sticky top-6"
     >
-      {pedido && (
-        <div className="flex items-start gap-2 border-b border-violet-200 bg-violet-50 px-4 py-3 text-[12px] text-violet-900">
-          <div className="min-w-0 flex-1">
-            <p className="font-semibold">
-              Pedido de CDM: {pedido.formato} · {pedido.piezas} {pedido.piezas === 1 ? 'pieza' : 'piezas'}
-            </p>
-            <p className="mt-0.5 text-violet-800">
-              {pedido.campana}. Lo que guardes de esta generación cuenta para el pedido.
-              {pedido.piezas > CANTIDAD.max ? ` Se escribe en tandas de ${CANTIDAD.max}.` : ''}
-              {!pedido.dnaProfileId ? ' Esta campaña no tiene brief: elígelo para poder generar.' : ''}
-            </p>
-          </div>
-          {onQuitarPedido && (
-            <button type="button" onClick={onQuitarPedido} aria-label="Escribir sin pedido" className="text-violet-700 hover:text-violet-950">
-              <X className="h-3.5 w-3.5" />
-            </button>
-          )}
-        </div>
-      )}
       {/* ADN bajo el mínimo (docs/plan-adn-2.md, F3): en v1 avisa y deja generar. */}
       {activeClient?.adn && !activeClient.adn.apta && (
         <div className="flex items-start gap-2 border-b border-amber-200 bg-amber-50 px-5 py-3">

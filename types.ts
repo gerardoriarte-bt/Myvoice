@@ -947,7 +947,7 @@ export interface PedidoDeCopy {
   etapa: EtapaDeFunnel;
   piezas: number;
   desde: string | null;
-  textos: { nombre: string; maximo: number | null; repeticiones: number }[];
+  textos: { clave: string; nombre: string; maximo: number | null; repeticiones: number }[];
   escritas: number;
   aprobadas: number;
   estado: EstadoPedido;
@@ -963,15 +963,3 @@ export interface CampanaConPedidos {
   lineas: PedidoDeCopy[];
 }
 
-/** Lo que Generar necesita para escribir un pedido: se precarga y el copy guardado queda ligado a la línea. */
-export interface PedidoAEscribir {
-  lineaId: string;
-  clientId: string;
-  campanaId: string;
-  campana: string;
-  dnaProfileId: string | null;
-  canal: string;
-  formato: string;
-  etapa: EtapaDeFunnel;
-  piezas: number;
-}

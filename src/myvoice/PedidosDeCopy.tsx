@@ -1,6 +1,7 @@
 import React from 'react';
 import { copywritingApi } from '../../services/api';
-import type { CampanaConPedidos, EstadoPedido, EtapaDeFunnel, PedidoAEscribir, PedidoDeCopy } from '../../types';
+import type { CampanaConPedidos, Client, ContentDNAProfile, EstadoPedido, EtapaDeFunnel, PedidoDeCopy } from '../../types';
+import EscribirPedido from './EscribirPedido';
 
 /**
  * Copywriting › Pedidos (F4, 2026-11-20): el copy que pidió CDM, ordenado por estado y por campaña. Cada línea de
@@ -27,22 +28,31 @@ const textos = (p: PedidoDeCopy) =>
 
 interface Props {
   marcaId: string;
-  onEscribir: (pedido: PedidoAEscribir) => void;
+  marcas: Client[];
+  briefs: ContentDNAProfile[];
+  /** Generar gasta crédito: lo mismo que en Generar suelto, solo quien administra. */
+  puedeGenerar: boolean;
   onVerCopy: (campanaId: string) => void;
+  onAviso: (mensaje: string, tipo: 'success' | 'error' | 'info' | 'warning') => void;
 }
 
-export default function PedidosDeCopy({ marcaId, onEscribir, onVerCopy }: Props) {
+export default function PedidosDeCopy({ marcaId, marcas, briefs, puedeGenerar, onVerCopy, onAviso }: Props) {
   const [campanas, setCampanas] = React.useState<CampanaConPedidos[] | null>(null);
   const [error, setError] = React.useState<string | null>(null);
   const [pestana, setPestana] = React.useState<EstadoPedido>('POR_ESCRIBIR');
+  // El pedido que se está escribiendo en su tarjeta. Sigue abierto aunque cambie de estado al guardar.
+  const [escribiendo, setEscribiendo] = React.useState<string | null>(null);
 
-  React.useEffect(() => {
-    setCampanas(null);
+  const leer = React.useCallback(() => {
     copywritingApi
       .pedidos(marcaId)
       .then(setCampanas)
       .catch(err => setError(err instanceof Error ? err.message : 'No se pudieron leer los pedidos'));
   }, [marcaId]);
+  React.useEffect(() => {
+    setCampanas(null);
+    leer();
+  }, [leer]);
 
   if (error) return <p className="text-[13px] text-red-600">{error}</p>;
   if (!campanas) return <div className="h-48" />;
@@ -50,7 +60,7 @@ export default function PedidosDeCopy({ marcaId, onEscribir, onVerCopy }: Props)
   const todos = campanas.flatMap(c => c.lineas);
   const cuantos = (e: EstadoPedido) => todos.filter(l => l.estado === e).length;
   const visibles = campanas
-    .map(c => ({ ...c, deLaPestana: c.lineas.filter(l => l.estado === pestana) }))
+    .map(c => ({ ...c, deLaPestana: c.lineas.filter(l => l.estado === pestana || l.id === escribiendo) }))
     .filter(c => c.deLaPestana.length > 0);
 
   return (
@@ -113,8 +123,11 @@ export default function PedidosDeCopy({ marcaId, onEscribir, onVerCopy }: Props)
                   <div key={e} className="border-t border-[rgba(0,0,0,0.06)]">
                     <p className="px-4 pb-1 pt-2.5 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-[#86868B]">{ETAPA[e]}</p>
                     <ul>
-                      {de.map(l => (
-                        <li key={l.id} className="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-2.5 text-[13px] hover:bg-[#FAFAFB]">
+                      {de.map(l => {
+                        const brief = briefs.find(b => b.id === c.campana.dnaProfileId);
+                        return (
+                        <li key={l.id} className="text-[13px]">
+                          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-2.5 hover:bg-[#FAFAFB]">
                           <div className="min-w-0 flex-1">
                             <span className="font-semibold text-[#1D1D1F]">{l.formato}</span>
                             <span className="text-[#6E6E73]"> · {l.piezas} {l.piezas === 1 ? 'pieza' : 'piezas'}</span>
@@ -127,29 +140,21 @@ export default function PedidosDeCopy({ marcaId, onEscribir, onVerCopy }: Props)
                                 ? `${l.aprobadas} de ${l.piezas} aprobadas`
                                 : 'Aprobado'}
                           </span>
-                          {l.estado === 'POR_ESCRIBIR' ? (
-                            l.canal ? (
+                          {escribiendo === l.id ? null : l.estado === 'POR_ESCRIBIR' ? (
+                            !l.canal ? (
+                              <span className="text-[11.5px] text-amber-700">Todavía no se puede escribir este formato</span>
+                            ) : !brief ? (
+                              <span className="text-[11.5px] text-amber-700">La campaña no tiene brief</span>
+                            ) : !puedeGenerar ? (
+                              <span className="text-[11.5px] text-[#86868B]">Lo escribe quien administra</span>
+                            ) : (
                               <button
                                 type="button"
-                                onClick={() =>
-                                  onEscribir({
-                                    lineaId: l.id,
-                                    clientId: marcaId,
-                                    campanaId: c.campana.id,
-                                    campana: c.campana.nombre,
-                                    dnaProfileId: c.campana.dnaProfileId,
-                                    canal: l.canal!,
-                                    formato: l.formato,
-                                    etapa: l.etapa,
-                                    piezas: Math.max(1, l.piezas - l.escritas),
-                                  })
-                                }
+                                onClick={() => setEscribiendo(l.id)}
                                 className="rounded-lg bg-[#1D1D1F] px-3 py-1.5 text-[12px] font-semibold text-white hover:bg-black"
                               >
                                 Escribir
                               </button>
-                            ) : (
-                              <span className="text-[11.5px] text-amber-700">Generar todavía no escribe este formato</span>
                             )
                           ) : (
                             <button
@@ -160,8 +165,27 @@ export default function PedidosDeCopy({ marcaId, onEscribir, onVerCopy }: Props)
                               Ver el copy
                             </button>
                           )}
+                          </div>
+                          {escribiendo === l.id && brief && (
+                            <EscribirPedido
+                              pedido={l}
+                              campanaId={c.campana.id}
+                              brief={brief}
+                              marca={marcas.find(m => m.id === marcaId)}
+                              onAviso={onAviso}
+                              onGuardado={cuantas => {
+                                onAviso(`${cuantas} ${cuantas === 1 ? 'pieza guardada' : 'piezas guardadas'} en el pedido, por aprobar`, 'success');
+                                leer();
+                              }}
+                              onCerrar={() => {
+                                setEscribiendo(null);
+                                leer();
+                              }}
+                            />
+                          )}
                         </li>
-                      ))}
+                        );
+                      })}
                     </ul>
                   </div>
                 );

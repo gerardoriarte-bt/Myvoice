@@ -622,7 +622,7 @@ export const pedidosDeCopy = async (tenant: TenantContext, clientId: string) => 
       etapa: l.etapa,
       piezas: l.piezas,
       desde: (l.desde ?? p.desde)?.toISOString() ?? null,
-      textos: textosDe(l).map(t => ({ nombre: t.nombre, maximo: t.maximo, repeticiones: t.repeticiones })),
+      textos: textosDe(l).map(t => ({ clave: t.clave, nombre: t.nombre, maximo: t.maximo, repeticiones: t.repeticiones })),
     })),
   }));
 };

@@ -337,8 +337,12 @@ las tablas de CDM van en `cdm.prisma`.
   - **Listo:** todas sus piezas están aprobadas.
 - **Copywriting › Pedidos** (`src/myvoice/PedidosDeCopy.tsx`, `GET /copywriting/pedidos`): pestañas por estado y una
   tarjeta por campaña con su avance y sus pedidos agrupados por etapa (Gerardo eligió campaña › pedidos).
-- **«Escribir»** abre Generar con la campaña, el canal, la etapa y las piezas ya puestos. Lo que se guarda queda
-  ligado a la línea, y el servidor rechaza un pedido de otra campaña o de otro canal.
+- **«Escribir» genera dentro de la tarjeta del pedido** (`src/myvoice/EscribirPedido.tsx`). Usa la voz del brief
+  de la campaña y las reglas del pedido: canal, etapa, piezas que faltan y slides del carrusel. Se revisa y se
+  guarda ahí mismo; lo guardado queda ligado a la línea, y el servidor rechaza un pedido de otra campaña o de
+  otro canal. Gerardo, 2026-11-20: mandar el pedido a Generar suelto confundía. **Generar suelto queda para lo
+  que no viene de CDM y deberá cambiar**, porque formatos y etapas los decide CDM. Los dos arman los parámetros
+  con la misma función (`src/myvoice/parametrosDelBrief.ts`).
 - **Hueco:** los formatos sin canal de Generar no se pueden escribir todavía. Son las 6 piezas maestras de Meta
   Ads (decisión 18), y la pantalla lo dice.
 - **Deuda:** al guardar, My Voice lee directo la línea de CDM para validarla (`pedidoValido` en `savedController.ts`).

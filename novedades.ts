@@ -54,7 +54,8 @@ export const NOVEDADES: Novedad[] = [
     cambios: [
       'En Copywriting está la pantalla Pedidos: cada línea de una sábana aprobada es un pedido, con su formato, su etapa, cuántas piezas y el largo de cada texto.',
       'Las pestañas Por escribir, En aprobación y Listos ordenan los pedidos; cada campaña muestra cuánto lleva listo.',
-      '«Escribir» abre Generar con la campaña, el medio, la etapa y las piezas ya elegidos, y lo que guardes cuenta para ese pedido.',
+      '«Escribir» genera el pedido ahí mismo, en su tarjeta, con la voz del brief de la campaña y lo que pidió CDM: el medio, la etapa y cuántas piezas. Lo que guardes cuenta para ese pedido.',
+      'Generar suelto queda para el copy que no viene de una sábana.',
     ],
   },
   {
