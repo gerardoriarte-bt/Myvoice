@@ -309,7 +309,7 @@ las tablas de CDM van en `cdm.prisma`.
   nombre, P3 medios con piezas por etapa, P4 la sábana con los textos y largos para My Voice, P5 aprobar.
 - **El paso ②** queda hecho con la sábana aprobada, y si no, dice en qué va y quién lo debe.
 
-**F3b (1) (2026-11-20), hecho sin leer el `.pen`** (el acceso al diseño vuelve el 29-nov; se compara entonces):
+**F3b (1) (2026-11-20, en producción, #95), hecho sin leer el `.pen`** (el acceso al diseño vuelve el 29-nov; se compara entonces):
 - **P4b.** Una línea elige sus ubicaciones con casillas (`PUT …/lineas/:lineaId/ubicaciones`).
   - El largo para My Voice pasa a ser el más corto entre las elegidas. Elegirlas todas se guarda como
     «todas».
@@ -321,7 +321,7 @@ las tablas de CDM van en `cdm.prisma`.
   Los tipos son `PLANNING_POR_APROBAR`, `PLANNING_APROBADO` y `PLANNING_DEVUELTO`, y la campana lleva a los
   plannings de la marca.
 
-**F3b (2) (2026-11-20): el cliente aprueba la sábana por enlace,** en las campañas «con cliente»:
+**F3b (2) (2026-11-20, en producción, #96): el cliente aprueba la sábana por enlace,** en las campañas «con cliente»:
 - Cuando el responsable la aprueba, el planning pasa a `CON_EL_CLIENTE` en vez de `APROBADO`.
 - El responsable o Planning crean el enlace (`POST …/enlace`, una sesión `RondaRevision.SABANA` de 14 días).
   Si ya hay uno abierto, se devuelve ese.
@@ -329,7 +329,7 @@ las tablas de CDM van en `cdm.prisma`.
   comentario: la sábana queda `APROBADO` o `DEVUELTO` y avisa a quien la armó y al responsable.
 - El CHECK del portal pasa de XOR a «exactamente uno» entre copy, pieza y planning.
 
-**F4 (1) (2026-11-20): los pedidos de copy en Copywriting**, hecho sin el `.pen` (se compara el 29-nov):
+**F4 (1) (2026-11-20, en producción, #100): los pedidos de copy en Copywriting**, hecho sin el `.pen` (se compara el 29-nov):
 - **Un pedido es una línea de una sábana aprobada:** formato, etapa, piezas y el largo de cada texto. No hay tabla
   de pedidos: se leen de CDM y su estado se calcula al leer con el copy guardado (`SavedVariation.lineaDePlanningId`).
   - **Por escribir:** faltan piezas.
