@@ -48,6 +48,16 @@ export interface Novedad {
 
 export const NOVEDADES: Novedad[] = [
   {
+    id: 'copywriting-y-aprobacion',
+    fecha: '2026-11-20',
+    titulo: 'Copywriting se entera de la sábana aprobada, y quién puede aprobar',
+    cambios: [
+      'Cuando una sábana queda aprobada, a quienes escriben el copy de la marca les llega «Hay copy por escribir», con aviso y correo.',
+      'Para elegir el responsable o sumar un aprobador de una campaña, la persona tiene que tener la función Aprobación en Equipo.',
+      'En el encabezado por procesos, el paso ③ se llama Copywriting.',
+    ],
+  },
+  {
     id: 'por-aprobar-y-aprobadores',
     fecha: '2026-11-20',
     titulo: 'Lo que te toca aprobar, siempre a la vista',

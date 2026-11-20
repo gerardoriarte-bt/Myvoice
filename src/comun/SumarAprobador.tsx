@@ -1,6 +1,6 @@
 import React from 'react';
 import { UserPlus, X } from 'lucide-react';
-import { aprobacionesApi, workspaceApi } from '../../services/api';
+import { aprobacionesApi } from '../../services/api';
 import type { AprobadoresDeCampana } from '../../types';
 
 /**
@@ -10,7 +10,6 @@ import type { AprobadoresDeCampana } from '../../types';
  */
 export default function SumarAprobador({ campanaId, onCambio }: { campanaId: string; onCambio?: () => void }) {
   const [datos, setDatos] = React.useState<AprobadoresDeCampana | null>(null);
-  const [miembros, setMiembros] = React.useState<{ id: string; name: string }[]>([]);
   const [eligiendo, setEligiendo] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
@@ -18,13 +17,7 @@ export default function SumarAprobador({ campanaId, onCambio }: { campanaId: str
     aprobacionesApi.aprobadores(campanaId).then(setDatos).catch(() => setDatos(null));
   }, [campanaId]);
 
-  const abrir = async () => {
-    setEligiendo(true);
-    if (!miembros.length) {
-      const lista = await workspaceApi.members().catch(() => []);
-      setMiembros((Array.isArray(lista) ? lista : lista?.members ?? []).map((m: any) => ({ id: m.id ?? m.userId, name: m.name })));
-    }
-  };
+  const abrir = () => setEligiendo(true);
   const hacer = async (accion: () => Promise<AprobadoresDeCampana>) => {
     setError(null);
     try {
@@ -66,7 +59,8 @@ export default function SumarAprobador({ campanaId, onCambio }: { campanaId: str
             className="w-full max-w-[260px] rounded-md border border-[rgba(0,0,0,0.12)] bg-white px-2 py-1.5 text-[12px]"
           >
             <option value="">¿A quién sumas como aprobador?</option>
-            {miembros
+            {/* Solo quienes tienen la función Aprobación (o todos, si nadie la tiene todavía). */}
+            {datos.elegibles
               .filter(m => !ya.has(m.id))
               .map(m => (
                 <option key={m.id} value={m.id}>
@@ -75,7 +69,7 @@ export default function SumarAprobador({ campanaId, onCambio }: { campanaId: str
               ))}
           </select>
         ) : (
-          <button type="button" onClick={() => void abrir()} className="inline-flex items-center gap-1 text-[12px] font-semibold text-[#047857] hover:underline">
+          <button type="button" onClick={abrir} className="inline-flex items-center gap-1 text-[12px] font-semibold text-[#047857] hover:underline">
             <UserPlus className="h-3.5 w-3.5" />
             Sumar aprobador
           </button>

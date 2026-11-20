@@ -923,6 +923,8 @@ export interface AprobadoresDeCampana {
   responsable: PersonaQueAprueba | null;
   sumados: PersonaQueAprueba[];
   puedoCambiar: boolean;
+  /** Quienes tienen la función Aprobación (o todo el workspace, si nadie la tiene todavía). */
+  elegibles: PersonaQueAprueba[];
 }
 
 /** «Por aprobar» (decisión 30): lo que espera la decisión de quien mira, en los tres pasos. */

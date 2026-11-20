@@ -54,7 +54,33 @@ export const nombresDe = (personas: PersonaQueAprueba[]) =>
 
 const campanaConAprobadores = async (tenant: TenantContext, projectId: string) => {
   await assertProjectInWorkspace(tenant, projectId);
-  return prisma.project.findUniqueOrThrow({ where: { id: projectId }, select: { id: true, name: true, ...SELECT_APROBADORES } });
+  return prisma.project.findUniqueOrThrow({ where: { id: projectId }, select: { id: true, name: true, clientId: true, ...SELECT_APROBADORES } });
+};
+
+/**
+ * Quiénes se pueden elegir como responsable o sumar como aprobador (pregunta 10 de las decisiones,
+ * 2026-11-20): las personas con la función Aprobación, para esa marca o para todas. Si en el workspace nadie
+ * la tiene todavía, cualquiera del workspace, como hasta ahora: declarar la función no puede trabar nada.
+ */
+export const elegiblesPara = async (workspaceId: string, clientId: string | null): Promise<PersonaQueAprueba[]> => {
+  const conFuncion = await prisma.miembroFuncion.findMany({
+    where: { workspaceId, funcion: 'APROBACION', OR: [{ clientId: null }, ...(clientId ? [{ clientId }] : [])] },
+    select: { user: { select: { id: true, name: true, email: true } } },
+  });
+  const unicos = new Map(conFuncion.map(f => [f.user.id, f.user]));
+  if (unicos.size) return [...unicos.values()].sort((a, b) => a.name.localeCompare(b.name, 'es'));
+  const todos = await prisma.membership.findMany({
+    where: { workspaceId },
+    select: { user: { select: { id: true, name: true, email: true } } },
+  });
+  return todos.map(m => m.user).sort((a, b) => a.name.localeCompare(b.name, 'es'));
+};
+
+/** Rechaza a quien no es elegible, con el motivo en palabras del equipo. */
+export const exigirElegible = async (workspaceId: string, clientId: string | null, userId: string) => {
+  const elegibles = await elegiblesPara(workspaceId, clientId);
+  if (!elegibles.some(e => e.id === userId))
+    throw new TenantError('Esa persona no tiene la función Aprobación: dásela en Equipo para poder elegirla', 400);
 };
 
 /** Suma y quita quien administra o quien ya aprueba la campaña: la urgencia no puede esperar a un admin. */
@@ -69,6 +95,7 @@ export const listarAprobadores = async (tenant: TenantContext, projectId: string
     responsable: c.responsable ? { id: c.responsable.id, name: c.responsable.name, email: c.responsable.email } : null,
     sumados: c.aprobadores.map(a => a.user),
     puedoCambiar: canManage(tenant.role) || apruebaLaCampana(tenant.userId, c),
+    elegibles: await elegiblesPara(tenant.workspaceId, c.clientId),
   };
 };
 
@@ -79,6 +106,7 @@ export const sumarAprobador = async (tenant: TenantContext, projectId: string, u
   // Solo alguien del workspace: un aprobador de fuera vería una campaña que no es suya.
   const miembro = await prisma.membership.findUnique({ where: { userId_workspaceId: { userId, workspaceId: tenant.workspaceId } } });
   if (!miembro) throw new TenantError('Esa persona no es del workspace', 404);
+  await exigirElegible(tenant.workspaceId, c.clientId, userId);
   if (userId !== c.responsableId) {
     await prisma.aprobadorDeCampana.upsert({
       where: { projectId_userId: { projectId, userId } },

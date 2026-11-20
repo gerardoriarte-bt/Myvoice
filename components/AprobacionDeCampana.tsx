@@ -2,7 +2,7 @@ import SumarAprobador from '../src/comun/SumarAprobador';
 import React from 'react';
 import { AlertTriangle, ShieldCheck } from 'lucide-react';
 import { MODO_APROBACION_LABELS, ModoAprobacion, Project, WorkspaceMember } from '../types';
-import { libraryApi } from '../services/api';
+import { aprobacionesApi, libraryApi } from '../services/api';
 
 /**
  * Cómo se aprueba una campaña y quién responde por eso.
@@ -38,6 +38,15 @@ export default function AprobacionDeCampana({ campana, miembros = [], puedeEdita
   const [guardando, setGuardando] = React.useState(false);
   const modo: ModoAprobacion = campana.modoAprobacion ?? 'INTERNA';
   const sinResponsable = !campana.responsableId;
+  // Decisión 30 / pregunta 10: el responsable sale de quienes tienen la función Aprobación.
+  const [elegibles, setElegibles] = React.useState<Set<string> | null>(null);
+  React.useEffect(() => {
+    if (!puedeEditar) return;
+    aprobacionesApi
+      .aprobadores(campana.id)
+      .then(d => setElegibles(new Set(d.elegibles.map(e => e.id))))
+      .catch(() => setElegibles(null));
+  }, [campana.id, puedeEditar]);
 
   const cambiar = async (datos: { modoAprobacion?: ModoAprobacion; responsableId?: string | null }) => {
     setGuardando(true);
@@ -90,7 +99,9 @@ export default function AprobacionDeCampana({ campana, miembros = [], puedeEdita
               className="w-full rounded-md border border-gray-200 bg-white px-2 py-1.5 text-[12px] text-gray-900"
             >
               <option value="">Elegir…</option>
-              {ordenar(miembros, campana.clientId).map(m => (
+              {ordenar(miembros, campana.clientId)
+                .filter(m => !elegibles || elegibles.has(m.id) || m.id === campana.responsableId)
+                .map(m => (
                 <option key={m.id} value={m.id}>
                   {m.name}
                 </option>

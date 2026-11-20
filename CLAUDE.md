@@ -231,7 +231,8 @@ session must be workspace-filtered.
 (2026-11-20) a campaign may also have added approvers** (`AprobadorDeCampana`): any of them decides sábana, copy and
 pieces, the first one wins. Ask `server/src/comun/aprobadores.ts` (`apruebaLaCampana`, `quienesAprueban`,
 `SELECT_APROBADORES`) — never compare `responsableId` by hand. `GET /por-aprobar` (`server/src/plataforma/porAprobar.ts`)
-feeds the always-visible «Por aprobar · N» header button.
+feeds the always-visible «Por aprobar · N» header button. Only people with the `APROBACION` team function can be
+chosen as responsable or added approver (`elegiblesPara`; anyone, while nobody in the workspace has it).
 `isApproved` is **not** in the `PUT /saved/:id` allow-list: internal approval goes through
 `POST /saved/aprobacion` and only the campaign's responsable may decide; client approval comes only
 from `submitReview`, which now ignores ids outside its own session and **un-approves** rejected copy.
@@ -452,7 +453,7 @@ each in the code and the three batches that answer them (batch 1 shipped).
 groups by what each does for the output, completeness with a 75 % minimum (blocks in v2, warns in v1),
 audiences as a brand list, the campaign pinning its DNA version; six phases, design in the `.pen`.
 `docs/plan-plataforma-por-procesos.md` (2026-11-17): the platform as a process — the header ① Marca ›
-② CDM › ③ My Voice › ④ Implementación, each function in its own environment with the rest read-only
+② CDM › ③ Copywriting (the step; My Voice stays the product name, decision 31) › ④ Implementación, each function in its own environment with the rest read-only
 (decision 22), CDM planning and sábana, copy requests in My Voice and the trafficker; six deliveries, F0–F5.
 `docs/ecosistema/datos/arquitectura-de-datos.md` (2026-11-19, decision 28): the data model for F1–F5 — one base,
 tables owned by five modules, what each module reads from the others, and the migration order. Read it

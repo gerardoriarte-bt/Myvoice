@@ -85,7 +85,7 @@ export default function PorAprobar({ pulso, onSabana, onCopy, onPieza }: Props) 
                 )}
                 {datos.copy.length > 0 && (
                   <>
-                    <p className={titulo}>Copy · My Voice</p>
+                    <p className={titulo}>Copy · Copywriting</p>
                     {datos.copy.map(c => (
                       <button key={c.campanaId} type="button" className={fila} onClick={() => ir(() => onCopy(c.clientId, c.campanaId))}>
                         <span className="text-[13px] font-medium text-[#1D1D1F]">

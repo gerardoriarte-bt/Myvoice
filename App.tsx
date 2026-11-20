@@ -1208,6 +1208,10 @@ const App: React.FC = () => {
         setActiveClientId(clientId);
         setActiveTab(plataforma ? 'plannings' : 'clients');
       }}
+      onIrACopy={clientId => {
+        setActiveClientId(clientId);
+        setActiveTab('generator');
+      }}
     />
   );
 

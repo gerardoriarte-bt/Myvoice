@@ -121,7 +121,7 @@ export default function Biblioteca({ puedeEditar }: { puedeEditar: boolean }) {
           <h2 className="text-[22px] font-bold text-[#1D1D1F] tracking-[-0.01em]">{SCREENS.biblioteca.name}</h2>
           <p className="text-[13px] text-[#6E6E73] mt-0.5">
             {medios.length} {medios.length === 1 ? 'medio' : 'medios'} · {piezas} {piezas === 1 ? 'pieza' : 'piezas'} · la mantiene
-            Planning · My Voice y Producción la heredan
+            Planning · Copywriting y Producción la heredan
           </p>
         </div>
         {puedeEditar && (
@@ -359,7 +359,7 @@ function Medio({
                 </div>
               )}
               {f.camposDelFormato.length > 0 && <CamposDelFormato campos={f.camposDelFormato} />}
-              {f.canal && <p className="mt-2 text-[11px] text-[#86868B]">Lo escribe My Voice como «{f.canal}».</p>}
+              {f.canal && <p className="mt-2 text-[11px] text-[#86868B]">Lo escribe Copywriting como «{f.canal}».</p>}
               <p className="mt-2 text-[11.5px] text-[#86868B]">
                 {[f.archivos, f.pesoMaximo].filter(Boolean).join(' · ')}
                 {zona ? ` · Zona segura ${zona.superior ?? '–'} % · ${zona.inferior ?? '–'} % · ${zona.lados ?? '–'} %` : ''}
