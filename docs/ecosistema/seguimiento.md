@@ -35,12 +35,16 @@ Cada función con su estado en las tres pistas. Se actualiza en el mismo PR que 
 | Todos | Mi cola | ✓ | ○ | ○ | PL-6 |
 | Todos | Avisos que llevan a la acción | ✓ | ○ | ◐ | PL-7 |
 | Super Admin | Funciones del equipo por marca | ● | ● | ● | PL-8 (Estrategia, Planning y Trafficker: ✓ en F1a) |
+| Todos | «Por aprobar · N» en el encabezado: sábanas, copy y piezas que esperan tu decisión | ○ | ● | ● | decisión 30 · #98, 2026-11-20 (hecho sin el `.pen`) |
+| Admin, responsable | Varios aprobadores por campaña («Sumar aprobador»); «Aprobación» es la lista de elegibles | ○ | ● | ● | decisión 30 · #98, #99 |
 
 ## My Voice
 
 | Usuario | Función | Diseño | Front | Back | Requisito |
 |---|---|---|---|---|---|
-| Copy | Generar por canales | ● | ● | ● | (v1) |
+| Copy | Generar por canales | ● | ● | ● | (v1) · en el marco por procesos se llama «Generar suelto» y queda para lo que no viene de CDM |
+| Copy | Pedidos de copy: por campaña y estado, escritos dentro de su tarjeta | ○ | ● | ● | F4 (1) · #100, 2026-11-20 (sin el `.pen`). Falta: Meta Ads sin canal en el motor |
+| Copy | Aviso «Hay copy por escribir» al aprobarse la sábana | — | ● | ● | decisión 31 · #99 |
 | — | El ADN manda en la generación | — | — | ● | decisión 14 (2026-10-28) |
 | — | Manual de oficio en el motor | — | — | ● | MV-1 (PR #43, desplegado el 2026-11-04) |
 | Copy | Brief del equipo | ◐ | ○ | ○ | MV-2 |
@@ -63,7 +67,7 @@ Cada función con su estado en las tres pistas. Se actualiza en el mismo PR que 
 | Planning | Agregar un medio con sus formatos | ✓ | ○ | ○ | CD-3 (Meta desde la planilla) |
 | Planning | Cargar desde planilla | ◐ | ✓ | ✓ | CD-4 · F2a: importador; F2b: pantalla B5 (el navegador lee el .xlsx, el servidor revisa en seco) |
 | Planning | Paquetes de la marca | ○ | ○ | ○ | CD-6 |
-| Planning | Armar, enviar y aprobar la sábana (P1 a P5) | ✓ | ✓ | ✓ | CD-7 · F3a; F3b: ubicaciones por línea (P4b), avisos y aprobación del cliente por enlace |
+| Planning | Armar, enviar y aprobar la sábana (P1 a P5) | ◐ | ● | ● | CD-7 · F3a; F3b (#95, #96): ubicaciones por línea (P4b), avisos y aprobación del cliente por enlace; P4b y P5 sin el `.pen` |
 | Planning, responsable | Cuadro rápido para campañas chicas | ○ | ○ | ○ | CD-11 |
 | Planning | Los 14 canales cargados en la biblioteca | ◐ | ✓ | ✓ | CD-12 · F2c: `npm run cdm:canales`, cada canal en el medio de su clase; las cantidades de B8 ya las fija `porPieza` |
 | Planning | Clases de medio: Pagos, Redes sociales, Propios, Tradicional | ✓ | ✓ | ✓ | decisión 29 |

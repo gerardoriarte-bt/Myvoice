@@ -84,8 +84,9 @@ Implementación. F1 a F5 suman unas 15 tablas, todas aditivas.
 ### Portal del cliente (plataforma)
 
 `ReviewSession`, `ReviewSessionItem`, `ReviewSubmission`, `ReviewItemFeedback`: una ronda por envío
-(`COPY`, `PIEZA`). F3 suma `SABANA` y `ReviewSessionItem.lineaDePlanningId`; el `CHECK` de la migración
-pasa de XOR a «exactamente uno» entre copy, pieza y línea.
+(`COPY`, `PIEZA`). F3b suma `SABANA` y `ReviewSessionItem.planningId` (la sábana entera, no una línea); el
+`CHECK` de la migración pasa de XOR a «exactamente uno» entre copy, pieza y planning (`num_nonnulls`).
+`EstadoPlanning` suma `CON_EL_CLIENTE`.
 
 ## 3. Relaciones
 
@@ -138,8 +139,11 @@ Las dos deudas se pagan antes de F4, cuando el copy empieza a llegar por línea.
 | F1 | `FuncionEquipo` + `ESTRATEGIA`, `PLANNING`, `TRAFFICKER` (un `ALTER TYPE … ADD VALUE` por sentencia); `User.ultimaRuta`; `ModuloDeMarca` | Parte común |
 | Hecho (2026-11-19) | `schema.prisma` partido por módulo en `server/prisma/schema/` (`prismaSchemaFolder`, decisión 28). Sin migración: el esquema es idéntico | Todos |
 | F2 | `cdm.prisma` con `Medio`, `Formato`, `FormatoVersion`, `Ubicacion`, `CampoDeTexto`, `CargaDePlanilla`, `MediosDeMarca`, `MedioDeMarcaFormato` | CDM |
-| F3 | `Planning`, `LineaDePlanning`; `RondaRevision` + `SABANA`, `ReviewSessionItem.lineaDePlanningId`; `Project` + fechas; `CampanaAudiencia` | CDM, portal, parte común |
-| F4 | `EncargoRecibido`, `LineaDeEncargo`, `FormatoUsado`; `SavedVariation.lineaId`; `Notificacion` + `modulo`, `campanaId`, `destino` | My Voice, parte común |
+| Hecho (2026-11-19) · F3a | `Planning`, `LineaDePlanning`, `EventoDePlanning` | CDM |
+| Hecho (2026-11-20) · F3b | `RondaRevision` + `SABANA`, `ReviewSessionItem.planningId`, `EstadoPlanning` + `CON_EL_CLIENTE` | CDM, portal |
+| Hecho (2026-11-20) · decisión 30 | `AprobadorDeCampana(projectId, userId, agregadoPorId)`: aprobadores sumados a una campaña | Parte común |
+| Hecho (2026-11-20) · F4 (1) | `SavedVariation.lineaDePlanningId`. **Sin `EncargoRecibido` ni `LineaDeEncargo`:** un pedido es la línea de la sábana aprobada y su estado se calcula al leer | My Voice |
+| Por hacer | `Project` + fechas; `CampanaAudiencia`; `FormatoUsado`; `Notificacion` + `modulo`, `campanaId`, `destino` | Parte común, My Voice |
 | F5 | `Anuncio`, `AnuncioEvento`. El historial de aprobaciones es una vista de lectura, sin tabla (decisión 28) | Implementación |
 
 Cada migración pasa el chequeo de deriva de CI (`migrate diff`) y `verify:isolation` con sus rutas nuevas.

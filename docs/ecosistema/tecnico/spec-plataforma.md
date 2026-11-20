@@ -61,6 +61,14 @@ Las reglas:
   dueño de los formatos.
 - Producción todavía lee el copy con `prisma`, desde las tablas de My Voice. La regla de imports no ve
   eso; sigue como deuda del contrato.
+- **2026-11-20, F3b, decisión 30 y F4 (1):**
+  - Quién aprueba una campaña lo decide la parte común (`comun/aprobadores.ts`). CDM, My Voice y Producción
+    le preguntan ahí, y eso suma 9 imports que pasan por el contrato (66 en total).
+  - Lo que cruza módulos lo junta la plataforma: el portal arma las tres rondas (copy, piezas y sábana),
+    `plataforma/porAprobar.ts` junta lo que espera decisión y `plataforma/pedidosDeCopy.ts` junta las líneas de
+    CDM con el copy de My Voice.
+  - Hay una deuda nueva de lectura directa: al guardar copy de un pedido, My Voice lee la línea de CDM con
+    `prisma` para validarla (`pedidoValido` en `savedController.ts`).
 
 **Lo que hay que invertir antes de partir carpetas (3).** La parte común no puede depender de My Voice:
 
