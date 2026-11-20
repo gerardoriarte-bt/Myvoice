@@ -590,3 +590,39 @@ export const sabanasPorAprobarDe = async (tenant: TenantContext) => {
     desde: p.updatedAt.toISOString(),
   }));
 };
+
+/**
+ * F4: los pedidos de copy de una marca, es decir, las líneas de sus sábanas aprobadas. Una línea es un pedido:
+ * un formato, una etapa, cuántas piezas y el largo de cada texto ya calculado. CDM entrega esto por contrato;
+ * Copywriting lo cruza con su copy en la plataforma (`plataforma/pedidosDeCopy.ts`).
+ */
+export const pedidosDeCopy = async (tenant: TenantContext, clientId: string) => {
+  const plannings = await prisma.planning.findMany({
+    where: { workspaceId: tenant.workspaceId, clientId, estado: 'APROBADO' },
+    include: {
+      ...INCLUDE_LINEAS,
+      campana: { select: { id: true, name: true, dnaProfileId: true, ...SELECT_APROBADORES } },
+    },
+    orderBy: [{ desde: 'asc' }, { updatedAt: 'desc' }],
+  });
+  return plannings.map(p => ({
+    planningId: p.id,
+    version: p.version,
+    campana: { id: p.campana.id, nombre: p.campana.name, dnaProfileId: p.campana.dnaProfileId },
+    aprueban: quienesAprueban(p.campana),
+    desde: p.desde?.toISOString() ?? null,
+    hasta: p.hasta?.toISOString() ?? null,
+    lineas: p.lineas.map(l => ({
+      id: l.id,
+      medio: l.formato.medio.nombre,
+      formato: l.formato.nombre,
+      // El canal de Generar que escribe este formato. Sin canal (las piezas de Meta Ads, por ahora), Generar
+      // todavía no lo sabe escribir.
+      canal: l.formato.canal,
+      etapa: l.etapa,
+      piezas: l.piezas,
+      desde: (l.desde ?? p.desde)?.toISOString() ?? null,
+      textos: textosDe(l).map(t => ({ clave: t.clave, nombre: t.nombre, maximo: t.maximo, repeticiones: t.repeticiones })),
+    })),
+  }));
+};

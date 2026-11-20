@@ -19,6 +19,7 @@ import type {
   PropuestaDePiezas,
   PorAprobar,
   AprobadoresDeCampana,
+  CampanaConPedidos,
 } from '../types';
 
 
@@ -484,4 +485,9 @@ export const aprobacionesApi = {
     apiRequest(`/projects/${projectId}/aprobadores`, { method: 'POST', body: JSON.stringify({ userId }) }),
   quitar: (projectId: string, userId: string): Promise<AprobadoresDeCampana> =>
     apiRequest(`/projects/${projectId}/aprobadores/${userId}`, { method: 'DELETE' }),
+};
+
+/** F4: los pedidos de copy que llegan de CDM, por campaña. */
+export const copywritingApi = {
+  pedidos: (clientId: string): Promise<CampanaConPedidos[]> => apiRequest(`/copywriting/pedidos?clientId=${encodeURIComponent(clientId)}`),
 };

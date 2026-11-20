@@ -52,7 +52,8 @@ export type ScreenId =
   | 'loMio'
   | 'adn'
   | 'biblioteca'
-  | 'plannings';
+  | 'plannings'
+  | 'pedidos';
 
 /**
  * Cinco etapas, no cuatro: cuando entra la pieza, «producir» dejaba de
@@ -208,6 +209,16 @@ export const SCREENS: Record<ScreenId, ScreenDef> = {
    * Los plannings de la marca (F3; P1 a P5 en el `.pen`): el trabajo de cada campaña en CDM, de los medios a la
    * sábana aprobada. La entrada de Planning.
    */
+  /** F4: los pedidos de copy que llegan de las sábanas aprobadas de CDM, por campaña y estado. */
+  pedidos: {
+    id: 'pedidos',
+    name: 'Pedidos',
+    description: 'El copy que pidió CDM, por campaña y estado: por escribir, en aprobación y listo.',
+    icon: Inbox,
+    stage: 'escribir',
+    adminOnly: false,
+    soloPorProcesos: true,
+  },
   plannings: {
     id: 'plannings',
     name: 'Plannings',

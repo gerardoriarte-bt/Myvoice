@@ -28,8 +28,9 @@ interface Props {
   onGuardar: (textos: CopyVariation[]) => Promise<void>;
   /** «Otra»: reescribe ese texto mirando los demás de su pieza. */
   onOtra?: (texto: CopyVariation, deLaPieza: CopyVariation[]) => Promise<void>;
-  onAjustar: () => void;
-  onOtroMedio: () => void;
+  /** Sin estos dos (en un pedido de CDM, F4), no hay «Ajustar» ni «Otro medio»: el pedido ya fijó el medio. */
+  onAjustar?: () => void;
+  onOtroMedio?: () => void;
 }
 
 const Pasos: React.FC<{ activo: number }> = ({ activo }) => (
@@ -229,20 +230,24 @@ const ResultadosPorPieza: React.FC<Props> = ({
             {carrusel ? ` · ${slides ?? Math.max(...piezas.map(p => p.textos.filter(v => numeroDeSlide(v.slot) > 0).length))} slides` : ''}
           </p>
         </div>
-        <button
-          onClick={() => {
-            setPidiendoOtro(false);
-            onAjustar();
-          }}
-          className="flex items-center gap-1.5 rounded-lg border border-gray-200 px-2.5 py-1.5 text-[11.5px] text-gray-700 hover:bg-gray-50">
-          <ArrowLeft className="h-3 w-3" /> Ajustar
-        </button>
-        <button
-          onClick={() => (sinGuardar.length > 0 ? setPidiendoOtro(true) : onOtroMedio())}
-          className="flex items-center gap-1.5 rounded-lg border border-gray-200 px-2.5 py-1.5 text-[11.5px] text-gray-700 hover:bg-gray-50"
-        >
-          <Plus className="h-3 w-3" /> Otro medio
-        </button>
+        {onAjustar && (
+          <button
+            onClick={() => {
+              setPidiendoOtro(false);
+              onAjustar();
+            }}
+            className="flex items-center gap-1.5 rounded-lg border border-gray-200 px-2.5 py-1.5 text-[11.5px] text-gray-700 hover:bg-gray-50">
+            <ArrowLeft className="h-3 w-3" /> Ajustar
+          </button>
+        )}
+        {onOtroMedio && (
+          <button
+            onClick={() => (sinGuardar.length > 0 ? setPidiendoOtro(true) : onOtroMedio())}
+            className="flex items-center gap-1.5 rounded-lg border border-gray-200 px-2.5 py-1.5 text-[11.5px] text-gray-700 hover:bg-gray-50"
+          >
+            <Plus className="h-3 w-3" /> Otro medio
+          </button>
+        )}
       </div>
 
       {pidiendoOtro && (
@@ -255,7 +260,7 @@ const ResultadosPorPieza: React.FC<Props> = ({
             onClick={async () => {
               await guardar(sinGuardar.flatMap(p => p.textos));
               setPidiendoOtro(false);
-              onOtroMedio();
+              onOtroMedio?.();
             }}
             className="rounded-lg bg-gray-900 px-3 py-1.5 text-[11.5px] font-semibold text-white disabled:opacity-40"
           >
@@ -264,7 +269,7 @@ const ResultadosPorPieza: React.FC<Props> = ({
           <button
             onClick={() => {
               setPidiendoOtro(false);
-              onOtroMedio();
+              onOtroMedio?.();
             }}
             className="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-[11.5px] text-gray-700"
           >

@@ -30,6 +30,7 @@ export const RUTAS: Record<ScreenId, string> = {
   adn: '/marca/adn',
   biblioteca: '/cdm/biblioteca',
   plannings: '/cdm/plannings',
+  pedidos: '/myvoice/pedidos',
 };
 
 export interface Ubicacion {
@@ -91,7 +92,7 @@ export const PASOS: PasoDef[] = [
     tema: 'Copy',
     color: '#6D28D9',
     grupos: [
-      { titulo: 'Trabajo', pantallas: ['saved', 'generator', 'collaboration'] },
+      { titulo: 'Trabajo', pantallas: ['pedidos', 'generator', 'saved', 'collaboration'] },
       { titulo: 'Seguimiento', pantallas: ['history', 'analytics'] },
     ],
     trabajo: 'COPY',

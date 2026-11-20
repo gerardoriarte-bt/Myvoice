@@ -2,6 +2,7 @@ import React from 'react';
 import { Building2, Layers, Target, Radio, Zap, Check, Loader2, Sparkles, ChevronRight, BookOpen, X, Minus, Plus, Copy as CopyIcon } from 'lucide-react';
 import { CANTIDAD, SLIDES, acotar, esCarrusel, nombreDePiezas } from '../piezas';
 import { Platform, PLATFORM_GROUPS, FunnelStage, FUNNEL_STAGE_DESCRIPTIONS, CopyParameters, BrandConfig, Client, ContentDNAProfile, Project, WorkspaceMember } from '../types';
+import { parametrosDelBrief } from '../src/myvoice/parametrosDelBrief';
 import { PlatformIcon } from './ui/platformIcons';
 import { apiRequest, clientApi, libraryApi } from '../services/api';
 import AprobacionDeCampana from './AprobacionDeCampana';
@@ -53,6 +54,7 @@ const ParameterForm: React.FC<ParameterFormProps> = ({
   React.useEffect(() => {
     if (limpiarMedio) setSelectedPlatforms([]);
   }, [limpiarMedio]);
+
 
   const [dnaInsights, setDnaInsights] = React.useState<{approvedCount: number; negativeCount: number; topReasons: {reason: string; count: number}[]} | null>(null);
 
@@ -185,28 +187,10 @@ const ParameterForm: React.FC<ParameterFormProps> = ({
     const profile = dnaProfiles.find(p => p.id === activeProfileId);
     if (!profile || selectedPlatforms.length === 0 || !clientId) return null;
     return {
-      voice: profile.voice,
-      goal: profile.goal,
-      theme: profile.theme,
-      product: profile.product,
-      targetAudience: profile.targetAudience,
-      keywords: profile.keywords,
-      prohibitions: profile.prohibitions,
-      brandVoiceGuidelines: profile.brandVoiceGuidelines,
-      valueProposition: profile.valueProposition,
-      primaryCTA: profile.primaryCTA,
-      funnelStage,
-      feedbackExamples: profile.feedbackExamples,
-      platforms: selectedPlatforms.slice(0, 1),
-      cantidad,
-      ...(esCarrusel(medio) ? { slides } : {}),
+      ...parametrosDelBrief(profile, activeClient, { platform: selectedPlatforms[0], funnelStage, cantidad, slides }),
       clientId,
-      dnaProfileId: profile.id,
-      clientName: activeClient?.name,
-      clientIndustry: activeClient?.industry,
     };
   };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const p = buildParams();

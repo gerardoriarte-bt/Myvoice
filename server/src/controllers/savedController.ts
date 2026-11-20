@@ -10,6 +10,7 @@ import {
   canManage,
   pickFields,
   TenantError,
+  TenantContext,
 } from '../lib/tenancy.js';
 import { assertPuedeActuar } from '../comun/permisos.js';
 import { prisma } from '../lib/prisma.js';
@@ -73,9 +74,26 @@ export const getSavedVariations = async (req: AuthRequest, res: Response) => {
  * Generar— la campaña es la del brief y no se pregunta: elegirla a mano era
  * elegir dos veces lo mismo, con la posibilidad de elegir distinto.
  */
+/**
+ * F4: el pedido (línea de una sábana aprobada) al que responde este copy. Tiene que ser de la misma campaña y del
+ * mismo canal; si no, se rechaza en vez de contar copy en el pedido equivocado.
+ * Deuda conocida: My Voice lee aquí la tabla de CDM directo, sin pasar por el contrato (docs/ecosistema/).
+ */
+const pedidoValido = async (tenant: TenantContext, lineaId: string, campanaId: string | null, platform: unknown) => {
+  const linea = await prisma.lineaDePlanning.findUnique({
+    where: { id: lineaId },
+    select: { planning: { select: { workspaceId: true, campanaId: true, estado: true } }, formato: { select: { canal: true } } },
+  });
+  if (!linea || linea.planning.workspaceId !== tenant.workspaceId) throw new TenantError('Pedido de copy no encontrado', 404);
+  if (linea.planning.campanaId !== campanaId) throw new TenantError('El pedido es de otra campaña', 400);
+  if (linea.planning.estado !== 'APROBADO') throw new TenantError('La sábana de este pedido ya no está aprobada', 409);
+  if (linea.formato.canal !== platform) throw new TenantError(`El pedido es de ${linea.formato.canal ?? 'otro canal'}`, 400);
+  return lineaId;
+};
+
 export const saveVariation = async (req: AuthRequest, res: Response) => {
   // `slotLabel` NO se lee del body: la etiqueta la resuelve el servidor contra el registry.
-  const { clientId, projectId, dnaProfileId, platform, type, content, charCount, tags, slot, variationIndex, conjuntoId, piezaIndex } =
+  const { clientId, projectId, dnaProfileId, platform, type, content, charCount, tags, slot, variationIndex, conjuntoId, piezaIndex, lineaDePlanningId } =
     req.body;
   try {
     const tenant = req.tenant!;
@@ -100,6 +118,7 @@ export const saveVariation = async (req: AuthRequest, res: Response) => {
     // La pieza a la que pertenece el texto: lo pone el motor al generar (un uuid por pieza).
     const conjunto = typeof conjuntoId === 'string' && /^[0-9a-f-]{36}$/i.test(conjuntoId) ? conjuntoId : null;
     const pieza = Number.isInteger(piezaIndex) && piezaIndex >= 1 && piezaIndex <= 10 ? piezaIndex : null;
+    const linea = typeof lineaDePlanningId === 'string' && lineaDePlanningId ? await pedidoValido(tenant, lineaDePlanningId, campanaId, platform) : null;
 
     const variation = await prisma.savedVariation.create({
       data: {
@@ -115,6 +134,7 @@ export const saveVariation = async (req: AuthRequest, res: Response) => {
         variationIndex: index,
         conjuntoId: conjunto,
         piezaIndex: pieza,
+        lineaDePlanningId: linea,
       },
       include: { project: { include: { responsable: { select: { id: true, name: true, email: true } } } } },
     });

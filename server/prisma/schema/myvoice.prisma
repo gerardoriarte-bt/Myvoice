@@ -142,6 +142,10 @@ model SavedVariation {
   /// La pieza de su generación (docs/plan-piezas-por-medio.md): todos los textos de una pieza comparten
   /// `conjuntoId` y se guardan, aprueban y producen juntos. NULL = guardado con el modelo anterior.
   conjuntoId        String?
+  /// F4: el pedido de copy que lo pidió, es decir, la línea de la sábana de CDM (formato × etapa × piezas).
+  /// Sin relación declarada a propósito: la línea es de CDM y My Voice solo guarda la referencia (el contrato
+  /// de docs/ecosistema/). NULL = copy escrito sin pedido, como todo el de antes.
+  lineaDePlanningId String?
   piezaIndex        Int?
   /// Marca las filas cuyo slot lo dedujo el backfill heurístico por conteo de
   /// unidades contra el ChannelSpec. Es columna aparte y no un sufijo en
@@ -175,6 +179,7 @@ model SavedVariation {
   /// La consulta de H2.A: todos los slots de un canal para una marca. Es el
   /// primer índice de la tabla.
   @@index([conjuntoId])
+  @@index([lineaDePlanningId])
   @@index([clientId, platform, slot])
 }
 

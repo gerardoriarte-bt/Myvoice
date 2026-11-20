@@ -934,3 +934,32 @@ export interface PorAprobar {
   piezas: { piezaId: string; pieza: string; campanaId: string | null; campana: string | null; clientId: string; marca: string | null }[];
   total: number;
 }
+
+/** F4: un pedido de copy, es decir, una línea de una sábana aprobada de CDM. El estado se calcula al leer. */
+export type EstadoPedido = 'POR_ESCRIBIR' | 'EN_APROBACION' | 'LISTO';
+
+export interface PedidoDeCopy {
+  id: string;
+  medio: string;
+  formato: string;
+  /** El canal de Generar que lo escribe; null si Generar todavía no sabe escribir ese formato. */
+  canal: string | null;
+  etapa: EtapaDeFunnel;
+  piezas: number;
+  desde: string | null;
+  textos: { clave: string; nombre: string; maximo: number | null; repeticiones: number }[];
+  escritas: number;
+  aprobadas: number;
+  estado: EstadoPedido;
+}
+
+export interface CampanaConPedidos {
+  planningId: string;
+  version: number;
+  campana: { id: string; nombre: string; dnaProfileId: string | null };
+  aprueban: PersonaQueAprueba[];
+  desde: string | null;
+  hasta: string | null;
+  lineas: PedidoDeCopy[];
+}
+

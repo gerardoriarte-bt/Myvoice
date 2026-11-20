@@ -15,6 +15,7 @@ import NotificationSystem, { Notification, NotificationType } from './components
 import { CopyParameters, CopyVariation, ReviewSession, SavedVariation, BrandConfig, Client, User, WorkspaceMember, WorkspaceSummary, canManageWorkspace, ContentDNAProfile } from './types';
 import TableroProduccion from './components/produccion/TableroProduccion';
 import CrearPiezasModal from './components/produccion/CrearPiezasModal';
+import PedidosDeCopy from './src/myvoice/PedidosDeCopy';
 import PorAprobar from './src/plataforma/PorAprobar';
 import Bandeja, { DestinoAviso } from './components/Bandeja';
 import { NAV_STAGES, SCREENS, ScreenId, puedeVer } from './screens';
@@ -1118,6 +1119,20 @@ const App: React.FC = () => {
       )}
       {activeTab === 'analytics' && isAdmin && <Analytics />}
       {activeTab === 'control' && superAdmin && <Control />}
+      {activeTab === 'pedidos' && plataforma && activeClient && (
+        <PedidosDeCopy
+          key={activeClient.id}
+          marcaId={activeClient.id}
+          marcas={clients}
+          briefs={dnaProfiles}
+          puedeGenerar={isAdmin}
+          onAviso={(m, tipo) => addNotification(m, tipo)}
+          onVerCopy={campana => {
+            setCampanaId(campana);
+            setActiveTab('saved');
+          }}
+        />
+      )}
       {activeTab === 'plannings' && plataforma && activeClient && (
         <Plannings
           key={activeClient.id}
