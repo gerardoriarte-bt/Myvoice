@@ -48,6 +48,15 @@ export interface Novedad {
 
 export const NOVEDADES: Novedad[] = [
   {
+    id: 'por-aprobar-y-aprobadores',
+    fecha: '2026-11-20',
+    titulo: 'Lo que te toca aprobar, siempre a la vista',
+    cambios: [
+      'Arriba, junto a la campana, está «Por aprobar»: las sábanas, el copy y las piezas que esperan tu decisión, en todas las pantallas. Cada fila te lleva a donde se decide.',
+      'Una campaña puede tener más de un aprobador. Si el responsable no está, quien administra o quien ya aprueba suma a otra persona con «Sumar aprobador», y decide el primero que lo haga.',
+    ],
+  },
+  {
     id: 'modelos-claude-5-5',
     fecha: '2026-11-12',
     titulo: 'El motor escribe con una versión más nueva de Claude',

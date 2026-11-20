@@ -20,6 +20,7 @@
  */
 
 import { WorkspaceRole } from '@prisma/client';
+import { apruebaLaCampana, quienesAprueban } from '../comun/aprobadores.js';
 import { canManage, TenantContext, TenantError } from '../lib/tenancy.js';
 
 export interface PiezaParaPermisos {
@@ -29,6 +30,8 @@ export interface PiezaParaPermisos {
     name: string;
     responsableId: string | null;
     responsable?: { name: string; email?: string | null } | null;
+    /** Los aprobadores sumados a la campaña (decisión 30): deciden igual que el responsable. */
+    aprobadores?: { user: Persona }[];
   } | null;
   /** La última versión subida, si la hay. Su autor es quien entregó. */
   versiones?: { subidaPorId: string | null }[];
@@ -57,7 +60,7 @@ export interface Persona {
 
 /** Quién aprueba la pieza, para mostrarlo con nombre y cara en la tarjeta. */
 export interface Aprobador {
-  /** `responsable` de la campaña; `administra` si la entregó el responsable; `nadie` si no hay a quién. */
+  /** `responsable` (y sumados) de la campaña; `administra` si la entregó el responsable; `nadie` si no hay a quién. */
   rol: 'responsable' | 'administra' | 'nadie';
   personas: Persona[];
   /** Una línea: por qué es esa persona y qué hacer. */
@@ -85,11 +88,15 @@ export const permisosDe = (
 ) => {
   const administra = canManage(tenant.role);
   const responsableId = pieza.project?.responsableId ?? null;
-  const esResponsable = !!responsableId && responsableId === tenant.userId;
+  // «Responsable» aquí es quien aprueba la campaña: su responsable o un aprobador sumado (decisión 30).
+  const esResponsable = apruebaLaCampana(tenant.userId, pieza.project);
+  const aprueban = quienesAprueban(pieza.project);
   const entrego = entregadaPor(pieza);
   const laEntregoYo = entrego === tenant.userId;
   const laEntregoElResponsable = !!responsableId && entrego === responsableId;
-  const decide = !laEntregoYo && (esResponsable || (administra && laEntregoElResponsable));
+  // Quienes aprueban y no la entregaron: si hay alguno, deciden ellos aunque la haya entregado el responsable.
+  const otrosQueAprueban = aprueban.filter(p => p.id !== entrego);
+  const decide = !laEntregoYo && (esResponsable || (administra && laEntregoElResponsable && otrosQueAprueban.length === 0));
 
   const puedo: Puedo = {
     asignar: administra || esResponsable,
@@ -119,7 +126,7 @@ export const permisosDe = (
       soyYo: false,
       detalle: `«${pieza.project.name}» no tiene responsable: quien administra lo nombra en Copy.`,
     };
-  } else if (laEntregoElResponsable) {
+  } else if (laEntregoElResponsable && otrosQueAprueban.length === 0) {
     const otros = gestores.filter(g => g.id !== entrego);
     const responsable = pieza.project.responsable?.name ?? 'El responsable';
     aprobador = {
@@ -127,16 +134,17 @@ export const permisosDe = (
       personas: otros,
       soyYo: otros.some(g => g.id === tenant.userId),
       detalle: laEntregoYo
-        ? `La entregaste vos, así que la aprueba quien administra: ${nombres(otros)}.`
+        ? `La entregaste tú, así que la aprueba quien administra: ${nombres(otros)}.`
         : `${responsable} la entregó, así que la aprueba quien administra (cualquiera, menos quien la subió).`,
     };
   } else {
-    const r: Persona = { id: responsableId, name: pieza.project.responsable?.name ?? 'El responsable', email: pieza.project.responsable?.email };
+    // Si la entregó uno de los que aprueban, la deciden los demás.
+    const personas = aprueban.filter(p => p.id !== entrego);
     aprobador = {
       rol: 'responsable',
-      personas: [r],
-      soyYo: esResponsable,
-      detalle: `Responsable de «${pieza.project.name}».`,
+      personas: personas.length ? personas : aprueban,
+      soyYo: esResponsable && !laEntregoYo,
+      detalle: aprueban.length > 1 ? `Aprueban «${pieza.project.name}».` : `Responsable de «${pieza.project.name}».`,
     };
   }
 
@@ -146,8 +154,8 @@ export const permisosDe = (
     quienDecide =
       aprobador.rol === 'responsable'
         ? laEntregoYo
-          ? `La entregaste. Espera el visto bueno de ${aprobador.personas[0].name}.`
-          : `La decide ${aprobador.personas[0].name}, responsable de «${pieza.project!.name}».`
+          ? `La entregaste. Espera el visto bueno de ${nombres(aprobador.personas)}.`
+          : `La decide ${nombres(aprobador.personas)}, de «${pieza.project!.name}».`
         : aprobador.rol === 'administra'
           ? laEntregoYo
             ? aprobador.detalle

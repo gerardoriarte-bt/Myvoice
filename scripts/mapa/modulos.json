@@ -55,6 +55,7 @@
     "components/ReviewPortal.tsx": "plataforma",
 
     "server/src/comun/": "comun",
+    "server/src/plataforma/": "plataforma",
     "server/src/myvoice/": "myvoice",
     "server/src/cdm/": "cdm",
     "server/src/contrato/": "compartido",

@@ -297,6 +297,21 @@ dónde se está (marca, campaña, paso) se contradecía entre pantallas. Gerardo
     - **En la base:** `Medio.clase` (`PAGOS`, `REDES_SOCIALES`, `PROPIOS`, `TRADICIONAL`). La biblioteca agrupa
       y filtra por clase.
 
+## 2026-11-20 · Varios aprobadores y «Por aprobar» siempre a la vista
+
+30. **Una campaña puede tener varios aprobadores, y lo que te toca aprobar está siempre a la vista** (Gerardo,
+    2026-11-20). Surgió al probar F3b: Gerardo tenía la función Aprobación, pero no encontraba dónde aprobar,
+    porque la sábana la aprueba el responsable de la campaña y el aviso nunca le llegó.
+    - **Aprobadores sumados.** Además del responsable, se pueden sumar aprobadores. Cualquiera de ellos decide
+      la sábana, el copy y las piezas, y decide el primero que lo haga; el historial dice quién fue. Los suma
+      quien administra o quien ya aprueba, para no depender de un admin en una urgencia. Solo personas del
+      workspace. La regla vive en un solo lugar (`server/src/comun/aprobadores.ts`).
+    - **«Por aprobar · N»** está en el encabezado de todas las pantallas, junto a la campana y en los dos
+      marcos. Lista lo que espera tu decisión: sábanas por aprobar, copy pendiente de campañas internas y
+      piezas por revisar. Cada fila lleva a donde se decide. Los avisos siguen, pero ya no son el único camino.
+    - **La función «Aprobación» todavía no da el turno de aprobar.** Qué significa queda abierto (pregunta 10).
+    - **En la base:** `AprobadorDeCampana(projectId, userId, agregadoPorId)`, en la parte común.
+
 ## Antes (2026-10-27), siguen vigentes con los nombres nuevos
 
 - La marca, su ADN y sus audiencias son la fuente de verdad (ahora en la parte común, decisión 7).
@@ -313,4 +328,5 @@ dónde se está (marca, campaña, paso) se contradecía entre pantallas. Gerardo
 | # | Pregunta | Por qué importa |
 |---|---|---|
 | 8 | ¿Cómo se revisan 200 líneas? Propuesta: generar por tandas según fecha de salida, revisar agrupado por etapa y formato, y **aprobar por muestra** (una de cada grupo; el resto queda aprobado si pasa todos los controles; lo que se pasa del largo o tiene problemas se revisa siempre de a uno). | Revisar de a uno, como está diseñado, sirve para 10 líneas, no para 200. |
+| 10 | ¿Qué hace la función «Aprobación» del equipo? Propuesta: ser la lista de personas que se pueden elegir como responsable o aprobador de una campaña. | Hoy no da el turno de aprobar, y quien la tiene espera ver qué aprobar (decisión 30). |
 | 9 | Si la campaña sigue directo a My Voice, sin cuadro todavía, ¿para qué etapas se escriben los textos raíz? Propuesta: el brief puede marcar etapas previstas, y el cuadro de CDM las confirma o agrega. Las adaptaciones esperan al cuadro (decisión 15). | Con la decisión 9 la etapa sale del cuadro, pero la decisión 7 permite empezar por My Voice. |

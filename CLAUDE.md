@@ -227,7 +227,11 @@ session must be workspace-filtered.
 
 **Approval is per campaign and always has an owner** (`services/aprobacion.ts`, see
 `docs/plan-aprobacion-por-campana.md`). A `Project` (campaign) is tied 1:1 to its brief
-(`dnaProfileId`) and carries `modoAprobacion` (`INTERNA` | `CLIENTE`) and `responsableId`.
+(`dnaProfileId`) and carries `modoAprobacion` (`INTERNA` | `CLIENTE`) and `responsableId`. **Since decision 30
+(2026-11-20) a campaign may also have added approvers** (`AprobadorDeCampana`): any of them decides sábana, copy and
+pieces, the first one wins. Ask `server/src/comun/aprobadores.ts` (`apruebaLaCampana`, `quienesAprueban`,
+`SELECT_APROBADORES`) — never compare `responsableId` by hand. `GET /por-aprobar` (`server/src/plataforma/porAprobar.ts`)
+feeds the always-visible «Por aprobar · N» header button.
 `isApproved` is **not** in the `PUT /saved/:id` allow-list: internal approval goes through
 `POST /saved/aprobacion` and only the campaign's responsable may decide; client approval comes only
 from `submitReview`, which now ignores ids outside its own session and **un-approves** rejected copy.

@@ -1,3 +1,4 @@
+import SumarAprobador from '../src/comun/SumarAprobador';
 import React from 'react';
 import { AlertTriangle, ShieldCheck } from 'lucide-react';
 import { MODO_APROBACION_LABELS, ModoAprobacion, Project, WorkspaceMember } from '../types';
@@ -110,6 +111,8 @@ export default function AprobacionDeCampana({ campana, miembros = [], puedeEdita
             ? `${campana.responsable?.name} aprueba el copy antes de producirlo.`
             : `El cliente aprueba desde el enlace de revisión; ${campana.responsable?.name} se lo manda y responde por él.`}
       </p>
+      {/* Decisión 30: si el responsable no está, se suma otro aprobador y cualquiera decide. */}
+      {!sinResponsable && <SumarAprobador campanaId={campana.id} />}
     </div>
   );
 }

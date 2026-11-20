@@ -304,6 +304,12 @@ async function main() {
     });
     await expectDenied('DELETE /saved/:id de A', `/saved/${A.variation.id}`, B.token, { method: 'DELETE' });
     await expectDenied('DELETE /projects/:id de A', `/projects/${A.project.id}`, B.token, { method: 'DELETE' });
+    // Decisión 30: los aprobadores de una campaña ajena ni se leen ni se cambian, y nadie se suma a uno de afuera.
+    await expectDenied('GET /projects/:id/aprobadores de A', `/projects/${A.project.id}/aprobadores`, B.token);
+    await expectDenied('POST /projects/:id/aprobadores en A', `/projects/${A.project.id}/aprobadores`, B.token, { method: 'POST', body: JSON.stringify({ userId: B.user.id }) });
+    await expectDenied('POST /projects/:id/aprobadores sumando a alguien de B', `/projects/${A.project.id}/aprobadores`, A.token, { method: 'POST', body: JSON.stringify({ userId: B.user.id }) });
+    const porAprobar = await api('/por-aprobar', B.token);
+    record('GET /por-aprobar no trae nada de A', porAprobar.status === 200 && !JSON.stringify(porAprobar.body).includes(A.project.id), `status ${porAprobar.status}`);
     await expectDenied('POST /feedback/negative en la marca de A', '/feedback/negative', B.token, {
       method: 'POST',
       body: JSON.stringify({ clientId: A.client.id, content: 'veneno', reason: 'veneno' }),

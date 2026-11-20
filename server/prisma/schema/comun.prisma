@@ -47,23 +47,23 @@ model Workspace {
 }
 
 model User {
-  id                    String            @id @default(uuid())
-  email                 String            @unique
+  id                    String               @id @default(uuid())
+  email                 String               @unique
   passwordHash          String
   name                  String
   /// LEGACY. Ya no autoriza nada: el rol efectivo vive en Membership.role y se
   /// resuelve por workspace activo. Se conserva para no romper seeds y para el
   /// backfill; eliminar en una migración posterior.
-  role                  Role              @default(CLIENT)
+  role                  Role                 @default(CLIENT)
   /// LEGACY. Ya no confina la lectura: un usuario ve todas las marcas de los
   /// workspaces donde tiene membresía.
   clientId              String?
   /// Decisión 27: está por encima de los workspaces. Ve y controla todos (interruptores, usuarios, gasto de
   /// IA) sin ser miembro, y es el único que ve costos. No es un rol de Membership: se asigna con
   /// `npm run superadmin`, nunca desde la pantalla, y se verifica contra la base en cada request.
-  superAdmin            Boolean           @default(false)
-  createdAt             DateTime          @default(now())
-  updatedAt             DateTime          @updatedAt
+  superAdmin            Boolean              @default(false)
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
   /// Workspace ACTIVO de la sesión, no una relación de pertenencia. Solo es
   /// válido si existe la Membership correspondiente; el middleware lo verifica
   /// en cada request y nunca confía en este campo por sí solo.
@@ -71,21 +71,22 @@ model User {
   /// Ids de `novedades.ts` (frontend) que esta persona ya vio. En el servidor y
   /// no en el navegador: el localStorage se borra cada vez que vence la sesión,
   /// y el aviso volvería a aparecer cada 24 h.
-  novedadesVistas       String[]          @default([])
-  client                Client?           @relation(fields: [clientId], references: [id])
-  workspace             Workspace?        @relation(fields: [workspaceId], references: [id])
+  novedadesVistas       String[]             @default([])
+  client                Client?              @relation(fields: [clientId], references: [id])
+  workspace             Workspace?           @relation(fields: [workspaceId], references: [id])
   memberships           Membership[]
-  invitesSent           WorkspaceInvite[] @relation("InviteAuthor")
+  invitesSent           WorkspaceInvite[]    @relation("InviteAuthor")
   createdReviewSessions ReviewSession[]
   funciones             MiembroFuncion[]
-  piezasAsignadas       Pieza[]           @relation("PiezaAsignada")
-  piezasCreadas         Pieza[]           @relation("PiezaAutor")
+  piezasAsignadas       Pieza[]              @relation("PiezaAsignada")
+  piezasCreadas         Pieza[]              @relation("PiezaAutor")
   eventosDePieza        PiezaEvento[]
   versionesSubidas      PiezaVersion[]
   hallazgosDecididos    Hallazgo[]
   notificaciones        Notificacion[]
-  campanasAResponder    Project[]         @relation("ResponsableDeAprobacion")
-  copyAprobado          SavedVariation[]  @relation("CopyAprobadoPor")
+  campanasAResponder    Project[]            @relation("ResponsableDeAprobacion")
+  copyAprobado          SavedVariation[]     @relation("CopyAprobadoPor")
+  aprobacionesSumadas   AprobadorDeCampana[] @relation("AprobadorSumado")
 }
 
 /// La única fuente de verdad de "quién puede entrar a qué workspace".
@@ -287,9 +288,9 @@ model AdnVersion {
 }
 
 model Project {
-  id                      String             @id @default(uuid())
+  id                      String               @id @default(uuid())
   name                    String
-  createdAt               DateTime           @default(now())
+  createdAt               DateTime             @default(now())
   workspaceId             String
   /// LEGADO desde 2026-10-13: ya no se lee ni se escribe. Si el cliente ve el
   /// arte lo dice `modoAprobacion`. Se dropea en una migración posterior.
@@ -297,31 +298,49 @@ model Project {
   /// siempre: la pieza llega a Lista y ahí termina. Vive en la campaña y no en
   /// el workspace porque una agencia tiene clientes que quieren ver el arte y
   /// clientes que no, y esa diferencia es por campaña.
-  pideAprobacionDeCliente Boolean            @default(false)
+  pideAprobacionDeCliente Boolean              @default(false)
   /// La marca de la campaña. Nullable por las campañas viejas que mezclaban
   /// copy de varias marcas; las nuevas siempre la traen.
   clientId                String?
   /// El brief del que sale. Único: la campaña que se elige en Generar es la
   /// misma donde cae el copy al guardar.
-  dnaProfileId            String?            @unique
+  dnaProfileId            String?              @unique
   /// Cómo se aprueba el copy antes de producir. Siempre hay una aprobación.
-  modoAprobacion          ModoAprobacion     @default(INTERNA)
+  modoAprobacion          ModoAprobacion       @default(INTERNA)
   /// Quien aprueba (interna) o quien responde por la aprobación del cliente.
   /// Sin responsable el copy de la campaña no avanza.
   responsableId           String?
   /// La versión del ADN con que trabaja la campaña. NULL = sigue la vigente (todas las de v1: fijarla
   /// sin la pantalla para pasarla a la nueva dejaría la campaña atrapada en un ADN viejo).
   adnVersion              Int?
-  workspace               Workspace          @relation(fields: [workspaceId], references: [id])
-  client                  Client?            @relation(fields: [clientId], references: [id], onDelete: SetNull)
-  dnaProfile              ContentDNAProfile? @relation(fields: [dnaProfileId], references: [id], onDelete: SetNull)
-  responsable             User?              @relation("ResponsableDeAprobacion", fields: [responsableId], references: [id], onDelete: SetNull)
+  workspace               Workspace            @relation(fields: [workspaceId], references: [id])
+  client                  Client?              @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  dnaProfile              ContentDNAProfile?   @relation(fields: [dnaProfileId], references: [id], onDelete: SetNull)
+  responsable             User?                @relation("ResponsableDeAprobacion", fields: [responsableId], references: [id], onDelete: SetNull)
   variations              SavedVariation[]
   piezas                  Pieza[]
   /// CDM (F3): el planning de la campaña, uno solo.
   planning                Planning?
+  /// Quienes aprueban además del responsable (decisión 30): cualquiera decide, el primero que lo hace.
+  aprobadores             AprobadorDeCampana[]
 
   @@index([clientId])
+}
+
+/// Un aprobador sumado a una campaña, además de su responsable (decisión 30, 2026-11-20). Existe para la
+/// urgencia: si el responsable no está, quien administra o el responsable suman a otra persona y cualquiera
+/// de ellas decide la sábana, el copy y las piezas. La aprobación sigue teniendo nombre: queda quién decidió.
+model AprobadorDeCampana {
+  id            String   @id @default(uuid())
+  projectId     String
+  userId        String
+  agregadoPorId String
+  createdAt     DateTime @default(now())
+  project       Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user          User     @relation("AprobadorSumado", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, userId])
+  @@index([userId])
 }
 
 /// INTERNA: aprueba el responsable. CLIENTE: aprueba el cliente desde el

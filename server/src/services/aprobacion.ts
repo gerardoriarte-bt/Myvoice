@@ -1,3 +1,4 @@
+import { SELECT_APROBADORES, apruebaLaCampana, nombresDe, quienesAprueban } from '../comun/aprobadores.js';
 import { ModoAprobacion, ReviewDecision } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import {
@@ -100,9 +101,10 @@ export interface Rechazo {
 /**
  * Aprobar o desaprobar copy por una decisión interna.
  *
- * Solo el responsable de la campaña decide, en las dos direcciones. No hay un
- * «administrador puede todo»: si el responsable no está, quien administra
- * nombra a otro en la campaña, y la aprobación sigue teniendo un nombre.
+ * Deciden quienes aprueban la campaña, en las dos direcciones: su responsable y
+ * los aprobadores sumados (decisión 30, `comun/aprobadores.ts`). No hay un
+ * «administrador puede todo»: si no está ninguno, quien administra suma a otro,
+ * y la aprobación sigue teniendo un nombre.
  *
  * Lo que no se puede no corta la operación: vuelve en `rechazados` con su
  * motivo, para que la pantalla diga qué pasó con cada uno.
@@ -119,8 +121,7 @@ export const decidirAprobacion = async (tenant: TenantContext, ids: string[], ap
         select: {
           name: true,
           modoAprobacion: true,
-          responsableId: true,
-          responsable: { select: { name: true } },
+          ...SELECT_APROBADORES,
         },
       },
     },
@@ -132,13 +133,13 @@ export const decidirAprobacion = async (tenant: TenantContext, ids: string[], ap
   for (const v of variaciones) {
     const c = v.project;
     if (!c) {
-      rechazados.push({ id: v.id, motivo: 'No tiene campaña: asignale una antes de aprobarlo.' });
+      rechazados.push({ id: v.id, motivo: 'No tiene campaña: asígnale una antes de aprobarlo.' });
     } else if (!c.responsableId) {
       rechazados.push({ id: v.id, motivo: `La campaña «${c.name}» no tiene responsable de aprobación.` });
-    } else if (c.responsableId !== tenant.userId) {
-      rechazados.push({ id: v.id, motivo: `Lo aprueba ${c.responsable?.name ?? 'otra persona'}, responsable de «${c.name}».` });
+    } else if (!apruebaLaCampana(tenant.userId, c)) {
+      rechazados.push({ id: v.id, motivo: `Lo aprueba ${nombresDe(quienesAprueban(c))}, en «${c.name}».` });
     } else if (aprobar && c.modoAprobacion === ModoAprobacion.CLIENTE) {
-      rechazados.push({ id: v.id, motivo: `«${c.name}» la aprueba el cliente: enviala a revisión.` });
+      rechazados.push({ id: v.id, motivo: `«${c.name}» la aprueba el cliente: envíala a revisión.` });
     } else if (v.isApproved !== aprobar) {
       aplicar.push(v.id);
     }
@@ -233,4 +234,28 @@ export const assertCampanaDeLaMarca = async (tenant: TenantContext, projectId: s
   if (campana.clientId && campana.clientId !== clientId)
     throw new TenantError('La campaña es de otra marca', 400);
   return campana;
+};
+
+/**
+ * El copy que espera la decisión de quien mira, por campaña (decisión 30: «Por aprobar»). Solo campañas
+ * internas: en las del cliente, lo que espera es mandarlo a revisión, no aprobarlo aquí.
+ */
+export const copyPorAprobarDe = async (tenant: TenantContext) => {
+  const campanas = await prisma.project.findMany({
+    where: {
+      workspaceId: tenant.workspaceId,
+      modoAprobacion: ModoAprobacion.INTERNA,
+      OR: [{ responsableId: tenant.userId }, { aprobadores: { some: { userId: tenant.userId } } }],
+    },
+    select: {
+      id: true,
+      name: true,
+      clientId: true,
+      client: { select: { name: true } },
+      _count: { select: { variations: { where: { isApproved: false } } } },
+    },
+  });
+  return campanas
+    .filter(c => c._count.variations > 0)
+    .map(c => ({ campanaId: c.id, campana: c.name, clientId: c.clientId, marca: c.client?.name ?? null, cantidad: c._count.variations }));
 };
