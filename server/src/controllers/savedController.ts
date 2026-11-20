@@ -1,3 +1,4 @@
+import { exigirElegible } from '../comun/aprobadores.js';
 import { Response } from 'express';
 import { AuthRequest, handleTenantError } from '../middleware/auth.js';
 import {
@@ -276,7 +277,12 @@ export const updateProject = async (req: AuthRequest, res: Response) => {
         data.modoAprobacion = modoAprobacion;
       }
       if (responsableId !== undefined) {
-        if (responsableId !== null) await assertMemberOfWorkspace(tenant, responsableId);
+        if (responsableId !== null) {
+          await assertMemberOfWorkspace(tenant, responsableId);
+          // Solo quien tiene la función Aprobación (o cualquiera, si nadie la tiene todavía).
+          const campana = await assertProjectInWorkspace(tenant, id);
+          await exigirElegible(tenant.workspaceId, campana.clientId, responsableId);
+        }
         data.responsableId = responsableId;
       }
     }

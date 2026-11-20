@@ -149,10 +149,10 @@ export default function GuiaVisual({ medio, onVolver }: { medio: MedioDetalle; o
           <h3 className="text-[13px] font-bold text-[#1D1D1F]">Dónde va cada texto</h3>
           <ul className="mt-2 space-y-1 text-[12.5px] text-[#3A3A3C]">
             <li>
-              <span className="font-semibold">Copy en la pieza</span> · lo escribe My Voice, lo pone Diseño.
+              <span className="font-semibold">Copy en la pieza</span> · lo escribe Copywriting, lo pone Diseño.
             </li>
             <li>
-              <span className="font-semibold">Copy de la plataforma</span> · lo escribe My Voice, lo carga el trafficker: no va en la imagen.
+              <span className="font-semibold">Copy de la plataforma</span> · lo escribe Copywriting, lo carga el trafficker: no va en la imagen.
             </li>
           </ul>
         </section>

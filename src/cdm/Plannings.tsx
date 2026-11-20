@@ -646,7 +646,7 @@ function Sabana({
           <table className="w-full text-left text-[12.5px]">
             <thead className="bg-[#F5F5F7]">
               <tr>
-                {['Medio', 'Formato', 'Medidas', 'Etapa', 'Piezas', 'Fechas', 'Textos para My Voice', 'Estado'].map(c => (
+                {['Medio', 'Formato', 'Medidas', 'Etapa', 'Piezas', 'Fechas', 'Textos para Copywriting', 'Estado'].map(c => (
                   <th key={c} className="px-3 py-2 text-[11px] font-bold uppercase tracking-[0.04em] text-[#86868B]">
                     {c}
                   </th>
@@ -684,7 +684,7 @@ function Sabana({
                   <tr className="bg-[#FAFAFA]">
                     <td colSpan={8} className="px-3 py-3">
                       <p className="mb-2 text-[11.5px] text-[#6E6E73]">
-                        Dónde sale esta línea. El largo de cada texto para My Voice es el más corto entre las ubicaciones elegidas.
+                        Dónde sale esta línea. El largo de cada texto para Copywriting es el más corto entre las ubicaciones elegidas.
                       </p>
                       <div className="grid grid-cols-1 gap-1 md:grid-cols-2 xl:grid-cols-3">
                         {l.ubicaciones.map(u => {
@@ -721,12 +721,12 @@ function Sabana({
         <div className="rounded-[12px] border border-[rgba(0,0,0,0.08)] bg-white p-4 text-[12.5px] text-[#3A3A3C]">
           <h3 className="text-[13px] font-bold text-[#1D1D1F]">Al aprobarla</h3>
           <p className="mt-1">
-            <strong>My Voice</strong> recibe {p.resumen.lineas} pedidos de copy, uno por formato y etapa, con el largo de cada texto ya calculado.
+            <strong>Copywriting</strong> recibe {p.resumen.lineas} pedidos de copy, uno por formato y etapa, con el largo de cada texto ya calculado.
           </p>
           <p className="mt-1">
             <strong>Producción</strong> recibe {p.resumen.piezas} piezas con sus medidas, cada una sabiendo su formato y su etapa.
           </p>
-          <p className="mt-2 text-[11.5px] text-[#86868B]">Los pedidos de copy llegan a My Voice con la entrega siguiente (F4).</p>
+          <p className="mt-2 text-[11.5px] text-[#86868B]">Por ahora a Copywriting le llega un aviso; los pedidos con el largo de cada texto llegan en la próxima entrega.</p>
         </div>
         <div className="rounded-[12px] border border-[rgba(0,0,0,0.08)] bg-white p-4">
           <h3 className="text-[13px] font-bold text-[#1D1D1F]">{p.aprueban.length > 1 ? 'La aprueba cualquiera de ellos' : 'La aprueba'}</h3>

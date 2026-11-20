@@ -86,7 +86,8 @@ export const PASOS: PasoDef[] = [
   },
   {
     id: 'myvoice',
-    nombre: 'My Voice',
+    // El paso se llama Copywriting (2026-11-20); My Voice sigue siendo el nombre de la herramienta.
+    nombre: 'Copywriting',
     tema: 'Copy',
     color: '#6D28D9',
     grupos: [

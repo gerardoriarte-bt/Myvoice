@@ -174,6 +174,7 @@ export const notifyAviso = async (payload: AvisoPayload): Promise<void> => {
     PLANNING_POR_APROBAR: { rotulo: 'Te toca aprobarla', enlace: 'Ver la sábana', pie: 'Te llega porque eres responsable de la campaña.' },
     PLANNING_APROBADO: { rotulo: 'Sábana aprobada', enlace: 'Ver el planning', pie: 'Te llega porque armaste o enviaste este planning.' },
     PLANNING_DEVUELTO: { rotulo: 'Vuelve a tus manos', enlace: 'Ver el comentario', pie: 'Te llega porque armaste o enviaste este planning.' },
+    PLANNING_PARA_COPY: { rotulo: 'Copy por escribir', enlace: 'Escribir el copy', pie: 'Te llega porque escribes el copy de esta marca.' },
   };
   const t = TEXTOS[payload.tipo] ?? TEXTOS.ENTREGA;
   await enviar(

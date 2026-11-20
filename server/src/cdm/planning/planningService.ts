@@ -187,6 +187,8 @@ export const AVISOS_PLANNING = {
   POR_APROBAR: 'PLANNING_POR_APROBAR',
   APROBADO: 'PLANNING_APROBADO',
   DEVUELTO: 'PLANNING_DEVUELTO',
+  /** La sábana quedó aprobada del todo: a Copywriting le toca escribir (antes de los pedidos de F4). */
+  PARA_COPY: 'PLANNING_PARA_COPY',
 } as const;
 
 interface AvisoDePlanning {
@@ -221,12 +223,37 @@ const enviarCorreos = (aviso: Awaited<ReturnType<typeof avisar>>, campanaId: str
         titulo: aviso.titulo,
         detalle: aviso.detalle,
         marca,
-        url: `${app}/campana/${campanaId}/cdm/plannings`,
+        url: aviso.tipo === AVISOS_PLANNING.PARA_COPY ? `${app}/campana/${campanaId}/myvoice/generar` : `${app}/campana/${campanaId}/cdm/plannings`,
       });
     } catch (error) {
       console.error('[Planning] No se pudo enviar el correo del aviso:', error);
     }
   })();
+};
+
+/**
+ * Quienes escriben el copy de la marca: la función Copy, para esa marca o para todas. Si nadie la tiene, quien
+ * administra, para que la sábana aprobada no quede sin que nadie se entere.
+ */
+const quienesEscriben = async (tx: Prisma.TransactionClient, workspaceId: string, clientId: string) => {
+  const copy = await tx.miembroFuncion.findMany({
+    where: { workspaceId, funcion: 'COPY', OR: [{ clientId: null }, { clientId }] },
+    select: { userId: true },
+  });
+  if (copy.length) return copy.map(c => c.userId);
+  const jefes = await tx.membership.findMany({ where: { workspaceId, role: { in: ['OWNER', 'ADMIN'] } }, select: { userId: true } });
+  return jefes.map(j => j.userId);
+};
+
+/** La sábana aprobada del todo le avisa a Copywriting: hay copy por escribir para esta campaña. */
+const avisarACopy = async (tx: Prisma.TransactionClient, tenant: TenantContext, p: { id: string; clientId: string }, campana: string, marca: string) => {
+  const lineas = await tx.lineaDePlanning.count({ where: { planningId: p.id } });
+  return avisar(tx, tenant, p.clientId, {
+    tipo: AVISOS_PLANNING.PARA_COPY,
+    userIds: await quienesEscriben(tx, tenant.workspaceId, p.clientId),
+    titulo: 'Hay copy por escribir',
+    detalle: `${campana} · ${marca}: la sábana está aprobada, con ${lineas} ${lineas === 1 ? 'pedido' : 'pedidos'} de copy`,
+  });
 };
 
 /** Quién armó y quién envió el planning: a ellos les llega la decisión. */
@@ -371,20 +398,21 @@ export const decidirPlanning = async (tenant: TenantContext, id: string, accion:
   const marca = await prisma.client.findUnique({ where: { id: p.clientId }, select: { name: true } });
   // En una campaña «con cliente», la aprobación del responsable no es la última: falta el cliente por enlace.
   const conCliente = accion === 'aprobar' && p.campana.modoAprobacion === 'CLIENTE';
-  const aviso = await prisma.$transaction(async tx => {
+  const avisos = await prisma.$transaction(async tx => {
     await tx.planning.update({
       where: { id },
       data: { estado: accion === 'devolver' ? 'DEVUELTO' : conCliente ? 'CON_EL_CLIENTE' : 'APROBADO' },
     });
     await evento(tx, id, accion === 'aprobar' ? 'APROBADO' : 'DEVUELTO', p.version, tenant.userId, texto || undefined);
-    return avisar(tx, tenant, p.clientId, {
+    const paraCopy = accion === 'aprobar' && !conCliente ? [await avisarACopy(tx, tenant, p, p.campana.name, marca?.name ?? '')] : [];
+    return [...paraCopy, await avisar(tx, tenant, p.clientId, {
       tipo: accion === 'aprobar' ? AVISOS_PLANNING.APROBADO : AVISOS_PLANNING.DEVUELTO,
       userIds: await quienesLoArmaron(tx, id, p.creadoPorId),
       titulo: accion === 'devolver' ? 'Devolvieron la sábana' : conCliente ? 'El responsable aprobó la sábana: falta el cliente' : 'Aprobaron la sábana',
       detalle: accion === 'aprobar' ? `${p.campana.name} · ${marca?.name ?? ''}` : `${p.campana.name}: «${texto}»`,
-    });
+    })];
   });
-  enviarCorreos(aviso, p.campana.id, marca?.name ?? '');
+  for (const aviso of avisos) enviarCorreos(aviso, p.campana.id, marca?.name ?? '');
 };
 
 /** Un planning aprobado se cambia como versión nueva: vuelve a armado y, al enviarlo, a aprobación. */
@@ -530,13 +558,16 @@ export const aplicarRespuestaDelCliente = async (
   const texto = comentario ? `${cliente}: «${comentario}»` : cliente;
   await evento(tx, p.id, aprueba ? 'APROBADO_POR_CLIENTE' : 'DEVUELTO_POR_CLIENTE', p.version, sesion.createdById, texto);
   const tenant = { workspaceId: sesion.workspaceId, userId: '', role: 'MEMBER' } as TenantContext;
+  const paraCopy = aprueba ? [await avisarACopy(tx, tenant, p, p.campana.name, p.campana.client?.name ?? '')] : [];
   const aviso = await avisar(tx, tenant, p.clientId, {
     tipo: aprueba ? AVISOS_PLANNING.APROBADO : AVISOS_PLANNING.DEVUELTO,
     userIds: [...(await quienesLoArmaron(tx, p.id, p.creadoPorId)), ...quienesAprueban(p.campana).map(a => a.id)],
     titulo: aprueba ? 'El cliente aprobó la sábana' : 'El cliente devolvió la sábana',
     detalle: aprueba ? `${p.campana.name} · ${p.campana.client?.name ?? ''}` : `${p.campana.name}: «${comentario}»`,
   });
-  return () => enviarCorreos(aviso, p.campana.id, p.campana.client?.name ?? '');
+  return () => {
+    for (const a of [...paraCopy, aviso]) enviarCorreos(a, p.campana.id, p.campana.client?.name ?? '');
+  };
 };
 
 /** Las sábanas que esperan la decisión de quien mira (decisión 30: «Por aprobar»). */

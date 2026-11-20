@@ -309,8 +309,20 @@ dónde se está (marca, campaña, paso) se contradecía entre pantallas. Gerardo
     - **«Por aprobar · N»** está en el encabezado de todas las pantallas, junto a la campana y en los dos
       marcos. Lista lo que espera tu decisión: sábanas por aprobar, copy pendiente de campañas internas y
       piezas por revisar. Cada fila lleva a donde se decide. Los avisos siguen, pero ya no son el único camino.
-    - **La función «Aprobación» todavía no da el turno de aprobar.** Qué significa queda abierto (pregunta 10).
+    - **La función «Aprobación» es la lista de elegibles** (resuelve la pregunta 10, Gerardo, 2026-11-20). Solo
+      quien la tiene, para esa marca o para todas, se puede elegir como responsable o sumar como aprobador. Si
+      en el workspace nadie la tiene, se puede elegir a cualquiera, como antes. Los responsables que ya están
+      no se tocan. `elegiblesPara` en `comun/aprobadores.ts`.
     - **En la base:** `AprobadorDeCampana(projectId, userId, agregadoPorId)`, en la parte común.
+
+31. **El paso ③ se llama Copywriting, y la sábana aprobada le avisa** (Gerardo, 2026-11-20).
+    - **El nombre:** el encabezado dice ① Marca › ② CDM › ③ Copywriting › ④ Producción. **My Voice sigue siendo el
+      nombre de la herramienta**: el logo, los correos y la página de inicio no cambian. Las pantallas de CDM
+      que hablaban del paso («Textos para My Voice») dicen Copywriting.
+    - **El aviso:** cuando la sábana queda aprobada del todo (por el equipo o, en campañas «con cliente», por
+      el cliente), quienes tienen la función Copy de esa marca reciben «Hay copy por escribir»
+      (`PLANNING_PARA_COPY`), con aviso y correo que llevan a Generar. Si nadie tiene la función, le llega a quien
+      administra. Es el puente hasta F4, cuando la sábana se convierte en pedidos de copy con su largo.
 
 ## Antes (2026-10-27), siguen vigentes con los nombres nuevos
 
@@ -328,5 +340,4 @@ dónde se está (marca, campaña, paso) se contradecía entre pantallas. Gerardo
 | # | Pregunta | Por qué importa |
 |---|---|---|
 | 8 | ¿Cómo se revisan 200 líneas? Propuesta: generar por tandas según fecha de salida, revisar agrupado por etapa y formato, y **aprobar por muestra** (una de cada grupo; el resto queda aprobado si pasa todos los controles; lo que se pasa del largo o tiene problemas se revisa siempre de a uno). | Revisar de a uno, como está diseñado, sirve para 10 líneas, no para 200. |
-| 10 | ¿Qué hace la función «Aprobación» del equipo? Propuesta: ser la lista de personas que se pueden elegir como responsable o aprobador de una campaña. | Hoy no da el turno de aprobar, y quien la tiene espera ver qué aprobar (decisión 30). |
 | 9 | Si la campaña sigue directo a My Voice, sin cuadro todavía, ¿para qué etapas se escriben los textos raíz? Propuesta: el brief puede marcar etapas previstas, y el cuadro de CDM las confirma o agrega. Las adaptaciones esperan al cuadro (decisión 15). | Con la decisión 9 la etapa sale del cuadro, pero la decisión 7 permite empezar por My Voice. |

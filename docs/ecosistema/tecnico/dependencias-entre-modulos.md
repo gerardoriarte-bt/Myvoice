@@ -1,6 +1,6 @@
 # Dependencias entre módulos (generado)
 
-Generado el 2026-11-20 desde el commit `10565a6` con `bash scripts/mapa/actualizar.sh`. **No se edita a mano**: se corrige `scripts/mapa/modulos.json` y se vuelve a generar.
+Generado el 2026-11-20 desde el commit `c75c3a4` con `bash scripts/mapa/actualizar.sh`. **No se edita a mano**: se corrige `scripts/mapa/modulos.json` y se vuelve a generar.
 
 Cada fila es un archivo que usa algo de otro archivo de **otro módulo** (importa, llama o referencia un tipo). Módulos según la decisión 12; reglas en [spec-plataforma.md](./spec-plataforma.md) § 2.
 
@@ -10,12 +10,12 @@ Cada fila es un archivo que usa algo de otro archivo de **otro módulo** (import
 |---|---|---|---|---|---|---|
 | **Plataforma** | · | 24 | 21 | 7 | 7 | 32 |
 | **Parte común** | · | · | · | · | · | 49 |
-| **My Voice** | · | 39 | · | · | · | 117 |
+| **My Voice** | · | 40 | · | · | · | 117 |
 | **Producción** | · | 14 | 2 | · | · | 25 |
 | **CDM** | · | 9 | · | · | · | 17 |
 | **Compartido** | · | · | · | · | · | · |
 
-- **Hay que invertir**: 0 · **pasan por el contrato**: 64 · **permitidas**: 299
+- **Hay que invertir**: 0 · **pasan por el contrato**: 65 · **permitidas**: 299
 
 ## Hay que invertir (0)
 
@@ -23,7 +23,7 @@ Rompen la regla: la parte común o la infraestructura dependen de un módulo, o 
 
 Ninguna.
 
-## Pasan por el contrato (64)
+## Pasan por el contrato (65)
 
 Un módulo lee la parte común. Está bien, pero solo por `contrato/`: esta lista es lo que `contrato/` tiene que exponer.
 
@@ -60,6 +60,7 @@ Un módulo lee la parte común. Está bien, pero solo por `contrato/`: esta list
 | My Voice | `server/src/controllers/refineController.ts` | Parte común | `server/src/lib/tenancy.ts` | assertClientInWorkspace(), tenancy.ts |
 | My Voice | `server/src/controllers/refineController.ts` | Parte común | `server/src/lib/workspaceSecret.ts` | decryptWorkspaceApiKey(), workspaceSecret.ts |
 | My Voice | `server/src/controllers/refineController.ts` | Parte común | `server/src/middleware/auth.ts` | AuthRequest, auth.ts, handleTenantError() |
+| My Voice | `server/src/controllers/savedController.ts` | Parte común | `server/src/comun/aprobadores.ts` | aprobadores.ts, exigirElegible() |
 | My Voice | `server/src/controllers/savedController.ts` | Parte común | `server/src/comun/permisos.ts` | assertPuedeActuar(), permisos.ts |
 | My Voice | `server/src/controllers/savedController.ts` | Parte común | `server/src/lib/tenancy.ts` | TenantError, assertClientInWorkspace(), assertMemberOfWorkspace(), assertProjectInWorkspace() |
 | My Voice | `server/src/controllers/savedController.ts` | Parte común | `server/src/middleware/auth.ts` | AuthRequest, auth.ts, handleTenantError() |
