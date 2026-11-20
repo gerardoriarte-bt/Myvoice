@@ -53,4 +53,12 @@ export const ubicaciones = yDevolver(
   req => planning.elegirUbicaciones(req.tenant!, req.params.id, req.params.lineaId, req.body?.ubicacionIds),
   'Error al elegir las ubicaciones'
 );
+/** El enlace para el cliente: lo devuelve tal cual, para copiarlo. */
+export const enlace = async (req: AuthRequest, res: Response) => {
+  try {
+    res.json(await planning.enlaceParaElCliente(req.tenant!, req.params.id));
+  } catch (error) {
+    handleTenantError(error, res, 'Error al crear el enlace para el cliente');
+  }
+};
 export const reabrir = yDevolver(req => planning.reabrirPlanning(req.tenant!, req.params.id), 'Error al reabrir el planning');

@@ -241,7 +241,9 @@ has several clients, and a link mixing two brands shows one client the other's c
 password in between. `verify:isolation` covers it.
 
 A session is also **homogeneous in `ronda`**: `COPY` carries `savedVariationId` items, `PIEZA`
-carries `piezaId` ones, never both. A `CHECK` in the migration holds the XOR that Prisma cannot
+carries `piezaId` ones and, since F3b (2026-11-20), `SABANA` carries one `planningId` (the client approves a
+CDM sábana: `CON_EL_CLIENTE` → `APROBADO`/`DEVUELTO`, in `cdm/planning/planningService.ts`). A `CHECK` in the
+migration holds «exactly one of the three» (`num_nonnulls`), which Prisma cannot
 express, because this is content published behind an unauthenticated token and an application
 validation is the wrong last line of defence. `services/revisionDePiezas.ts` owns the second
 round: only pieces in `CON_EL_CLIENTE` of a `CLIENTE` campaign and not already in an open session

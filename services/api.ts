@@ -139,6 +139,8 @@ export const cdmApi = {
     apiRequest(`/cdm/plannings/${id}/aprobar`, { method: 'POST', body: JSON.stringify({ comentario }) }),
   devolverPlanning: (id: string, comentario: string): Promise<PlanningDetalle> =>
     apiRequest(`/cdm/plannings/${id}/devolver`, { method: 'POST', body: JSON.stringify({ comentario }) }),
+  /** F3b: el enlace para que el cliente apruebe la sábana. Si ya hay uno abierto, devuelve ese. */
+  enlaceCliente: (id: string): Promise<{ url: string; venceEn: string }> => apiRequest(`/cdm/plannings/${id}/enlace`, { method: 'POST' }),
   reabrirPlanning: (id: string): Promise<PlanningDetalle> => apiRequest(`/cdm/plannings/${id}/reabrir`, { method: 'POST' }),
   medios: (): Promise<MedioResumen[]> => apiRequest('/cdm/biblioteca'),
   medio: (id: string): Promise<MedioDetalle> => apiRequest(`/cdm/biblioteca/medios/${id}`),
@@ -365,6 +367,7 @@ export const reviewApi = {
       feedbacks: Array<
         | { savedVariationId: string; decision: string; comment?: string }
         | { piezaId: string; decision: string; feedbackCopy?: string; feedbackDiseno?: string }
+        | { planningId: string; decision: string; feedbackCopy?: string }
       >;
     }
   ) =>

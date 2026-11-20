@@ -179,6 +179,7 @@ router.post('/cdm/plannings/:id/enviar', ...inWorkspace, planningController.envi
 router.post('/cdm/plannings/:id/aprobar', ...inWorkspace, planningController.aprobar);
 router.post('/cdm/plannings/:id/devolver', ...inWorkspace, planningController.devolver);
 router.post('/cdm/plannings/:id/reabrir', ...inWorkspace, planningController.reabrir);
+router.post('/cdm/plannings/:id/enlace', ...inWorkspace, planningController.enlace);
 
 // ------------------------------------------------------------------ control
 /**

@@ -52,6 +52,7 @@
     "services/exportPiezasToExcel.ts": "produccion",
     "server/src/services/pricing.ts": "compartido",
     "components/QuienAprueba.tsx": "comun",
+    "components/ReviewPortal.tsx": "plataforma",
 
     "server/src/comun/": "comun",
     "server/src/myvoice/": "myvoice",

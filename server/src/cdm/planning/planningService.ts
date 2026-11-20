@@ -166,7 +166,10 @@ export const detallePlanning = async (tenant: TenantContext, id: string) => {
       enviar: arma && EDITABLE.includes(p.estado) && p.lineas.length > 0,
       decidir: esResponsable && p.estado === 'POR_APROBAR',
       reabrir: arma && p.estado === 'APROBADO',
+      enviarAlCliente: (esResponsable || arma) && p.estado === 'CON_EL_CLIENTE',
     },
+    // El enlace abierto para el cliente, si ya se creó (F3b).
+    enlace: await enlaceAbierto(p.id),
   };
 };
 
@@ -359,13 +362,18 @@ export const decidirPlanning = async (tenant: TenantContext, id: string, accion:
   const texto = typeof comentario === 'string' ? comentario.trim().slice(0, 1000) : '';
   if (accion === 'devolver' && !texto) throw new TenantError('Para devolverla, di qué hay que cambiar', 400);
   const marca = await prisma.client.findUnique({ where: { id: p.clientId }, select: { name: true } });
+  // En una campaña «con cliente», la aprobación del responsable no es la última: falta el cliente por enlace.
+  const conCliente = accion === 'aprobar' && p.campana.modoAprobacion === 'CLIENTE';
   const aviso = await prisma.$transaction(async tx => {
-    await tx.planning.update({ where: { id }, data: { estado: accion === 'aprobar' ? 'APROBADO' : 'DEVUELTO' } });
+    await tx.planning.update({
+      where: { id },
+      data: { estado: accion === 'devolver' ? 'DEVUELTO' : conCliente ? 'CON_EL_CLIENTE' : 'APROBADO' },
+    });
     await evento(tx, id, accion === 'aprobar' ? 'APROBADO' : 'DEVUELTO', p.version, tenant.userId, texto || undefined);
     return avisar(tx, tenant, p.clientId, {
       tipo: accion === 'aprobar' ? AVISOS_PLANNING.APROBADO : AVISOS_PLANNING.DEVUELTO,
       userIds: await quienesLoArmaron(tx, id, p.creadoPorId),
-      titulo: accion === 'aprobar' ? 'Aprobaron la sábana' : 'Devolvieron la sábana',
+      titulo: accion === 'devolver' ? 'Devolvieron la sábana' : conCliente ? 'El responsable aprobó la sábana: falta el cliente' : 'Aprobaron la sábana',
       detalle: accion === 'aprobar' ? `${p.campana.name} · ${marca?.name ?? ''}` : `${p.campana.name}: «${texto}»`,
     });
   });
@@ -400,4 +408,126 @@ export const elegirUbicaciones = async (tenant: TenantContext, id: string, linea
   if (elegidas.some(u => !validas.has(u))) throw new TenantError('Esa ubicación no es de esta pieza', 400);
   // Elegirlas todas es lo mismo que no elegir: se guarda vacío.
   await prisma.lineaDePlanning.update({ where: { id: lineaId }, data: { ubicacionIds: elegidas.length === validas.size ? [] : elegidas } });
+};
+
+// ------------------------------------------------------------------------------- el cliente, por enlace (F3b)
+
+const DIAS_DEL_ENLACE = 14;
+
+const urlDe = (token: string) => `${(process.env.APP_URL || 'https://myvoice.lobueno.co').replace(/\/$/, '')}/?review=${token}`;
+
+/** La sesión de revisión abierta del planning, si la hay: el mismo enlace se comparte, no se crea otro. */
+const enlaceAbierto = async (planningId: string) => {
+  const s = await prisma.reviewSession.findFirst({
+    where: { ronda: 'SABANA', status: { not: 'COMPLETED' }, expiresAt: { gt: new Date() }, items: { some: { planningId } } },
+    orderBy: { createdAt: 'desc' },
+    select: { token: true, expiresAt: true },
+  });
+  return s ? { url: urlDe(s.token), venceEn: s.expiresAt.toISOString() } : null;
+};
+
+/**
+ * El enlace para que el cliente apruebe la sábana (P5, campañas «con cliente»). Lo crea el responsable o
+ * Planning cuando el responsable ya la aprobó. Si ya hay uno abierto, devuelve ese.
+ */
+export const enlaceParaElCliente = async (tenant: TenantContext, id: string) => {
+  const p = await assertPlanningInWorkspace(tenant, id);
+  const puede = p.campana.responsable?.id === tenant.userId || (await puedeActuar(tenant, 'CDM', p.clientId));
+  if (!puede) throw new TenantError('El enlace lo manda el responsable de la campaña o Planning', 403);
+  if (p.estado !== 'CON_EL_CLIENTE') throw new TenantError('La sábana todavía no está lista para el cliente', 409);
+  const abierto = await enlaceAbierto(p.id);
+  if (abierto) return abierto;
+  const s = await prisma.$transaction(async tx => {
+    const sesion = await tx.reviewSession.create({
+      data: {
+        title: `Sábana · ${p.campana.name}`,
+        ronda: 'SABANA',
+        workspaceId: tenant.workspaceId,
+        createdById: tenant.userId,
+        expiresAt: new Date(Date.now() + DIAS_DEL_ENLACE * 86_400_000),
+        items: { create: [{ planningId: p.id }] },
+      },
+      select: { token: true, expiresAt: true },
+    });
+    await evento(tx, p.id, 'ENVIADO_AL_CLIENTE', p.version, tenant.userId);
+    return sesion;
+  });
+  return { url: urlDe(s.token), venceEn: s.expiresAt.toISOString() };
+};
+
+/**
+ * Lo que ve el cliente detrás del token, sin cuenta: la campaña, la marca, las fechas y la sábana. Nada de
+ * nombres internos, versiones de formato ni historial: este contenido es público para quien tenga el enlace.
+ */
+export const presentarParaElCliente = async (planningId: string) => {
+  const p = await prisma.planning.findUniqueOrThrow({
+    where: { id: planningId },
+    include: {
+      campana: { select: { name: true, client: { select: { name: true } } } },
+      lineas: {
+        orderBy: { orden: 'asc' },
+        select: {
+          id: true,
+          etapa: true,
+          piezas: true,
+          desde: true,
+          hasta: true,
+          formato: { select: { nombre: true, medio: { select: { nombre: true } } } },
+          version: { select: { anchoPx: true, altoPx: true, guia: true } },
+        },
+      },
+    },
+  });
+  return {
+    id: p.id,
+    campana: p.campana.name,
+    marca: p.campana.client?.name ?? null,
+    estado: p.estado,
+    desde: p.desde?.toISOString() ?? null,
+    hasta: p.hasta?.toISOString() ?? null,
+    etapas: p.etapas,
+    lineas: p.lineas.map(l => ({
+      id: l.id,
+      medio: l.formato.medio.nombre,
+      formato: l.formato.nombre,
+      medidas:
+        (l.version.guia as { medidas?: string[] } | null)?.medidas?.join(' · ') ??
+        (l.version.anchoPx && l.version.altoPx ? `${l.version.anchoPx} × ${l.version.altoPx}` : null),
+      etapa: l.etapa,
+      piezas: l.piezas,
+      desde: l.desde?.toISOString() ?? null,
+      hasta: l.hasta?.toISOString() ?? null,
+    })),
+  };
+};
+
+/**
+ * La respuesta del cliente, dentro de la transacción del portal: aprueba la sábana o la devuelve con
+ * comentario. Solo si sigue «con el cliente»; el autor del evento es quien mandó el enlace, y el nombre del
+ * cliente queda en el comentario. Avisa a quien la armó y al responsable.
+ */
+export const aplicarRespuestaDelCliente = async (
+  tx: Prisma.TransactionClient,
+  sesion: { workspaceId: string; createdById: string },
+  planningId: string,
+  aprueba: boolean,
+  comentario: string,
+  cliente: string
+) => {
+  const p = await tx.planning.findUniqueOrThrow({
+    where: { id: planningId },
+    include: { campana: { select: { id: true, name: true, responsableId: true, client: { select: { name: true } } } } },
+  });
+  if (p.estado !== 'CON_EL_CLIENTE') throw new TenantError('Esta sábana ya no espera la respuesta del cliente', 409);
+  await tx.planning.update({ where: { id: p.id }, data: { estado: aprueba ? 'APROBADO' : 'DEVUELTO' } });
+  const texto = comentario ? `${cliente}: «${comentario}»` : cliente;
+  await evento(tx, p.id, aprueba ? 'APROBADO_POR_CLIENTE' : 'DEVUELTO_POR_CLIENTE', p.version, sesion.createdById, texto);
+  const tenant = { workspaceId: sesion.workspaceId, userId: '', role: 'MEMBER' } as TenantContext;
+  const aviso = await avisar(tx, tenant, p.clientId, {
+    tipo: aprueba ? AVISOS_PLANNING.APROBADO : AVISOS_PLANNING.DEVUELTO,
+    userIds: [...(await quienesLoArmaron(tx, p.id, p.creadoPorId)), ...(p.campana.responsableId ? [p.campana.responsableId] : [])],
+    titulo: aprueba ? 'El cliente aprobó la sábana' : 'El cliente devolvió la sábana',
+    detalle: aprueba ? `${p.campana.name} · ${p.campana.client?.name ?? ''}` : `${p.campana.name}: «${comentario}»`,
+  });
+  return () => enviarCorreos(aviso, p.campana.id, p.campana.client?.name ?? '');
 };

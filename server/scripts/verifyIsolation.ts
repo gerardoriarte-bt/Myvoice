@@ -253,6 +253,15 @@ async function main() {
       await expectDenied('PUT /cdm/plannings/:id/lineas de A', `/cdm/plannings/${planA.id}/lineas`, B.token, { method: 'PUT', body: JSON.stringify({ lineas: [] }) });
       await expectDenied('POST /cdm/plannings sobre una campaña de A', '/cdm/plannings', B.token, { method: 'POST', body: JSON.stringify({ campanaId: A.project.id, etapas: ['RECONOCIMIENTO'] }) });
       await expectAllowed('GET /cdm/plannings/:id propio', `/cdm/plannings/${planA.id}`, A.token);
+      await expectDenied('POST /cdm/plannings/:id/enlace de A', `/cdm/plannings/${planA.id}/enlace`, B.token, { method: 'POST' });
+      // El portal publica detrás de un token sin cuenta: un item lleva exactamente una cosa (CHECK de F3b).
+      const sesion = await prisma.reviewSession.create({
+        data: { title: 'Verif sábana', ronda: 'SABANA', workspaceId: A.workspace.id, createdById: A.user.id, expiresAt: new Date(Date.now() + 86_400_000) },
+      });
+      const mezcla = await prisma.reviewSessionItem
+        .create({ data: { reviewSessionId: sesion.id, planningId: planA.id, savedVariationId: A.variation.id } })
+        .then(() => 'aceptó', () => 'rechazó');
+      record('Un item del portal no lleva planning y copy a la vez (CHECK)', mezcla === 'rechazó', `la base ${mezcla} la mezcla`);
       await expectDenied('PUT /cdm/biblioteca/medios/:id/estado de A', `/cdm/biblioteca/medios/${medioA.id}/estado`, B.token, { method: 'PUT', body: JSON.stringify({ estado: 'OCULTO' }) });
       // Editar la biblioteca es de Planning o de un admin: un MEMBER sin la función no carga planillas.
       const sinPlanning = await nuevoMiembro(B.workspace.id, 'sin-planning');

@@ -89,7 +89,7 @@ export default function Plannings({ marcaId, marcaNombre, campanaId, onAviso }: 
   if (!lista) return <div className="h-48" />;
 
   const grupos: { titulo: string; estados: PlanningResumen['estado'][] }[] = [
-    { titulo: 'Por aprobar', estados: ['POR_APROBAR'] },
+    { titulo: 'Por aprobar', estados: ['POR_APROBAR', 'CON_EL_CLIENTE'] },
     { titulo: 'Sin enviar', estados: ['EN_ARMADO', 'DEVUELTO'] },
     { titulo: 'Aprobados', estados: ['APROBADO'] },
   ];
@@ -139,6 +139,7 @@ export default function Plannings({ marcaId, marcaNombre, campanaId, onAviso }: 
                     )}
                   </div>
                   {p.estado === 'POR_APROBAR' && <span className="text-[12px] text-[#3A3A3C]">Espera a {p.aprueba?.name ?? 'el responsable'}</span>}
+                  {p.estado === 'CON_EL_CLIENTE' && <span className="text-[12px] text-[#3A3A3C]">Con el cliente</span>}
                   <span className="text-[12px] font-semibold text-[#047857]">{p.estado === 'APROBADO' ? 'Abrir' : 'Seguir'} →</span>
                 </button>
               ))}
@@ -329,8 +330,8 @@ function Planning({ id, onVolver, onAviso }: { id: string; onVolver: () => void;
 
   if (!p) return error ? <p className="text-[13px] text-red-600">{error}</p> : <div className="h-48" />;
 
-  const paso = p.estado === 'APROBADO' || p.estado === 'POR_APROBAR' ? 3 : vista === 'medios' ? 1 : 2;
-  const devuelto = p.estado === 'DEVUELTO' ? p.eventos.find(e => e.tipo === 'DEVUELTO') : null;
+  const paso = p.estado === 'APROBADO' || p.estado === 'POR_APROBAR' || p.estado === 'CON_EL_CLIENTE' ? 3 : vista === 'medios' ? 1 : 2;
+  const devuelto = p.estado === 'DEVUELTO' ? p.eventos.find(e => e.tipo === 'DEVUELTO' || e.tipo === 'DEVUELTO_POR_CLIENTE') : null;
 
   return (
     <div className="space-y-5 pb-8">
@@ -346,7 +347,10 @@ function Planning({ id, onVolver, onAviso }: { id: string; onVolver: () => void;
       </div>
       {devuelto && (
         <div className="rounded-[10px] border border-amber-200 bg-amber-50 px-4 py-2.5 text-[12.5px] text-amber-900">
-          {devuelto.autor ?? 'El responsable'} la devolvió: «{devuelto.comentario}». Ajústala y vuelve a enviarla.
+          {devuelto.tipo === 'DEVUELTO_POR_CLIENTE'
+            ? `El cliente la devolvió (${devuelto.comentario}).`
+            : `${devuelto.autor ?? 'El responsable'} la devolvió: «${devuelto.comentario}».`}{' '}
+          Ajústala y vuelve a enviarla.
         </div>
       )}
       {error && <p className="text-[12.5px] text-red-600">{error}</p>}
@@ -369,6 +373,17 @@ function Planning({ id, onVolver, onAviso }: { id: string; onVolver: () => void;
           onDevolver={comentario => hacer(() => cdmApi.devolverPlanning(p.id, comentario), 'Sábana devuelta con tu comentario')}
           onReabrir={() => hacer(() => cdmApi.reabrirPlanning(p.id))}
           onUbicaciones={(lineaId, ids) => hacer(() => cdmApi.elegirUbicaciones(p.id, lineaId, ids))}
+          onEnlace={async () => {
+            setError(null);
+            try {
+              const e = await cdmApi.enlaceCliente(p.id);
+              setP({ ...p, enlace: e });
+              await navigator.clipboard?.writeText(e.url).catch(() => undefined);
+              onAviso('Enlace copiado: compártelo con el cliente');
+            } catch (err) {
+              setError(err instanceof Error ? err.message : 'No se pudo crear el enlace');
+            }
+          }}
         />
       )}
 
@@ -379,9 +394,20 @@ function Planning({ id, onVolver, onAviso }: { id: string; onVolver: () => void;
             {p.eventos.map((e, i) => (
               <li key={i}>
                 <span className="text-[#86868B]">{new Date(e.fecha).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' })}</span> ·{' '}
-                {{ CREADO: 'Creado', ENVIADO: 'Enviado a aprobación', APROBADO: 'Aprobado', DEVUELTO: 'Devuelto', REABIERTO: 'Reabierto' }[e.tipo] ?? e.tipo} (v{e.version})
-                {e.autor ? ` por ${e.autor}` : ''}
-                {e.comentario ? `: «${e.comentario}»` : ''}
+                {{
+                  CREADO: 'Creado',
+                  ENVIADO: 'Enviado a aprobación',
+                  APROBADO: 'Aprobado',
+                  DEVUELTO: 'Devuelto',
+                  REABIERTO: 'Reabierto',
+                  ENVIADO_AL_CLIENTE: 'Enlace para el cliente',
+                  APROBADO_POR_CLIENTE: 'Aprobado por el cliente',
+                  DEVUELTO_POR_CLIENTE: 'Devuelto por el cliente',
+                }[e.tipo] ?? e.tipo} (v{e.version})
+                {/* Del cliente: el comentario ya trae su nombre; el autor guardado es quien mandó el enlace. */}
+                {e.tipo.endsWith('_POR_CLIENTE')
+                  ? ` · ${e.comentario}`
+                  : `${e.autor ? ` por ${e.autor}` : ''}${e.comentario ? `: «${e.comentario}»` : ''}`}
               </li>
             ))}
           </ul>
@@ -580,6 +606,7 @@ function Sabana({
   onDevolver,
   onReabrir,
   onUbicaciones,
+  onEnlace,
 }: {
   planning: PlanningDetalle;
   onMedios: () => void;
@@ -588,6 +615,7 @@ function Sabana({
   onDevolver: (comentario: string) => void;
   onReabrir: () => void;
   onUbicaciones: (lineaId: string, ubicacionIds: string[]) => void;
+  onEnlace: () => void;
 }) {
   const [comentario, setComentario] = React.useState('');
   const [abierta, setAbierta] = React.useState<string | null>(null);
@@ -700,6 +728,11 @@ function Sabana({
           </p>
           {p.estado === 'POR_APROBAR' && !p.puedo.decidir && <p className="mt-2 text-[12.5px] text-amber-700">Enviada: espera a {p.aprueba?.name}.</p>}
           {p.estado === 'APROBADO' && <p className="mt-2 text-[12.5px] font-semibold text-[#047857]">Aprobada.</p>}
+          {p.estado === 'CON_EL_CLIENTE' && (
+            <p className="mt-2 text-[12.5px] text-amber-700">
+              {p.aprueba?.name} la aprobó. Falta el cliente: {p.enlace ? 'el enlace ya está creado.' : 'crea el enlace y compártelo.'}
+            </p>
+          )}
         </div>
       </section>
 
@@ -735,6 +768,18 @@ function Sabana({
           <button type="button" onClick={onEnviar} disabled={!p.aprueba} className={primario}>
             Enviar a aprobación
           </button>
+        )}
+        {p.puedo.enviarAlCliente && (
+          <div className="flex items-center gap-2">
+            {p.enlace && (
+              <span className="text-[11.5px] text-[#86868B]">
+                Vence el {new Date(p.enlace.venceEn).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })}
+              </span>
+            )}
+            <button type="button" onClick={onEnlace} className={primario}>
+              {p.enlace ? 'Copiar el enlace para el cliente' : 'Crear el enlace para el cliente'}
+            </button>
+          </div>
         )}
         {p.puedo.reabrir && (
           <button type="button" onClick={onReabrir} className={secundario}>

@@ -179,6 +179,8 @@ enum EstadoPlanning {
   POR_APROBAR
   DEVUELTO
   APROBADO
+  /// F3b: el responsable la aprobó y, como la campaña es «con cliente», falta el cliente por enlace.
+  CON_EL_CLIENTE
 }
 
 /// El planning de una campaña (P1 a P5): uno por campaña, que se crea antes (decisión 24). Cada envío sube la
@@ -197,9 +199,10 @@ model Planning {
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
 
-  campana Project            @relation(fields: [campanaId], references: [id], onDelete: Cascade)
-  lineas  LineaDePlanning[]
-  eventos EventoDePlanning[]
+  campana         Project             @relation(fields: [campanaId], references: [id], onDelete: Cascade)
+  lineas          LineaDePlanning[]
+  eventos         EventoDePlanning[]
+  itemsDeRevision ReviewSessionItem[]
 
   @@index([workspaceId, clientId])
 }
@@ -233,6 +236,11 @@ enum TipoEventoPlanning {
   APROBADO
   DEVUELTO
   REABIERTO
+  /// F3b: la ronda del cliente por enlace. El autor es quien mandó el enlace; el nombre del cliente va en
+  /// el comentario.
+  ENVIADO_AL_CLIENTE
+  APROBADO_POR_CLIENTE
+  DEVUELTO_POR_CLIENTE
 }
 
 /// El historial del planning: no se edita (regla 5 del plan). Un «devuelto» lleva su comentario.
