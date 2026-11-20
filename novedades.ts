@@ -48,6 +48,16 @@ export interface Novedad {
 
 export const NOVEDADES: Novedad[] = [
   {
+    id: 'pedidos-de-copy',
+    fecha: '2026-11-20',
+    titulo: 'Pedidos de copy: lo que pide CDM, por campaña y estado',
+    cambios: [
+      'En Copywriting está la pantalla Pedidos: cada línea de una sábana aprobada es un pedido, con su formato, su etapa, cuántas piezas y el largo de cada texto.',
+      'Las pestañas Por escribir, En aprobación y Listos ordenan los pedidos; cada campaña muestra cuánto lleva listo.',
+      '«Escribir» abre Generar con la campaña, el medio, la etapa y las piezas ya elegidos, y lo que guardes cuenta para ese pedido.',
+    ],
+  },
+  {
     id: 'copywriting-y-aprobacion',
     fecha: '2026-11-20',
     titulo: 'Copywriting se entera de la sábana aprobada, y quién puede aprobar',

@@ -329,6 +329,20 @@ las tablas de CDM van en `cdm.prisma`.
   comentario: la sábana queda `APROBADO` o `DEVUELTO` y avisa a quien la armó y al responsable.
 - El CHECK del portal pasa de XOR a «exactamente uno» entre copy, pieza y planning.
 
+**F4 (1) (2026-11-20): los pedidos de copy en Copywriting**, hecho sin el `.pen` (se compara el 29-nov):
+- **Un pedido es una línea de una sábana aprobada:** formato, etapa, piezas y el largo de cada texto. No hay tabla
+  de pedidos: se leen de CDM y su estado se calcula al leer con el copy guardado (`SavedVariation.lineaDePlanningId`).
+  - **Por escribir:** faltan piezas.
+  - **En aprobación:** están todas escritas y falta aprobar alguna.
+  - **Listo:** todas sus piezas están aprobadas.
+- **Copywriting › Pedidos** (`src/myvoice/PedidosDeCopy.tsx`, `GET /copywriting/pedidos`): pestañas por estado y una
+  tarjeta por campaña con su avance y sus pedidos agrupados por etapa (Gerardo eligió campaña › pedidos).
+- **«Escribir»** abre Generar con la campaña, el canal, la etapa y las piezas ya puestos. Lo que se guarda queda
+  ligado a la línea, y el servidor rechaza un pedido de otra campaña o de otro canal.
+- **Hueco:** los formatos sin canal de Generar no se pueden escribir todavía. Son las 6 piezas maestras de Meta
+  Ads (decisión 18), y la pantalla lo dice.
+- **Deuda:** al guardar, My Voice lee directo la línea de CDM para validarla (`pedidoValido` en `savedController.ts`).
+
 **Lo que falta:**
 - Que My Voice espere a la sábana aprobada en las marcas con CDM (regla 2), junto con F4.
 

@@ -12,9 +12,10 @@ import PromptPreview from './components/PromptPreview';
 import UserManager from './components/UserManager';
 import UserHeader from './components/UserHeader';
 import NotificationSystem, { Notification, NotificationType } from './components/NotificationSystem';
-import { CopyParameters, CopyVariation, ReviewSession, SavedVariation, BrandConfig, Client, User, WorkspaceMember, WorkspaceSummary, canManageWorkspace, ContentDNAProfile } from './types';
+import { CopyParameters, CopyVariation, ReviewSession, SavedVariation, BrandConfig, Client, User, WorkspaceMember, WorkspaceSummary, canManageWorkspace, ContentDNAProfile, PedidoAEscribir } from './types';
 import TableroProduccion from './components/produccion/TableroProduccion';
 import CrearPiezasModal from './components/produccion/CrearPiezasModal';
+import PedidosDeCopy from './src/myvoice/PedidosDeCopy';
 import PorAprobar from './src/plataforma/PorAprobar';
 import Bandeja, { DestinoAviso } from './components/Bandeja';
 import { NAV_STAGES, SCREENS, ScreenId, puedeVer } from './screens';
@@ -135,6 +136,10 @@ const App: React.FC = () => {
   const [coherence, setCoherence] = React.useState<any | null>(null);
   const [spine, setSpine] = React.useState<any | null>(null);
   const [lastParams, setLastParams] = React.useState<CopyParameters | null>(null);
+  // F4: el pedido que se está escribiendo (precarga Generar) y el de lo que se generó (el copy guardado queda
+  // ligado a su línea de la sábana solo si se generó con el mismo canal y la misma campaña).
+  const [pedidoAEscribir, setPedidoAEscribir] = React.useState<PedidoAEscribir | null>(null);
+  const [pedidoGenerado, setPedidoGenerado] = React.useState<PedidoAEscribir | null>(null);
   const [progressPlatforms, setProgressPlatforms] = React.useState<string[]>([]);
   const [progressSpineDone, setProgressSpineDone] = React.useState(false);
   const [progressChannelStatus, setProgressChannelStatus] = React.useState<Record<string, 'pending' | 'active' | 'done' | 'error'>>({});
@@ -439,6 +444,11 @@ const App: React.FC = () => {
     if (!isAdmin) return;
     setIsLoading(true);
     setLastParams(params);
+    setPedidoGenerado(
+      pedidoAEscribir && params.platforms[0] === pedidoAEscribir.canal && params.dnaProfileId === pedidoAEscribir.dnaProfileId
+        ? pedidoAEscribir
+        : null
+    );
     setCoherence(null);
     setSpine(null);
 
@@ -678,6 +688,7 @@ const App: React.FC = () => {
         ...variation,
         clientId,
         dnaProfileId: lastParams?.dnaProfileId,
+        lineaDePlanningId: pedidoGenerado?.lineaId,
         tags: []
       });
       setSavedVariations(prev => [{ ...saved, savedAt: new Date(saved.savedAt).getTime() }, ...prev]);
@@ -777,6 +788,8 @@ const App: React.FC = () => {
               }}
               miembros={users}
               puedeEditarAprobacion={isAdmin}
+              pedido={pedidoAEscribir}
+              onQuitarPedido={() => setPedidoAEscribir(null)}
               onError={m => addNotification(m, 'error')}
             />
           </div>
@@ -1118,6 +1131,21 @@ const App: React.FC = () => {
       )}
       {activeTab === 'analytics' && isAdmin && <Analytics />}
       {activeTab === 'control' && superAdmin && <Control />}
+      {activeTab === 'pedidos' && plataforma && activeClient && (
+        <PedidosDeCopy
+          key={activeClient.id}
+          marcaId={activeClient.id}
+          onEscribir={pedido => {
+            setPedidoAEscribir(pedido);
+            setCampanaId(pedido.campanaId);
+            setActiveTab('generator');
+          }}
+          onVerCopy={campana => {
+            setCampanaId(campana);
+            setActiveTab('saved');
+          }}
+        />
+      )}
       {activeTab === 'plannings' && plataforma && activeClient && (
         <Plannings
           key={activeClient.id}

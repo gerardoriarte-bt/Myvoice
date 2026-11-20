@@ -231,7 +231,9 @@ session must be workspace-filtered.
 (2026-11-20) a campaign may also have added approvers** (`AprobadorDeCampana`): any of them decides sábana, copy and
 pieces, the first one wins. Ask `server/src/comun/aprobadores.ts` (`apruebaLaCampana`, `quienesAprueban`,
 `SELECT_APROBADORES`) — never compare `responsableId` by hand. `GET /por-aprobar` (`server/src/plataforma/porAprobar.ts`)
-feeds the always-visible «Por aprobar · N» header button. Only people with the `APROBACION` team function can be
+feeds the always-visible «Por aprobar · N» header button. **F4 copy requests** (`GET /copywriting/pedidos`,
+`server/src/plataforma/pedidosDeCopy.ts`): each line of an approved CDM sábana is a request; its state (por escribir →
+en aprobación → listo) is computed on read from `SavedVariation.lineaDePlanningId`, never stored. Only people with the `APROBACION` team function can be
 chosen as responsable or added approver (`elegiblesPara`; anyone, while nobody in the workspace has it).
 `isApproved` is **not** in the `PUT /saved/:id` allow-list: internal approval goes through
 `POST /saved/aprobacion` and only the campaign's responsable may decide; client approval comes only

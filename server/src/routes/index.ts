@@ -17,6 +17,7 @@ import * as bibliotecaController from '../cdm/biblioteca/bibliotecaController.js
 import * as planningController from '../cdm/planning/planningController.js';
 import * as aprobadoresController from '../comun/aprobadoresController.js';
 import { porAprobar } from '../plataforma/porAprobar.js';
+import { pedidos as pedidosDeCopy } from '../plataforma/pedidosDeCopy.js';
 
 const router = Router();
 const pdfUpload = multer({
@@ -157,6 +158,8 @@ router.get('/projects/:id/aprobadores', ...inWorkspace, aprobadoresController.li
 router.post('/projects/:id/aprobadores', ...inWorkspace, aprobadoresController.sumar);
 router.delete('/projects/:id/aprobadores/:userId', ...inWorkspace, aprobadoresController.quitar);
 router.get('/por-aprobar', ...inWorkspace, porAprobar);
+// F4: los pedidos de copy que llegan de CDM, por campaña y estado.
+router.get('/copywriting/pedidos', ...inWorkspace, pedidosDeCopy);
 router.post('/projects', ...inWorkspace, savedController.createProject);
 router.get('/projects/de-brief/:dnaProfileId', ...inWorkspace, savedController.getCampanaDeBrief);
 router.patch('/projects/:id', ...inWorkspace, savedController.updateProject);
