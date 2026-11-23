@@ -1,3 +1,4 @@
+import { getChannelSpec, zonaDe } from '../channels/registry.js';
 import { Request, Response } from 'express';
 import { AuthRequest, handleTenantError } from '../middleware/auth.js';
 import { filterVariationsInWorkspace, TenantError } from '../lib/tenancy.js';
@@ -212,6 +213,14 @@ export const getReviewByToken = async (req: Request, res: Response) => {
                 charCount: true,
                 clientId: true,
                 client: { select: { name: true } },
+                // Para que el cliente vea piezas y no textos sueltos (2026-11-23): un anuncio de Google Ads es uno,
+                // con sus 18 textos, no 18 anuncios.
+                slot: true,
+                slotLabel: true,
+                conjuntoId: true,
+                piezaIndex: true,
+                variationIndex: true,
+                project: { select: { name: true, dnaProfile: { select: { goal: true } } } },
               },
             },
           },
@@ -255,7 +264,25 @@ export const getReviewByToken = async (req: Request, res: Response) => {
      * marca se puede afirmar sin recorrer los items — y el cliente necesita
      * reconocer de entrada que lo que está mirando es lo suyo.
      */
-    res.json({ ...session, marca: session.items[0]?.savedVariation?.client?.name ?? null });
+    // Cada texto con su zona (en la pieza, acompaña la publicación o indicación interna) y su orden en la pieza,
+    // según el spec del canal. Las campañas, con su objetivo, para que el cliente sepa qué está aprobando.
+    const items = session.items.map(i => {
+      const v = i.savedVariation;
+      if (!v) return i;
+      const slots = getChannelSpec(v.platform)?.slots ?? [];
+      const base = v.slot?.replace(/\d+$/, '') ?? null;
+      const orden = slots.findIndex(s => s.id === v.slot || s.id === base);
+      const { project, ...resto } = v;
+      return { ...i, savedVariation: { ...resto, zona: zonaDe(v.platform, v.slot), ordenSlot: orden < 0 ? 99 : orden, campana: project?.name ?? null } };
+    });
+    const campanas = new Map<string, string | null>();
+    for (const i of session.items) if (i.savedVariation?.project) campanas.set(i.savedVariation.project.name, i.savedVariation.project.dnaProfile?.goal ?? null);
+    res.json({
+      ...session,
+      items,
+      marca: session.items[0]?.savedVariation?.client?.name ?? null,
+      campanas: [...campanas.entries()].map(([nombre, objetivo]) => ({ nombre, objetivo })),
+    });
   } catch (error) {
     console.error('getReviewByToken error:', error);
     res.status(500).json({ error: 'Error al cargar la sesión de revisión' });

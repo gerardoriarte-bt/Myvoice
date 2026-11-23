@@ -276,8 +276,9 @@ at boot closes audits cut by a restart. `Project.pideAprobacionDeCliente` is leg
 ### Frontend
 
 No router. `App.tsx` (~1000 lines, the god component holding nearly all state) switches on
-query params: `?review=<token>` renders `ReviewPortal` — which delegates to `RevisionDePiezas`
-when the session's `ronda` is `PIEZA` — `?invite=<token>` is picked up by the login components,
+query params: `?review=<token>` renders `ReviewPortal` — which delegates to `RevisionDeCopy` (`COPY`: by medium and
+by piece, decided per piece; internal `indicacion` texts are hidden but carry the piece's decision), `RevisionDePiezas`
+(`PIEZA`) or `RevisionDeSabana` (`SABANA`) — `?invite=<token>` is picked up by the login components,
 and `?pieza=<id>&marca=<clientId>` is where the notification emails land (the URL is cleaned
 after reading, so a refresh does not reopen an old piece).
 
