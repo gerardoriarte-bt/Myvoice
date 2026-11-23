@@ -55,7 +55,7 @@ Cada función con su estado en las tres pistas. Se actualiza en el mismo PR que 
 | Responsable | Revisión agrupada (200 líneas) | ○ | ○ | ○ | MV-7 |
 | Responsable | Qué texto va en qué formato | ○ | ○ | ○ | MV-9 |
 | Responsable | Aprobación de copy por campaña | ● | ● | ● | (v1) · 2026-11-23: Copy con el carril primero y «Crear enlace para el cliente» siempre a la vista ✓ |
-| Cliente | Aprobar copy y piezas en el portal | ● | ● | ● | (v1) |
+| Cliente | Aprobar copy y piezas en el portal | ◐ | ● | ● | (v1) · 2026-11-23: el copy por medio y por pieza, con contexto e instrucciones, en los 14 medios (#104, #105); sin el `.pen` |
 | Diseño, responsable | Producción y auditoría de piezas | ● | ● | ● | MV-10 |
 
 ## CDM
