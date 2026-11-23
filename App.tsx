@@ -16,6 +16,7 @@ import { CopyParameters, CopyVariation, ReviewSession, SavedVariation, BrandConf
 import TableroProduccion from './components/produccion/TableroProduccion';
 import CrearPiezasModal from './components/produccion/CrearPiezasModal';
 import PedidosDeCopy from './src/myvoice/PedidosDeCopy';
+import Implementacion from './src/implementacion/Implementacion';
 import PorAprobar from './src/plataforma/PorAprobar';
 import Bandeja, { DestinoAviso } from './components/Bandeja';
 import { NAV_STAGES, SCREENS, ScreenId, puedeVer } from './screens';
@@ -1124,6 +1125,19 @@ const App: React.FC = () => {
       )}
       {activeTab === 'analytics' && isAdmin && <Analytics />}
       {activeTab === 'control' && superAdmin && <Control />}
+      {activeTab === 'implementacion' && plataforma && activeClient && (
+        <Implementacion
+          key={activeClient.id}
+          marcaId={activeClient.id}
+          puedeMontar={
+            isAdmin ||
+            (currentUser?.funciones ?? []).some(
+              f => (f.funcion === 'TRAFFICKER' || f.funcion === 'COMMUNITY') && (!f.clientId || f.clientId === activeClient.id)
+            )
+          }
+          onAviso={(m, tipo) => addNotification(m, tipo)}
+        />
+      )}
       {activeTab === 'pedidos' && plataforma && activeClient && (
         <PedidosDeCopy
           key={activeClient.id}
@@ -1231,6 +1245,10 @@ const App: React.FC = () => {
       onIrACopy={clientId => {
         setActiveClientId(clientId);
         setActiveTab('generator');
+      }}
+      onIrAImplementacion={clientId => {
+        setActiveClientId(clientId);
+        setActiveTab('implementacion');
       }}
     />
   );

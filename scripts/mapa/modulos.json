@@ -5,6 +5,7 @@
     "myvoice": "My Voice: motor y copy",
     "produccion": "Producción: piezas, su auditoría y la ronda de piezas con el cliente (decisión 23)",
     "cdm": "CDM: biblioteca, cuadro (todavía sin código)",
+    "implementacion": "Implementación (F5): el trafficker monta lo aprobado y deja constancia",
     "plataforma": "Marco y arranque: puede importar de todos",
     "compartido": "Infraestructura que todos pueden importar",
     "fuera": "Scripts, seeds y configuración: fuera de la regla"
@@ -58,6 +59,8 @@
     "server/src/plataforma/": "plataforma",
     "server/src/myvoice/": "myvoice",
     "server/src/cdm/": "cdm",
+    "server/src/implementacion/": "implementacion",
+    "src/implementacion/": "implementacion",
     "server/src/contrato/": "compartido",
     "src/plataforma/": "plataforma",
     "src/comun/": "comun",

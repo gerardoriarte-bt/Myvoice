@@ -904,10 +904,13 @@ export interface PlanningDetalle {
     ubicaciones: { id: string; plataforma: string; nombre: string; porConfirmar: boolean; alertaTexto: string | null }[];
     ubicacionIds: string[];
     porConfirmar: boolean;
+    /** F5 (P6): adónde lleva el anuncio y su UTM; los pega Planning. */
+    destino: string | null;
+    utm: string | null;
   }[];
   resumen: { medios: number; formatos: number; lineas: number; piezas: number };
   eventos: { tipo: string; version: number; autor: string | null; comentario: string | null; fecha: string }[];
-  puedo: { editar: boolean; enviar: boolean; decidir: boolean; reabrir: boolean; enviarAlCliente: boolean };
+  puedo: { editar: boolean; enviar: boolean; decidir: boolean; reabrir: boolean; enviarAlCliente: boolean; destino: boolean };
   /** El responsable y los aprobadores sumados (decisión 30): cualquiera decide. */
   aprueban: PersonaQueAprueba[];
   /** El enlace abierto para el cliente (F3b), si ya se creó. */
@@ -977,3 +980,29 @@ export interface CampanaConPedidos {
   lineas: PedidoDeCopy[];
 }
 
+
+/** F5 · Implementación: un anuncio (una pieza lista) con lo que le falta para montarse. */
+export type EstadoAnuncio = 'POR_MONTAR' | 'MONTADO' | 'CON_NOVEDAD';
+
+export interface AnuncioParaMontar {
+  piezaId: string;
+  clientId: string;
+  titulo: string;
+  platform: string;
+  formato: string;
+  campana: { id: string; nombre: string } | null;
+  linea: { id: string; planningId: string; medio: string; formato: string; etapa: EtapaDeFunnel; desde: string | null; hasta: string | null } | null;
+  textos: { slot: string; nombre: string; texto: string }[];
+  previaUrl: string | null;
+  enlace: string | null;
+  destino: string | null;
+  utm: string | null;
+  url: string | null;
+  faltas: { que: 'destino' | 'fecha' | 'utm'; texto: string; bloquea: boolean; quien: string }[];
+  listo: boolean;
+  estado: EstadoAnuncio;
+  montado: { plataforma: string | null; idEnPlataforma: string | null; en: string } | null;
+  novedad: string | null;
+  aprobaciones: { copy: { por: string; en: string | null; via: string | null }[]; pieza: { por: string; en: string; via: string } | null };
+  destinoEnLaLinea: boolean;
+}

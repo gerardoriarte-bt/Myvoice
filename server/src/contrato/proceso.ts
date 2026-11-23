@@ -3,7 +3,7 @@
  * dice cómo va su paso; la plataforma (`plataforma/proceso.ts`) los junta. Sin imports, como todo `contrato/`.
  */
 
-export type PasoId = 'marca' | 'cdm' | 'myvoice' | 'produccion';
+export type PasoId = 'marca' | 'cdm' | 'myvoice' | 'produccion' | 'implementacion';
 
 /**
  * hecho = ✓ · activo = en curso · pendiente = no empezó · bloqueado = espera algo de otro paso ·

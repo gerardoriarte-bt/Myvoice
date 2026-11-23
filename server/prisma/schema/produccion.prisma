@@ -81,6 +81,8 @@ model Pieza {
 
   notificaciones  Notificacion[]
   itemsDeRevision ReviewSessionItem[]
+  /// F5: el anuncio que se monta con esta pieza.
+  anuncio         Anuncio?
 
   /// Los dos ejes del tablero: por marca (la pantalla) y por persona (Mis piezas).
   @@unique([workspaceId, huella])

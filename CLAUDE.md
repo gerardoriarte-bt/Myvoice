@@ -303,6 +303,13 @@ Generar and Historial read it instead of keeping their own selector; only «Lo m
 live in the path (`src/plataforma/rutas.ts`: `/campana/:id/myvoice/copy`). Off, the sidebar of `NAV_STAGES`
 and no routes, as before. Never build a second version of a screen for the new frame.
 
+**Implementación (F5, `server/src/implementacion/` + `src/implementacion/`, its own module and schema file)**: an
+`Anuncio` is a piece in «Lista»; `implementacion/anuncios.ts` alone decides what is ready (approved piece +
+destination + launch date if it comes from a sábana; a missing UTM only warns) and reads piece, copy and line by
+contract. Destination/UTM live on the sábana line (Planning pastes them, no new version) or, without a sábana, on the
+`Anuncio`. Mount/return need the IMPLEMENTACION step (admin, Trafficker or Community). Step ⑤ shows on brands with
+the `IMPLEMENTACION` module.
+
 **`screens.ts` is the single source of screen names and of the stage order**, and the stages are
 the process: Preparar · Escribir · Aprobar · Producir · Medir · Administrar. They were reordered
 on 2026-09-26 because they weren't: «Revisiones» sat in stage 4 and happens *before* Producción,

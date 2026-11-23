@@ -20,6 +20,7 @@ import type {
   PorAprobar,
   AprobadoresDeCampana,
   CampanaConPedidos,
+  AnuncioParaMontar,
 } from '../types';
 
 
@@ -144,6 +145,9 @@ export const cdmApi = {
     apiRequest(`/cdm/plannings/${id}/devolver`, { method: 'POST', body: JSON.stringify({ comentario }) }),
   /** F3b: el enlace para que el cliente apruebe la sábana. Si ya hay uno abierto, devuelve ese. */
   enlaceCliente: (id: string): Promise<{ url: string; venceEn: string }> => apiRequest(`/cdm/plannings/${id}/enlace`, { method: 'POST' }),
+  /** P6 (F5): el destino y la UTM de una línea, sin versión nueva de la sábana. */
+  destinoDeLinea: (id: string, lineaId: string, datos: { destino?: string; utm?: string }): Promise<PlanningDetalle> =>
+    apiRequest(`/cdm/plannings/${id}/lineas/${lineaId}/destino`, { method: 'PUT', body: JSON.stringify(datos) }),
   reabrirPlanning: (id: string): Promise<PlanningDetalle> => apiRequest(`/cdm/plannings/${id}/reabrir`, { method: 'POST' }),
   medios: (): Promise<MedioResumen[]> => apiRequest('/cdm/biblioteca'),
   medio: (id: string): Promise<MedioDetalle> => apiRequest(`/cdm/biblioteca/medios/${id}`),
@@ -487,4 +491,16 @@ export const aprobacionesApi = {
 /** F4: los pedidos de copy que llegan de CDM, por campaña. */
 export const copywritingApi = {
   pedidos: (clientId: string): Promise<CampanaConPedidos[]> => apiRequest(`/copywriting/pedidos?clientId=${encodeURIComponent(clientId)}`),
+};
+
+/** F5 · Implementación: los anuncios por montar de una marca y lo que se hace con cada uno. */
+export const implementacionApi = {
+  anuncios: (clientId: string): Promise<AnuncioParaMontar[]> => apiRequest(`/implementacion/anuncios?clientId=${encodeURIComponent(clientId)}`),
+  montar: (piezaId: string, datos: { plataforma: string; idEnPlataforma: string; montadoEn?: string }): Promise<AnuncioParaMontar> =>
+    apiRequest(`/implementacion/anuncios/${piezaId}/montar`, { method: 'POST', body: JSON.stringify(datos) }),
+  devolver: (piezaId: string, datos: { motivo: string; texto: string }): Promise<AnuncioParaMontar> =>
+    apiRequest(`/implementacion/anuncios/${piezaId}/devolver`, { method: 'POST', body: JSON.stringify(datos) }),
+  reabrir: (piezaId: string): Promise<AnuncioParaMontar> => apiRequest(`/implementacion/anuncios/${piezaId}/reabrir`, { method: 'POST' }),
+  destino: (piezaId: string, datos: { destino?: string; utm?: string }): Promise<AnuncioParaMontar> =>
+    apiRequest(`/implementacion/anuncios/${piezaId}/destino`, { method: 'PUT', body: JSON.stringify(datos) }),
 };

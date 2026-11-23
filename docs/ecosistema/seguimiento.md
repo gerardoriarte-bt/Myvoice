@@ -74,6 +74,15 @@ Cada función con su estado en las tres pistas. Se actualiza en el mismo PR que 
 | Planning | Estado por línea | ○ | ○ | ○ | CD-8 |
 | Planning | Portafolio | ○ | ○ | ○ | CD-9 |
 
+## Implementación
+
+| Usuario | Función | Diseño | Front | Back | Requisito |
+|---|---|---|---|---|---|
+| Trafficker, community | Por montar: copiar, marcar montado y devolver con novedad (T1 a T4) | ○ | ✓ | ✓ | F5 (1), 2026-11-23, sin el `.pen` |
+| Planning | Destino y UTM por línea, sin versión nueva (P6) | ○ | ✓ | ✓ | F5 (1) · decisión 20 |
+| Responsable | Reporte de implementación e historial de aprobaciones (T5) | ○ | ○ | ○ | fase B |
+| Trafficker | Mi cola de todas las marcas | ○ | ○ | ○ | |
+
 ## IA
 
 Detalle y prioridad de cada uso en [producto/prd-ia.md](./producto/prd-ia.md). Diseño = la pantalla

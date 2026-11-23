@@ -1,0 +1,53 @@
+// Implementación (F5, ⑤): el trafficker y el community manager montan lo aprobado y dejan constancia.
+// docs/plan-plataforma-por-procesos.md § F5 y el plan de Implementación (PR #65).
+
+/// Un anuncio: una pieza lista que se monta en una plataforma. Se crea la primera vez que alguien actúa sobre la
+/// pieza (montarla, devolverla, pegarle el destino); mientras tanto, «por montar» se calcula al leer.
+model Anuncio {
+  id             String          @id @default(uuid())
+  workspaceId    String
+  clientId       String
+  piezaId        String          @unique
+  /// Sin CDM, el destino y la UTM se pegan aquí (el puente de la fase A). Con CDM, manda la línea de la sábana.
+  destino        String?
+  utm            String?
+  estado         EstadoAnuncio   @default(POR_MONTAR)
+  plataforma     String?
+  idEnPlataforma String?
+  montadoEn      DateTime?
+  montadoPorId   String?
+  /// La última novedad, cuando el trafficker lo devolvió.
+  novedad        String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  pieza          Pieza           @relation(fields: [piezaId], references: [id], onDelete: Cascade)
+  eventos        AnuncioEvento[]
+
+  @@index([workspaceId, clientId])
+}
+
+enum EstadoAnuncio {
+  POR_MONTAR
+  MONTADO
+  CON_NOVEDAD
+}
+
+/// El historial del anuncio, append-only, como `PiezaEvento`.
+model AnuncioEvento {
+  id        String            @id @default(uuid())
+  anuncioId String
+  tipo      TipoEventoAnuncio
+  autorId   String
+  detalle   String?
+  createdAt DateTime          @default(now())
+  anuncio   Anuncio           @relation(fields: [anuncioId], references: [id], onDelete: Cascade)
+
+  @@index([anuncioId])
+}
+
+enum TipoEventoAnuncio {
+  MONTADO
+  DEVUELTO
+  DESTINO
+  REABIERTO
+}

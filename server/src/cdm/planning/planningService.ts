@@ -3,7 +3,7 @@ import { SELECT_APROBADORES, apruebaLaCampana, campanasQueApruebo, nombresDe, qu
 import { EstadoPlanning, EtapaDeFunnel, Prisma } from '@prisma/client';
 import { prisma } from '../../lib/prisma.js';
 import { assertProjectInWorkspace, TenantContext, TenantError } from '../../lib/tenancy.js';
-import { exigirPaso, puedeActuar } from '../../comun/permisos.js';
+import { exigirPaso, exigirPlanning, puedeActuar } from '../../comun/permisos.js';
 import { notifyAviso } from '../../services/notificationService.js';
 
 /**
@@ -164,6 +164,9 @@ export const detallePlanning = async (tenant: TenantContext, id: string) => {
       ubicaciones: l.version.ubicaciones,
       ubicacionIds: l.ubicacionIds,
       porConfirmar: l.version.ubicaciones.some(u => u.porConfirmar && (!l.ubicacionIds.length || l.ubicacionIds.includes(u.id))),
+      // F5 (P6): adónde lleva el anuncio; lo pega Planning, en cualquier estado.
+      destino: l.destino,
+      utm: l.utm,
     })),
     resumen: resumen(p.lineas),
     eventos: p.eventos.map(e => ({ tipo: e.tipo, version: e.version, autor: autores.get(e.autorId) ?? null, comentario: e.comentario, fecha: e.createdAt.toISOString() })),
@@ -173,6 +176,8 @@ export const detallePlanning = async (tenant: TenantContext, id: string) => {
       decidir: esResponsable && p.estado === 'POR_APROBAR',
       reabrir: arma && p.estado === 'APROBADO',
       enviarAlCliente: (esResponsable || arma) && p.estado === 'CON_EL_CLIENTE',
+      // P6: el destino y la UTM los pega Planning (o quien administra) en cualquier estado, sin versión nueva.
+      destino: arma,
     },
     // El enlace abierto para el cliente, si ya se creó (F3b).
     enlace: await enlaceAbierto(p.id),
@@ -660,4 +665,62 @@ export const lineaParaPedido = async (tenant: TenantContext, lineaId: string) =>
   });
   if (!linea || linea.planning.workspaceId !== tenant.workspaceId) return null;
   return { campanaId: linea.planning.campanaId, aprobada: linea.planning.estado === 'APROBADO', canal: linea.formato.canal };
+};
+
+/**
+ * F5: las líneas de la sábana que necesita Implementación (por contrato): su destino y su UTM, las fechas y qué
+ * medio, formato y etapa son. Solo del workspace.
+ */
+export const lineasParaImplementar = async (tenant: TenantContext, ids: string[]) => {
+  const unicos = [...new Set(ids)];
+  if (!unicos.length) return new Map();
+  const lineas = await prisma.lineaDePlanning.findMany({
+    where: { id: { in: unicos }, planning: { workspaceId: tenant.workspaceId } },
+    select: {
+      id: true,
+      planningId: true,
+      destino: true,
+      utm: true,
+      etapa: true,
+      desde: true,
+      hasta: true,
+      planning: { select: { desde: true, hasta: true } },
+      formato: { select: { nombre: true, medio: { select: { nombre: true } } } },
+    },
+  });
+  return new Map(
+    lineas.map(l => [
+      l.id,
+      {
+        id: l.id,
+        planningId: l.planningId,
+        destino: l.destino,
+        utm: l.utm,
+        etapa: l.etapa,
+        desde: (l.desde ?? l.planning.desde)?.toISOString() ?? null,
+        hasta: (l.hasta ?? l.planning.hasta)?.toISOString() ?? null,
+        medio: l.formato.medio.nombre,
+        formato: l.formato.nombre,
+      },
+    ])
+  );
+};
+
+/**
+ * P6: Planning pega el destino y la UTM de una línea, en cualquier estado de la sábana y **sin versión nueva**
+ * (decisión 20): suelen llegar al final. Lo hace quien administra o Planning.
+ */
+export const guardarDestinoDeLinea = async (tenant: TenantContext, id: string, lineaId: string, body: { destino?: unknown; utm?: unknown }) => {
+  const p = await assertPlanningInWorkspace(tenant, id);
+  await exigirPlanning(tenant);
+  const linea = await prisma.lineaDePlanning.findFirst({ where: { id: lineaId, planningId: p.id }, select: { id: true } });
+  if (!linea) throw new TenantError('Línea no encontrada', 404);
+  const texto = (x: unknown, max: number) => (typeof x === 'string' ? x.trim().slice(0, max) || null : undefined);
+  const destino = texto(body.destino, 2000);
+  if (destino && !/^https?:\/\/\S+$/i.test(destino)) throw new TenantError('El destino tiene que ser una URL que empiece por http:// o https://', 400);
+  await prisma.lineaDePlanning.update({
+    where: { id: linea.id },
+    data: { ...(destino !== undefined && { destino }), ...(body.utm !== undefined && { utm: texto(body.utm, 500) ?? null }) },
+  });
+  return detallePlanning(tenant, id);
 };

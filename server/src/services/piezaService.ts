@@ -1362,6 +1362,55 @@ export const piezasDeCampana = async (campanaId: string) =>
   (
     await prisma.pieza.findMany({
       where: { projectId: campanaId, canceladaEn: null },
-      select: { estado: true, slots: { select: { savedVariationId: true } } },
+      select: { id: true, estado: true, slots: { select: { savedVariationId: true } } },
     })
-  ).map(p => ({ estado: p.estado, copyIds: p.slots.map(s => s.savedVariationId).filter((id): id is string => !!id) }));
+  ).map(p => ({ id: p.id, estado: p.estado, copyIds: p.slots.map(s => s.savedVariationId).filter((id): id is string => !!id) }));
+
+/**
+ * F5: las piezas listas de una marca, para Implementación (por contrato). Lo que el trafficker necesita de cada
+ * una: su copy congelado por campo (sin las indicaciones para Diseño), la previa o el enlace del archivo
+ * aprobado y quién la aprobó.
+ */
+export const piezasParaImplementar = async (tenant: TenantContext, filtro: { clientId?: string; piezaId?: string }) => {
+  const piezas = await prisma.pieza.findMany({
+    where: {
+      workspaceId: tenant.workspaceId,
+      ...(filtro.clientId && { clientId: filtro.clientId }),
+      ...(filtro.piezaId && { id: filtro.piezaId }),
+      estado: PiezaEstado.LISTA,
+      canceladaEn: null,
+    },
+    select: {
+      id: true,
+      clientId: true,
+      estado: true,
+      titulo: true,
+      platform: true,
+      formato: true,
+      tipo: true,
+      enlace: true,
+      estadoDesde: true,
+      project: { select: { id: true, name: true, responsableId: true } },
+      slots: { orderBy: { orden: 'asc' }, select: { slot: true, slotLabel: true, textoCongelado: true, esInstruccion: true, savedVariationId: true } },
+      versiones: { orderBy: { numero: 'desc' }, take: 1, select: { claveSnapshot: true } },
+    },
+    orderBy: { estadoDesde: 'asc' },
+  });
+  const contexto = await contextoDe(piezas);
+  return Promise.all(
+    piezas.map(async p => ({
+      id: p.id,
+      clientId: p.clientId,
+      titulo: p.titulo,
+      platform: p.platform,
+      formato: p.formato,
+      tipo: p.tipo,
+      lista: p.estadoDesde,
+      campana: p.project ? { id: p.project.id, nombre: p.project.name, responsableId: p.project.responsableId } : null,
+      textos: p.slots.filter(s => !s.esInstruccion).map(s => ({ slot: s.slot, nombre: s.slotLabel, texto: s.textoCongelado, copyId: s.savedVariationId })),
+      enlace: p.enlace,
+      previaUrl: await urlDeSnapshot(p.versiones[0]?.claveSnapshot),
+      aprobadaPor: contexto.get(p.id)?.cierre ?? null,
+    }))
+  );
+};

@@ -18,6 +18,7 @@ import * as planningController from '../cdm/planning/planningController.js';
 import * as aprobadoresController from '../comun/aprobadoresController.js';
 import { porAprobar } from '../plataforma/porAprobar.js';
 import * as procesoController from '../plataforma/procesoController.js';
+import * as anunciosController from '../implementacion/anunciosController.js';
 import { pedidos as pedidosDeCopy } from '../plataforma/pedidosDeCopy.js';
 import { registrarLineasDePedido } from '../myvoice/pedidosDeCopy.js';
 import { lineaParaPedido } from '../cdm/planning/planningService.js';
@@ -165,6 +166,12 @@ router.get('/projects/:id/aprobadores', ...inWorkspace, aprobadoresController.li
 router.get('/por-aprobar', ...inWorkspace, porAprobar);
 // F4: los pedidos de copy que llegan de CDM, por campaña y estado.
 router.get('/copywriting/pedidos', ...inWorkspace, pedidosDeCopy);
+// F5 · Implementación: los anuncios por montar, montar, devolver con novedad y el destino sin sábana.
+router.get('/implementacion/anuncios', ...inWorkspace, anunciosController.listar);
+router.post('/implementacion/anuncios/:piezaId/montar', ...inWorkspace, anunciosController.montar);
+router.post('/implementacion/anuncios/:piezaId/devolver', ...inWorkspace, anunciosController.devolver);
+router.post('/implementacion/anuncios/:piezaId/reabrir', ...inWorkspace, anunciosController.reabrir);
+router.put('/implementacion/anuncios/:piezaId/destino', ...inWorkspace, anunciosController.destino);
 router.post('/projects', ...inWorkspace, savedController.createProject);
 router.get('/projects/de-brief/:dnaProfileId', ...inWorkspace, savedController.getCampanaDeBrief);
 router.patch('/projects/:id', ...inWorkspace, savedController.updateProject);
@@ -195,6 +202,7 @@ router.post('/cdm/plannings/:id/aprobar', ...inWorkspace, planningController.apr
 router.post('/cdm/plannings/:id/devolver', ...inWorkspace, planningController.devolver);
 router.post('/cdm/plannings/:id/reabrir', ...inWorkspace, planningController.reabrir);
 router.post('/cdm/plannings/:id/enlace', ...inWorkspace, planningController.enlace);
+router.put('/cdm/plannings/:id/lineas/:lineaId/destino', ...inWorkspace, planningController.destino);
 
 // ------------------------------------------------------------------ control
 /**

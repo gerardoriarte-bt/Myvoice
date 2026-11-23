@@ -61,4 +61,12 @@ export const enlace = async (req: AuthRequest, res: Response) => {
     handleTenantError(error, res, 'Error al crear el enlace para el cliente');
   }
 };
+/** P6: destino y UTM de una línea, sin versión nueva (F5). */
+export const destino = async (req: AuthRequest, res: Response) => {
+  try {
+    res.json(await planning.guardarDestinoDeLinea(req.tenant!, req.params.id, req.params.lineaId, req.body ?? {}));
+  } catch (error) {
+    handleTenantError(error, res, 'Error al guardar el destino');
+  }
+};
 export const reabrir = yDevolver(req => planning.reabrirPlanning(req.tenant!, req.params.id), 'Error al reabrir el planning');

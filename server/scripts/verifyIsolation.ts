@@ -253,6 +253,10 @@ async function main() {
       await expectDenied('PUT /cdm/plannings/:id/lineas de A', `/cdm/plannings/${planA.id}/lineas`, B.token, { method: 'PUT', body: JSON.stringify({ lineas: [] }) });
       await expectDenied('POST /cdm/plannings sobre una campaña de A', '/cdm/plannings', B.token, { method: 'POST', body: JSON.stringify({ campanaId: A.project.id, etapas: ['RECONOCIMIENTO'] }) });
       await expectAllowed('GET /cdm/plannings/:id propio', `/cdm/plannings/${planA.id}`, A.token);
+      await expectDenied('PUT /cdm/plannings/:id/lineas/:lineaId/destino de A', `/cdm/plannings/${planA.id}/lineas/x/destino`, B.token, {
+        method: 'PUT',
+        body: JSON.stringify({ destino: 'https://x.co' }),
+      });
       await expectDenied('POST /cdm/plannings/:id/enlace de A', `/cdm/plannings/${planA.id}/enlace`, B.token, { method: 'POST' });
       // El portal publica detrás de un token sin cuenta: un item lleva exactamente una cosa (CHECK de F3b).
       const sesion = await prisma.reviewSession.create({
@@ -426,6 +430,20 @@ async function main() {
       `devolvió ${JSON.stringify(mias.body)?.slice(0, 120)}`
     );
     await expectDenied('GET /piezas/:id de A', `/piezas/${piezaA.id}`, B.token);
+    // F5 · Implementación: los anuncios de otra empresa ni se leen ni se montan ni se les pega destino.
+    await expectDenied('GET /implementacion/anuncios de la marca de A', `/implementacion/anuncios?clientId=${A.client.id}`, B.token);
+    await expectDenied('POST /implementacion/anuncios/:piezaId/montar de A', `/implementacion/anuncios/${piezaA.id}/montar`, B.token, {
+      method: 'POST',
+      body: JSON.stringify({ plataforma: 'Meta', idEnPlataforma: '1' }),
+    });
+    await expectDenied('POST /implementacion/anuncios/:piezaId/devolver de A', `/implementacion/anuncios/${piezaA.id}/devolver`, B.token, {
+      method: 'POST',
+      body: JSON.stringify({ texto: 'x' }),
+    });
+    await expectDenied('PUT /implementacion/anuncios/:piezaId/destino de A', `/implementacion/anuncios/${piezaA.id}/destino`, B.token, {
+      method: 'PUT',
+      body: JSON.stringify({ destino: 'https://x.co' }),
+    });
     await expectDenied('PATCH /piezas/:id de A', `/piezas/${piezaA.id}`, B.token, {
       method: 'PATCH',
       body: JSON.stringify({ titulo: 'Secuestrada' }),

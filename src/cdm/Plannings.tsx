@@ -378,6 +378,7 @@ function Planning({ id, onVolver, onAviso }: { id: string; onVolver: () => void;
           onDevolver={comentario => hacer(() => cdmApi.devolverPlanning(p.id, comentario), 'Sábana devuelta con tu comentario')}
           onReabrir={() => hacer(() => cdmApi.reabrirPlanning(p.id))}
           onUbicaciones={(lineaId, ids) => hacer(() => cdmApi.elegirUbicaciones(p.id, lineaId, ids))}
+          onDestino={(lineaId, destino, utm) => hacer(() => cdmApi.destinoDeLinea(p.id, lineaId, { destino, utm }), 'Destino guardado')}
           onEnlace={async () => {
             setError(null);
             try {
@@ -612,6 +613,7 @@ function Sabana({
   onReabrir,
   onUbicaciones,
   onEnlace,
+  onDestino,
 }: {
   planning: PlanningDetalle;
   onMedios: () => void;
@@ -621,9 +623,12 @@ function Sabana({
   onReabrir: () => void;
   onUbicaciones: (lineaId: string, ubicacionIds: string[]) => void;
   onEnlace: () => void;
+  onDestino: (lineaId: string, destino: string, utm: string) => Promise<void>;
 }) {
   const [comentario, setComentario] = React.useState('');
   const [abierta, setAbierta] = React.useState<string | null>(null);
+  // P6 (F5): la línea cuyo destino y UTM se están viendo o pegando.
+  const [destinoDe, setDestinoDe] = React.useState<string | null>(null);
   const textos = (l: PlanningDetalle['lineas'][number]) =>
     l.textos
       .map(t => `${t.repeticiones > 1 ? `${t.repeticiones} ` : ''}${t.nombre.toLowerCase()}${t.maximo ? ` ${t.maximo}` : ''}`)
@@ -675,8 +680,25 @@ function Sabana({
                   <td className="px-3 py-2 text-[11.5px] text-[#6E6E73]">{textos(l)}</td>
                   <td className="px-3 py-2 text-[11.5px]">
                     {l.porConfirmar ? <span className="text-amber-700">Ubicación por confirmar</span> : <span className="text-[#047857]">Listo</span>}
+                    {(p.puedo.destino || l.destino) && (
+                      <button
+                        type="button"
+                        onClick={() => setDestinoDe(destinoDe === l.id ? null : l.id)}
+                        className={`mt-0.5 block font-semibold hover:underline ${l.destino ? 'text-[#0E7490]' : 'text-amber-700'}`}
+                      >
+                        {l.destino ? 'Destino ✓' : 'Falta el destino'}
+                        {l.destino && !l.utm ? ' · sin UTM' : ''}
+                      </button>
+                    )}
                   </td>
                 </tr>
+                {destinoDe === l.id && (
+                  <tr className="bg-cyan-50/40">
+                    <td colSpan={8} className="px-3 py-3">
+                      <DestinoDeLinea linea={l} puede={p.puedo.destino} onGuardar={(destino, utm) => onDestino(l.id, destino, utm)} />
+                    </td>
+                  </tr>
+                )}
                 {abierta === l.id && (
                   <tr className="bg-[#FAFAFA]">
                     <td colSpan={8} className="px-3 py-3">
@@ -793,6 +815,57 @@ function Sabana({
           </button>
         )}
       </div>
+    </div>
+  );
+}
+
+/**
+ * P6 (F5): adónde lleva el anuncio de esta línea y su UTM. Los pega Planning cuando los tiene, en cualquier estado
+ * de la sábana y sin versión nueva (decisión 20). El destino es obligatorio para montar; la UTM solo avisa.
+ */
+function DestinoDeLinea({
+  linea,
+  puede,
+  onGuardar,
+}: {
+  linea: { destino: string | null; utm: string | null };
+  puede: boolean;
+  onGuardar: (destino: string, utm: string) => Promise<void>;
+}) {
+  const [destino, setDestino] = React.useState(linea.destino ?? '');
+  const [utm, setUtm] = React.useState(linea.utm ?? '');
+  const campo = 'w-full rounded-md border border-[rgba(0,0,0,0.12)] bg-white px-2.5 py-1.5 text-[12.5px]';
+  if (!puede)
+    return (
+      <p className="text-[12px] text-[#3A3A3C]">
+        Destino: <span className="font-mono">{linea.destino}</span>
+        {linea.utm ? (
+          <>
+            {' '}
+            · UTM: <span className="font-mono">{linea.utm}</span>
+          </>
+        ) : (
+          ' · sin UTM'
+        )}
+      </p>
+    );
+  return (
+    <div className="grid gap-2 md:grid-cols-[1fr_1fr_auto]">
+      <label className="block text-[11.5px] text-[#6E6E73]">
+        Destino (obligatorio para montar)
+        <input value={destino} onChange={e => setDestino(e.target.value)} placeholder="https://…" className={campo} />
+      </label>
+      <label className="block text-[11.5px] text-[#6E6E73]">
+        UTM (si falta, solo avisa)
+        <input value={utm} onChange={e => setUtm(e.target.value)} placeholder="utm_source=meta&utm_campaign=…" className={campo} />
+      </label>
+      <button
+        type="button"
+        onClick={() => void onGuardar(destino, utm)}
+        className="self-end rounded-lg bg-[#1D1D1F] px-3 py-1.5 text-[12.5px] font-semibold text-white"
+      >
+        Guardar
+      </button>
     </div>
   );
 }
