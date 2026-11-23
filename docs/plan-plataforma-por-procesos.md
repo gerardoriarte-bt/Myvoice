@@ -343,8 +343,10 @@ las tablas de CDM van en `cdm.prisma`.
   otro canal. Gerardo, 2026-11-20: mandar el pedido a Generar suelto confundía. **Generar suelto queda para lo
   que no viene de CDM y deberá cambiar**, porque formatos y etapas los decide CDM. Los dos arman los parámetros
   con la misma función (`src/myvoice/parametrosDelBrief.ts`).
-- **Hueco:** los formatos sin canal de Generar no se pueden escribir todavía. Son las 6 piezas maestras de Meta
-  Ads (decisión 18), y la pantalla lo dice.
+- **Meta Ads en el motor** (2026-11-23). Hasta entonces sus 6 piezas maestras no se podían escribir.
+  - Canal `Meta Ads` con texto principal, título y descripción.
+  - El pedido manda qué textos lleva la pieza y su largo (`textosDelPedido`), según las ubicaciones elegidas.
+  - La planilla de Meta deja sus formatos con ese canal.
 - **Deuda:** al guardar, My Voice lee directo la línea de CDM para validarla (`pedidoValido` en `savedController.ts`).
 
 **Lo que falta:**

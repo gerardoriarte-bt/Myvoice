@@ -201,6 +201,7 @@ export const generateForChannel = async (
         falloContenido = "devolvió cero variaciones";
       } catch {
         falloContenido = "devolvió JSON inválido";
+        if (process.env.DEPURAR_WRITER) console.warn(`[writer:${spec.id}] respuesta no parseable:`, raw.slice(0, 1500));
       }
     }
 
@@ -317,7 +318,7 @@ const runGeneration = async (
     // tandas que entran en una llamada. Cada pieza lleva un id que comparten todos sus textos.
     const cantidad = cantidadValida(params.cantidad);
     const trabajos = specs.flatMap(base => {
-      const spec = specParaGeneracion(base, { slides: params.slides });
+      const spec = specParaGeneracion(base, { slides: params.slides, textosDelPedido: params.textosDelPedido });
       return tandasDePiezas(spec, cantidad, spine).map(piezas => ({ spec, piezas }));
     });
     const conjuntos = new Map<string, string>();

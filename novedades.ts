@@ -48,6 +48,16 @@ export interface Novedad {
 
 export const NOVEDADES: Novedad[] = [
   {
+    id: 'meta-ads',
+    fecha: '2026-11-23',
+    titulo: 'Los anuncios de Meta ya se escriben',
+    cambios: [
+      'Los pedidos de Meta (video e imagen, en sus proporciones) se escriben como los demás: texto principal, título y descripción.',
+      'Cada texto sale con el largo que permiten las ubicaciones elegidas en la sábana; si la pieza no lleva descripción (por ejemplo, en Stories), no se escribe.',
+      'Meta Ads también está en Generar suelto.',
+    ],
+  },
+  {
     id: 'copy-genera',
     fecha: '2026-11-23',
     titulo: 'Quien escribe el copy ya puede generar',

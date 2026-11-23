@@ -31,6 +31,7 @@ export enum Platform {
   GOOGLE_ADS = 'Google Ads',
   GOOGLE_DISPLAY = 'Google Display',
   RICH_MEDIA = 'Rich Media',
+  META_ADS = 'Meta Ads',
   POP_UP = 'Pop up',
   PUSH = 'Push Notification',
   EMAIL = 'Email',
@@ -70,6 +71,11 @@ export interface CopyParameters {
   cantidad?: number;
   /** Solo carrusel: cuántas slides tiene cada uno. De 3 a 10; sin valor, 5. */
   slides?: number;
+  /**
+   * F4, desde un pedido de CDM (2026-11-23): qué textos lleva la pieza y con qué largo, según las ubicaciones que
+   * eligió la línea. Por id de slot; el motor deja afuera los slots que no vienen y usa el máximo que llega.
+   */
+  textosDelPedido?: { slot: string; max: number | null }[];
   clientId: string;
   /**
    * Brief (perfil de ADN) elegido en el formulario. Sin esto el consumidor

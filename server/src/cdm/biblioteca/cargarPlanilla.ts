@@ -1,3 +1,4 @@
+import { Platform } from '../../types.js';
 import { ClaseDeMedio, Prisma, TipoDeArchivo, ZonaDeCampo } from '@prisma/client';
 import { prisma } from '../../lib/prisma.js';
 
@@ -348,9 +349,12 @@ export const aplicarCarga = async (workspaceId: string, p: PlanillaDeMedio, auto
       if (paso.accion === 'igual') continue;
       const formato = await tx.formato.upsert({
         where: { medioId_nombre: { medioId: medio.id, nombre: f.nombre } },
-        create: { workspaceId, medioId: medio.id, nombre: f.nombre, tipoArchivo: f.tipoArchivo, proporcion: f.proporcion },
+        // Las columnas de la planilla son los tres textos de Meta Ads: lo que se carga aquí lo escribe ese canal
+        // del motor (F4, 2026-11-23). Un formato que ya tenía canal lo conserva.
+        create: { workspaceId, medioId: medio.id, nombre: f.nombre, tipoArchivo: f.tipoArchivo, proporcion: f.proporcion, canal: Platform.META_ADS },
         update: {},
       });
+      if (!formato.canal) await tx.formato.update({ where: { id: formato.id }, data: { canal: Platform.META_ADS } });
       const version = await tx.formatoVersion.create({
         data: {
           formatoId: formato.id,

@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 My Voice is a multi-brand copy generation engine: a React SPA at the repo root and an
 Express + Prisma + PostgreSQL API under `server/`. It takes a brand DNA profile (brief) and
-produces channel-specific ad copy across 14 channels, then routes it through an internal
+produces channel-specific ad copy across 15 channels (Meta Ads since 2026-11-23), then routes it through an internal
 library and a client approval portal.
 
 Codebase language: **code and comments are in Spanish** (user-facing strings, error messages,
@@ -142,7 +142,10 @@ titles in a Google Ads ad), **`zona`** (`pieza` | `copyOut` | `indicacion`) and 
 `registry.ts` maps the `Platform` enum value (e.g. `"Instagram Post"`) to its spec;
 `specParaGeneracion` drops `legado` slots (kept only to label old saved copy) and, for the carousel,
 keeps `slide1`…`slideN`. `promptBuilder.ts` turns a spec + brief into the system/user prompts.
-Changing a char limit means editing the spec, not a prompt.
+Changing a char limit means editing the spec, not a prompt. The one exception is a CDM request (F4): its line sends
+`textosDelPedido` (which slots the piece carries and their max, from the placements chosen in CDM), and
+`specParaGeneracion` narrows the spec with it — so prompt, validators and fixer all see the request's lengths. Meta Ads'
+six master pieces come from the Meta sheet (`cargarPlanilla` sets `canal: 'Meta Ads'`), not from `cdm:canales`.
 
 **A generation is one medium and a number of pieces** (`docs/plan-piezas-por-medio.md`, since
 2026-11-05): «5 carruseles de 6 slides». The director makes one angle per piece; `runGeneration`

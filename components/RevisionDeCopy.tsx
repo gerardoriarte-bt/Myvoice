@@ -25,6 +25,7 @@ interface Pieza {
 
 /** Una línea por medio: qué es lo que está viendo el cliente. */
 const QUE_ES: Record<string, string> = {
+  'Meta Ads': 'Un anuncio en Facebook e Instagram: el texto principal va arriba de la imagen o el video, y el título y la descripción, abajo.',
   'Google Ads': 'Un anuncio de búsqueda. Google combina estos títulos y descripciones según lo que busque cada persona: nunca salen todos juntos.',
   'Google Display': 'Un anuncio gráfico. Google arma las combinaciones con estos textos.',
   'Instagram Carrusel': 'Un carrusel: el texto de cada slide, en orden, y el texto que lo acompaña al publicarlo.',
@@ -49,6 +50,7 @@ const SON_OPCIONES = new Set(['Google Ads', 'Google Display']);
  * 0-3s», «Microcopy de rechazo»). Por medio y por slot; lo que no está aquí usa la etiqueta del spec.
  */
 const LUGAR: Record<string, Record<string, string>> = {
+  'Meta Ads': { textoPrincipal: 'Texto principal', titulo: 'Título', descripcion: 'Descripción' },
   'Google Ads': { shortTitle: 'Títulos cortos', longTitle: 'Títulos largos', description: 'Descripciones' },
   'Google Display': { shortTitle: 'Títulos cortos', longTitle: 'Títulos largos', description: 'Descripciones' },
   'Instagram Post': { titular: 'Titular', bajada: 'Bajada', primeraLinea: 'Primera línea del texto', cuerpo: 'Texto del post', hashtags: 'Hashtags', hook: 'Primera línea del texto', body: 'Texto del post' },

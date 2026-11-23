@@ -90,8 +90,14 @@ const registrarGeneracion = async (datos: DatosGeneracion): Promise<void> => {
  */
 const deLaGeneracion = (
   params: unknown
-): { platforms: string[]; funnelStage?: string; cantidad?: number; slides?: number } => {
-  const p = (params ?? {}) as { platforms?: unknown; funnelStage?: unknown; cantidad?: unknown; slides?: unknown };
+): {
+  platforms: string[];
+  funnelStage?: string;
+  cantidad?: number;
+  slides?: number;
+  textosDelPedido?: { slot: string; max: number | null }[];
+} => {
+  const p = (params ?? {}) as { platforms?: unknown; funnelStage?: unknown; cantidad?: unknown; slides?: unknown; textosDelPedido?: unknown };
   const platforms = Array.isArray(p.platforms)
     ? p.platforms.filter((x): x is string => typeof x === 'string')
     : [];
@@ -102,6 +108,15 @@ const deLaGeneracion = (
     ...(typeof p.funnelStage === 'string' && p.funnelStage ? { funnelStage: p.funnelStage } : {}),
     ...(entero(p.cantidad) !== undefined ? { cantidad: entero(p.cantidad) } : {}),
     ...(entero(p.slides) !== undefined ? { slides: entero(p.slides) } : {}),
+    // F4: los textos y largos del pedido de CDM, acotados a lo que tiene forma de eso.
+    ...(Array.isArray(p.textosDelPedido)
+      ? {
+          textosDelPedido: p.textosDelPedido
+            .filter((t: any) => t && typeof t.slot === 'string')
+            .slice(0, 20)
+            .map((t: any) => ({ slot: String(t.slot).slice(0, 64), max: entero(t.max) ?? null })),
+        }
+      : {}),
   };
 };
 
@@ -349,7 +364,7 @@ export const regenerateChannel = async (req: AuthRequest, res: Response) => {
     const base = getChannelSpec(platform);
     if (!base) return res.status(400).json({ error: 'Canal no soportado: ' + platform });
     const deGeneracion = deLaGeneracion(params);
-    const spec = specParaGeneracion(base, { slides: deGeneracion.slides });
+    const spec = specParaGeneracion(base, { slides: deGeneracion.slides, textosDelPedido: deGeneracion.textosDelPedido });
 
     const spine = existingSpine;
     const aiConfig = await resolveWorkspaceAIConfig(req.tenant!.workspaceId);
@@ -431,7 +446,7 @@ export const regenerarTexto = async (req: AuthRequest, res: Response) => {
     const base = getChannelSpec(platform);
     if (!base) return res.status(400).json({ error: 'Canal no soportado: ' + platform });
     const deGeneracion = deLaGeneracion(params);
-    const slotSpec = specParaGeneracion(base, { slides: deGeneracion.slides }).slots.find(s => s.id === slot);
+    const slotSpec = specParaGeneracion(base, { slides: deGeneracion.slides, textosDelPedido: deGeneracion.textosDelPedido }).slots.find(s => s.id === slot);
     if (!slotSpec) return res.status(400).json({ error: `«${slot}» no es un texto de ${platform}` });
     const indice = Number.isInteger(pieza) && pieza >= 1 && pieza <= 10 ? pieza : 1;
     const resto = (Array.isArray(textos) ? textos : [])
