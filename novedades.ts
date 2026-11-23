@@ -48,6 +48,15 @@ export interface Novedad {
 
 export const NOVEDADES: Novedad[] = [
   {
+    id: 'copy-genera',
+    fecha: '2026-11-23',
+    titulo: 'Quien escribe el copy ya puede generar',
+    cambios: [
+      'Quien tenga la función Copy para una marca puede generar: en Pedidos, dentro de cada pedido, y en Generar suelto. Antes solo podía quien administra.',
+      'La función se da en Equipo, para una marca o para todas.',
+    ],
+  },
+  {
     id: 'copy-carril-y-enlace',
     fecha: '2026-11-23',
     titulo: 'Copy: el flujo primero y el enlace para el cliente a la vista',

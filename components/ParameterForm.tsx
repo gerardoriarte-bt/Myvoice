@@ -25,6 +25,8 @@ interface ParameterFormProps {
   miembros?: WorkspaceMember[];
   puedeEditarAprobacion?: boolean;
   onError?: (mensaje: string) => void;
+  /** Sin la función Copy para la marca no se genera (2026-11-23): el formulario lo dice y no deja enviar. */
+  sinPermiso?: boolean;
 }
 
 const ParameterForm: React.FC<ParameterFormProps> = ({
@@ -40,6 +42,7 @@ const ParameterForm: React.FC<ParameterFormProps> = ({
   miembros = [],
   puedeEditarAprobacion = false,
   onError = () => {},
+  sinPermiso = false,
 }) => {
 
 
@@ -201,13 +204,18 @@ const ParameterForm: React.FC<ParameterFormProps> = ({
 
   const activeClient = clients.find(c => c.id === clientId);
   const activeProfile = clientProfiles.find(p => p.id === activeProfileId);
-  const canSubmit = !isLoading && !!activeProfileId && selectedPlatforms.length > 0;
+  const canSubmit = !sinPermiso && !isLoading && !!activeProfileId && selectedPlatforms.length > 0;
 
   return (
     <form
       onSubmit={handleSubmit}
       className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden animate-in fade-in duration-300 sticky top-6"
     >
+      {sinPermiso && (
+        <div className="border-b border-gray-200 bg-gray-50 px-5 py-3 text-[12px] text-gray-700">
+          Generar es para quien tiene la función <strong>Copy</strong> de esta marca. Pídela a quien administra, en Equipo.
+        </div>
+      )}
       {/* ADN bajo el mínimo (docs/plan-adn-2.md, F3): en v1 avisa y deja generar. */}
       {activeClient?.adn && !activeClient.adn.apta && (
         <div className="flex items-start gap-2 border-b border-amber-200 bg-amber-50 px-5 py-3">

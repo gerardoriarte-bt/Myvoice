@@ -30,7 +30,7 @@ interface Props {
   marcaId: string;
   marcas: Client[];
   briefs: ContentDNAProfile[];
-  /** Generar gasta crédito: lo mismo que en Generar suelto, solo quien administra. */
+  /** Generar gasta crédito: quien administra o quien tiene la función Copy para la marca (2026-11-23). */
   puedeGenerar: boolean;
   onVerCopy: (campanaId: string) => void;
   onAviso: (mensaje: string, tipo: 'success' | 'error' | 'info' | 'warning') => void;
@@ -146,7 +146,7 @@ export default function PedidosDeCopy({ marcaId, marcas, briefs, puedeGenerar, o
                             ) : !brief ? (
                               <span className="text-[11.5px] text-amber-700">La campaña no tiene brief</span>
                             ) : !puedeGenerar ? (
-                              <span className="text-[11.5px] text-[#86868B]">Lo escribe quien administra</span>
+                              <span className="text-[11.5px] text-[#86868B]">Lo escribe quien tiene la función Copy</span>
                             ) : (
                               <button
                                 type="button"

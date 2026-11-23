@@ -125,6 +125,9 @@ field, a concept, a tone). Those become brief fields the team fills, with an opt
 `docs/v2/prd-proceso-de-campana.md`. Today's spine still invents concept (when empty), key message, tone,
 hero CTA and angles: that is the debt v2 pays.
 
+**Who may generate** (2026-11-23): OWNER/ADMIN or the `COPY` team function for the brand — `buildGenerationContext`
+calls `exigirPaso(tenant, 'COPY', clientId)`, strict (no observe mode), because generating spends credit.
+
 `generateCopyWithOpenAI` and `streamGenerateCopyWithOpenAI` are two wrappers over the same
 `runGeneration`; the streaming one emits SSE `StreamEvent`s and is what the UI uses. A channel
 that exhausts its retries emits `channel-error` (with `terminal`/`codigo`/`intentos`) and is
