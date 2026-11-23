@@ -36,6 +36,8 @@ interface Props {
   onIrAlPlanning?: (clientId: string) => void;
   /** La sábana quedó aprobada: lleva a Copywriting de esa marca (PLANNING_PARA_COPY). */
   onIrACopy?: (clientId: string) => void;
+  /** Un anuncio volvió con novedad (F5): lleva a Implementación de esa marca. */
+  onIrAImplementacion?: (clientId: string) => void;
 }
 
 const ICONO: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -46,6 +48,7 @@ const ICONO: Record<string, React.ComponentType<{ className?: string }>> = {
   PLANNING_APROBADO: Stamp,
   PLANNING_DEVUELTO: PenLine,
   PLANNING_PARA_COPY: PenLine,
+  ANUNCIO_DEVUELTO: PenLine,
 };
 
 const COLOR: Record<string, string> = {
@@ -56,6 +59,7 @@ const COLOR: Record<string, string> = {
   PLANNING_APROBADO: '#047857',
   PLANNING_DEVUELTO: '#D97706',
   PLANNING_PARA_COPY: '#6D28D9',
+  ANUNCIO_DEVUELTO: '#B45309',
 };
 
 const desde = (fecha: string): string => {
@@ -68,7 +72,7 @@ const desde = (fecha: string): string => {
   return dias === 1 ? 'ayer' : `hace ${dias} días`;
 };
 
-export default function Bandeja({ onIr, onIrAlTablero, onIrAlAdn, onIrAlPlanning, onIrACopy }: Props) {
+export default function Bandeja({ onIr, onIrAlTablero, onIrAlAdn, onIrAlPlanning, onIrACopy, onIrAImplementacion }: Props) {
   const [abierta, setAbierta] = React.useState(false);
   const [avisos, setAvisos] = React.useState<Notificacion[]>([]);
   const [sinLeer, setSinLeer] = React.useState(0);
@@ -100,6 +104,7 @@ export default function Bandeja({ onIr, onIrAlTablero, onIrAlAdn, onIrAlPlanning
     setAbierta(false);
     if (aviso.clientId && aviso.tipo === 'ADN_POR_REVISAR' && onIrAlAdn) onIrAlAdn(aviso.clientId);
     else if (aviso.clientId && aviso.tipo === 'PLANNING_PARA_COPY' && onIrACopy) onIrACopy(aviso.clientId);
+    else if (aviso.clientId && aviso.tipo === 'ANUNCIO_DEVUELTO' && onIrAImplementacion) onIrAImplementacion(aviso.clientId);
     else if (aviso.clientId && aviso.tipo.startsWith('PLANNING_') && onIrAlPlanning) onIrAlPlanning(aviso.clientId);
     else if (aviso.clientId) onIr({ clientId: aviso.clientId, piezaId: aviso.piezaId });
     if (aviso.leida) return;

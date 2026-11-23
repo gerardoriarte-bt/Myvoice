@@ -28,6 +28,7 @@ import {
   Map as MapIcon,
   History,
   LayoutGrid,
+  Rocket,
   Library,
   Megaphone,
   Settings,
@@ -53,7 +54,8 @@ export type ScreenId =
   | 'adn'
   | 'biblioteca'
   | 'plannings'
-  | 'pedidos';
+  | 'pedidos'
+  | 'implementacion';
 
 /**
  * Cinco etapas, no cuatro: cuando entra la pieza, «producir» dejaba de
@@ -210,6 +212,16 @@ export const SCREENS: Record<ScreenId, ScreenDef> = {
    * Los plannings de la marca (F3; P1 a P5 en el `.pen`): el trabajo de cada campaña en CDM, de los medios a la
    * sábana aprobada. La entrada de Planning.
    */
+  /** F5: lo aprobado, listo para que el trafficker o el community lo monten y dejen constancia. */
+  implementacion: {
+    id: 'implementacion',
+    name: 'Por montar',
+    description: 'Los anuncios listos de cada campaña: copiar, montar y dejar constancia, o devolver con novedad.',
+    icon: Rocket,
+    stage: 'producir',
+    adminOnly: false,
+    soloPorProcesos: true,
+  },
   /** F4: los pedidos de copy que llegan de las sábanas aprobadas de CDM, por campaña y estado. */
   pedidos: {
     id: 'pedidos',

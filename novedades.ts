@@ -48,6 +48,16 @@ export interface Novedad {
 
 export const NOVEDADES: Novedad[] = [
   {
+    id: 'implementacion',
+    fecha: '2026-11-23',
+    titulo: 'Implementación: montar lo aprobado y dejar constancia',
+    cambios: [
+      'En las marcas con Implementación prendida aparece el paso ⑤. En «Por montar» están los anuncios listos de cada campaña.',
+      'Cada anuncio trae sus textos con «Copiar», la URL con la UTM, el archivo y quién aprobó. Se marca montado (plataforma, ID y fecha) o se devuelve con una novedad, que le llega al responsable.',
+      'Planning pega el destino y la UTM en cada línea de la sábana, aunque ya esté aprobada. Sin destino no se puede montar; sin UTM, solo avisa.',
+    ],
+  },
+  {
     id: 'meta-ads',
     fecha: '2026-11-23',
     titulo: 'Los anuncios de Meta ya se escriben',

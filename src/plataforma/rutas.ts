@@ -31,6 +31,7 @@ export const RUTAS: Record<ScreenId, string> = {
   biblioteca: '/cdm/biblioteca',
   plannings: '/cdm/plannings',
   pedidos: '/myvoice/pedidos',
+  implementacion: '/implementacion',
 };
 
 export interface Ubicacion {
@@ -56,7 +57,7 @@ export const armarRuta = ({ pantalla, campanaId }: { pantalla: ScreenId; campana
  * (`pasosDeMarca`); Implementación (⑤), cuando exista. Un paso que no se puede abrir no se muestra. Se numeran en el orden en que se ven, para que los números
  * sigan siendo el orden del trabajo.
  */
-export type PasoId = 'marca' | 'cdm' | 'myvoice' | 'produccion';
+export type PasoId = 'marca' | 'cdm' | 'myvoice' | 'produccion' | 'implementacion';
 
 export interface PasoDef {
   id: PasoId;
@@ -99,6 +100,8 @@ export const PASOS: PasoDef[] = [
     funcion: 'COPY',
   },
   { id: 'produccion', nombre: 'Producción', tema: 'Piezas', color: '#B45309', grupos: [{ titulo: 'Trabajo', pantallas: ['loMio', 'produccion'] }], trabajo: 'PRODUCCION', funcion: 'DISENO' },
+  // ⑤ F5: el trafficker y el community manager montan lo aprobado. Solo en marcas con el módulo prendido.
+  { id: 'implementacion', nombre: 'Implementación', tema: 'Anuncios', color: '#0E7490', grupos: [{ titulo: 'Trabajo', pantallas: ['implementacion'] }], trabajo: 'IMPLEMENTACION', funcion: 'TRAFFICKER' },
 ];
 
 /** El paso de una pantalla; las de la cuenta (Equipo, Configuración, Guía, Novedades) no son de ninguno. */
@@ -127,4 +130,8 @@ export const pantallaDeEntrada = (
 
 /** Los pasos que muestra una marca: CDM solo si lo tiene prendido (ModuloDeMarca). */
 export const pasosDeMarca = (marca?: Pick<Client, 'modulos'> | null): PasoDef[] =>
-  PASOS.filter(p => p.id !== 'cdm' || Boolean(marca?.modulos?.includes('CDM')));
+  PASOS.filter(
+    p =>
+      (p.id !== 'cdm' || Boolean(marca?.modulos?.includes('CDM'))) &&
+      (p.id !== 'implementacion' || Boolean(marca?.modulos?.includes('IMPLEMENTACION')))
+  );

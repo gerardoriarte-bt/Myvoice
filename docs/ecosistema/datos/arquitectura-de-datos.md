@@ -78,8 +78,8 @@ Implementación. F1 a F5 suman unas 15 tablas, todas aditivas.
 
 | Tabla | Qué guarda | Estado |
 |---|---|---|
-| `Anuncio` | Pieza, `lineaId` (vacío sin CDM), estado, plataforma, ID en la plataforma, fecha real | nuevo · F5 |
-| `AnuncioEvento` | Historial append-only, como `PiezaEvento` | nuevo · F5 |
+| `Anuncio` | Pieza (única), destino y UTM sin sábana, estado, plataforma, ID en la plataforma, fecha real, novedad. La línea sale del copy (`SavedVariation.lineaDePlanningId`), no se guarda | hecho · F5 (1) |
+| `AnuncioEvento` | Historial append-only, como `PiezaEvento` | hecho · F5 (1) |
 
 ### Portal del cliente (plataforma)
 
@@ -144,7 +144,7 @@ Las dos deudas se pagan antes de F4, cuando el copy empieza a llegar por línea.
 | Hecho (2026-11-20) · decisión 30 | `AprobadorDeCampana(projectId, userId, agregadoPorId)`: aprobadores sumados a una campaña | Parte común |
 | Hecho (2026-11-20) · F4 (1) | `SavedVariation.lineaDePlanningId`. **Sin `EncargoRecibido` ni `LineaDeEncargo`:** un pedido es la línea de la sábana aprobada y su estado se calcula al leer | My Voice |
 | Por hacer | `Project` + fechas; `CampanaAudiencia`; `FormatoUsado`; `Notificacion` + `modulo`, `campanaId`, `destino` | Parte común, My Voice |
-| F5 | `Anuncio`, `AnuncioEvento`. El historial de aprobaciones es una vista de lectura, sin tabla (decisión 28) | Implementación |
+| Hecho (2026-11-23) · F5 (1) | `Anuncio`, `AnuncioEvento` (`implementacion.prisma`); `LineaDePlanning` + `destino`, `utm`. El historial de aprobaciones será una vista de lectura, sin tabla (decisión 28) | Implementación, CDM |
 
 Cada migración pasa el chequeo de deriva de CI (`migrate diff`) y `verify:isolation` con sus rutas nuevas.
 

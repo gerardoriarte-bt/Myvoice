@@ -5,6 +5,7 @@ import type { Paso } from '../contrato/proceso.js';
 import { pasoCdm } from '../cdm/planning/planningService.js';
 import { copyDeCampana } from '../myvoice/pedidosDeCopy.js';
 import { piezasDeCampana } from '../services/piezaService.js';
+import { pasoImplementacion } from '../implementacion/anuncios.js';
 
 /**
  * El estado de cada paso del encabezado (F0, docs/plan-plataforma-por-procesos.md): cómo va UNA campaña
@@ -28,19 +29,19 @@ const NEUTROS: Paso[] = [
   { paso: 'produccion', estado: 'neutro' },
 ];
 
-const conCdm = (clientId: string) =>
-  prisma.moduloDeMarca.findUnique({ where: { clientId_modulo: { clientId, modulo: 'CDM' } }, select: { id: true } }).then(Boolean);
+const conModulo = (clientId: string, modulo: 'CDM' | 'IMPLEMENTACION') =>
+  prisma.moduloDeMarca.findUnique({ where: { clientId_modulo: { clientId, modulo } }, select: { id: true } }).then(Boolean);
 
 /** `clientId` y `campanaId` ya pasaron por la guarda de tenancy: acá no se vuelve a mirar el workspace. */
 export const procesoDeCampana = async (clientId: string, campanaId: string | null): Promise<Paso[]> => {
-  const cdm = await conCdm(clientId);
-  const pasos = await pasosDeCampana(clientId, campanaId);
+  const [cdm, implementacion] = await Promise.all([conModulo(clientId, 'CDM'), conModulo(clientId, 'IMPLEMENTACION')]);
+  const pasos = await pasosDeCampana(clientId, campanaId, implementacion);
   if (!cdm) return pasos;
   return [pasos[0], campanaId ? await pasoCdm(campanaId) : { paso: 'cdm', estado: 'neutro' }, ...pasos.slice(1)];
 };
 
-const pasosDeCampana = async (clientId: string, campanaId: string | null): Promise<Paso[]> => {
-  if (!campanaId) return NEUTROS;
+const pasosDeCampana = async (clientId: string, campanaId: string | null, conImplementacion = false): Promise<Paso[]> => {
+  if (!campanaId) return conImplementacion ? [...NEUTROS, { paso: 'implementacion', estado: 'neutro' }] : NEUTROS;
 
   const [adn, campana, copy, piezas] = await Promise.all([
     resolverAdn(clientId).then(a => completitudAdn(a)),
@@ -98,7 +99,23 @@ const pasosDeCampana = async (clientId: string, campanaId: string | null): Promi
             ...(aprobadosSinPieza > 0 && { falta: `${aprobadosSinPieza} aprobados sin pieza` }),
           };
 
-  return [marca, myvoice, produccion];
+  if (!conImplementacion) return [marca, myvoice, produccion];
+
+  // ⑤ Implementación (F5): las piezas listas que ya están montadas. Hecho solo con todo montado y Producción hecha.
+  const imp = await pasoImplementacion(piezas);
+  const implementacion: Paso =
+    imp.listas === 0
+      ? { paso: 'implementacion', estado: 'bloqueado', falta: 'Espera piezas listas' }
+      : imp.montados === imp.listas && produccion.estado === 'hecho'
+        ? { paso: 'implementacion', estado: 'hecho', texto: `${imp.montados} montados`, avance: { hechas: imp.montados, total: imp.listas } }
+        : {
+            paso: 'implementacion',
+            estado: 'activo',
+            texto: `${imp.montados} de ${imp.listas} montados`,
+            avance: { hechas: imp.montados, total: imp.listas },
+            ...(imp.conNovedad > 0 && { falta: `${imp.conNovedad} con novedad` }),
+          };
+  return [marca, myvoice, produccion, implementacion];
 };
 
 /**

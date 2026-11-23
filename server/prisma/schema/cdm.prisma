@@ -221,6 +221,10 @@ model LineaDePlanning {
   hasta            DateTime?
   /// Las ubicaciones que eligió la línea (P4b, F3b): el largo para My Voice es el más corto entre ellas.
   ubicacionIds     String[]      @default([])
+  /// F5 (P6): adónde lleva el anuncio y su UTM. Los pega Planning cuando los tiene, sin versión nueva de la sábana.
+  /// El destino es obligatorio para montar; la UTM solo avisa (decisión 20).
+  destino          String?
+  utm              String?
   orden            Int           @default(0)
 
   planning Planning       @relation(fields: [planningId], references: [id], onDelete: Cascade)

@@ -379,6 +379,29 @@ las tablas de CDM van en `cdm.prisma`.
 
 ### F5 · Implementación (T1 a T5, P6)
 
+**F5 (1) (2026-11-23), hecho sin el `.pen`:** la fase A del plan de Implementación (#65) y la parte de CDM de la C.
+- **Módulo nuevo** `implementacion`, en el servidor y en el front, con su propio archivo de esquema
+  (`implementacion.prisma`: `Anuncio` y `AnuncioEvento`). Lee la pieza, el copy y la línea por contrato.
+- **Un anuncio es una pieza en «Lista».** Su estado (por montar, montado, con novedad) se guarda cuando alguien
+  actúa sobre él.
+  - **Listo para montar:** pieza aprobada, destino y, si viene de una sábana, fecha de salida.
+  - **La UTM no bloquea:** solo avisa.
+- **Destino y UTM:**
+  - con sábana, en la línea: P6, lo pega Planning en cualquier estado y sin versión nueva;
+  - sin sábana, en el anuncio: lo pega el responsable o quien administra.
+- **T1 a T4** en ⑤ › «Por montar»:
+  - pestañas por estado y tarjetas por campaña;
+  - cada anuncio con sus textos y «Copiar», la URL completa, el archivo y quién aprobó;
+  - «Marcar montado» (plataforma, ID y fecha), «Devolver con novedad» (motivo y texto, avisa al responsable) y
+    «Volver a por montar».
+- **Permisos:** monta quien administra o tiene Trafficker o Community.
+- **Encabezado:** el paso ⑤ aparece en las marcas con el módulo Implementación prendido (Control › Marcas) y cuenta
+  los montados.
+- **Falta:**
+  - T5, el reporte de lo planeado contra lo montado, con el historial de aprobaciones (fase B);
+  - «Mi cola» de todas las marcas;
+  - que un cambio después de montado devuelva el anuncio a «por montar» solo.
+
 El detalle está en `docs/plan-implementacion.md` (PR #65, nivel 2). Lo que cambia
 con lo diseñado hoy:
 

@@ -60,3 +60,14 @@ export const corregirCopyAprobado = (tx: Prisma.TransactionClient, id: string, t
       aprobadoVia: ModoAprobacion.INTERNA,
     },
   });
+
+/** F5: de cada copy, de qué línea de la sábana salió y quién lo aprobó y cómo (para Implementación, por contrato). */
+export const copyParaImplementar = async (ids: string[]) => {
+  const unicos = [...new Set(ids)];
+  if (!unicos.length) return new Map<string, { lineaDePlanningId: string | null; aprobadoPor: string | null; aprobadoEn: Date | null; via: string | null }>();
+  const filas = await prisma.savedVariation.findMany({
+    where: { id: { in: unicos } },
+    select: { id: true, lineaDePlanningId: true, aprobadoPorNombre: true, aprobadoEn: true, aprobadoVia: true },
+  });
+  return new Map(filas.map(f => [f.id, { lineaDePlanningId: f.lineaDePlanningId, aprobadoPor: f.aprobadoPorNombre, aprobadoEn: f.aprobadoEn, via: f.aprobadoVia }]));
+};
