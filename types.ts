@@ -459,6 +459,15 @@ export interface ReviewSessionItem {
     content: string;
     charCount: number;
     clientId: string;
+    /** En el portal (2026-11-23): para mostrar piezas y no textos sueltos. */
+    slot?: string | null;
+    slotLabel?: string | null;
+    conjuntoId?: string | null;
+    piezaIndex?: number | null;
+    variationIndex?: number | null;
+    zona?: 'pieza' | 'copyOut' | 'indicacion';
+    ordenSlot?: number;
+    campana?: string | null;
   } | null;
   pieza?: { id: string; platform: string; formato: string; titulo: string } | null;
 }
@@ -513,6 +522,8 @@ export interface ReviewSession {
   items?: ReviewSessionItem[];
   /** Solo en la ronda 2: el portal recibe piezas en vez de items. */
   piezas?: PiezaEnRevision[];
+  /** Ronda de copy: las campañas que lleva, con su objetivo, para darle contexto al cliente. */
+  campanas?: { nombre: string; objetivo: string | null }[];
   /** Solo en la ronda SABANA (F3b): la sábana del planning, sin nada interno. */
   sabana?: SabanaEnRevision;
   submission?: {
