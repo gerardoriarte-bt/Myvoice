@@ -35,15 +35,45 @@ const QUE_ES: Record<string, string> = {
   YouTube: 'Un video: título y descripción.',
   Email: 'Un correo: asunto, texto de vista previa, cuerpo y botón.',
   WhatsApp: 'Un mensaje de WhatsApp.',
-  'Push Notification': 'Una notificación en el celular.',
-  'Pop up': 'Una ventana emergente en la web.',
+  'Push Notification': 'Una notificación en el celular: título y texto.',
+  'Pop up': 'Una ventana emergente en la web: título, texto y botones.',
+  'Rich Media': 'Un banner animado: título, texto y botón.',
+  'Cuña de Radio': 'Una cuña de radio: el guion que se lee al aire.',
+};
+
+/** Solo aquí los textos repetidos son opciones que la plataforma combina; en el resto, cada texto sale. */
+const SON_OPCIONES = new Set(['Google Ads', 'Google Display']);
+
+/**
+ * Cómo se llama cada lugar para el cliente (2026-11-23): sin nombres internos («Header del cuerpo», «Hook verbal
+ * 0-3s», «Microcopy de rechazo»). Por medio y por slot; lo que no está aquí usa la etiqueta del spec.
+ */
+const LUGAR: Record<string, Record<string, string>> = {
+  'Google Ads': { shortTitle: 'Títulos cortos', longTitle: 'Títulos largos', description: 'Descripciones' },
+  'Google Display': { shortTitle: 'Títulos cortos', longTitle: 'Títulos largos', description: 'Descripciones' },
+  'Instagram Post': { titular: 'Titular', bajada: 'Bajada', primeraLinea: 'Primera línea del texto', cuerpo: 'Texto del post', hashtags: 'Hashtags', hook: 'Primera línea del texto', body: 'Texto del post' },
+  'Instagram Carrusel': { primeraLinea: 'Primera línea del texto', cuerpo: 'Texto del post', hashtags: 'Hashtags', caption: 'Texto del post', slide1Hook: 'Slide 1', slidesBody: 'Slides', slideFinalCTA: 'Última slide' },
+  'Instagram Historia': { copy: 'Texto principal', interactive: 'Encuesta o sticker', swipeCTA: 'Llamado a la acción' },
+  'Instagram Reel': { verbalHook: 'Lo que se dice al empezar', onScreenText: 'Texto en pantalla', caption: 'Texto del post', cta: 'Cierre' },
+  TikTok: { verbalHook: 'Lo que se dice al empezar', narrative: 'Lo que se cuenta', caption: 'Texto del post', cta: 'Cierre' },
+  YouTube: { headLine: 'Título corto', longLine: 'Título largo', description: 'Descripción' },
+  Email: { subject: 'Asunto', preheader: 'Texto de vista previa', header: 'Título del correo', body: 'Cuerpo', cta: 'Botón' },
+  'Pop up': { title: 'Título', body: 'Texto', cta: 'Botón principal', rejectMicrocopy: 'Botón para cerrar' },
+  'Push Notification': { title: 'Título', text: 'Texto' },
+  'Rich Media': { title: 'Título', text: 'Texto', cta: 'Botón' },
+  WhatsApp: { message: 'Mensaje', cta: 'Botón o enlace' },
+  'Cuña de Radio': { script: 'Guion' },
 };
 
 const ZONA: Record<string, string> = { pieza: 'Va en la pieza', copyOut: 'Acompaña la publicación' };
 
 const mayuscula = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
-/** «Título Corto 3» → «Título Corto»: los textos repetidos de un mismo lugar se muestran juntos. */
-const lugar = (t: Texto) => (t.slotLabel ?? t.type ?? 'Texto').replace(/\s*\d+$/, '');
+/**
+ * El lugar de un texto en su pieza. Los textos del mismo slot van juntos (los 10 títulos cortos); las slides de un
+ * carrusel tienen cada una su slot, así que salen como una secuencia y no como opciones.
+ */
+const lugar = (t: Texto) => (t.slot && LUGAR[t.platform]?.[t.slot]) || t.slotLabel || t.type || 'Texto';
+const claveDeLugar = (t: Texto) => t.slot ?? lugar(t);
 
 /** Agrupa los textos en piezas (por conjunto) y las piezas por medio, en el orden en que llegaron. */
 const agrupar = (items: ReviewSessionItem[]) => {
@@ -191,11 +221,11 @@ export default function RevisionDeCopy({ token, sesion, onEnviada, onError }: Pr
               const d = decisiones[p.clave];
               const visibles = p.textos.filter(t => t.zona !== 'indicacion');
               // Los textos de un mismo lugar (los 10 títulos cortos) van juntos, numerados.
-              const lugares: { nombre: string; zona: string | undefined; textos: Texto[] }[] = [];
+              const lugares: { clave: string; nombre: string; zona: string | undefined; textos: Texto[] }[] = [];
               for (const t of visibles) {
                 const ultimo = lugares[lugares.length - 1];
-                if (ultimo && ultimo.nombre === lugar(t)) ultimo.textos.push(t);
-                else lugares.push({ nombre: lugar(t), zona: t.zona, textos: [t] });
+                if (ultimo && ultimo.clave === claveDeLugar(t)) ultimo.textos.push(t);
+                else lugares.push({ clave: claveDeLugar(t), nombre: lugar(t), zona: t.zona, textos: [t] });
               }
               const zonas = [...new Set(lugares.map(l => l.zona ?? 'pieza'))];
               return (
@@ -227,10 +257,15 @@ export default function RevisionDeCopy({ token, sesion, onEnviada, onError }: Pr
                           {lugares
                             .filter(l => (l.zona ?? 'pieza') === z)
                             .map(l => (
-                              <div key={l.nombre}>
+                              <div key={l.clave}>
                                 <p className="text-[12px] font-semibold text-[#6E6E73]">
                                   {l.nombre}
-                                  {l.textos.length > 1 && <span className="font-normal text-[#86868B]"> · {l.textos.length} opciones</span>}
+                                  {l.textos.length > 1 && (
+                                    <span className="font-normal text-[#86868B]">
+                                      {' '}
+                                      · {l.textos.length} {SON_OPCIONES.has(m.platform) ? 'opciones' : 'textos'}
+                                    </span>
+                                  )}
                                 </p>
                                 {l.textos.length === 1 ? (
                                   <p className="mt-0.5 whitespace-pre-wrap text-[14px] leading-relaxed text-[#1D1D1F]">{l.textos[0].content}</p>
