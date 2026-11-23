@@ -349,7 +349,8 @@ export const refineApi = {
 export const reviewApi = {
   list: () => apiRequest('/review-sessions'),
   getDetail: (id: string) => apiRequest(`/review-sessions/${id}`),
-  create: (data: { title: string; variationIds: string[]; expiresInDays?: number }) =>
+  /** `incluirAprobadoPorEquipo`: lo que el equipo ya aprobó también va, y queda pendiente hasta que el cliente responda. */
+  create: (data: { title: string; variationIds: string[]; expiresInDays?: number; incluirAprobadoPorEquipo?: boolean }) =>
     apiRequest('/review-sessions', { method: 'POST', body: JSON.stringify(data) }),
   /** La ronda 2 (H2.E): el cliente aprueba la pieza terminada, no el texto. */
   crearDePiezas: (data: { title: string; piezaIds: string[]; expiresInDays?: number }) =>

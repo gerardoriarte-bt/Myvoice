@@ -238,7 +238,9 @@ en aprobación → listo) is computed on read from `SavedVariation.lineaDePlanni
 chosen as responsable or added approver (`elegiblesPara`; anyone, while nobody in the workspace has it).
 `isApproved` is **not** in the `PUT /saved/:id` allow-list: internal approval goes through
 `POST /saved/aprobacion` and only the campaign's responsable may decide; client approval comes only
-from `submitReview`, which now ignores ids outside its own session and **un-approves** rejected copy.
+from `submitReview`, which now ignores ids outside its own session and **un-approves** rejected copy. Since
+2026-11-23 a session may carry copy the *team* approved (`incluirAprobadoPorEquipo`, only `aprobadoVia = INTERNA`,
+never copy already in a piece): it is reset to pending in the same transaction that creates the session.
 Editing an approved text or moving it to another campaign resets it to pending. Production requires
 `isApproved` plus a campaign with a responsable. A copy's `etapa` (por aprobar → con el cliente →
 aprobado → en producción) is computed on read, never stored.

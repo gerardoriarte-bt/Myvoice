@@ -12,7 +12,7 @@ import { aprobadoPorCliente, motivosParaNoRevisar, SIN_APROBACION } from '../ser
 
 export const createReviewSession = async (req: AuthRequest, res: Response) => {
   const tenant = req.tenant!;
-  const { title, variationIds, piezaIds, expiresInDays } = req.body;
+  const { title, variationIds, piezaIds, expiresInDays, incluirAprobadoPorEquipo } = req.body;
 
   if (!title) return res.status(400).json({ error: 'title es obligatorio' });
 
@@ -74,10 +74,18 @@ export const createReviewSession = async (req: AuthRequest, res: Response) => {
 
     // Solo va al cliente el copy de campañas que el cliente aprueba, y que no
     // esté ya aprobado ni en otra revisión abierta (services/aprobacion.ts).
-    const motivos = await motivosParaNoRevisar(items);
+    const conAprobado = incluirAprobadoPorEquipo === true;
+    const motivos = await motivosParaNoRevisar(items, conAprobado);
     if (motivos.length) throw new TenantError(`No se puede mandar al cliente: ${motivos.join(' ')}`, 400);
 
-    const session = await prisma.reviewSession.create({
+    // Lo que el equipo había aprobado vuelve a quedar pendiente: ahora decide el cliente. Junto con la sesión,
+    // para que no quede copy desaprobado sin enlace ni un enlace con copy que figura aprobado.
+    const [, session] = await prisma.$transaction([
+      prisma.savedVariation.updateMany({
+        where: { id: { in: conAprobado ? items : [] }, isApproved: true, aprobadoVia: 'INTERNA' },
+        data: SIN_APROBACION,
+      }),
+      prisma.reviewSession.create({
       data: {
         title,
         expiresAt,
@@ -95,7 +103,8 @@ export const createReviewSession = async (req: AuthRequest, res: Response) => {
       include: {
         items: { include: { savedVariation: { select: { id: true, platform: true, type: true, content: true, charCount: true } } } },
       },
-    });
+      }),
+    ]);
 
     res.status(201).json(session);
   } catch (error) {

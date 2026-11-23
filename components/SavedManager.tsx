@@ -95,6 +95,10 @@ const SavedManager: React.FC<SavedManagerProps> = ({
   const [resultado, setResultado] = React.useState<Resultado | null>(null);
   const [mandandoAProduccion, setMandandoAProduccion] = React.useState<string[] | null>(null);
   const [enviando, setEnviando] = React.useState<string[] | null>(null);
+  // Cuando se manda desde la campaña (no desde la selección): si va lo que aprobó el equipo, y de qué campaña.
+  const [envioDeCampana, setEnvioDeCampana] = React.useState<{ campana: string; conAprobado: boolean } | null>(null);
+  // El último enlace creado: queda a la vista en «Con el cliente», no solo en el portapapeles.
+  const [ultimoEnlace, setUltimoEnlace] = React.useState<string | null>(null);
   const [copiado, setCopiado] = React.useState<string | null>(null);
   const [editandoId, setEditandoId] = React.useState<string | null>(null);
   const [buffer, setBuffer] = React.useState('');
@@ -640,10 +644,17 @@ const SavedManager: React.FC<SavedManagerProps> = ({
           <CampanaYCliente
             campana={campanaElegida}
             porMandar={deLaCampana.filter(v => etapaDe(v) === 'POR_APROBAR' || etapaDe(v) === 'DEVUELTO').map(v => v.id)}
+            aprobadoPorEquipo={deLaCampana.filter(v => etapaDe(v) === 'APROBADO' && v.aprobadoVia === 'INTERNA').map(v => v.id)}
+            conElCliente={conteo.get('CON_EL_CLIENTE') ?? 0}
+            ultimoEnlace={ultimoEnlace}
             puedeMandar={isAdmin || (!!currentUserId && campanaElegida.responsableId === currentUserId)}
             isAdmin={isAdmin}
             miembros={miembros}
-            onMandar={ids => setEnviando(ids)}
+            onMandar={(ids, conAprobado) => {
+              setEnvioDeCampana({ campana: campanaElegida.name, conAprobado });
+              setEnviando(ids);
+            }}
+            onVerEnlaces={() => onIrA('collaboration')}
             onCambio={actualizarCampana}
             onError={m => addNotification(m, 'error')}
           />
@@ -880,10 +891,20 @@ const SavedManager: React.FC<SavedManagerProps> = ({
         <EnviarAlCliente
           ids={enviando}
           marca={marca.name}
-          campanas={[...new Set(seleccionados.filter(v => enviando.includes(v.id)).map(v => campanaDe(v)?.name).filter(Boolean))] as string[]}
-          onCerrar={() => setEnviando(null)}
+          campanas={
+            envioDeCampana
+              ? [envioDeCampana.campana]
+              : ([...new Set(seleccionados.filter(v => enviando.includes(v.id)).map(v => campanaDe(v)?.name).filter(Boolean))] as string[])
+          }
+          incluirAprobadoPorEquipo={envioDeCampana?.conAprobado}
+          onCerrar={() => {
+            setEnviando(null);
+            setEnvioDeCampana(null);
+          }}
           onEnviado={async enlace => {
             setEnviando(null);
+            setEnvioDeCampana(null);
+            setUltimoEnlace(enlace);
             await terminar({
               texto: `Revisión creada para ${marca.name}. Mándale el enlace al cliente: el copy queda «Con el cliente» hasta que responda.`,
               enlace,
@@ -923,6 +944,7 @@ function EnviarAlCliente({
   ids,
   marca,
   campanas,
+  incluirAprobadoPorEquipo = false,
   onCerrar,
   onEnviado,
   onError,
@@ -930,6 +952,7 @@ function EnviarAlCliente({
   ids: string[];
   marca: string;
   campanas: string[];
+  incluirAprobadoPorEquipo?: boolean;
   onCerrar: () => void;
   onEnviado: (enlace: string) => void;
   onError: (m: string) => void;
@@ -942,7 +965,7 @@ function EnviarAlCliente({
   const crear = async () => {
     setOcupado(true);
     try {
-      const sesion = await reviewApi.create({ title: titulo.trim(), variationIds: ids, expiresInDays: dias });
+      const sesion = await reviewApi.create({ title: titulo.trim(), variationIds: ids, expiresInDays: dias, incluirAprobadoPorEquipo });
       const enlace = `${window.location.origin}/?review=${sesion.token}`;
       try {
         await navigator.clipboard.writeText(enlace);
@@ -962,9 +985,14 @@ function EnviarAlCliente({
       <div className="w-full max-w-md rounded-xl border border-gray-200 bg-white p-6 shadow-xl" onClick={e => e.stopPropagation()}>
         <h3 className="text-[16px] font-medium text-gray-900">Enviar al cliente</h3>
         <p className="mt-0.5 text-[12px] text-gray-500">
-          {ids.length} copy{ids.length === 1 ? '' : 's'} de <strong>{marca}</strong>. El enlace no pide cuenta: solo va
+          {ids.length} {ids.length === 1 ? 'texto' : 'textos'} de <strong>{marca}</strong>. El enlace no pide cuenta: solo va
           copy de esta marca.
         </p>
+        {incluirAprobadoPorEquipo && (
+          <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-[12px] text-amber-900">
+            El equipo ya los había aprobado. Al mandarlos vuelven a quedar pendientes hasta que el cliente responda.
+          </p>
+        )}
         <label className="mt-5 block text-[12px] font-medium text-gray-700">
           Título que ve el cliente
           <input
@@ -1014,19 +1042,28 @@ export default SavedManager;
 function CampanaYCliente({
   campana,
   porMandar,
+  aprobadoPorEquipo,
+  conElCliente,
+  ultimoEnlace,
   puedeMandar,
   isAdmin,
   miembros,
   onMandar,
+  onVerEnlaces,
   onCambio,
   onError,
 }: {
   campana: Project;
   porMandar: string[];
+  /** Copy que aprobó el equipo (antes de que la campaña pasara al cliente): puede ir al cliente si se pide. */
+  aprobadoPorEquipo: string[];
+  conElCliente: number;
+  ultimoEnlace: string | null;
   puedeMandar: boolean;
   isAdmin: boolean;
   miembros: WorkspaceMember[];
-  onMandar: (ids: string[]) => void;
+  onMandar: (ids: string[], conAprobado: boolean) => void;
+  onVerEnlaces: () => void;
   onCambio: (c: Project) => void;
   onError: (m: string) => void;
 }) {
@@ -1054,29 +1091,71 @@ function CampanaYCliente({
       <div className="bg-white px-5 py-3">
         <p className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-gray-400">Con el cliente</p>
         {conCliente ? (
-          <div className="mt-1.5 flex flex-wrap items-center gap-3">
-            <p className="flex-1 text-[12.5px] text-gray-600">
-              El cliente aprueba desde un enlace, sin cuenta.{' '}
-              {porMandar.length ? `Hay ${porMandar.length} ${porMandar.length === 1 ? 'texto' : 'textos'} por aprobar para mandarle.` : 'No hay copy por aprobar para mandarle.'}
-            </p>
-            {puedeMandar && (
-              <button
-                disabled={!porMandar.length}
-                onClick={() => onMandar(porMandar)}
-                className="flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-2 text-[12.5px] font-semibold text-white hover:bg-blue-700 disabled:opacity-40"
-              >
-                <Link2 className="h-3.5 w-3.5" /> Crear enlace para el cliente
-              </button>
+          <div className="mt-1.5 space-y-2 text-[12.5px] text-gray-600">
+            {porMandar.length > 0 ? (
+              <div className="flex flex-wrap items-center gap-3">
+                <p className="flex-1">
+                  El cliente aprueba desde un enlace, sin cuenta. Hay {porMandar.length} {porMandar.length === 1 ? 'texto' : 'textos'} por aprobar
+                  para mandarle.
+                </p>
+                {puedeMandar && (
+                  <button
+                    onClick={() => onMandar(porMandar, false)}
+                    className="flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-2 text-[12.5px] font-semibold text-white hover:bg-blue-700"
+                  >
+                    <Link2 className="h-3.5 w-3.5" /> Crear enlace para el cliente
+                  </button>
+                )}
+              </div>
+            ) : aprobadoPorEquipo.length > 0 ? (
+              <div className="flex flex-wrap items-center gap-3">
+                <p className="flex-1">
+                  El equipo ya aprobó {aprobadoPorEquipo.length} {aprobadoPorEquipo.length === 1 ? 'texto' : 'textos'} de esta campaña. Si el cliente
+                  también tiene que verlos, mándaselos: quedan pendientes hasta que responda.
+                </p>
+                {puedeMandar && (
+                  <button
+                    onClick={() => onMandar(aprobadoPorEquipo, true)}
+                    className="flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-2 text-[12.5px] font-semibold text-white hover:bg-blue-700"
+                  >
+                    <Link2 className="h-3.5 w-3.5" /> Mandarle al cliente lo aprobado
+                  </button>
+                )}
+              </div>
+            ) : conElCliente > 0 ? (
+              <p>Todo el copy de esta campaña ya está con el cliente. Cuando responda, lo aprobado pasa a «Aprobado».</p>
+            ) : (
+              <p>No hay copy para mandarle todavía. Cuando se escriba (en Pedidos o en Generar suelto), aparece aquí.</p>
             )}
-            {isAdmin && (
-              <button disabled={guardando} onClick={() => void cambiar({ modoAprobacion: 'INTERNA' })} className="text-[11.5px] text-gray-500 underline">
-                Que la apruebe el equipo
-              </button>
+            {!puedeMandar && (porMandar.length > 0 || aprobadoPorEquipo.length > 0) && (
+              <p className="text-[11.5px] text-gray-400">El enlace lo crea {campana.responsable?.name ?? 'el responsable'} o quien administra.</p>
             )}
+            {ultimoEnlace && (
+              <div className="flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2">
+                <span className="min-w-0 flex-1 truncate font-mono text-[11.5px] text-blue-900">{ultimoEnlace}</span>
+                <button onClick={() => void navigator.clipboard?.writeText(ultimoEnlace)} className="text-[12px] font-semibold text-blue-700">
+                  Copiar
+                </button>
+              </div>
+            )}
+            <div className="flex flex-wrap items-center gap-3 text-[11.5px]">
+              {conElCliente > 0 && <span>{conElCliente} con el cliente, esperando respuesta.</span>}
+              <button onClick={onVerEnlaces} className="font-semibold text-gray-700 underline">
+                Ver los enlaces abiertos
+              </button>
+              {isAdmin && (
+                <button disabled={guardando} onClick={() => void cambiar({ modoAprobacion: 'INTERNA' })} className="text-gray-500 underline">
+                  Que la apruebe el equipo
+                </button>
+              )}
+            </div>
           </div>
         ) : (
           <div className="mt-1.5 flex flex-wrap items-center gap-3">
-            <p className="flex-1 text-[12.5px] text-gray-600">Esta campaña la aprueba el equipo: no pasa por el cliente.</p>
+            <p className="flex-1 text-[12.5px] text-gray-600">
+              Esta campaña la aprueba el equipo, así que no hay enlace para el cliente. Para mandársela, cámbiala a «la aprueba el
+              cliente».
+            </p>
             {isAdmin ? (
               <button
                 disabled={guardando}
