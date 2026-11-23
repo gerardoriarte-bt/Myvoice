@@ -477,14 +477,10 @@ export const piezasApi = {
 const accion = (id: string, nombre: string, datos: Record<string, unknown>): Promise<Pieza> =>
   apiRequest(`/piezas/${id}/${nombre}`, { method: 'POST', body: JSON.stringify(datos) });
 
-/** Decisión 30: los aprobadores de cada campaña y lo que espera tu aprobación. */
+/** Decisión 30: quién aprueba cada campaña (se define en Equipo) y lo que espera tu aprobación. */
 export const aprobacionesApi = {
   porAprobar: (): Promise<PorAprobar> => apiRequest('/por-aprobar'),
   aprobadores: (projectId: string): Promise<AprobadoresDeCampana> => apiRequest(`/projects/${projectId}/aprobadores`),
-  sumar: (projectId: string, userId: string): Promise<AprobadoresDeCampana> =>
-    apiRequest(`/projects/${projectId}/aprobadores`, { method: 'POST', body: JSON.stringify({ userId }) }),
-  quitar: (projectId: string, userId: string): Promise<AprobadoresDeCampana> =>
-    apiRequest(`/projects/${projectId}/aprobadores/${userId}`, { method: 'DELETE' }),
 };
 
 /** F4: los pedidos de copy que llegan de CDM, por campaña. */

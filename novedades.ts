@@ -48,6 +48,16 @@ export interface Novedad {
 
 export const NOVEDADES: Novedad[] = [
   {
+    id: 'copy-carril-y-enlace',
+    fecha: '2026-11-23',
+    titulo: 'Copy: el flujo primero y el enlace para el cliente a la vista',
+    cambios: [
+      'En Copy, el carril del proceso (por aprobar, con el cliente, aprobado, en producción) es lo principal; toca un paso para ver solo ese.',
+      'Con una campaña elegida, «Con el cliente» dice si la aprueba el equipo o el cliente. Si es el cliente, «Crear enlace para el cliente» está siempre a la vista; si es el equipo, «Que la apruebe el cliente» la cambia.',
+      'Quién aprueba se maneja en Equipo: quien tenga la función Aprobación para una marca aprueba sus campañas. En la campaña solo se elige el responsable.',
+    ],
+  },
+  {
     id: 'pedidos-de-copy',
     fecha: '2026-11-20',
     titulo: 'Pedidos de copy: lo que pide CDM, por campaña y estado',
@@ -244,7 +254,7 @@ export const NOVEDADES: Novedad[] = [
         pasos: [
           'En Copy, elige cada campaña y nombra su responsable. Sin responsable, el copy se guarda pero no avanza: nadie puede aprobarlo.',
           'Define si la aprueba el equipo o el cliente. Si es el cliente, el responsable es quien le manda el enlace.',
-          'El copy aprobado que no tenía campaña aparece en «Sin campaña»: asignale una y aprobalo de nuevo.',
+          'El copy aprobado que no tenía campaña aparece en «Sin campaña»: asígnale una y apruébalo de nuevo.',
         ],
         accion: { label: 'Ir a nombrar responsables', pantalla: 'saved' },
       },

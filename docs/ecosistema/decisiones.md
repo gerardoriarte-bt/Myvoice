@@ -314,6 +314,13 @@ dónde se está (marca, campaña, paso) se contradecía entre pantallas. Gerardo
       en el workspace nadie la tiene, se puede elegir a cualquiera, como antes. Los responsables que ya están
       no se tocan. `elegiblesPara` en `comun/aprobadores.ts`.
     - **En la base:** `AprobadorDeCampana(projectId, userId, agregadoPorId)`, en la parte común.
+    - **Cambio del 2026-11-23 (Gerardo): los permisos se manejan desde Equipo.**
+      - Ya no se suman aprobadores por campaña. Aprueban el responsable y quienes tienen la función
+        **Aprobación** para la marca de la campaña, o para todas.
+      - En la campaña solo se elige el responsable, entre quienes tienen Aprobación. Quién más aprueba se
+        muestra, pero no se edita.
+      - `AprobadorDeCampana` queda sin uso y se borra en una migración posterior.
+      - Si nadie tiene Aprobación, aprueba solo el responsable.
 
 31. **El paso ③ se llama Copywriting, y la sábana aprobada le avisa** (Gerardo, 2026-11-20).
     - **El nombre:** el encabezado dice ① Marca › ② CDM › ③ Copywriting › ④ Producción. **My Voice sigue siendo el

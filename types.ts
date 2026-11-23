@@ -175,7 +175,7 @@ export const FUNCION_HINTS: Record<FuncionEquipo, string> = {
   COMMUNITY: 'Publica lo orgánico en las redes de la marca',
   COPY: 'Escribe y manda a producción',
   DISENO: 'Recibe piezas asignadas',
-  APROBACION: 'Acepta o devuelve piezas',
+  APROBACION: 'Aprueba la sábana, el copy y las piezas de sus marcas; puede ser responsable de campaña',
 };
 
 export interface WorkspaceMember {
@@ -391,6 +391,8 @@ export const MODO_APROBACION_LABELS: Record<ModoAprobacion, string> = {
  * son la misma: `dnaProfileId` las une.
  */
 export interface Project {
+  /** Quienes aprueban: el responsable y quienes tienen Aprobación para la marca en Equipo (decisión 30). */
+  aprueban?: PersonaQueAprueba[];
   id: string;
   name: string;
   createdAt: number;
@@ -408,9 +410,9 @@ export interface Project {
 export type EtapaCopy = 'SIN_CAMPANA' | 'POR_APROBAR' | 'DEVUELTO' | 'CON_EL_CLIENTE' | 'APROBADO' | 'EN_PRODUCCION';
 
 export const ETAPAS_COPY: { id: EtapaCopy; label: string; que: string }[] = [
-  { id: 'SIN_CAMPANA', label: 'Sin campaña', que: 'Guardado antes de que el copy perteneciera a una campaña. Asignale una para que pueda avanzar.' },
+  { id: 'SIN_CAMPANA', label: 'Sin campaña', que: 'Guardado antes de que el copy perteneciera a una campaña. Asígnale una para que pueda avanzar.' },
   { id: 'POR_APROBAR', label: 'Por aprobar', que: 'Espera la aprobación del responsable o el envío al cliente.' },
-  { id: 'DEVUELTO', label: 'Devuelto', que: 'El cliente lo rechazó. Editalo y volvé a mandarlo.' },
+  { id: 'DEVUELTO', label: 'Devuelto', que: 'El cliente lo rechazó. Edítalo y vuelve a mandarlo.' },
   { id: 'CON_EL_CLIENTE', label: 'Con el cliente', que: 'En una revisión abierta, esperando respuesta.' },
   { id: 'APROBADO', label: 'Aprobado', que: 'Listo para mandar a producción.' },
   { id: 'EN_PRODUCCION', label: 'En producción', que: 'Ya forma parte de una pieza.' },
@@ -893,7 +895,7 @@ export interface PlanningDetalle {
   }[];
   resumen: { medios: number; formatos: number; lineas: number; piezas: number };
   eventos: { tipo: string; version: number; autor: string | null; comentario: string | null; fecha: string }[];
-  puedo: { editar: boolean; enviar: boolean; decidir: boolean; reabrir: boolean; enviarAlCliente: boolean; sumarAprobador: boolean };
+  puedo: { editar: boolean; enviar: boolean; decidir: boolean; reabrir: boolean; enviarAlCliente: boolean };
   /** El responsable y los aprobadores sumados (decisión 30): cualquiera decide. */
   aprueban: PersonaQueAprueba[];
   /** El enlace abierto para el cliente (F3b), si ya se creó. */

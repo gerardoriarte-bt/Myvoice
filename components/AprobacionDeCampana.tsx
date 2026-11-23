@@ -1,4 +1,4 @@
-import SumarAprobador from '../src/comun/SumarAprobador';
+import QuienesAprueban from '../src/comun/QuienesAprueban';
 import React from 'react';
 import { AlertTriangle, ShieldCheck } from 'lucide-react';
 import { MODO_APROBACION_LABELS, ModoAprobacion, Project, WorkspaceMember } from '../types';
@@ -23,6 +23,11 @@ interface Props {
   puedeEditar: boolean;
   onCambio: (campana: Project) => void;
   onError: (mensaje: string) => void;
+  /**
+   * En Copy (Gerardo, 2026-11-23): solo el responsable y quién más aprueba, en una línea. El modo (equipo o
+   * cliente) se decide junto al enlace para el cliente, no aquí.
+   */
+  soloResponsable?: boolean;
 }
 
 /** Quien tiene la función Aprobación en esa marca va primero; el resto sigue estando. */
@@ -34,7 +39,7 @@ const ordenar = (miembros: WorkspaceMember[], clientId?: string | null) => {
   );
 };
 
-export default function AprobacionDeCampana({ campana, miembros = [], puedeEditar, onCambio, onError }: Props) {
+export default function AprobacionDeCampana({ campana, miembros = [], puedeEditar, onCambio, onError, soloResponsable = false }: Props) {
   const [guardando, setGuardando] = React.useState(false);
   const modo: ModoAprobacion = campana.modoAprobacion ?? 'INTERNA';
   const sinResponsable = !campana.responsableId;
@@ -60,6 +65,44 @@ export default function AprobacionDeCampana({ campana, miembros = [], puedeEdita
   };
 
   const quien = modo === 'INTERNA' ? 'Aprueba' : 'Responde por el cliente';
+
+  const selectorDeResponsable = (
+    <select
+      value={campana.responsableId ?? ''}
+      disabled={guardando}
+      onChange={e => cambiar({ responsableId: e.target.value || null })}
+      className="w-full rounded-md border border-gray-200 bg-white px-2 py-1.5 text-[12px] text-gray-900"
+    >
+      <option value="">Elegir…</option>
+      {ordenar(miembros, campana.clientId)
+        .filter(m => !elegibles || elegibles.has(m.id) || m.id === campana.responsableId)
+        .map(m => (
+          <option key={m.id} value={m.id}>
+            {m.name}
+          </option>
+        ))}
+    </select>
+  );
+
+  if (soloResponsable) {
+    return (
+      <div className="text-[12.5px]">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-gray-500">Responsable:</span>
+          {puedeEditar ? (
+            <div className="w-44">{selectorDeResponsable}</div>
+          ) : (
+            <span className="font-medium text-gray-900">{campana.responsable?.name ?? 'sin responsable'}</span>
+          )}
+        </div>
+        {sinResponsable ? (
+          <p className="mt-1 text-[12px] text-amber-700">Sin responsable el copy se guarda pero no avanza.</p>
+        ) : (
+          <QuienesAprueban campanaId={campana.id} />
+        )}
+      </div>
+    );
+  }
 
   return (
     <div
@@ -92,21 +135,7 @@ export default function AprobacionDeCampana({ campana, miembros = [], puedeEdita
           </label>
           <label className="block">
             <span className="mb-0.5 block text-[10px] font-medium uppercase tracking-wide text-gray-500">Responsable</span>
-            <select
-              value={campana.responsableId ?? ''}
-              disabled={guardando}
-              onChange={e => cambiar({ responsableId: e.target.value || null })}
-              className="w-full rounded-md border border-gray-200 bg-white px-2 py-1.5 text-[12px] text-gray-900"
-            >
-              <option value="">Elegir…</option>
-              {ordenar(miembros, campana.clientId)
-                .filter(m => !elegibles || elegibles.has(m.id) || m.id === campana.responsableId)
-                .map(m => (
-                <option key={m.id} value={m.id}>
-                  {m.name}
-                </option>
-              ))}
-            </select>
+            {selectorDeResponsable}
           </label>
         </div>
       ) : (
@@ -122,8 +151,8 @@ export default function AprobacionDeCampana({ campana, miembros = [], puedeEdita
             ? `${campana.responsable?.name} aprueba el copy antes de producirlo.`
             : `El cliente aprueba desde el enlace de revisión; ${campana.responsable?.name} se lo manda y responde por él.`}
       </p>
-      {/* Decisión 30: si el responsable no está, se suma otro aprobador y cualquiera decide. */}
-      {!sinResponsable && <SumarAprobador campanaId={campana.id} />}
+      {/* Decisión 30: también aprueban quienes tienen Aprobación para la marca; se maneja en Equipo. */}
+      {!sinResponsable && <QuienesAprueban campanaId={campana.id} />}
     </div>
   );
 }

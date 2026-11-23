@@ -304,10 +304,8 @@ async function main() {
     });
     await expectDenied('DELETE /saved/:id de A', `/saved/${A.variation.id}`, B.token, { method: 'DELETE' });
     await expectDenied('DELETE /projects/:id de A', `/projects/${A.project.id}`, B.token, { method: 'DELETE' });
-    // Decisión 30: los aprobadores de una campaña ajena ni se leen ni se cambian, y nadie se suma a uno de afuera.
+    // Decisión 30: quién aprueba una campaña ajena no se lee.
     await expectDenied('GET /projects/:id/aprobadores de A', `/projects/${A.project.id}/aprobadores`, B.token);
-    await expectDenied('POST /projects/:id/aprobadores en A', `/projects/${A.project.id}/aprobadores`, B.token, { method: 'POST', body: JSON.stringify({ userId: B.user.id }) });
-    await expectDenied('POST /projects/:id/aprobadores sumando a alguien de B', `/projects/${A.project.id}/aprobadores`, A.token, { method: 'POST', body: JSON.stringify({ userId: B.user.id }) });
     // F4: los pedidos de copy de una marca ajena no se leen.
     await expectDenied('GET /copywriting/pedidos de la marca de A', `/copywriting/pedidos?clientId=${A.client.id}`, B.token);
     const porAprobar = await api('/por-aprobar', B.token);
