@@ -161,7 +161,121 @@ Devuelve una entrada por cada id recibido, con el id LITERAL.
 `.trim();
 };
 
+/** Se pasa del máximo (no «le falta», que es otro arreglo): lo que la segunda pasada intenta acortar. */
+const excedeElMaximo = (v: CopyVariation): boolean =>
+  v.budgetOk === false && typeof v.budget === "number" && v.charCount > v.budget;
+
+/** No agrega faltas que el texto no tenía: un recorte que mete una prohibición o rompe el tratamiento no sirve. */
+const noEmpeora = (antes: CopyVariation, despues: CopyVariation): boolean =>
+  (despues.prohibitionsHit?.length ?? 0) <= (antes.prohibitionsHit?.length ?? 0) &&
+  (despues.tuteoHits?.length ?? 0) <= (antes.tuteoHits?.length ?? 0) &&
+  (despues.adnHits?.length ?? 0) <= (antes.adnHits?.length ?? 0);
+
+/**
+ * Segunda pasada, solo para largos (2026-11-23). El corrector reescribe y el texto puede volver igual de largo,
+ * porque el modelo cuenta mal: un 45/44 quedaba marcado «excede» y llegaba así. Aquí el modelo propone tres
+ * versiones más cortas de cada texto excedido y **el código cuenta**: se queda con la primera que cabe y no
+ * agrega faltas. Si ninguna cabe, se queda la más corta, que sigue marcada para que el equipo la vea.
+ */
+export const acortarLosLargos = async (
+  brief: ChannelBrief,
+  spec: ChannelSpec,
+  variations: CopyVariation[],
+  client: OpenAI,
+  model: string,
+  usage?: UsageEntry[],
+  opciones: { signal?: AbortSignal; presupuestoMs?: number } = {}
+): Promise<CopyVariation[]> => {
+  const largos = variations.filter(excedeElMaximo);
+  if (largos.length === 0) return variations;
+
+  const items = largos
+    .map(v => {
+      const unidad = v.budgetUnit === "word" ? "palabras" : "caracteres (con espacios y signos)";
+      return `### id: ${v.id}
+- Slot: ${v.slot || "(default)"}
+- Máximo: ${v.budget} ${unidad}. Tiene ${v.charCount}: sobran ${v.charCount - (v.budget as number)}.
+- Texto: "${v.content.replace(/"/g, '\\"')}"`;
+    })
+    .join("\n\n");
+
+  const prompt = `
+Estos textos de "${brief.brand.name}" (canal ${spec.id}) se pasan del máximo. Para CADA uno escribe 3 versiones más
+cortas, de la más fiel a la más corta. Las tres tienen que quedar en el máximo o por debajo: cuenta antes de devolver.
+Conserva el sentido, el dato clave y la voz de la marca; quita palabras de relleno antes que ideas. No agregues
+palabras nuevas ni cambies el tratamiento (tú, vos o usted) que ya usa el texto.
+
+${items}
+
+## FORMATO JSON (única salida válida)
+{ "versiones": [ { "id": "el id literal", "opciones": ["versión 1", "versión 2", "versión 3"] } ] }
+`.trim();
+
+  try {
+    const response = await chatCompletionConRetry(
+      client,
+      {
+        model,
+        messages: [
+          { role: "system", content: "Eres editor de copy y acortas textos sin perder su sentido. Respondes SOLO en JSON válido." },
+          { role: "user", content: prompt },
+        ],
+        response_format: jsonObjectFormat(client),
+        max_tokens: Math.min(MAX_TOKENS.fixer * largos.length, 8_000),
+        ...samplingParams(model, 0.4),
+      },
+      {
+        etapa: `acortar:${spec.id}`,
+        timeoutMs: TIEMPOS.llamada.fixer,
+        intentosMax: 2,
+        presupuestoMs: opciones.presupuestoMs,
+        signal: opciones.signal,
+      }
+    );
+    const u = extractUsage(response, model, `acortar:${spec.id}`);
+    if (u && usage) usage.push(u);
+
+    const raw = response.choices[0]?.message?.content;
+    if (!raw) return variations;
+    const parsed = JSON.parse(stripJsonFence(raw));
+    const porId = new Map<string, string[]>(
+      (Array.isArray(parsed.versiones) ? parsed.versiones : [])
+        .filter((x: any) => typeof x?.id === "string" && Array.isArray(x.opciones))
+        .map((x: any) => [x.id, x.opciones.filter((o: unknown): o is string => typeof o === "string" && Boolean(o.trim()))])
+    );
+
+    return variations.map(v => {
+      if (!excedeElMaximo(v)) return v;
+      const candidatas = (porId.get(v.id) ?? []).map(c =>
+        validateVariation({ ...v, content: c.trim(), autofixed: true }, spec, brief.campaign.prohibitions, brief.tratamiento, contextoDeValidacion(brief))
+      );
+      const cabe = candidatas.find(c => c.budgetOk !== false && noEmpeora(v, c));
+      if (cabe) return cabe;
+      // Ninguna cabe: la más corta si mejora, todavía marcada «excede» para que se vea.
+      const masCorta = candidatas.filter(c => noEmpeora(v, c)).sort((a, b) => a.charCount - b.charCount)[0];
+      return masCorta && masCorta.charCount < v.charCount ? masCorta : v;
+    });
+  } catch (error) {
+    console.warn(`Acortar falló para canal ${spec.id}:`, error);
+    return variations;
+  }
+};
+
 export const runAutoFix = async (
+  brief: ChannelBrief,
+  spec: ChannelSpec,
+  variations: CopyVariation[],
+  client: OpenAI,
+  model: string,
+  usage?: UsageEntry[],
+  opciones: { signal?: AbortSignal; presupuestoMs?: number } = {}
+): Promise<CopyVariation[]> => {
+  const corregidas = await corregirUnaVez(brief, spec, variations, client, model, usage, opciones);
+  // Lo que el corrector dejó todavía largo pasa por la segunda pasada, que solo acorta.
+  return acortarLosLargos(brief, spec, corregidas, client, model, usage, opciones);
+};
+
+const corregirUnaVez = async (
   brief: ChannelBrief,
   spec: ChannelSpec,
   variations: CopyVariation[],
