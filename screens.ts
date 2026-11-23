@@ -110,7 +110,8 @@ export const SCREENS: Record<ScreenId, ScreenDef> = {
     description: 'Elige marca, campaña y canales. El motor arma el concepto y escribe cada canal.',
     icon: Sparkles,
     stage: 'escribir',
-    adminOnly: true,
+    // Genera quien administra o quien tiene la función Copy (2026-11-23); la pantalla lo dice si no.
+    adminOnly: false,
   },
   saved: {
     id: 'saved',

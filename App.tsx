@@ -436,8 +436,12 @@ const App: React.FC = () => {
   React.useEffect(() => { if (isAuthenticated) localStorage.setItem('vt_custom_voices', JSON.stringify(customVoices)); }, [customVoices, isAuthenticated]);
   React.useEffect(() => { if (isAuthenticated) localStorage.setItem('vt_custom_goals', JSON.stringify(customGoals)); }, [customGoals, isAuthenticated]);
 
+  /** Genera quien administra o quien tiene la función Copy para esa marca (2026-11-23). */
+  const escribe = (marcaId?: string | null) =>
+    isAdmin || (currentUser?.funciones ?? []).some(f => f.funcion === 'COPY' && (!f.clientId || f.clientId === marcaId));
+
   const handleGenerate = async (params: CopyParameters, lockedSnapshot?: CopyVariation[]) => {
-    if (!isAdmin) return;
+    if (!escribe(params.clientId)) return;
     setIsLoading(true);
     setLastParams(params);
     setCoherence(null);
@@ -778,6 +782,7 @@ const App: React.FC = () => {
               }}
               miembros={users}
               puedeEditarAprobacion={isAdmin}
+              sinPermiso={!escribe(activeClientId)}
               onError={m => addNotification(m, 'error')}
             />
           </div>
@@ -1125,7 +1130,7 @@ const App: React.FC = () => {
           marcaId={activeClient.id}
           marcas={clients}
           briefs={dnaProfiles}
-          puedeGenerar={isAdmin}
+          puedeGenerar={escribe(activeClient.id)}
           onAviso={(m, tipo) => addNotification(m, tipo)}
           onVerCopy={campana => {
             setCampanaId(campana);
