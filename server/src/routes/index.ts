@@ -153,10 +153,8 @@ router.post('/saved/aprobacion', ...inWorkspace, savedController.decidirAprobaci
 router.put('/saved/:id', ...inWorkspace, savedController.updateVariation);
 router.delete('/saved/:id', ...inWorkspace, savedController.deleteVariation);
 router.get('/projects', ...inWorkspace, savedController.getProjects);
-// Decisión 30: aprobadores sumados a la campaña y todo lo que espera tu aprobación.
+// Decisión 30: quién aprueba la campaña (desde Equipo) y todo lo que espera tu aprobación.
 router.get('/projects/:id/aprobadores', ...inWorkspace, aprobadoresController.listar);
-router.post('/projects/:id/aprobadores', ...inWorkspace, aprobadoresController.sumar);
-router.delete('/projects/:id/aprobadores/:userId', ...inWorkspace, aprobadoresController.quitar);
 router.get('/por-aprobar', ...inWorkspace, porAprobar);
 // F4: los pedidos de copy que llegan de CDM, por campaña y estado.
 router.get('/copywriting/pedidos', ...inWorkspace, pedidosDeCopy);

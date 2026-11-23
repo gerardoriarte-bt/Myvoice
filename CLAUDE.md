@@ -228,8 +228,9 @@ session must be workspace-filtered.
 **Approval is per campaign and always has an owner** (`services/aprobacion.ts`, see
 `docs/plan-aprobacion-por-campana.md`). A `Project` (campaign) is tied 1:1 to its brief
 (`dnaProfileId`) and carries `modoAprobacion` (`INTERNA` | `CLIENTE`) and `responsableId`. **Since decision 30
-(2026-11-20) a campaign may also have added approvers** (`AprobadorDeCampana`): any of them decides sábana, copy and
-pieces, the first one wins. Ask `server/src/comun/aprobadores.ts` (`apruebaLaCampana`, `quienesAprueban`,
+(2026-11-20, changed 2026-11-23) approvers come from Equipo**: the responsable plus everyone with the `APROBACION`
+function for the campaign's brand (or all brands) decides sábana, copy and pieces; the first one wins. Permissions are
+managed in Equipo, not per campaign (`AprobadorDeCampana` is unused). Ask `server/src/comun/aprobadores.ts` (`apruebaLaCampana`, `quienesAprueban`,
 `SELECT_APROBADORES`) — never compare `responsableId` by hand. `GET /por-aprobar` (`server/src/plataforma/porAprobar.ts`)
 feeds the always-visible «Por aprobar · N» header button. **F4 copy requests** (`GET /copywriting/pedidos`,
 `server/src/plataforma/pedidosDeCopy.ts`): each line of an approved CDM sábana is a request; its state (por escribir →

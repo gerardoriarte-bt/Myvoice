@@ -1,4 +1,4 @@
-import SumarAprobador from '../comun/SumarAprobador';
+import QuienesAprueban from '../comun/QuienesAprueban';
 import React from 'react';
 import { ArrowLeft, Check, Minus, Plus } from 'lucide-react';
 import { SCREENS } from '../../screens';
@@ -374,7 +374,6 @@ function Planning({ id, onVolver, onAviso }: { id: string; onVolver: () => void;
           planning={p}
           onMedios={() => setVista('medios')}
           onEnviar={() => hacer(() => cdmApi.enviarPlanning(p.id), `Enviada a ${nombres(p.aprueban)}`)}
-          onAprobadores={() => cdmApi.planning(p.id).then(setP).catch(() => undefined)}
           onAprobar={comentario => hacer(() => cdmApi.aprobarPlanning(p.id, comentario), 'Sábana aprobada')}
           onDevolver={comentario => hacer(() => cdmApi.devolverPlanning(p.id, comentario), 'Sábana devuelta con tu comentario')}
           onReabrir={() => hacer(() => cdmApi.reabrirPlanning(p.id))}
@@ -613,7 +612,6 @@ function Sabana({
   onReabrir,
   onUbicaciones,
   onEnlace,
-  onAprobadores,
 }: {
   planning: PlanningDetalle;
   onMedios: () => void;
@@ -623,7 +621,6 @@ function Sabana({
   onReabrir: () => void;
   onUbicaciones: (lineaId: string, ubicacionIds: string[]) => void;
   onEnlace: () => void;
-  onAprobadores: () => void;
 }) {
   const [comentario, setComentario] = React.useState('');
   const [abierta, setAbierta] = React.useState<string | null>(null);
@@ -734,7 +731,7 @@ function Sabana({
             {p.aprueba ? `${p.aprueba.name} · responsable` : 'Falta el responsable de la campaña'}
             {p.campana.modoAprobacion === 'CLIENTE' ? ' · después, el cliente por enlace' : ''}
           </p>
-          {p.aprueba && <SumarAprobador campanaId={p.campana.id} onCambio={onAprobadores} />}
+          {p.aprueba && <QuienesAprueban campanaId={p.campana.id} />}
           {p.estado === 'POR_APROBAR' && !p.puedo.decidir && <p className="mt-2 text-[12.5px] text-amber-700">Enviada: espera a {nombres(p.aprueban)}.</p>}
           {p.estado === 'APROBADO' && <p className="mt-2 text-[12.5px] font-semibold text-[#047857]">Aprobada.</p>}
           {p.estado === 'CON_EL_CLIENTE' && (

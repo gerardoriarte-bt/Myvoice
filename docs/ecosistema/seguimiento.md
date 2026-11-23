@@ -36,7 +36,7 @@ Cada función con su estado en las tres pistas. Se actualiza en el mismo PR que 
 | Todos | Avisos que llevan a la acción | ✓ | ○ | ◐ | PL-7 |
 | Super Admin | Funciones del equipo por marca | ● | ● | ● | PL-8 (Estrategia, Planning y Trafficker: ✓ en F1a) |
 | Todos | «Por aprobar · N» en el encabezado: sábanas, copy y piezas que esperan tu decisión | ○ | ● | ● | decisión 30 · #98, 2026-11-20 (hecho sin el `.pen`) |
-| Admin, responsable | Varios aprobadores por campaña («Sumar aprobador»); «Aprobación» es la lista de elegibles | ○ | ● | ● | decisión 30 · #98, #99 |
+| Admin | Quién aprueba se maneja en Equipo: la función Aprobación por marca aprueba sus campañas | ○ | ✓ | ✓ | decisión 30, cambio del 2026-11-23 (reemplaza «Sumar aprobador» por campaña) |
 
 ## My Voice
 
@@ -54,7 +54,7 @@ Cada función con su estado en las tres pistas. Se actualiza en el mismo PR que 
 | Responsable | Revisar el copy de a uno | ◐ | ○ | ○ | MV-5, MV-6 |
 | Responsable | Revisión agrupada (200 líneas) | ○ | ○ | ○ | MV-7 |
 | Responsable | Qué texto va en qué formato | ○ | ○ | ○ | MV-9 |
-| Responsable | Aprobación de copy por campaña | ● | ● | ● | (v1) |
+| Responsable | Aprobación de copy por campaña | ● | ● | ● | (v1) · 2026-11-23: Copy con el carril primero y «Crear enlace para el cliente» siempre a la vista ✓ |
 | Cliente | Aprobar copy y piezas en el portal | ● | ● | ● | (v1) |
 | Diseño, responsable | Producción y auditoría de piezas | ● | ● | ● | MV-10 |
 

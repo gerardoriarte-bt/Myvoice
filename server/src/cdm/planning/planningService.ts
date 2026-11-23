@@ -1,7 +1,7 @@
-import { SELECT_APROBADORES, apruebaLaCampana, nombresDe, quienesAprueban } from '../../comun/aprobadores.js';
+import { SELECT_APROBADORES, apruebaLaCampana, campanasQueApruebo, nombresDe, quienesAprueban } from '../../comun/aprobadores.js';
 import { EstadoPlanning, EtapaDeFunnel, Prisma } from '@prisma/client';
 import { prisma } from '../../lib/prisma.js';
-import { assertProjectInWorkspace, canManage, TenantContext, TenantError } from '../../lib/tenancy.js';
+import { assertProjectInWorkspace, TenantContext, TenantError } from '../../lib/tenancy.js';
 import { exigirPaso, puedeActuar } from '../../comun/permisos.js';
 import { notifyAviso } from '../../services/notificationService.js';
 
@@ -24,7 +24,7 @@ const EDITABLE: EstadoPlanning[] = ['EN_ARMADO', 'DEVUELTO'];
 export const assertPlanningInWorkspace = async (tenant: TenantContext, id: string) => {
   const planning = await prisma.planning.findUnique({
     where: { id },
-    include: { campana: { select: { id: true, name: true, clientId: true, modoAprobacion: true, ...SELECT_APROBADORES } } },
+    include: { campana: { select: { id: true, name: true, modoAprobacion: true, ...SELECT_APROBADORES } } },
   });
   if (!planning || planning.workspaceId !== tenant.workspaceId) throw new TenantError('Planning no encontrado', 404);
   return planning;
@@ -172,8 +172,6 @@ export const detallePlanning = async (tenant: TenantContext, id: string) => {
       decidir: esResponsable && p.estado === 'POR_APROBAR',
       reabrir: arma && p.estado === 'APROBADO',
       enviarAlCliente: (esResponsable || arma) && p.estado === 'CON_EL_CLIENTE',
-      // Para la urgencia: quien administra o quien ya aprueba suma a otro aprobador.
-      sumarAprobador: canManage(tenant.role) || esResponsable,
     },
     // El enlace abierto para el cliente, si ya se creó (F3b).
     enlace: await enlaceAbierto(p.id),
@@ -573,11 +571,7 @@ export const aplicarRespuestaDelCliente = async (
 /** Las sábanas que esperan la decisión de quien mira (decisión 30: «Por aprobar»). */
 export const sabanasPorAprobarDe = async (tenant: TenantContext) => {
   const plannings = await prisma.planning.findMany({
-    where: {
-      workspaceId: tenant.workspaceId,
-      estado: 'POR_APROBAR',
-      campana: { OR: [{ responsableId: tenant.userId }, { aprobadores: { some: { userId: tenant.userId } } }] },
-    },
+    where: { workspaceId: tenant.workspaceId, estado: 'POR_APROBAR', campana: await campanasQueApruebo(tenant) },
     select: { id: true, clientId: true, campana: { select: { id: true, name: true, client: { select: { name: true } } } }, updatedAt: true },
     orderBy: { updatedAt: 'asc' },
   });

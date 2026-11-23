@@ -1,4 +1,4 @@
-import { exigirElegible } from '../comun/aprobadores.js';
+import { SELECT_APROBADORES, exigirElegible, quienesAprueban } from '../comun/aprobadores.js';
 import { Response } from 'express';
 import { AuthRequest, handleTenantError } from '../middleware/auth.js';
 import {
@@ -222,7 +222,13 @@ export const bulkDeleteSaved = async (req: AuthRequest, res: Response) => {
 
 // ------------------------------------------------------------------ proyectos
 
-const INCLUDE_CAMPANA = { responsable: { select: { id: true, name: true, email: true } } } as const;
+const INCLUDE_CAMPANA = { responsable: { select: { id: true, name: true, email: true } }, workspace: SELECT_APROBADORES.workspace } as const;
+
+/** La campaña con quiénes la aprueban (responsable y función Aprobación en Equipo), sin el workspace que se leyó para eso. */
+const presentarCampana = <T extends { workspace?: unknown } & Parameters<typeof quienesAprueban>[0]>(p: T) => {
+  const { workspace: _w, ...campana } = p;
+  return { ...campana, aprueban: quienesAprueban(p) };
+};
 
 /**
  * Las campañas. Con `?clientId=` solo las de esa marca —más las viejas sin
@@ -241,7 +247,7 @@ export const getProjects = async (req: AuthRequest, res: Response) => {
       include: INCLUDE_CAMPANA,
       orderBy: { createdAt: 'desc' },
     });
-    res.json(projects);
+    res.json(projects.map(presentarCampana));
   } catch (error) {
     handleTenantError(error, res, 'Error al obtener las campañas');
   }
@@ -265,7 +271,7 @@ export const createProject = async (req: AuthRequest, res: Response) => {
       data: { name: name.trim(), workspaceId: req.tenant!.workspaceId, clientId: clientId || null },
       include: INCLUDE_CAMPANA,
     });
-    res.status(201).json(project);
+    res.status(201).json(presentarCampana(project));
   } catch (error) {
     handleTenantError(error, res, 'Error al crear la campaña');
   }
@@ -310,7 +316,7 @@ export const updateProject = async (req: AuthRequest, res: Response) => {
 
     await assertProjectInWorkspace(tenant, id);
     const project = await prisma.project.update({ where: { id }, data, include: INCLUDE_CAMPANA });
-    res.json(project);
+    res.json(presentarCampana(project));
   } catch (error) {
     handleTenantError(error, res, 'Error al actualizar la campaña');
   }

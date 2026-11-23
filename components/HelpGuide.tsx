@@ -221,7 +221,7 @@ export default function HelpGuide() {
         <SubHead>Como usarlo</SubHead>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           <Step n={1} title="Configura el formulario" desc="Llena todos los parametros que quieres conservar: cliente, perfil de ADN, plataformas seleccionadas, etapa del funnel, voz de marca y objetivo." />
-          <Step n={2} title="Guarda el preset" desc="Presiona el boton Guardar preset, asignale un nombre descriptivo (ej. 'Terpel — Awareness Social') y confirma. El preset queda disponible en el selector." />
+          <Step n={2} title="Guarda el preset" desc="Presiona el botón Guardar preset, asígnale un nombre descriptivo (ej. 'Terpel — Awareness Social') y confirma. El preset queda disponible en el selector." />
           <Step n={3} title="Carga un preset" desc="Al inicio de una nueva sesion, abre el selector de presets y elige el que necesitas. Todos los campos del formulario se rellenan automaticamente." />
           <Step n={4} title="Elimina presets obsoletos" desc="Abre el selector, pasa el cursor sobre el preset que ya no necesitas y presiona el icono de basura para eliminarlo." />
         </div>

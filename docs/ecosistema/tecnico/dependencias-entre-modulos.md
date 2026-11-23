@@ -1,6 +1,6 @@
 # Dependencias entre módulos (generado)
 
-Generado el 2026-11-20 desde el commit `4d5842b` con `bash scripts/mapa/actualizar.sh`. **No se edita a mano**: se corrige `scripts/mapa/modulos.json` y se vuelve a generar.
+Generado el 2026-11-23 desde el commit `caa64e7` con `bash scripts/mapa/actualizar.sh`. **No se edita a mano**: se corrige `scripts/mapa/modulos.json` y se vuelve a generar.
 
 Cada fila es un archivo que usa algo de otro archivo de **otro módulo** (importa, llama o referencia un tipo). Módulos según la decisión 12; reglas en [spec-plataforma.md](./spec-plataforma.md) § 2.
 
@@ -33,12 +33,12 @@ Un módulo lee la parte común. Está bien, pero solo por `contrato/`: esta list
 | CDM | `server/src/cdm/biblioteca/bibliotecaController.ts` | Parte común | `server/src/middleware/auth.ts` | AuthRequest, auth.ts, handleTenantError() |
 | CDM | `server/src/cdm/planning/planningController.ts` | Parte común | `server/src/lib/tenancy.ts` | assertClientInWorkspace(), tenancy.ts |
 | CDM | `server/src/cdm/planning/planningController.ts` | Parte común | `server/src/middleware/auth.ts` | AuthRequest, auth.ts, handleTenantError() |
-| CDM | `server/src/cdm/planning/planningService.ts` | Parte común | `server/src/comun/aprobadores.ts` | SELECT_APROBADORES, aprobadores.ts, apruebaLaCampana(), nombresDe() |
+| CDM | `server/src/cdm/planning/planningService.ts` | Parte común | `server/src/comun/aprobadores.ts` | SELECT_APROBADORES, aprobadores.ts, apruebaLaCampana(), campanasQueApruebo() |
 | CDM | `server/src/cdm/planning/planningService.ts` | Parte común | `server/src/comun/permisos.ts` | exigirPaso(), permisos.ts, puedeActuar() |
-| CDM | `server/src/cdm/planning/planningService.ts` | Parte común | `server/src/lib/tenancy.ts` | TenantContext, TenantError, assertProjectInWorkspace(), canManage() |
+| CDM | `server/src/cdm/planning/planningService.ts` | Parte común | `server/src/lib/tenancy.ts` | TenantContext, TenantError, assertProjectInWorkspace(), tenancy.ts |
 | CDM | `server/src/cdm/planning/planningService.ts` | Parte común | `server/src/services/notificationService.ts` | notificationService.ts, notifyAviso() |
-| CDM | `src/cdm/Plannings.tsx` | Parte común | `src/comun/SumarAprobador.tsx` | SumarAprobador(), SumarAprobador.tsx |
-| My Voice | `components/AprobacionDeCampana.tsx` | Parte común | `src/comun/SumarAprobador.tsx` | SumarAprobador(), SumarAprobador.tsx |
+| CDM | `src/cdm/Plannings.tsx` | Parte común | `src/comun/QuienesAprueban.tsx` | QuienesAprueban(), QuienesAprueban.tsx |
+| My Voice | `components/AprobacionDeCampana.tsx` | Parte común | `src/comun/QuienesAprueban.tsx` | QuienesAprueban(), QuienesAprueban.tsx |
 | My Voice | `components/ParameterForm.tsx` | Parte común | `marcas.ts` | marcas.ts, nombreConMadre() |
 | My Voice | `components/ResultadosPorPieza.tsx` | Parte común | `components/QuienAprueba.tsx` | PersonaQueAprueba, QuienAprueba(), QuienAprueba.tsx |
 | My Voice | `components/SavedManager.tsx` | Parte común | `components/QuienAprueba.tsx` | QuienAprueba(), QuienAprueba.tsx |
@@ -60,12 +60,12 @@ Un módulo lee la parte común. Está bien, pero solo por `contrato/`: esta list
 | My Voice | `server/src/controllers/refineController.ts` | Parte común | `server/src/lib/tenancy.ts` | assertClientInWorkspace(), tenancy.ts |
 | My Voice | `server/src/controllers/refineController.ts` | Parte común | `server/src/lib/workspaceSecret.ts` | decryptWorkspaceApiKey(), workspaceSecret.ts |
 | My Voice | `server/src/controllers/refineController.ts` | Parte común | `server/src/middleware/auth.ts` | AuthRequest, auth.ts, handleTenantError() |
-| My Voice | `server/src/controllers/savedController.ts` | Parte común | `server/src/comun/aprobadores.ts` | aprobadores.ts, exigirElegible() |
+| My Voice | `server/src/controllers/savedController.ts` | Parte común | `server/src/comun/aprobadores.ts` | SELECT_APROBADORES, aprobadores.ts, exigirElegible(), quienesAprueban() |
 | My Voice | `server/src/controllers/savedController.ts` | Parte común | `server/src/comun/permisos.ts` | assertPuedeActuar(), permisos.ts |
 | My Voice | `server/src/controllers/savedController.ts` | Parte común | `server/src/lib/tenancy.ts` | TenantContext, TenantError, assertClientInWorkspace(), assertMemberOfWorkspace() |
 | My Voice | `server/src/controllers/savedController.ts` | Parte común | `server/src/middleware/auth.ts` | AuthRequest, auth.ts, handleTenantError() |
 | My Voice | `server/src/myvoice/pedidosDeCopy.ts` | Parte común | `server/src/lib/tenancy.ts` | TenantContext, tenancy.ts |
-| My Voice | `server/src/services/aprobacion.ts` | Parte común | `server/src/comun/aprobadores.ts` | SELECT_APROBADORES, aprobadores.ts, apruebaLaCampana(), nombresDe() |
+| My Voice | `server/src/services/aprobacion.ts` | Parte común | `server/src/comun/aprobadores.ts` | SELECT_APROBADORES, aprobadores.ts, apruebaLaCampana(), campanasQueApruebo() |
 | My Voice | `server/src/services/aprobacion.ts` | Parte común | `server/src/lib/tenancy.ts` | TenantContext, TenantError, assertDnaProfileInWorkspace(), assertProjectInWorkspace() |
 | My Voice | `server/src/services/criticService.ts` | Parte común | `server/src/comun/adn/estilo.ts` | estilo.ts, reglasDeAdnEnPalabras() |
 | My Voice | `server/src/services/criticService.ts` | Parte común | `server/src/comun/adn/tratamiento.ts` | tratamiento.ts, verificacionDeTratamiento() |

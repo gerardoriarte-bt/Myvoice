@@ -161,7 +161,11 @@ const SavedManager: React.FC<SavedManagerProps> = ({
   // ── Qué se puede hacer con lo seleccionado ─────────────────────────────────
 
   const seleccionados = React.useMemo(() => saved.filter(v => seleccion.has(v.id)), [saved, seleccion]);
-  const soyResponsable = (v: SavedVariation) => !!currentUserId && campanaDe(v)?.responsableId === currentUserId;
+  // Aprueba el responsable o quien tenga Aprobación para la marca en Equipo (decisión 30).
+  const soyResponsable = (v: SavedVariation) => {
+    const c = campanaDe(v);
+    return !!currentUserId && (c?.responsableId === currentUserId || !!c?.aprueban?.some(a => a.id === currentUserId));
+  };
   const pendiente = (v: SavedVariation) => etapaDe(v) === 'POR_APROBAR' || etapaDe(v) === 'DEVUELTO';
 
   const acciones = React.useMemo(() => {
@@ -193,7 +197,7 @@ const SavedManager: React.FC<SavedManagerProps> = ({
       } else if (soyResponsable(v)) {
         aprobar.push(v.id);
       } else {
-        motivos.add(`Lo de «${c.name}» lo aprueba ${c.responsable?.name}.`);
+        motivos.add(`Lo de «${c.name}» lo aprueba ${(c.aprueban?.length ? c.aprueban : [c.responsable]).map(a => a?.name).join(' o ')}.`);
       }
     }
     return { aprobar, enviar, producir, revocar, sinCampana, motivos: [...motivos] };
@@ -563,29 +567,25 @@ const SavedManager: React.FC<SavedManagerProps> = ({
 
   return (
     <div className="space-y-5 animate-in fade-in duration-300">
-      {/* Encabezado */}
+      {/*
+        Encabezado (Gerardo, 2026-11-23): el flujo manda. Arriba, una línea con dónde estás; después el carril
+        del proceso, grande, que es lo que se usa; y la campaña elegida con quién aprueba y cómo llega al cliente.
+      */}
       <div className="rounded-2xl border border-gray-200 bg-white shadow-sm">
-        <div className="flex flex-col gap-4 px-6 py-5 md:flex-row md:items-start md:justify-between">
-          <div className="flex items-center gap-4">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-ink text-white">
-              <BookmarkCheck className="h-5 w-5" strokeWidth={2} />
-            </div>
-            <div>
-              <h2 className="text-[20px] font-semibold tracking-[-0.01em] text-[#1D1D1F]">
-                {SCREENS.saved.name} <span className="text-gray-400">· {marca.name}</span>
-              </h2>
-              <p className="mt-0.5 text-[12px] text-gray-500">{SCREENS.saved.description}</p>
-            </div>
-          </div>
-          <div className="w-full md:w-80 space-y-2">
-            {!conEncabezado && (
+        <div className="flex flex-wrap items-center gap-3 px-5 pt-4">
+          <BookmarkCheck className="h-4 w-4 text-gray-500" strokeWidth={2} />
+          <h2 className="text-[15px] font-semibold text-[#1D1D1F]">
+            {SCREENS.saved.name} <span className="font-normal text-gray-400">· {marca.name}</span>
+          </h2>
+          <div className="flex-1" />
+          {!conEncabezado && (
             <select
               value={campanaFiltro}
               onChange={e => {
                 setCampanaFiltro(e.target.value);
                 setSeleccion(new Set());
               }}
-              className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-[13px] font-medium text-gray-800"
+              className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-[12.5px] font-medium text-gray-800"
             >
               <option value="all">Todas las campañas</option>
               {campanas.map(c => (
@@ -595,54 +595,61 @@ const SavedManager: React.FC<SavedManagerProps> = ({
               ))}
               {deLaMarca.some(v => !v.projectId) && <option value="none">Sin campaña</option>}
             </select>
-            )}
-            {campanaElegida && (
-              <AprobacionDeCampana
-                campana={campanaElegida}
-                miembros={miembros}
-                puedeEditar={isAdmin}
-                onCambio={actualizarCampana}
-                onError={m => addNotification(m, 'error')}
-              />
-            )}
-          </div>
+          )}
         </div>
 
         {/*
-          El carril. Cada paso dice cuántos hay y filtra con un clic; el orden
-          es el del proceso. «Sin campaña» y «Devuelto» solo aparecen si hay
-          algo: son desvíos, no pasos por los que todo pasa.
+          El carril. Cada paso dice cuántos hay y filtra con un clic; el orden es el del proceso. «Sin campaña» y
+          «Devuelto» solo aparecen si hay algo: son desvíos, no pasos por los que todo pasa.
         */}
-        <div className="flex flex-wrap items-stretch gap-1 border-t border-gray-100 bg-gray-50/40 px-4 py-3">
-          <button
-            onClick={() => setEtapaFiltro('all')}
-            className={`rounded-lg px-3 py-1.5 text-[12px] font-medium ${
-              etapaFiltro === 'all' ? 'bg-ink text-white' : 'text-gray-600 hover:bg-white'
-            }`}
-          >
-            Todo · {new Set(deLaCampana.map(v => v.conjuntoId ?? v.id)).size}
-          </button>
+        <div className="flex flex-wrap items-stretch gap-2 px-5 py-4">
           {ETAPAS_COPY.filter(e => (e.id !== 'SIN_CAMPANA' && e.id !== 'DEVUELTO') || (conteo.get(e.id) ?? 0) > 0).map(
             (e, i, arr) => (
               <React.Fragment key={e.id}>
                 <button
-                  onClick={() => setEtapaFiltro(e.id)}
+                  onClick={() => setEtapaFiltro(etapaFiltro === e.id ? 'all' : e.id)}
                   title={e.que}
-                  className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[12px] font-medium ${
+                  className={`min-w-[150px] flex-1 rounded-xl border px-4 py-3 text-left transition ${
                     etapaFiltro === e.id ? 'border-ink bg-ink text-white' : `${ESTILO_ETAPA[e.id]} hover:brightness-95`
                   }`}
                 >
-                  {e.label}
-                  <span className="tabular-nums opacity-70">{conteo.get(e.id) ?? 0}</span>
+                  <span className="block text-[24px] font-bold leading-none tabular-nums">{conteo.get(e.id) ?? 0}</span>
+                  <span className="mt-1.5 block text-[12.5px] font-semibold">{e.label}</span>
                 </button>
-                {i < arr.length - 1 && <ArrowRight className="h-3 w-3 self-center text-gray-300" />}
+                {i < arr.length - 1 && <ArrowRight className="h-4 w-4 shrink-0 self-center text-gray-300" />}
               </React.Fragment>
             )
           )}
         </div>
-        {etapaFiltro !== 'all' && (
-          <p className="border-t border-gray-100 px-6 py-2 text-[11px] text-gray-500">
-            {ETAPAS_COPY.find(e => e.id === etapaFiltro)?.que}
+        <p className="px-5 pb-3 text-[11.5px] text-gray-500">
+          {etapaFiltro === 'all' ? (
+            <>
+              {new Set(deLaCampana.map(v => v.conjuntoId ?? v.id)).size} en total. Toca un paso para ver solo ese.
+            </>
+          ) : (
+            <>
+              {ETAPAS_COPY.find(e => e.id === etapaFiltro)?.que}{' '}
+              <button onClick={() => setEtapaFiltro('all')} className="font-semibold text-gray-700 underline">
+                Ver todo
+              </button>
+            </>
+          )}
+        </p>
+
+        {campanaElegida ? (
+          <CampanaYCliente
+            campana={campanaElegida}
+            porMandar={deLaCampana.filter(v => etapaDe(v) === 'POR_APROBAR' || etapaDe(v) === 'DEVUELTO').map(v => v.id)}
+            puedeMandar={isAdmin || (!!currentUserId && campanaElegida.responsableId === currentUserId)}
+            isAdmin={isAdmin}
+            miembros={miembros}
+            onMandar={ids => setEnviando(ids)}
+            onCambio={actualizarCampana}
+            onError={m => addNotification(m, 'error')}
+          />
+        ) : (
+          <p className="border-t border-gray-100 px-5 py-3 text-[12px] text-gray-500">
+            Elige una campaña para ver quién la aprueba y para mandarla al cliente.
           </p>
         )}
       </div>
@@ -878,7 +885,7 @@ const SavedManager: React.FC<SavedManagerProps> = ({
           onEnviado={async enlace => {
             setEnviando(null);
             await terminar({
-              texto: `Revisión creada para ${marca.name}. Mandale el enlace al cliente: el copy queda «Con el cliente» hasta que responda.`,
+              texto: `Revisión creada para ${marca.name}. Mándale el enlace al cliente: el copy queda «Con el cliente» hasta que responda.`,
               enlace,
               ir: 'collaboration',
             });
@@ -998,3 +1005,92 @@ function EnviarAlCliente({
 }
 
 export default SavedManager;
+
+/**
+ * La campaña elegida en Copy: quién aprueba y cómo llega al cliente (Gerardo, 2026-11-23). El enlace para el
+ * cliente ya no depende de seleccionar copy: está siempre a la vista. Si la campaña la aprueba el equipo, se
+ * dice y se ofrece cambiarla; quién aprueba se maneja en Equipo, aquí solo se elige el responsable.
+ */
+function CampanaYCliente({
+  campana,
+  porMandar,
+  puedeMandar,
+  isAdmin,
+  miembros,
+  onMandar,
+  onCambio,
+  onError,
+}: {
+  campana: Project;
+  porMandar: string[];
+  puedeMandar: boolean;
+  isAdmin: boolean;
+  miembros: WorkspaceMember[];
+  onMandar: (ids: string[]) => void;
+  onCambio: (c: Project) => void;
+  onError: (m: string) => void;
+}) {
+  const [guardando, setGuardando] = React.useState(false);
+  const cambiar = async (datos: { modoAprobacion?: 'INTERNA' | 'CLIENTE' }) => {
+    setGuardando(true);
+    try {
+      onCambio(await libraryApi.updateProject(campana.id, datos));
+    } catch (e) {
+      onError(e instanceof Error ? e.message : 'No se pudo cambiar la campaña');
+    } finally {
+      setGuardando(false);
+    }
+  };
+  const conCliente = campana.modoAprobacion === 'CLIENTE';
+
+  return (
+    <div className="grid gap-px border-t border-gray-100 bg-gray-100 md:grid-cols-2">
+      <div className="bg-white px-5 py-3">
+        <p className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-gray-400">Quién aprueba · {campana.name}</p>
+        <div className="mt-1">
+          <AprobacionDeCampana campana={campana} miembros={miembros} puedeEditar={isAdmin} soloResponsable onCambio={onCambio} onError={onError} />
+        </div>
+      </div>
+      <div className="bg-white px-5 py-3">
+        <p className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-gray-400">Con el cliente</p>
+        {conCliente ? (
+          <div className="mt-1.5 flex flex-wrap items-center gap-3">
+            <p className="flex-1 text-[12.5px] text-gray-600">
+              El cliente aprueba desde un enlace, sin cuenta.{' '}
+              {porMandar.length ? `Hay ${porMandar.length} ${porMandar.length === 1 ? 'texto' : 'textos'} por aprobar para mandarle.` : 'No hay copy por aprobar para mandarle.'}
+            </p>
+            {puedeMandar && (
+              <button
+                disabled={!porMandar.length}
+                onClick={() => onMandar(porMandar)}
+                className="flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-2 text-[12.5px] font-semibold text-white hover:bg-blue-700 disabled:opacity-40"
+              >
+                <Link2 className="h-3.5 w-3.5" /> Crear enlace para el cliente
+              </button>
+            )}
+            {isAdmin && (
+              <button disabled={guardando} onClick={() => void cambiar({ modoAprobacion: 'INTERNA' })} className="text-[11.5px] text-gray-500 underline">
+                Que la apruebe el equipo
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="mt-1.5 flex flex-wrap items-center gap-3">
+            <p className="flex-1 text-[12.5px] text-gray-600">Esta campaña la aprueba el equipo: no pasa por el cliente.</p>
+            {isAdmin ? (
+              <button
+                disabled={guardando}
+                onClick={() => void cambiar({ modoAprobacion: 'CLIENTE' })}
+                className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-[12.5px] font-semibold text-blue-700 hover:bg-blue-100 disabled:opacity-40"
+              >
+                Que la apruebe el cliente
+              </button>
+            ) : (
+              <span className="text-[11.5px] text-gray-400">Lo cambia quien administra.</span>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

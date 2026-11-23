@@ -1,4 +1,4 @@
-import { SELECT_APROBADORES, apruebaLaCampana, nombresDe, quienesAprueban } from '../comun/aprobadores.js';
+import { SELECT_APROBADORES, apruebaLaCampana, campanasQueApruebo, nombresDe, quienesAprueban } from '../comun/aprobadores.js';
 import { ModoAprobacion, ReviewDecision } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import {
@@ -242,11 +242,7 @@ export const assertCampanaDeLaMarca = async (tenant: TenantContext, projectId: s
  */
 export const copyPorAprobarDe = async (tenant: TenantContext) => {
   const campanas = await prisma.project.findMany({
-    where: {
-      workspaceId: tenant.workspaceId,
-      modoAprobacion: ModoAprobacion.INTERNA,
-      OR: [{ responsableId: tenant.userId }, { aprobadores: { some: { userId: tenant.userId } } }],
-    },
+    where: { AND: [await campanasQueApruebo(tenant), { modoAprobacion: ModoAprobacion.INTERNA }] },
     select: {
       id: true,
       name: true,
