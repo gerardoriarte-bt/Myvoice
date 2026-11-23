@@ -16,6 +16,7 @@
  * Ver docs/plan-h2-produccion-auditoria.md.
  */
 
+import { copyOriginal, copyParaCrear, copyParaProponer, corregirCopyAprobado, textoActual } from '../myvoice/copyParaProduccion.js';
 import { createHash } from 'node:crypto';
 import { ModoAprobacion, Prisma, PiezaEstado, PiezaTipo, RondaRevision, WorkspaceRole } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
@@ -124,14 +125,8 @@ const PERMISO_DE: Record<AccionPieza, AccionConPermiso | null> = {
 
 /** Lo que el tablero y la orden de trabajo necesitan de una pieza. */
 const INCLUDE_PIEZA = {
-  slots: {
-    orderBy: { orden: 'asc' as const },
-    include: {
-      savedVariation: {
-        select: { id: true, content: true, isApproved: true, platform: true },
-      },
-    },
-  },
+  // El copy original de cada slot lo da My Voice (`conOriginales`), no un include sobre su tabla.
+  slots: { orderBy: { orden: 'asc' as const } },
   asignadaA: { select: { id: true, name: true, email: true } },
   /** Solo el último comentario: la tarjeta muestra uno, la orden todos. */
   eventos: {
@@ -159,7 +154,22 @@ const INCLUDE_PIEZA = {
   },
 } satisfies Prisma.PiezaInclude;
 
-type PiezaConSlots = Prisma.PiezaGetPayload<{ include: typeof INCLUDE_PIEZA }>;
+type PiezaBase = Prisma.PiezaGetPayload<{ include: typeof INCLUDE_PIEZA }>;
+type OriginalDeCopy = { id: string; content: string; isApproved: boolean; platform: string };
+/** La pieza con el copy original de cada slot al lado, para calcular si «el copy cambió». */
+type PiezaConSlots = Omit<PiezaBase, 'slots'> & { slots: (PiezaBase['slots'][number] & { savedVariation: OriginalDeCopy | null })[] };
+
+/** Le pone a cada slot su copy original, pedido a My Voice en una sola consulta para todas las piezas. */
+type ConOriginales<T extends { slots: { savedVariationId: string | null }[] }> = Omit<T, 'slots'> & {
+  slots: (T['slots'][number] & { savedVariation: OriginalDeCopy | null })[];
+};
+const conOriginales = async <T extends { slots: { savedVariationId: string | null }[] }>(piezas: T[]): Promise<ConOriginales<T>[]> => {
+  const originales = await copyOriginal(piezas.flatMap(p => p.slots.map(s => s.savedVariationId).filter((id): id is string => !!id)));
+  return piezas.map(p => ({
+    ...p,
+    slots: p.slots.map(s => ({ ...s, savedVariation: s.savedVariationId ? originales.get(s.savedVariationId) ?? null : null })),
+  }));
+};
 
 /**
  * El aviso «el copy cambió» NO es un estado guardado: se calcula al leer,
@@ -301,11 +311,7 @@ export const proponerPiezas = async (
 ): Promise<Propuesta> => {
   if (!savedVariationIds.length) throw new TenantError('No hay contenido seleccionado', 400);
 
-  const variaciones = await prisma.savedVariation.findMany({
-    where: { id: { in: savedVariationIds }, client: { workspaceId: tenant.workspaceId } },
-    include: { project: { select: { id: true, name: true, responsableId: true } } },
-    orderBy: { savedAt: 'asc' },
-  });
+  const variaciones = await copyParaProponer(tenant, savedVariationIds);
 
   const yaEnPieza = new Set(
     (
@@ -442,10 +448,7 @@ export const crearPiezas = async (tenant: TenantContext, piezas: PiezaAConfirmar
   const todosLosIds = piezas.flatMap(p => p.savedVariationIds ?? []);
   if (!todosLosIds.length) throw new TenantError('Una pieza sin copy aprobado no es una pieza', 400);
 
-  const variaciones = await prisma.savedVariation.findMany({
-    where: { id: { in: todosLosIds }, client: { workspaceId: tenant.workspaceId } },
-    include: { project: { select: { responsableId: true } } },
-  });
+  const variaciones = await copyParaCrear(tenant, todosLosIds);
   const porId = new Map(variaciones.map(v => [v.id, v]));
 
   // Hermanas (estado límite 1): las piezas que apuntan a otra con `hermanaDe`
@@ -924,15 +927,14 @@ const piezaParaDecidir = async (tenant: TenantContext, piezaId: string) => {
  * trabajando sobre algo que cambió sin avisarle.
  */
 const recongelarCopy = async (tx: Prisma.TransactionClient, piezaId: string) => {
-  const slots = await tx.piezaSlot.findMany({
-    where: { piezaId },
-    include: { savedVariation: { select: { content: true } } },
-  });
+  const slots = await tx.piezaSlot.findMany({ where: { piezaId } });
+  const actual = await textoActual(tx, slots.map(s => s.savedVariationId).filter((id): id is string => !!id));
   for (const s of slots) {
-    if (!s.savedVariation || s.savedVariation.content === s.textoCongelado) continue;
+    const texto = s.savedVariationId ? actual.get(s.savedVariationId) : undefined;
+    if (texto === undefined || texto === s.textoCongelado) continue;
     await tx.piezaSlot.update({
       where: { id: s.id },
-      data: { textoCongelado: s.savedVariation.content },
+      data: { textoCongelado: texto },
     });
   }
 };
@@ -965,7 +967,11 @@ const gestoresDe = (tenant: TenantContext): Promise<Persona[]> => {
   return p;
 };
 
-const presentar = async (
+/** Una pieza sola: pide su copy original a My Voice y la presenta. */
+const presentar = async <T extends PiezaBase>(tenant: TenantContext, pieza: T, comentarios = 0, contexto?: ContextoDePieza) =>
+  presentarConCopy(tenant, (await conOriginales([pieza]))[0], comentarios, contexto);
+
+const presentarConCopy = async (
   tenant: TenantContext,
   pieza: PiezaConSlots,
   comentarios = 0,
@@ -1101,18 +1107,7 @@ export const corregirCopy = async (
       if (!s || s.esInstruccion || s.textoCongelado === c.texto) continue;
       await tx.piezaSlot.update({ where: { id: s.id }, data: { textoCongelado: c.texto } });
       if (s.savedVariationId) {
-        await tx.savedVariation.update({
-          where: { id: s.savedVariationId },
-          data: {
-            content: c.texto,
-            charCount: c.texto.length,
-            isApproved: true,
-            aprobadoPorId: tenant.userId,
-            aprobadoPorNombre: yo?.name ?? null,
-            aprobadoEn: new Date(),
-            aprobadoVia: ModoAprobacion.INTERNA,
-          },
-        });
+        await corregirCopyAprobado(tx, s.savedVariationId, c.texto, { id: tenant.userId, nombre: yo?.name ?? null });
       }
       cambiados.push(s.slotLabel);
     }
@@ -1141,10 +1136,10 @@ export const listarPorMarca = async (tenant: TenantContext, clientId: string) =>
   return presentarVarias(tenant, piezas);
 };
 
-const presentarVarias = async (tenant: TenantContext, piezas: PiezaConSlots[]) => {
+const presentarVarias = async (tenant: TenantContext, piezas: PiezaBase[]) => {
   const ids = piezas.map(p => p.id);
-  const [comentarios, contexto] = await Promise.all([contarComentarios(ids), contextoDe(piezas)]);
-  return Promise.all(piezas.map(p => presentar(tenant, p, comentarios.get(p.id) ?? 0, contexto.get(p.id))));
+  const [comentarios, contexto, conCopy] = await Promise.all([contarComentarios(ids), contextoDe(piezas), conOriginales(piezas)]);
+  return Promise.all(conCopy.map(p => presentarConCopy(tenant, p, comentarios.get(p.id) ?? 0, contexto.get(p.id))));
 };
 
 /**
@@ -1358,3 +1353,15 @@ export const piezasPorDecidirDe = async (tenant: TenantContext) => {
       marca: p.client?.name ?? null,
     }));
 };
+
+/**
+ * Las piezas de una campaña para el encabezado (④): su estado y qué copy llevan. Lo dice Producción sobre su
+ * tabla; la plataforma lo junta con el copy (`plataforma/proceso.ts`).
+ */
+export const piezasDeCampana = async (campanaId: string) =>
+  (
+    await prisma.pieza.findMany({
+      where: { projectId: campanaId, canceladaEn: null },
+      select: { estado: true, slots: { select: { savedVariationId: true } } },
+    })
+  ).map(p => ({ estado: p.estado, copyIds: p.slots.map(s => s.savedVariationId).filter((id): id is string => !!id) }));

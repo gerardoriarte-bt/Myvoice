@@ -1,3 +1,4 @@
+import { lineaDePedido } from '../myvoice/pedidosDeCopy.js';
 import { SELECT_APROBADORES, exigirElegible, quienesAprueban } from '../comun/aprobadores.js';
 import { Response } from 'express';
 import { AuthRequest, handleTenantError } from '../middleware/auth.js';
@@ -76,18 +77,15 @@ export const getSavedVariations = async (req: AuthRequest, res: Response) => {
  */
 /**
  * F4: el pedido (línea de una sábana aprobada) al que responde este copy. Tiene que ser de la misma campaña y del
- * mismo canal; si no, se rechaza en vez de contar copy en el pedido equivocado.
- * Deuda conocida: My Voice lee aquí la tabla de CDM directo, sin pasar por el contrato (docs/ecosistema/).
+ * mismo canal; si no, se rechaza en vez de contar copy en el pedido equivocado. La línea la responde CDM por la
+ * función que registra la plataforma (`lineaDePedido`), sin que My Voice lea su tabla.
  */
 const pedidoValido = async (tenant: TenantContext, lineaId: string, campanaId: string | null, platform: unknown) => {
-  const linea = await prisma.lineaDePlanning.findUnique({
-    where: { id: lineaId },
-    select: { planning: { select: { workspaceId: true, campanaId: true, estado: true } }, formato: { select: { canal: true } } },
-  });
-  if (!linea || linea.planning.workspaceId !== tenant.workspaceId) throw new TenantError('Pedido de copy no encontrado', 404);
-  if (linea.planning.campanaId !== campanaId) throw new TenantError('El pedido es de otra campaña', 400);
-  if (linea.planning.estado !== 'APROBADO') throw new TenantError('La sábana de este pedido ya no está aprobada', 409);
-  if (linea.formato.canal !== platform) throw new TenantError(`El pedido es de ${linea.formato.canal ?? 'otro canal'}`, 400);
+  const linea = await lineaDePedido(tenant, lineaId);
+  if (!linea) throw new TenantError('Pedido de copy no encontrado', 404);
+  if (linea.campanaId !== campanaId) throw new TenantError('El pedido es de otra campaña', 400);
+  if (!linea.aprobada) throw new TenantError('La sábana de este pedido ya no está aprobada', 409);
+  if (linea.canal !== platform) throw new TenantError(`El pedido es de ${linea.canal ?? 'otro canal'}`, 400);
   return lineaId;
 };
 

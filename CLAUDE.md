@@ -47,6 +47,7 @@ npm run superadmin            # lists super admins; `-- <email> [--quitar] --app
 npm run cdm:canales           # loads the 14 My Voice channels into a workspace's CDM library, each in its class's medium (decision 29); `-- <slug> --apply`
 #                              in production: `[APLICAR=1] bash deploy/cdm-canales.sh <slug>…` (disposable Node on the backend's network)
 npm run cdm:importar          # loads a medium's spec sheet (JSON) into a workspace's CDM library; `-- <slug> <json> --apply`
+#                              in production: `[APLICAR=1] bash deploy/cdm-importar.sh <json in the repo> <slug>…`
 npm run plataforma            # lists workspaces; `-- <slug> --encender|--apagar --apply` flips the process frame (F0)
 npm run verify:isolation      # cross-tenant isolation suite; needs the API running
 npm run verify:resiliencia    # retry/backoff/timeout against a fake client; spends no API credit
@@ -298,7 +299,7 @@ Generar and Historial read it instead of keeping their own selector; only «Lo m
 `Workspace.plataformaPorProcesos` on (it travels in the session), `App.tsx` mounts the same `contenido` inside
 `src/plataforma/Marco.tsx` — a two-row header with the campaign and the steps (② CDM only for brands with
 `ModuloDeMarca` CDM, switched on per brand in Control) (state from
-`GET /clients/:id/proceso`, `server/src/comun/proceso.ts`) and a menu per step — and the screen and campaign
+`GET /clients/:id/proceso`, `server/src/plataforma/proceso.ts`, which composes each module's own step) and a menu per step — and the screen and campaign
 live in the path (`src/plataforma/rutas.ts`: `/campana/:id/myvoice/copy`). Off, the sidebar of `NAV_STAGES`
 and no routes, as before. Never build a second version of a screen for the new frame.
 
