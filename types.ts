@@ -31,6 +31,7 @@ export const PLATFORM_GROUPS: Record<string, Platform[]> = {
     Platform.YOUTUBE
   ],
   Performance: [
+    Platform.META_ADS,
     Platform.GOOGLE_ADS,
     Platform.GOOGLE_DISPLAY,
     Platform.RICH_MEDIA

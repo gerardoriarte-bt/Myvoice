@@ -1,3 +1,4 @@
+import { metaAds } from "./specs/metaAds.js";
 import { ChannelSpec, PiezaSpec, SlotSpec, ZonaSlot } from "./types.js";
 import { instagramPost } from "./specs/instagramPost.js";
 import { instagramHistoria } from "./specs/instagramHistoria.js";
@@ -29,6 +30,7 @@ const ALL: ChannelSpec[] = [
   pushNotification,
   email,
   whatsapp,
+  metaAds,
 ];
 
 export const CHANNEL_REGISTRY: Map<string, ChannelSpec> = new Map(
@@ -93,8 +95,22 @@ export const slidesValidas = (slides?: number | null): number =>
  * la última convertida en el cierre. El spec del registro no cambia: sigue resolviendo las etiquetas de
  * todo lo guardado.
  */
-export const specParaGeneracion = (spec: ChannelSpec, opciones: { slides?: number | null } = {}): ChannelSpec => {
+export const specParaGeneracion = (
+  spec: ChannelSpec,
+  opciones: { slides?: number | null; textosDelPedido?: { slot: string; max: number | null }[] | null } = {}
+): ChannelSpec => {
   let slots = spec.slots.filter(s => !s.legado);
+  // F4: lo que pidió CDM manda sobre el spec: qué textos lleva la pieza y su largo. Solo si alguno coincide con
+  // los slots del canal; si no, el pedido no aplica a este spec y se sigue con el de siempre.
+  const pedido = (opciones.textosDelPedido ?? []).filter(t => slots.some(s => s.id === t.slot));
+  if (pedido.length) {
+    slots = slots
+      .filter(s => pedido.some(t => t.slot === s.id))
+      .map(s => {
+        const max = pedido.find(t => t.slot === s.id)?.max;
+        return typeof max === "number" && max > 0 ? { ...s, max } : s;
+      });
+  }
   if (esCarrusel(spec.id)) {
     const n = slidesValidas(opciones.slides);
     slots = slots

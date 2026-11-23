@@ -2,7 +2,7 @@ import React from 'react';
 import {
   Camera, Music2, PlayCircle, Radio, MonitorSmartphone, Image as ImageIcon,
   Film, Bell, Mail, MessageCircle, MousePointerClick, AppWindow,
-  Hash, Type
+  Hash, Type, Megaphone
 } from 'lucide-react';
 
 interface IconStyle {
@@ -22,6 +22,7 @@ const STYLES: Record<string, IconStyle> = {
   'Cuña de Radio':        { Icon: Radio,              bg: 'bg-amber-50',    fg: 'text-amber-700',   label: 'Radio' },
   'Google Ads':           { Icon: Type,               bg: 'bg-blue-50',     fg: 'text-blue-600',    label: 'Google Ads' },
   'Google Display':       { Icon: MonitorSmartphone,  bg: 'bg-blue-50',     fg: 'text-blue-700',    label: 'Display' },
+  'Meta Ads':             { Icon: Megaphone,          bg: 'bg-indigo-50',   fg: 'text-indigo-700',  label: 'Meta Ads' },
   'Rich Media':           { Icon: AppWindow,          bg: 'bg-indigo-50',   fg: 'text-indigo-600',  label: 'Rich Media' },
   'Pop up':               { Icon: MousePointerClick,  bg: 'bg-purple-50',   fg: 'text-purple-600',  label: 'Pop up' },
   'Push Notification':    { Icon: Bell,               bg: 'bg-emerald-50',  fg: 'text-emerald-600', label: 'Push' },

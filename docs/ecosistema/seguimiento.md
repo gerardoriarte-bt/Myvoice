@@ -43,7 +43,7 @@ Cada función con su estado en las tres pistas. Se actualiza en el mismo PR que 
 | Usuario | Función | Diseño | Front | Back | Requisito |
 |---|---|---|---|---|---|
 | Copy | Generar por canales | ● | ● | ● | (v1) · en el marco por procesos se llama «Generar suelto» y queda para lo que no viene de CDM |
-| Copy | Pedidos de copy: por campaña y estado, escritos dentro de su tarjeta | ○ | ● | ● | F4 (1) · #100, 2026-11-20 (sin el `.pen`). Falta: Meta Ads sin canal en el motor |
+| Copy | Pedidos de copy: por campaña y estado, escritos dentro de su tarjeta | ○ | ● | ● | F4 (1) · #100, 2026-11-20 (sin el `.pen`); Meta Ads escribible desde el 2026-11-23 |
 | Copy | Aviso «Hay copy por escribir» al aprobarse la sábana | — | ● | ● | decisión 31 · #99 |
 | — | El ADN manda en la generación | — | — | ● | decisión 14 (2026-10-28) |
 | — | Manual de oficio en el motor | — | — | ● | MV-1 (PR #43, desplegado el 2026-11-04) |

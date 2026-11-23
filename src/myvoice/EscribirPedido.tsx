@@ -36,13 +36,17 @@ export default function EscribirPedido({ pedido, campanaId, brief, marca, onGuar
   // Las slides del carrusel salen del pedido: cuántos textos «slide…» trae la pieza.
   const slides = pedido.textos.filter(t => /^slide/i.test(t.clave)).reduce((n, t) => n + t.repeticiones, 0);
   const params: CopyParameters = React.useMemo(
-    () =>
-      parametrosDelBrief(brief, marca, {
+    () => ({
+      ...parametrosDelBrief(brief, marca, {
         platform,
         funnelStage: ETAPA_DEL_MOTOR[pedido.etapa],
         cantidad: acotar(pedido.piezas - pedido.escritas, CANTIDAD),
         slides: slides >= SLIDES.min ? acotar(slides, SLIDES) : undefined,
       }),
+      // Qué textos lleva la pieza y su largo, según las ubicaciones que eligió CDM (Meta Ads: un video 4:5 no lleva
+      // descripción, y el texto principal de Stories es más corto que el del feed).
+      textosDelPedido: pedido.textos.map(t => ({ slot: t.clave, max: t.maximo })),
+    }),
     [brief, marca, platform, pedido, slides]
   );
 

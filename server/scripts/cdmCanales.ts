@@ -64,7 +64,11 @@ interface Plan {
 }
 
 const leerCanales = (): Plan[] =>
-  listChannels().map(spec => {
+  listChannels()
+    // Meta Ads no se carga desde aquí: sus seis piezas maestras vienen de la planilla de Meta (decisión 18), que
+    // les pone el canal al cargarlas (2026-11-23).
+    .filter(spec => spec.id !== 'Meta Ads')
+    .map(spec => {
     const destino = DESTINO[spec.id];
     if (!destino) throw new Error(`El canal «${spec.id}» no tiene medio asignado en DESTINO`);
     const pieza = spec.pieza;

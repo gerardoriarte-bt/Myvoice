@@ -19,6 +19,7 @@ const NOMBRE: Record<string, [string, string]> = {
   [Platform.TIKTOK]: ['video', 'videos'],
   [Platform.YOUTUBE]: ['video', 'videos'],
   [Platform.GOOGLE_ADS]: ['anuncio', 'anuncios'],
+  [Platform.META_ADS]: ['anuncio', 'anuncios'],
   [Platform.GOOGLE_DISPLAY]: ['anuncio', 'anuncios'],
   [Platform.RICH_MEDIA]: ['pieza', 'piezas'],
   [Platform.POP_UP]: ['pop up', 'pop ups'],
