@@ -1,3 +1,4 @@
+import type { Paso } from '../../contrato/proceso.js';
 import { SELECT_APROBADORES, apruebaLaCampana, campanasQueApruebo, nombresDe, quienesAprueban } from '../../comun/aprobadores.js';
 import { EstadoPlanning, EtapaDeFunnel, Prisma } from '@prisma/client';
 import { prisma } from '../../lib/prisma.js';
@@ -619,4 +620,44 @@ export const pedidosDeCopy = async (tenant: TenantContext, clientId: string) => 
       textos: textosDe(l).map(t => ({ clave: t.clave, nombre: t.nombre, maximo: t.maximo, repeticiones: t.repeticiones })),
     })),
   }));
+};
+
+/**
+ * ② CDM en el encabezado (F3): hecho con la sábana aprobada; mientras tanto, en qué va y quién lo debe. Lo dice
+ * CDM sobre su propia tabla; la plataforma lo pone en su lugar (`plataforma/proceso.ts`).
+ */
+export const pasoCdm = async (campanaId: string): Promise<Paso> => {
+  const p = await prisma.planning.findUnique({
+    where: { campanaId },
+    select: {
+      estado: true,
+      lineas: { select: { piezas: true } },
+      campana: { select: { responsable: { select: { id: true, name: true } } } },
+    },
+  });
+  if (!p) return { paso: 'cdm', estado: 'pendiente', texto: 'Sin planning todavía', falta: 'Armar el planning' };
+  const piezas = p.lineas.reduce((s, l) => s + l.piezas, 0);
+  const quien = p.campana.responsable ? { id: p.campana.responsable.id, nombre: p.campana.responsable.name } : undefined;
+  switch (p.estado) {
+    case 'APROBADO':
+      return { paso: 'cdm', estado: 'hecho', texto: `Sábana aprobada · ${piezas} piezas` };
+    case 'CON_EL_CLIENTE':
+      return { paso: 'cdm', estado: 'activo', texto: 'Sábana con el cliente', falta: 'Respuesta del cliente por enlace', quien };
+    case 'POR_APROBAR':
+      return { paso: 'cdm', estado: 'activo', texto: 'Sábana por aprobar', falta: 'Aprobar la sábana', quien };
+    case 'DEVUELTO':
+      return { paso: 'cdm', estado: 'activo', texto: 'Sábana devuelta', falta: 'Ajustar lo que pidió el responsable' };
+    default:
+      return { paso: 'cdm', estado: 'activo', texto: `Planning en armado · ${piezas} piezas`, falta: 'Enviar la sábana a aprobación' };
+  }
+};
+
+/** La línea de un pedido, para My Voice al guardar copy (lo registra la plataforma). Otro workspace = null. */
+export const lineaParaPedido = async (tenant: TenantContext, lineaId: string) => {
+  const linea = await prisma.lineaDePlanning.findUnique({
+    where: { id: lineaId },
+    select: { planning: { select: { workspaceId: true, campanaId: true, estado: true } }, formato: { select: { canal: true } } },
+  });
+  if (!linea || linea.planning.workspaceId !== tenant.workspaceId) return null;
+  return { campanaId: linea.planning.campanaId, aprobada: linea.planning.estado === 'APROBADO', canal: linea.formato.canal };
 };

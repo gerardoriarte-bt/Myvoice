@@ -59,16 +59,22 @@ Las reglas:
 - Los 2 pares de Producción hacia My Voice son el spec de cada canal (`channels/registry.ts`: formato y
   zona de cada texto). Cuentan como «pasan por el contrato»: se pagan cuando el catálogo de CDM sea el
   dueño de los formatos.
-- Producción todavía lee el copy con `prisma`, desde las tablas de My Voice. La regla de imports no ve
-  eso; sigue como deuda del contrato.
+- **Producción ya no lee las tablas de My Voice** (pagado el 2026-11-23). Todo lo que necesita del copy lo pide a
+  `myvoice/copyParaProduccion.ts`: el original de cada slot (para «el copy cambió»), el copy para proponer y crear
+  piezas, el texto actual para recongelar y la corrección del copy dentro de la pieza.
 - **2026-11-20, F3b, decisión 30 y F4 (1):**
   - Quién aprueba una campaña lo decide la parte común (`comun/aprobadores.ts`). CDM, My Voice y Producción
     le preguntan ahí, y eso suma 9 imports que pasan por el contrato (66 en total).
   - Lo que cruza módulos lo junta la plataforma: el portal arma las tres rondas (copy, piezas y sábana),
     `plataforma/porAprobar.ts` junta lo que espera decisión y `plataforma/pedidosDeCopy.ts` junta las líneas de
     CDM con el copy de My Voice.
-  - Hay una deuda nueva de lectura directa: al guardar copy de un pedido, My Voice lee la línea de CDM con
-    `prisma` para validarla (`pedidoValido` en `savedController.ts`).
+  - ~~Hay una deuda nueva de lectura directa~~ (pagada el 2026-11-23): al guardar copy de un pedido, My Voice
+    pregunta por la línea con `lineaDePedido`. CDM la responde (`lineaParaPedido`) y la plataforma conecta las dos
+    funciones al arrancar (`registrarLineasDePedido` en `routes/index.ts`). My Voice no importa CDM.
+- **El encabezado pasó a la plataforma** (`plataforma/proceso.ts`, 2026-11-23). Antes vivía en la parte común y leía
+  con `prisma` las tablas de CDM, My Voice y Producción. Ahora cada módulo dice cómo va su paso (`pasoCdm`,
+  `copyDeCampana`, `piezasDeCampana`) y la plataforma los junta. El tipo `Paso` está en `contrato/proceso.ts`.
+- **Con esto no quedan lecturas directas entre módulos.** El contador del contrato queda en 68.
 
 **Lo que hay que invertir antes de partir carpetas (3).** La parte común no puede depender de My Voice:
 

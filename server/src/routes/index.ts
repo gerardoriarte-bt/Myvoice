@@ -17,7 +17,14 @@ import * as bibliotecaController from '../cdm/biblioteca/bibliotecaController.js
 import * as planningController from '../cdm/planning/planningController.js';
 import * as aprobadoresController from '../comun/aprobadoresController.js';
 import { porAprobar } from '../plataforma/porAprobar.js';
+import * as procesoController from '../plataforma/procesoController.js';
 import { pedidos as pedidosDeCopy } from '../plataforma/pedidosDeCopy.js';
+import { registrarLineasDePedido } from '../myvoice/pedidosDeCopy.js';
+import { lineaParaPedido } from '../cdm/planning/planningService.js';
+
+// My Voice valida el pedido al guardar copy preguntándole a CDM por la línea, sin importarlo: la plataforma los
+// conecta aquí, al arrancar (deuda de lectura directa pagada el 2026-11-23).
+registrarLineasDePedido(lineaParaPedido);
 
 const router = Router();
 const pdfUpload = multer({
@@ -118,10 +125,10 @@ router.put('/clients/:id/adn/secciones/:clave', ...inWorkspace, clientController
 router.post('/clients/:id/adn/secciones/:clave/revisada', ...inWorkspace, clientController.postSeccionRevisada);
 router.post('/clients/:id/adn/secciones/:clave/propuesta/:accion', ...inWorkspace, clientController.postPropuestaAdn);
 // El estado de cada paso del encabezado (F0): lo lee cualquier miembro, como el ADN.
-router.get('/clients/:id/proceso', ...inWorkspace, clientController.getProceso);
-router.get('/clients/:id/campanas/proceso', ...inWorkspace, clientController.getCampanasEnProceso);
+router.get('/clients/:id/proceso', ...inWorkspace, procesoController.getProceso);
+router.get('/clients/:id/campanas/proceso', ...inWorkspace, procesoController.getCampanasEnProceso);
 // El Panorama (decisión 24): todas las marcas del workspace, solo para quien administra.
-router.get('/panorama', ...asManager, clientController.getPanorama);
+router.get('/panorama', ...asManager, procesoController.getPanorama);
 router.get('/clients/:id/audiencias', ...inWorkspace, clientController.getAudiencias);
 router.post('/clients/:id/audiencias', ...inWorkspace, clientController.postAudiencia);
 router.put('/clients/:id/audiencias/:audienciaId', ...inWorkspace, clientController.putAudiencia);

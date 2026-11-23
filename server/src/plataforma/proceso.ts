@@ -1,6 +1,10 @@
 import { prisma } from '../lib/prisma.js';
-import { completitudAdn, MINIMO_ADN } from './adn/completitudAdn.js';
-import { resolverAdn } from './adn/resolverAdn.js';
+import { completitudAdn, MINIMO_ADN } from '../comun/adn/completitudAdn.js';
+import { resolverAdn } from '../comun/adn/resolverAdn.js';
+import type { Paso } from '../contrato/proceso.js';
+import { pasoCdm } from '../cdm/planning/planningService.js';
+import { copyDeCampana } from '../myvoice/pedidosDeCopy.js';
+import { piezasDeCampana } from '../services/piezaService.js';
 
 /**
  * El estado de cada paso del encabezado (F0, docs/plan-plataforma-por-procesos.md): cómo va UNA campaña
@@ -11,29 +15,12 @@ import { resolverAdn } from './adn/resolverAdn.js';
  * CDM (②) aparece solo en las marcas que lo tienen prendido (`ModuloDeMarca`); Implementación (⑤), cuando
  * exista. Un paso que no se puede abrir no se muestra.
  *
- * Lee las tablas con `prisma` y no los servicios de My Voice: la parte común no importa un módulo
- * (`npm run fronteras`). Son conteos; las reglas de quién aprueba siguen en `aprobacion.ts`.
+ * Es de la plataforma (2026-11-23; antes vivía en la parte común y leía las tablas de cada módulo con
+ * `prisma`): cada módulo dice cómo va lo suyo —CDM su sábana, My Voice su copy, Producción sus piezas— y aquí
+ * solo se juntan. Solo lee directo lo que es de la parte común: la marca, su ADN y la campaña.
  */
 
-export type PasoId = 'marca' | 'cdm' | 'myvoice' | 'produccion';
-
-/**
- * hecho = ✓ · activo = en curso · pendiente = no empezó · bloqueado = espera algo de otro paso ·
- * neutro = sin campaña elegida, solo navega.
- */
-export type EstadoPaso = 'hecho' | 'activo' | 'pendiente' | 'bloqueado' | 'neutro';
-
-export interface Paso {
-  paso: PasoId;
-  estado: EstadoPaso;
-  /** La línea chica bajo el nombre del paso: «6 de 17 piezas». */
-  texto?: string;
-  /** Qué falta, cuando está bloqueado o pendiente. */
-  falta?: string;
-  /** A quién le toca destrabarlo. */
-  quien?: { id: string; nombre: string };
-  avance?: { hechas: number; total: number };
-}
+export type { PasoId, EstadoPaso, Paso } from '../contrato/proceso.js';
 
 const NEUTROS: Paso[] = [
   { paso: 'marca', estado: 'neutro' },
@@ -43,36 +30,6 @@ const NEUTROS: Paso[] = [
 
 const conCdm = (clientId: string) =>
   prisma.moduloDeMarca.findUnique({ where: { clientId_modulo: { clientId, modulo: 'CDM' } }, select: { id: true } }).then(Boolean);
-
-/**
- * ② CDM según el planning de la campaña (F3): hecho con la sábana aprobada; mientras tanto, en qué va y quién
- * lo debe. Lee la tabla del planning y no el servicio de CDM: la parte común no importa un módulo.
- */
-const pasoCdm = async (campanaId: string): Promise<Paso> => {
-  const p = await prisma.planning.findUnique({
-    where: { campanaId },
-    select: {
-      estado: true,
-      lineas: { select: { piezas: true } },
-      campana: { select: { responsable: { select: { id: true, name: true } } } },
-    },
-  });
-  if (!p) return { paso: 'cdm', estado: 'pendiente', texto: 'Sin planning todavía', falta: 'Armar el planning' };
-  const piezas = p.lineas.reduce((s, l) => s + l.piezas, 0);
-  const quien = p.campana.responsable ? { id: p.campana.responsable.id, nombre: p.campana.responsable.name } : undefined;
-  switch (p.estado) {
-    case 'APROBADO':
-      return { paso: 'cdm', estado: 'hecho', texto: `Sábana aprobada · ${piezas} piezas` };
-    case 'CON_EL_CLIENTE':
-      return { paso: 'cdm', estado: 'activo', texto: 'Sábana con el cliente', falta: 'Respuesta del cliente por enlace', quien };
-    case 'POR_APROBAR':
-      return { paso: 'cdm', estado: 'activo', texto: 'Sábana por aprobar', falta: 'Aprobar la sábana', quien };
-    case 'DEVUELTO':
-      return { paso: 'cdm', estado: 'activo', texto: 'Sábana devuelta', falta: 'Ajustar lo que pidió el responsable' };
-    default:
-      return { paso: 'cdm', estado: 'activo', texto: `Planning en armado · ${piezas} piezas`, falta: 'Enviar la sábana a aprobación' };
-  }
-};
 
 /** `clientId` y `campanaId` ya pasaron por la guarda de tenancy: acá no se vuelve a mirar el workspace. */
 export const procesoDeCampana = async (clientId: string, campanaId: string | null): Promise<Paso[]> => {
@@ -91,11 +48,8 @@ const pasosDeCampana = async (clientId: string, campanaId: string | null): Promi
       where: { id: campanaId },
       select: { responsable: { select: { id: true, name: true } } },
     }),
-    prisma.savedVariation.findMany({ where: { projectId: campanaId }, select: { id: true, isApproved: true } }),
-    prisma.pieza.findMany({
-      where: { projectId: campanaId, canceladaEn: null },
-      select: { estado: true, slots: { select: { savedVariationId: true } } },
-    }),
+    copyDeCampana(campanaId),
+    piezasDeCampana(campanaId),
   ]);
   const quien = campana.responsable ? { id: campana.responsable.id, nombre: campana.responsable.name } : undefined;
 
@@ -126,7 +80,7 @@ const pasosDeCampana = async (clientId: string, campanaId: string | null): Promi
           };
 
   // ④ Producción: las piezas de la campaña. Nunca ✓ mientras quede copy aprobado sin pieza.
-  const enPieza = new Set(piezas.flatMap(p => p.slots.map(s => s.savedVariationId)));
+  const enPieza = new Set(piezas.flatMap(p => p.copyIds));
   const aprobadosSinPieza = aprobados.filter(c => !enPieza.has(c.id)).length;
   const listas = piezas.filter(p => p.estado === 'LISTA').length;
   const produccion: Paso =

@@ -27,3 +27,23 @@ export const avanceDeLineas = async (tenant: TenantContext, lineaIds: string[]) 
   }
   return avance;
 };
+
+/**
+ * El copy de una campaña para el encabezado (③ y ④): qué textos tiene y cuáles están aprobados. Lo dice My Voice
+ * sobre su propia tabla; la plataforma y Producción no la leen directo.
+ */
+export const copyDeCampana = async (campanaId: string) =>
+  prisma.savedVariation.findMany({ where: { projectId: campanaId }, select: { id: true, isApproved: true } });
+
+/**
+ * Lo que My Voice necesita saber de la línea de un pedido al guardar copy: de qué campaña es, si su sábana sigue
+ * aprobada y qué canal la escribe. La línea es de CDM, y My Voice no importa CDM: la plataforma registra al
+ * arrancar la función que lo responde (`routes/index.ts`). Sin registrar, ningún pedido es válido.
+ */
+export type LineaDePedido = { campanaId: string; aprobada: boolean; canal: string | null };
+type BuscarLinea = (tenant: TenantContext, lineaId: string) => Promise<LineaDePedido | null>;
+let buscarLinea: BuscarLinea = async () => null;
+export const registrarLineasDePedido = (fn: BuscarLinea) => {
+  buscarLinea = fn;
+};
+export const lineaDePedido = (tenant: TenantContext, lineaId: string) => buscarLinea(tenant, lineaId);

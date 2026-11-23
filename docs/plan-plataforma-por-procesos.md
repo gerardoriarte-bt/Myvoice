@@ -101,7 +101,7 @@ una vez. Gerardo decidió (2026-11-17):
   sigue con los cinco pasos. La campaña activa vive en la ruta (`/campana/:id/…`), no en `localStorage`
   como la marca: dos pestañas pueden estar en campañas distintas, y un aviso abre la suya. El estado de cada paso lo calcula el servidor al leer, **`GET /clients/:id/proceso[?campana=]`**:
   `{ paso, estado: 'hecho' | 'activo' | 'bloqueado', falta?: string, quien?: {id, nombre},
-  avance?: {hechas, total} }[]`, en `server/src/comun/proceso.ts`. Usa `completitudAdn` (①), la sábana
+  avance?: {hechas, total} }[]`, en `server/src/plataforma/proceso.ts` (en la parte común hasta el 2026-11-23). Usa `completitudAdn` (①), la sábana
   aprobada (②, cuando exista F3), el copy aprobado por línea (③) y las piezas y anuncios (④ y ⑤, con
   `avance`: avanzan por línea). Sin CDM encendido, ② no aparece y ③ no tiene candado.
 - **Menú por módulo**: My Voice (Pedidos de copy · Copy · Con el cliente · Métricas · Generar suelto ·
@@ -121,7 +121,7 @@ una vez. Gerardo decidió (2026-11-17):
     (`plataformaPorProcesos` en `/auth/me`). Lo prende o apaga **un script, no un botón**:
     `npm run plataforma -- <slug> --encender --apply`. En producción hay muchos ADMIN, y el workspace real
     lo decide Gerardo. `seed:capacitacion` lo deja prendido.
-  - `GET /clients/:id/proceso[?campana=]` está en `server/src/comun/proceso.ts`. Cuenta el ADN, el copy y
+  - `GET /clients/:id/proceso[?campana=]` está en `server/src/plataforma/proceso.ts` (antes en la parte común). Cuenta el ADN, el copy y
     las piezas leyendo las tablas, porque la parte común no importa My Voice. Una campaña de otra marca
     responde 404, y `verify:isolation` lo cubre.
   - Front en `src/plataforma/`:
