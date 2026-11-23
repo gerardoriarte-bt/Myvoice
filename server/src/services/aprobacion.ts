@@ -169,14 +169,15 @@ export const decidirAprobacion = async (tenant: TenantContext, ids: string[], ap
  * copy de una campaña interna daría dos aprobaciones distintas para lo mismo,
  * y la del cliente pasaría por encima del responsable sin que él lo decida.
  */
-export const motivosParaNoRevisar = async (ids: string[]): Promise<string[]> => {
-  const [variaciones, abiertas] = await Promise.all([
+export const motivosParaNoRevisar = async (ids: string[], incluirAprobadoPorEquipo = false): Promise<string[]> => {
+  const [variaciones, abiertas, enPieza] = await Promise.all([
     prisma.savedVariation.findMany({
       where: { id: { in: ids } },
       select: {
         id: true,
         platform: true,
         isApproved: true,
+        aprobadoVia: true,
         project: { select: { name: true, modoAprobacion: true, responsableId: true } },
       },
     }),
@@ -187,8 +188,13 @@ export const motivosParaNoRevisar = async (ids: string[]): Promise<string[]> => 
       },
       select: { savedVariationId: true },
     }),
+    prisma.piezaSlot.findMany({
+      where: { savedVariationId: { in: ids }, pieza: { canceladaEn: null } },
+      select: { savedVariationId: true },
+    }),
   ]);
   const yaEnRevision = new Set(abiertas.map(a => a.savedVariationId));
+  const producidos = new Set(enPieza.map(s => s.savedVariationId));
 
   const motivos = new Set<string>();
   for (const v of variaciones) {
@@ -197,7 +203,11 @@ export const motivosParaNoRevisar = async (ids: string[]): Promise<string[]> => 
     else if (c.modoAprobacion !== ModoAprobacion.CLIENTE)
       motivos.add(`«${c.name}» se aprueba internamente, no con el cliente.`);
     else if (!c.responsableId) motivos.add(`«${c.name}» no tiene responsable de aprobación.`);
-    else if (v.isApproved) motivos.add('Hay copy que ya está aprobado.');
+    else if (producidos.has(v.id)) motivos.add('Hay copy que ya está en producción.');
+    // Lo que aprobó el equipo puede ir al cliente si se pide (la campaña pasó a «la aprueba el cliente»,
+    // 2026-11-23): vuelve a quedar pendiente hasta que responda. Lo que ya aprobó el cliente, no.
+    else if (v.isApproved && !(incluirAprobadoPorEquipo && v.aprobadoVia === ModoAprobacion.INTERNA))
+      motivos.add('Hay copy que ya está aprobado.');
     else if (yaEnRevision.has(v.id)) motivos.add('Hay copy que ya está en otra revisión abierta.');
   }
   return [...motivos];

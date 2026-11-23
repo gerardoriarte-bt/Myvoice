@@ -55,6 +55,7 @@ export const NOVEDADES: Novedad[] = [
       'En Copy, el carril del proceso (por aprobar, con el cliente, aprobado, en producción) es lo principal; toca un paso para ver solo ese.',
       'Con una campaña elegida, «Con el cliente» dice si la aprueba el equipo o el cliente. Si es el cliente, «Crear enlace para el cliente» está siempre a la vista; si es el equipo, «Que la apruebe el cliente» la cambia.',
       'Quién aprueba se maneja en Equipo: quien tenga la función Aprobación para una marca aprueba sus campañas. En la campaña solo se elige el responsable.',
+      'Si el equipo ya había aprobado el copy y la campaña pasa a «la aprueba el cliente», «Mandarle al cliente lo aprobado» crea el enlace con ese copy. El enlace queda a la vista para copiarlo.',
     ],
   },
   {
