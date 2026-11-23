@@ -101,7 +101,9 @@ per channel, concurrency-capped at 5 by an in-file semaphore:
   writer          → raw JSON variations (channel spec drives slots and budgets)
   validators.ts   → deterministic checks: char/word budgets, prohibitions, voseo
   criticService   → editorFlags per variation
-  fixerService    → rewrites only flagged variations, then re-validates
+  fixerService    → rewrites only flagged variations, then re-validates; a second pass
+                    (acortarLosLargos) asks for 3 shorter versions of whatever is still
+                    over its max and keeps the first one that fits — counted by code
   ↓
 superCritic       → CoherenceReport across all channels
 ```
