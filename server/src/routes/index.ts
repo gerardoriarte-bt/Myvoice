@@ -172,6 +172,8 @@ router.post('/implementacion/anuncios/:id/montar', ...inWorkspace, anunciosContr
 router.post('/implementacion/anuncios/:id/devolver', ...inWorkspace, anunciosController.devolver);
 router.post('/implementacion/anuncios/:id/reabrir', ...inWorkspace, anunciosController.reabrir);
 router.put('/implementacion/anuncios/:id/destino', ...inWorkspace, anunciosController.destino);
+router.post('/implementacion/autorizar', ...inWorkspace, anunciosController.autorizar);
+router.post('/implementacion/enlace', ...inWorkspace, anunciosController.enlace);
 router.post('/projects', ...inWorkspace, savedController.createProject);
 router.get('/projects/de-brief/:dnaProfileId', ...inWorkspace, savedController.getCampanaDeBrief);
 router.patch('/projects/:id', ...inWorkspace, savedController.updateProject);

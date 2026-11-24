@@ -440,6 +440,14 @@ async function main() {
       method: 'POST',
       body: JSON.stringify({ texto: 'x' }),
     });
+    await expectDenied('POST /implementacion/enlace con la campaña de A', '/implementacion/enlace', B.token, {
+      method: 'POST',
+      body: JSON.stringify({ campanaId: A.project.id }),
+    });
+    await expectDenied('POST /implementacion/autorizar un anuncio de A', '/implementacion/autorizar', B.token, {
+      method: 'POST',
+      body: JSON.stringify({ ids: [`pieza:${piezaA.id}`] }),
+    });
     await expectDenied('PUT /implementacion/anuncios/:piezaId/destino de A', `/implementacion/anuncios/${piezaA.id}/destino`, B.token, {
       method: 'PUT',
       body: JSON.stringify({ destino: 'https://x.co' }),
@@ -1060,21 +1068,22 @@ async function main() {
       `respondió ${unaSola.status}`
     );
 
-    console.log('\nRONDA 2 — el cliente aprueba la pieza (H2.E)');
-    // La pieza de B está LISTA en este punto del guión: su campaña es interna,
-    // que es el valor por defecto, y una campaña interna no va al cliente.
-    const sinPedir = await api('/review-sessions', B.token, {
+    console.log('\nAPROBACIÓN FINAL — el cliente aprueba lo que se va a implementar (F5, 2026-11-24)');
+    // La ronda de piezas se retiró: Producción termina en Lista y el cliente aprueba el arte, con su copy, el destino
+    // y las fechas, en un solo enlace desde Implementación.
+    const rondaVieja = await api('/review-sessions', B.token, {
       method: 'POST',
       body: JSON.stringify({ title: 'Piezas', piezaIds: [piezaB.id] }),
     });
-    record(
-      'Una pieza de una campaña interna no se manda al cliente',
-      sinPedir.status === 404,
-      `respondió ${sinPedir.status} ${JSON.stringify(sinPedir.body)?.slice(0, 110)}`
-    );
+    record('Ya no se crean rondas de piezas', rondaVieja.status === 410, `respondió ${rondaVieja.status}`);
 
-    // La campaña pasa a «del cliente» y la pieza vuelve a recorrer el camino:
-    // reabrir, entregar, aceptar. Aceptada, ya no queda en Lista sino con el cliente.
+    const mezclada = await api('/review-sessions', B.token, {
+      method: 'POST',
+      body: JSON.stringify({ title: 'Mezcla', piezaIds: [piezaB.id], variationIds: [aprobadoB.id] }),
+    });
+    record('Una sesión no puede mezclar copys y piezas', mezclada.status === 400, `respondió ${mezclada.status}`);
+
+    // La campaña pasa a «del cliente» y la pieza vuelve a recorrer el camino: aceptada, queda en Lista igual.
     await api(`/projects/${B.project.id}`, B.token, {
       method: 'PATCH',
       body: JSON.stringify({ modoAprobacion: 'CLIENTE' }),
@@ -1091,128 +1100,66 @@ async function main() {
       method: 'POST',
       body: JSON.stringify({ enlace: 'https://drive.google.com/file/d/para-el-cliente' }),
     });
-    const paraElCliente = await api(`/piezas/${piezaB.id}/aceptar`, B.token, {
+    const aceptada = await api(`/piezas/${piezaB.id}/aceptar`, B.token, {
       method: 'POST',
       body: JSON.stringify({ nota: 'Las medidas son de la prueba' }),
     });
-    record(
-      'En una campaña del cliente, aceptar deja la pieza Con el cliente',
-      paraElCliente.body?.estado === 'CON_EL_CLIENTE',
-      `quedó en ${paraElCliente.body?.estado}`
-    );
+    record('En una campaña del cliente, aceptar deja la pieza en Lista', aceptada.body?.estado === 'LISTA', `quedó en ${aceptada.body?.estado}`);
 
-    const conPieza = await api('/review-sessions', B.token, {
+    const idB = `pieza:${piezaB.id}`;
+    const sinAutorizar = await api(`/implementacion/anuncios/${idB}/montar`, B.token, {
       method: 'POST',
-      body: JSON.stringify({ title: 'Piezas de B', piezaIds: [piezaB.id] }),
+      body: JSON.stringify({ plataforma: 'Meta', idEnPlataforma: '1' }),
     });
-    record(
-      'La pieza con el cliente se le manda',
-      conPieza.status === 201 && conPieza.body?.ronda === 'PIEZA' && !!conPieza.body?.token,
-      `respondió ${conPieza.status} ${JSON.stringify(conPieza.body)?.slice(0, 110)}`
-    );
-    const dosVeces = await api('/review-sessions', B.token, {
-      method: 'POST',
-      body: JSON.stringify({ title: 'Otra vez', piezaIds: [piezaB.id] }),
-    });
-    record(
-      'Lo que ya está en una revisión abierta no se manda dos veces',
-      dosVeces.status === 404,
-      `respondió ${dosVeces.status}`
-    );
+    record('Nada se monta sin la aprobación final', sinAutorizar.status === 409, `respondió ${sinAutorizar.status}`);
+    const autorizaEnCliente = await api('/implementacion/autorizar', B.token, { method: 'POST', body: JSON.stringify({ ids: [idB] }) });
+    record('En una campaña del cliente no se autoriza a mano', autorizaEnCliente.status === 409, `respondió ${autorizaEnCliente.status}`);
 
-    const mezclada = await api('/review-sessions', B.token, {
-      method: 'POST',
-      body: JSON.stringify({ title: 'Mezcla', piezaIds: [piezaB.id], variationIds: [aprobadoB.id] }),
-    });
-    record(
-      'Una sesión no puede mezclar copys y piezas',
-      mezclada.status === 400,
-      `respondió ${mezclada.status}`
-    );
+    await api(`/implementacion/anuncios/${idB}/destino`, B.token, { method: 'PUT', body: JSON.stringify({ destino: 'https://example.com/b' }) });
+    const enlace = await api('/implementacion/enlace', B.token, { method: 'POST', body: JSON.stringify({ campanaId: B.project.id }) });
+    const tokenB = typeof enlace.body?.url === 'string' ? enlace.body.url.split('review=')[1] : '';
+    record('La campaña del cliente crea su enlace', enlace.status === 200 && !!tokenB, `respondió ${enlace.status} ${JSON.stringify(enlace.body)?.slice(0, 110)}`);
+    const otraVez = await api('/implementacion/enlace', B.token, { method: 'POST', body: JSON.stringify({ campanaId: B.project.id }) });
+    record('Pedirlo otra vez devuelve el mismo enlace', otraVez.body?.url === enlace.body?.url, `devolvió ${otraVez.body?.url}`);
 
-    // Lo que importa del portal público: que el token de B no alcance una
-    // pieza de A, y que no filtre lo que no es asunto del cliente.
-    const ajena = await api('/review-sessions', B.token, {
-      method: 'POST',
-      body: JSON.stringify({ title: 'Pieza de A', piezaIds: [piezaA.id] }),
-    });
+    const publico = await (await fetch(`${API_URL}/review/public/${tokenB}`)).json();
+    const anuncioB = publico?.implementacion?.anuncios?.[0];
     record(
-      'Una pieza de otro workspace no entra en una sesión',
-      ajena.status === 404,
-      `respondió ${ajena.status}`
-    );
-
-    const publico = await (await fetch(`${API_URL}/review/public/${conPieza.body?.token}`)).json();
-    record(
-      'El portal devuelve la pieza con su copy aprobado y sin datos internos',
-      Array.isArray(publico?.piezas) &&
-        publico.piezas.length === 1 &&
-        publico.piezas[0].id === piezaB.id &&
-        Array.isArray(publico.piezas[0].slots) &&
-        publico.piezas[0].enlace === undefined &&
-        publico.piezas[0].asignadaA === undefined,
+      'El portal muestra el anuncio con su destino y sin datos internos',
+      publico?.ronda === 'IMPLEMENTACION' &&
+        publico.implementacion.anuncios.length === 1 &&
+        anuncioB?.url?.startsWith('https://example.com/b') &&
+        anuncioB.aprobaciones === undefined &&
+        anuncioB.faltas === undefined &&
+        publico.items === undefined,
       `devolvió ${JSON.stringify(publico)?.slice(0, 160)}`
     );
 
-    const mudo = await fetch(`${API_URL}/review/public/${conPieza.body?.token}/submit`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ reviewerName: 'La clienta', feedbacks: [{ piezaId: piezaB.id, decision: 'REJECTED' }] }),
+    // Un anuncio de A no entra por el token de B: el servidor ignora lo que no es de la sesión.
+    const anuncioA = await prisma.anuncio.upsert({
+      where: { piezaId: piezaA.id },
+      create: { workspaceId: A.workspace.id, clientId: A.client.id, piezaId: piezaA.id, estado: 'CON_EL_CLIENTE' },
+      update: { estado: 'CON_EL_CLIENTE' },
     });
+    const responder = (feedbacks: unknown[]) =>
+      fetch(`${API_URL}/review/public/${tokenB}/submit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reviewerName: 'La clienta', feedbacks }),
+      });
+    const mudo = await responder([{ anuncioId: anuncioB?.id, decision: 'REJECTED' }]);
     record('Pedir cambios sin escribir cuáles responde 400', mudo.status === 400, `respondió ${mudo.status}`);
-
-    // Desde 2026-10-13 un reparo sobre el mensaje también devuelve la pieza a
-    // diseño: en Lista quedaba varada, porque el copy en producción no se
-    // corregía en ningún lado. El responsable lo corrige dentro de la pieza.
-    const entrega = await fetch(`${API_URL}/review/public/${conPieza.body?.token}/submit`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        reviewerName: 'La clienta',
-        feedbacks: [{ piezaId: piezaB.id, decision: 'REJECTED', feedbackCopy: 'El hook no me cierra' }],
-      }),
-    });
-    const trasCopy = await prisma.pieza.findUnique({ where: { id: piezaB.id }, select: { estado: true } });
-    record(
-      'Un reparo sobre el mensaje devuelve la pieza a diseño',
-      entrega.status === 201 && trasCopy?.estado === 'EN_DISENO',
-      `respondió ${entrega.status}, quedó en ${trasCopy?.estado}`
-    );
-
-    const corrigeUnMiembro = await api(`/piezas/${piezaB.id}/corregir-copy`, disenaB.token, {
-      method: 'POST',
-      body: JSON.stringify({ correcciones: [{ slot: 'hook', texto: 'Hook corregido' }] }),
-    });
-    record('Un MEMBER que no es responsable no corrige el copy', corrigeUnMiembro.status === 403, `respondió ${corrigeUnMiembro.status}`);
-    const slotDeB = await prisma.piezaSlot.findFirst({ where: { piezaId: piezaB.id }, select: { slot: true, savedVariationId: true } });
-    const corregido = await api(`/piezas/${piezaB.id}/corregir-copy`, B.token, {
-      method: 'POST',
-      body: JSON.stringify({ correcciones: [{ slot: slotDeB?.slot, texto: 'Hook corregido por el responsable' }] }),
-    });
-    const original = await prisma.savedVariation.findUnique({
-      where: { id: slotDeB?.savedVariationId ?? '' },
-      select: { content: true, isApproved: true },
-    });
-    record(
-      'El responsable corrige el copy en la pieza y en Copy, y queda aprobado',
-      corregido.status === 200 &&
-        original?.content === 'Hook corregido por el responsable' &&
-        original?.isApproved === true &&
-        corregido.body?.devolucion?.esperaCopy === false,
-      `respondió ${corregido.status}, copy ${JSON.stringify(original)}, devolución ${JSON.stringify(corregido.body?.devolucion)?.slice(0, 100)}`
-    );
-
-    const eventoExterno = await prisma.piezaEvento.findFirst({
-      where: { piezaId: piezaB.id, nota: 'El hook no me cierra' },
-      select: { autorId: true, autorExterno: true, categoria: true },
-    });
-    record(
-      'El comentario del cliente NO se le atribuye a nadie del equipo',
-      eventoExterno?.autorId === null &&
-        eventoExterno?.autorExterno === 'La clienta' &&
-        eventoExterno?.categoria === 'COPY',
-      `quedó ${JSON.stringify(eventoExterno)}`
-    );
+    const respuesta = await responder([
+      { anuncioId: anuncioB?.id, decision: 'APPROVED' },
+      { anuncioId: anuncioA.id, decision: 'REJECTED', feedbackCopy: 'Colado desde otra empresa' },
+    ]);
+    const [trasB, trasA] = await Promise.all([
+      prisma.anuncio.findUnique({ where: { id: anuncioB?.id ?? '' }, select: { estado: true } }),
+      prisma.anuncio.findUnique({ where: { id: anuncioA.id }, select: { estado: true, novedad: true } }),
+    ]);
+    record('Lo que el cliente aprueba queda por montar', respuesta.status === 200 && trasB?.estado === 'POR_MONTAR', `respondió ${respuesta.status}, quedó ${trasB?.estado}`);
+    record('El token de B no decide un anuncio de A', trasA?.estado === 'CON_EL_CLIENTE' && !trasA.novedad, `quedó ${JSON.stringify(trasA)}`);
+    await prisma.anuncio.delete({ where: { id: anuncioA.id } });
 
     // La campaña de B vuelve a ser interna: lo que sigue la usa así.
     await prisma.project.update({ where: { id: B.project.id }, data: { modoAprobacion: 'INTERNA' } });

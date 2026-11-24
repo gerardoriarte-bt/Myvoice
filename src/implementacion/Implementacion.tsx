@@ -4,12 +4,15 @@ import { implementacionApi } from '../../services/api';
 import type { AnuncioParaMontar, EstadoAnuncio, EtapaDeFunnel } from '../../types';
 
 /**
- * ⑤ Implementación · Por montar (F5, T1 a T4; plan de Implementación, PR #65). El trafficker o el community
+ * ⑤ Implementación · Anuncios (F5, T1 a T4; plan de Implementación, PR #65). El trafficker o el community
  * manager ven los anuncios listos de cada campaña, abren uno a la vez, copian lo que va en la plataforma y dejan
  * constancia: «Marcar montado» (plataforma, ID, fecha) o «Devolver con novedad». Hecho sin el `.pen`.
  */
 
 const PESTANAS: { estado: EstadoAnuncio; nombre: string }[] = [
+  // La aprobación final (2026-11-24): nada se monta sin la del cliente o la de un aprobador, según la campaña.
+  { estado: 'POR_APROBAR', nombre: 'Por aprobar' },
+  { estado: 'CON_EL_CLIENTE', nombre: 'Con el cliente' },
   { estado: 'POR_MONTAR', nombre: 'Por montar' },
   { estado: 'CON_NOVEDAD', nombre: 'Con novedad' },
   { estado: 'MONTADO', nombre: 'Hechos' },
@@ -65,7 +68,8 @@ interface Props {
  */
 export default function Implementacion({ marcaId, onAviso }: Props) {
   const [anuncios, setAnuncios] = React.useState<AnuncioParaMontar[] | null>(null);
-  const [pestana, setPestana] = React.useState<EstadoAnuncio>('POR_MONTAR');
+  const [pestana, setPestana] = React.useState<EstadoAnuncio>('POR_APROBAR');
+  const [enlaces, setEnlaces] = React.useState<Record<string, string>>({});
   const [abierto, setAbierto] = React.useState<string | null>(null);
 
   const leer = React.useCallback(() => {
@@ -96,10 +100,10 @@ export default function Implementacion({ marcaId, onAviso }: Props) {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-[22px] font-bold text-[#1D1D1F]">Por montar</h1>
+        <h1 className="text-[22px] font-bold text-[#1D1D1F]">Anuncios</h1>
         <p className="mt-1 text-[13px] text-[#6E6E73]">
-          Lo aprobado de cada campaña. Abre uno, copia lo que va en la plataforma y deja constancia: el trafficker lo monta y el
-          community manager publica lo de redes sociales.
+          Lo listo de cada campaña. Primero la aprobación final —la del cliente por enlace o la de un aprobador, según la
+          campaña—; después el trafficker lo monta y el community manager publica lo de redes sociales.
         </p>
       </div>
 
@@ -120,12 +124,20 @@ export default function Implementacion({ marcaId, onAviso }: Props) {
 
       {anuncios.length === 0 ? (
         <div className="rounded-[12px] border border-dashed border-[rgba(0,0,0,0.12)] bg-white px-6 py-10 text-center text-[13px] text-[#6E6E73]">
-          Esta marca todavía no tiene nada listo para montar. Aparece aquí cuando Producción acepta una pieza (y el cliente, si
-          la campaña lo pide) o, en los anuncios de solo texto como la búsqueda de Google Ads, cuando se aprueba el copy.
+          Esta marca todavía no tiene nada para implementar. Aparece aquí cuando Producción acepta una pieza o, en los anuncios
+          de solo texto como la búsqueda de Google Ads, cuando se aprueba el copy.
         </div>
       ) : porCampana.size === 0 ? (
         <div className="rounded-[12px] border border-dashed border-[rgba(0,0,0,0.12)] bg-white px-6 py-10 text-center text-[13px] text-[#6E6E73]">
-          {pestana === 'POR_MONTAR' ? 'No hay nada por montar ni por publicar.' : pestana === 'CON_NOVEDAD' ? 'Nada tiene novedad.' : 'Todavía no hay nada montado ni publicado.'}
+          {
+            {
+              POR_APROBAR: 'Nada espera la aprobación final.',
+              CON_EL_CLIENTE: 'No hay nada esperando al cliente.',
+              POR_MONTAR: 'No hay nada por montar ni por publicar.',
+              CON_NOVEDAD: 'Nada tiene novedad.',
+              MONTADO: 'Todavía no hay nada montado ni publicado.',
+            }[pestana]
+          }
         </div>
       ) : (
         [...porCampana.entries()].map(([clave, g]) => {
@@ -135,6 +147,34 @@ export default function Implementacion({ marcaId, onAviso }: Props) {
             <section key={clave} className="overflow-hidden rounded-[12px] border border-[rgba(0,0,0,0.08)] bg-white">
               <header className="flex flex-wrap items-center gap-3 px-4 py-3">
                 <h2 className="min-w-0 flex-1 text-[15px] font-bold text-[#1D1D1F]">{g.nombre}</h2>
+                {pestana === 'POR_APROBAR' && (
+                  <AprobacionFinal
+                    anuncios={g.anuncios.filter(a => a.estado === 'POR_APROBAR')}
+                    enlace={enlaces[clave]}
+                    onEnlace={url => setEnlaces(prev => ({ ...prev, [clave]: url }))}
+                    onHecho={leer}
+                    onAviso={onAviso}
+                  />
+                )}
+                {pestana === 'CON_EL_CLIENTE' && g.anuncios[0]?.campana?.puedoEnlace && (
+                  // El enlace abierto, para volver a mandarlo: el servidor devuelve el mismo, no crea otro.
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        const r = await implementacionApi.enlace(g.anuncios[0].campana!.id);
+                        await navigator.clipboard?.writeText(r.url).catch(() => undefined);
+                        setEnlaces(prev => ({ ...prev, [clave]: r.url }));
+                        onAviso('Enlace del cliente copiado', 'success');
+                      } catch (err) {
+                        onAviso(err instanceof Error ? err.message : 'No se pudo leer el enlace', 'error');
+                      }
+                    }}
+                    className="flex items-center gap-1.5 rounded-lg border border-violet-200 bg-violet-50 px-3 py-1.5 text-[12.5px] font-semibold text-violet-800 hover:bg-violet-100"
+                  >
+                    <Copy className="h-3.5 w-3.5" /> {enlaces[clave] ? 'Copiado' : 'Copiar el enlace del cliente'}
+                  </button>
+                )}
                 <div className="h-1.5 w-28 overflow-hidden rounded-full bg-[#F0F0F2]">
                   <div className="h-full rounded-full bg-[#0E7490]" style={{ width: `${deLaCampana.length ? (montados / deLaCampana.length) * 100 : 0}%` }} />
                 </div>
@@ -158,7 +198,21 @@ export default function Implementacion({ marcaId, onAviso }: Props) {
                         </span>
                       </div>
                       {a.linea?.desde && <span className="text-[12px] text-[#6E6E73]">Sale el {dia(a.linea.desde)}</span>}
-                      {a.estado === 'MONTADO' ? (
+                      {a.estado === 'POR_APROBAR' ? (
+                        a.novedad ? (
+                          <span className="rounded-full bg-amber-50 px-2.5 py-0.5 text-[11.5px] font-semibold text-amber-800">El cliente pidió cambios</span>
+                        ) : a.listo ? (
+                          <span className="rounded-full bg-violet-50 px-2.5 py-0.5 text-[11.5px] font-semibold text-violet-700">
+                            Listo para aprobar{a.faltas.length ? ' · falta la UTM' : ''}
+                          </span>
+                        ) : (
+                          <span className="rounded-full bg-amber-50 px-2.5 py-0.5 text-[11.5px] font-semibold text-amber-800">
+                            {a.faltas.filter(f => f.bloquea).map(f => f.texto).join(' · ')}
+                          </span>
+                        )
+                      ) : a.estado === 'CON_EL_CLIENTE' ? (
+                        <span className="rounded-full bg-violet-50 px-2.5 py-0.5 text-[11.5px] font-semibold text-violet-700">Esperando al cliente</span>
+                      ) : a.estado === 'MONTADO' ? (
                         <span className="rounded-full bg-cyan-50 px-2.5 py-0.5 text-[11.5px] font-semibold text-[#0E7490]">
                           {a.accion === 'publicar' ? 'Publicado' : 'Montado'} · {a.montado?.plataforma}
                         </span>
@@ -339,7 +393,7 @@ function Detalle({
         )}
         {a.puedo && modo === 'ver' && (
           <div className="flex flex-col gap-2">
-            {a.estado !== 'MONTADO' && (
+            {a.estado === 'POR_MONTAR' && (
               <button
                 type="button"
                 disabled={!a.listo}
@@ -349,14 +403,16 @@ function Detalle({
                 {a.accion === 'publicar' ? 'Marcar publicado' : 'Marcar montado'}
               </button>
             )}
-            <button
-              type="button"
-              onClick={() => setModo('devolver')}
-              className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-[rgba(0,0,0,0.12)] bg-white px-3 py-2 text-[13px] font-semibold text-[#1D1D1F] hover:bg-[#F5F5F7]"
-            >
-              <Undo2 className="h-3.5 w-3.5" /> Devolver con novedad
-            </button>
-            {a.estado !== 'POR_MONTAR' && (
+            {a.estado !== 'POR_APROBAR' && a.estado !== 'CON_EL_CLIENTE' && (
+              <button
+                type="button"
+                onClick={() => setModo('devolver')}
+                className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-[rgba(0,0,0,0.12)] bg-white px-3 py-2 text-[13px] font-semibold text-[#1D1D1F] hover:bg-[#F5F5F7]"
+              >
+                <Undo2 className="h-3.5 w-3.5" /> Devolver con novedad
+              </button>
+            )}
+            {(a.estado === 'MONTADO' || a.estado === 'CON_NOVEDAD') && (
               <button
                 type="button"
                 disabled={ocupado}
@@ -417,5 +473,90 @@ function Detalle({
         )}
       </div>
     </div>
+  );
+}
+
+/**
+ * La aprobación final de una campaña (2026-11-24), en su tarjeta: si la aprueba el equipo, «Autorizar
+ * implementación» para quien la aprueba; si la aprueba el cliente, «Crear enlace para el cliente» con todo lo listo
+ * (arte, copy, caption, destino y fechas). Lo que no está listo (sin destino o fecha) espera.
+ */
+function AprobacionFinal({
+  anuncios,
+  enlace,
+  onEnlace,
+  onHecho,
+  onAviso,
+}: {
+  anuncios: AnuncioParaMontar[];
+  enlace?: string;
+  onEnlace: (url: string) => void;
+  onHecho: () => void;
+  onAviso: (mensaje: string, tipo: 'success' | 'error' | 'info' | 'warning') => void;
+}) {
+  const [ocupado, setOcupado] = React.useState(false);
+  const campana = anuncios[0]?.campana;
+  const listos = anuncios.filter(a => a.listo);
+  if (!campana || !anuncios.length) return null;
+  const boton = 'rounded-lg px-3 py-1.5 text-[12.5px] font-semibold text-white disabled:opacity-40';
+
+  if (campana.modoAprobacion === 'CLIENTE') {
+    return (
+      <div className="flex flex-wrap items-center gap-2">
+        {enlace ? (
+          <>
+            <span className="max-w-[280px] truncate font-mono text-[11.5px] text-violet-900">{enlace}</span>
+            <Copiar texto={enlace} />
+          </>
+        ) : campana.puedoEnlace ? (
+          <button
+            type="button"
+            disabled={ocupado || !listos.length}
+            onClick={async () => {
+              setOcupado(true);
+              try {
+                const r = await implementacionApi.enlace(campana.id);
+                onEnlace(r.url);
+                await navigator.clipboard?.writeText(r.url).catch(() => undefined);
+                onAviso(`Enlace copiado: ${r.cuantos} para que el cliente apruebe`, 'success');
+                onHecho();
+              } catch (err) {
+                onAviso(err instanceof Error ? err.message : 'No se pudo crear el enlace', 'error');
+              } finally {
+                setOcupado(false);
+              }
+            }}
+            className={`${boton} bg-violet-600 hover:bg-violet-700`}
+          >
+            Crear enlace para el cliente ({listos.length})
+          </button>
+        ) : (
+          <span className="text-[12px] text-[#86868B]">El cliente lo aprueba por enlace</span>
+        )}
+      </div>
+    );
+  }
+  return campana.puedoAutorizar ? (
+    <button
+      type="button"
+      disabled={ocupado || !listos.length}
+      onClick={async () => {
+        setOcupado(true);
+        try {
+          const r = await implementacionApi.autorizar(listos.map(a => a.id));
+          onAviso(`${r.autorizados} autorizados: pasan a «Por montar»`, 'success');
+          onHecho();
+        } catch (err) {
+          onAviso(err instanceof Error ? err.message : 'No se pudo autorizar', 'error');
+        } finally {
+          setOcupado(false);
+        }
+      }}
+      className={`${boton} bg-[#047857] hover:bg-emerald-800`}
+    >
+      Autorizar implementación ({listos.length})
+    </button>
+  ) : (
+    <span className="text-[12px] text-[#86868B]">Lo autoriza quien aprueba la campaña</span>
   );
 }

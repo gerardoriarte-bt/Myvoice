@@ -6,6 +6,7 @@ import { prisma } from '../lib/prisma.js';
 import { notifyReviewCompleted } from '../services/notificationService.js';
 import * as piezasRevision from '../services/revisionDePiezas.js';
 import * as planningCdm from '../cdm/planning/planningService.js';
+import * as anunciosImpl from '../implementacion/anuncios.js';
 import { prepararAviso } from '../services/piezaService.js';
 import { AvisoEscrito, enviarEnSegundoPlano, notificar } from '../services/notificacionService.js';
 import { WorkspaceRole } from '@prisma/client';
@@ -28,12 +29,9 @@ export const createReviewSession = async (req: AuthRequest, res: Response) => {
   if (conPiezas && conCopy)
     return res.status(400).json({ error: 'Una revisión lleva copys o piezas, no las dos cosas' });
   if (conPiezas) {
-    try {
-      const sesion = await piezasRevision.crearSesionDePiezas(tenant, { title, piezaIds, expiresInDays });
-      return res.status(201).json(sesion);
-    } catch (error) {
-      return handleTenantError(error, res, 'Error al crear la revisión de piezas');
-    }
+    // La ronda de piezas se retiró el 2026-11-24: el cliente aprueba el arte con su copy en Implementación. El portal
+    // sigue mostrando las sesiones de piezas que ya existían.
+    return res.status(410).json({ error: 'La aprobación del cliente de las piezas ahora es en Implementación, con el copy y el destino' });
   }
   if (!conCopy) {
     return res.status(400).json({ error: 'Hace falta al menos una variación o una pieza' });
@@ -250,6 +248,14 @@ export const getReviewByToken = async (req: Request, res: Response) => {
       return res.json({ ...cabecera, marca: piezas[0]?.marca ?? null, piezas });
     }
 
+    // La aprobación final antes de implementar (F5, 2026-11-24): arte, copy, caption, destino y fechas por anuncio.
+    if (session.ronda === 'IMPLEMENTACION') {
+      const ids = session.items.map(i => i.anuncioId).filter((id): id is string => !!id);
+      const { items: _descartados, ...cabecera } = session;
+      const implementacion = await anunciosImpl.presentarParaElCliente(session, ids);
+      return res.json({ ...cabecera, marca: implementacion.marca, implementacion });
+    }
+
     // La ronda de la sábana (F3b): la campaña, la marca, las fechas y las líneas. Nada interno.
     if (session.ronda === 'SABANA') {
       const planningId = session.items[0]?.planningId;
@@ -304,13 +310,33 @@ export const submitReview = async (req: Request, res: Response) => {
       // respondió. Hasta H3.D esto iba a una casilla fija del entorno.
       include: {
         createdBy: { select: { email: true } },
-        items: { select: { piezaId: true, savedVariationId: true, planningId: true } },
+        items: { select: { piezaId: true, savedVariationId: true, planningId: true, anuncioId: true } },
       },
     });
 
     if (!session) return res.status(404).json({ error: 'Sesión de revisión no encontrada' });
     if (new Date() > session.expiresAt) return res.status(410).json({ error: 'Esta sesión de revisión ha expirado' });
     if (session.status === 'COMPLETED') return res.status(409).json({ error: 'Esta sesión ya fue enviada' });
+
+    // La aprobación final (F5): una decisión por anuncio; pedir cambios exige decir cuáles.
+    if (session.ronda === 'IMPLEMENTACION') {
+      const deLaSesion = new Set(session.items.map(i => i.anuncioId).filter((id): id is string => !!id));
+      const decisiones = feedbacks
+        .filter((f: any) => typeof f?.anuncioId === 'string' && deLaSesion.has(f.anuncioId) && ['APPROVED', 'REJECTED'].includes(f.decision))
+        .map((f: any) => ({ anuncioId: f.anuncioId, decision: f.decision, comentario: typeof f.feedbackCopy === 'string' ? f.feedbackCopy.trim().slice(0, 1000) : '' }));
+      if (decisiones.length < deLaSesion.size) return res.status(400).json({ error: 'Falta decidir algún anuncio' });
+      if (decisiones.some((d: any) => d.decision === 'REJECTED' && !d.comentario)) return res.status(400).json({ error: 'Para pedir cambios, escribe cuáles.' });
+      const cliente = typeof reviewerName === 'string' && reviewerName.trim() ? reviewerName.trim() : 'El cliente';
+      await prisma.$transaction(async tx => {
+        const entrega = await tx.reviewSubmission.create({ data: { reviewSessionId: session.id, reviewerName: reviewerName || null }, select: { id: true } });
+        await tx.reviewItemFeedback.createMany({
+          data: decisiones.map((d: any) => ({ reviewSubmissionId: entrega.id, anuncioId: d.anuncioId, decision: d.decision, feedbackCopy: d.comentario || null })),
+        });
+        await anunciosImpl.aplicarRespuestaDelCliente(tx, session, deLaSesion, decisiones, cliente);
+        await tx.reviewSession.update({ where: { id: session.id }, data: { status: 'COMPLETED' } });
+      });
+      return res.json({ ok: true });
+    }
 
     // La sábana (F3b): una sola decisión sobre el planning de la sesión; devolverla pide comentario.
     if (session.ronda === 'SABANA') {

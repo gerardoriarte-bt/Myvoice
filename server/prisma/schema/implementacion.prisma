@@ -6,31 +6,38 @@
 /// exactamente uno de los dos, por un CHECK de la migración. Se crea la primera vez que alguien actúa sobre él;
 /// mientras tanto, «por montar» se calcula al leer.
 model Anuncio {
-  id             String          @id @default(uuid())
-  workspaceId    String
-  clientId       String
-  piezaId        String?         @unique
+  id              String              @id @default(uuid())
+  workspaceId     String
+  clientId        String
+  /// La campaña del anuncio (2026-11-24): para encontrar su enlace de aprobación abierto y avisar a su responsable.
+  projectId       String?
+  piezaId         String?             @unique
   /// Solo texto (2026-11-24): el conjunto de copy aprobado (la pieza del copy).
-  conjuntoId     String?         @unique
+  conjuntoId      String?             @unique
   /// Sin CDM, el destino y la UTM se pegan aquí (el puente de la fase A). Con CDM, manda la línea de la sábana.
-  destino        String?
-  utm            String?
-  estado         EstadoAnuncio   @default(POR_MONTAR)
-  plataforma     String?
-  idEnPlataforma String?
-  montadoEn      DateTime?
-  montadoPorId   String?
+  destino         String?
+  utm             String?
+  estado          EstadoAnuncio       @default(POR_APROBAR)
+  plataforma      String?
+  idEnPlataforma  String?
+  montadoEn       DateTime?
+  montadoPorId    String?
   /// La última novedad, cuando el trafficker lo devolvió.
-  novedad        String?
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
-  pieza          Pieza?          @relation(fields: [piezaId], references: [id], onDelete: Cascade)
-  eventos        AnuncioEvento[]
+  novedad         String?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  itemsDeRevision ReviewSessionItem[]
+  pieza           Pieza?              @relation(fields: [piezaId], references: [id], onDelete: Cascade)
+  eventos         AnuncioEvento[]
 
   @@index([workspaceId, clientId])
 }
 
+/// POR_APROBAR → (CON_EL_CLIENTE) → POR_MONTAR → MONTADO; CON_NOVEDAD cuando el trafficker lo devuelve. Nada se
+/// monta sin la aprobación final (2026-11-24): la del cliente por enlace o la de un aprobador, según la campaña.
 enum EstadoAnuncio {
+  POR_APROBAR
+  CON_EL_CLIENTE
   POR_MONTAR
   MONTADO
   CON_NOVEDAD
@@ -50,6 +57,10 @@ model AnuncioEvento {
 }
 
 enum TipoEventoAnuncio {
+  AUTORIZADO
+  ENVIADO_AL_CLIENTE
+  APROBADO_CLIENTE
+  CAMBIOS_CLIENTE
   MONTADO
   DEVUELTO
   DESTINO

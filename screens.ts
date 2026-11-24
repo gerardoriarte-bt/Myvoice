@@ -215,8 +215,8 @@ export const SCREENS: Record<ScreenId, ScreenDef> = {
   /** F5: lo aprobado, listo para que el trafficker o el community lo monten y dejen constancia. */
   implementacion: {
     id: 'implementacion',
-    name: 'Por montar',
-    description: 'Los anuncios listos de cada campaña: copiar, montar y dejar constancia, o devolver con novedad.',
+    name: 'Anuncios',
+    description: 'Los anuncios listos de cada campaña: la aprobación final, y después copiar, montar y dejar constancia, o devolver con novedad.',
     icon: Rocket,
     stage: 'producir',
     adminOnly: false,

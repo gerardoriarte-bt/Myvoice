@@ -17,10 +17,12 @@
 
 type Clase = 'PAGOS' | 'REDES_SOCIALES' | 'PROPIOS' | 'TRADICIONAL';
 
+import { Prisma } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import { canManage, TenantContext, TenantError } from '../lib/tenancy.js';
 import { copyEnPiezas, piezasParaImplementar } from '../services/piezaService.js';
-import { claseDeCanal, producePieza } from '../channels/registry.js';
+import { claseDeCanal, producePieza, zonaDe } from '../channels/registry.js';
+import { SELECT_APROBADORES, apruebaLaCampana } from '../comun/aprobadores.js';
 import { copyParaImplementar, copySinPiezaAprobado } from '../myvoice/copyParaProduccion.js';
 import { lineasParaImplementar } from '../cdm/planning/planningService.js';
 
@@ -55,7 +57,7 @@ interface Fuente {
   formato: string;
   campana: { id: string; nombre: string } | null;
   lineaId: string | null;
-  textos: { slot: string; nombre: string; texto: string }[];
+  textos: { slot: string; nombre: string; texto: string; zona: string }[];
   previaUrl: string | null;
   enlace: string | null;
   aprobacionesDeCopy: { por: string; en: string | null; via: string | null }[];
@@ -91,7 +93,7 @@ const fuentes = async (tenant: TenantContext, filtro: { clientId?: string; id?: 
       formato: p.formato,
       campana: p.campana ? { id: p.campana.id, nombre: p.campana.nombre } : null,
       lineaId: p.textos.map(t => (t.copyId ? copy.get(t.copyId)?.lineaDePlanningId : null)).find((id): id is string => !!id) ?? null,
-      textos: p.textos.map(t => ({ slot: t.slot, nombre: t.nombre, texto: t.texto })),
+      textos: p.textos.map(t => ({ slot: t.slot, nombre: t.nombre, texto: t.texto, zona: zonaDe(p.platform, t.slot) })),
       previaUrl: p.previaUrl,
       enlace: p.enlace,
       aprobacionesDeCopy: [...aprobaciones.values()],
@@ -110,7 +112,7 @@ const fuentes = async (tenant: TenantContext, filtro: { clientId?: string; id?: 
     formato: 'Solo texto',
     campana: g.campana ? { id: g.campana.id, nombre: g.campana.nombre } : null,
     lineaId: g.lineaDePlanningId,
-    textos: g.textos.map(t => ({ slot: t.slot, nombre: t.nombre, texto: t.texto })),
+    textos: g.textos.map(t => ({ slot: t.slot, nombre: t.nombre, texto: t.texto, zona: zonaDe(g.platform, t.slot) })),
     previaUrl: null,
     enlace: null,
     aprobacionesDeCopy: g.aprobaciones,
@@ -137,6 +139,15 @@ const armar = async (tenant: TenantContext, filtro: { clientId?: string; id?: st
     select: { funcion: true, clientId: true },
   });
   const administra = canManage(tenant.role);
+  // La aprobación final (2026-11-24): según la campaña, la del cliente por enlace o la de un aprobador.
+  const campanas = new Map(
+    (
+      await prisma.project.findMany({
+        where: { id: { in: [...new Set(todas.map(f => f.campana?.id).filter((id): id is string => !!id))] } },
+        select: { id: true, modoAprobacion: true, ...SELECT_APROBADORES },
+      })
+    ).map(c => [c.id, c])
+  );
   const actuaEn = (clase: Clase | null, clientId: string) =>
     administra ||
     funciones.some(
@@ -172,7 +183,15 @@ const armar = async (tenant: TenantContext, filtro: { clientId?: string; id?: st
       titulo: f.titulo,
       platform: f.platform,
       formato: f.formato,
-      campana: f.campana,
+      campana: f.campana
+        ? {
+            ...f.campana,
+            modoAprobacion: campanas.get(f.campana.id)?.modoAprobacion ?? 'INTERNA',
+            // Autoriza quien aprueba la campaña (responsable o función Aprobación); el enlace también lo crea quien administra.
+            puedoAutorizar: apruebaLaCampana(tenant.userId, campanas.get(f.campana.id)),
+            puedoEnlace: administra || apruebaLaCampana(tenant.userId, campanas.get(f.campana.id)),
+          }
+        : null,
       linea: linea ? { id: linea.id, planningId: linea.planningId, medio: linea.medio, formato: linea.formato, etapa: linea.etapa, desde: linea.desde, hasta: linea.hasta } : null,
       textos: f.textos,
       previaUrl: f.previaUrl,
@@ -182,11 +201,12 @@ const armar = async (tenant: TenantContext, filtro: { clientId?: string; id?: st
       url: urlCompleta(destino, utm),
       faltas,
       listo: !faltas.some(x => x.bloquea),
-      estado: anuncio?.estado ?? 'POR_MONTAR',
+      estado: anuncio?.estado ?? 'POR_APROBAR',
       montado: anuncio?.montadoEn
         ? { plataforma: anuncio.plataforma, idEnPlataforma: anuncio.idEnPlataforma, en: anuncio.montadoEn.toISOString() }
         : null,
-      novedad: anuncio?.estado === 'CON_NOVEDAD' ? anuncio.novedad : null,
+      // La del trafficker (con novedad) o la del cliente que pidió cambios (vuelve a por aprobar).
+      novedad: anuncio?.estado === 'CON_NOVEDAD' || anuncio?.estado === 'POR_APROBAR' ? anuncio.novedad : null,
       aprobaciones: { copy: f.aprobacionesDeCopy, pieza: f.aprobacionDePieza },
       // El destino lo pega aquí el responsable solo sin sábana; con sábana se pega en la línea.
       destinoEnLaLinea: Boolean(linea),
@@ -216,15 +236,15 @@ const uno = async (tenant: TenantContext, id: string) => {
 
 const registrar = async (
   tenant: TenantContext,
-  a: { piezaId: string | null; conjuntoId: string | null; clientId: string },
+  a: { piezaId: string | null; conjuntoId: string | null; clientId: string; campana: { id: string } | null },
   data: Record<string, unknown>,
-  evento: { tipo: 'MONTADO' | 'DEVUELTO' | 'DESTINO' | 'REABIERTO'; detalle?: string }
+  evento: { tipo: 'MONTADO' | 'DEVUELTO' | 'DESTINO' | 'REABIERTO' | 'AUTORIZADO'; detalle?: string }
 ) =>
   prisma.$transaction(async tx => {
     const anuncio = await tx.anuncio.upsert({
       where: a.piezaId ? { piezaId: a.piezaId } : { conjuntoId: a.conjuntoId! },
-      create: { workspaceId: tenant.workspaceId, clientId: a.clientId, piezaId: a.piezaId, conjuntoId: a.conjuntoId, ...data },
-      update: data,
+      create: { workspaceId: tenant.workspaceId, clientId: a.clientId, projectId: a.campana?.id ?? null, piezaId: a.piezaId, conjuntoId: a.conjuntoId, ...data },
+      update: { projectId: a.campana?.id ?? null, ...data },
     });
     await tx.anuncioEvento.create({ data: { anuncioId: anuncio.id, tipo: evento.tipo, autorId: tenant.userId, detalle: evento.detalle ?? null } });
     return anuncio;
@@ -235,6 +255,11 @@ export const montar = async (tenant: TenantContext, id: string, body: { platafor
   const a = await uno(tenant, id);
   exigirQuienActua(a);
   if (!a.listo) throw new TenantError(a.faltas.filter(f => f.bloquea).map(f => `${f.texto} (${f.quien})`).join('. '), 409);
+  if (a.estado === 'POR_APROBAR' || a.estado === 'CON_EL_CLIENTE')
+    throw new TenantError(
+      a.campana?.modoAprobacion === 'CLIENTE' ? 'Falta la aprobación del cliente: se manda por enlace desde la campaña' : 'Falta que un aprobador autorice la implementación',
+      409
+    );
   const plataforma = typeof body.plataforma === 'string' ? body.plataforma.trim().slice(0, 80) : '';
   const idEnPlataforma = typeof body.idEnPlataforma === 'string' ? body.idEnPlataforma.trim().slice(0, 200) : '';
   if (!plataforma || !idEnPlataforma) throw new TenantError('Falta la plataforma o el ID del anuncio', 400);
@@ -255,9 +280,15 @@ const MOTIVOS: Record<string, string> = {
  * T4 · Devolver con novedad: lo decide el trafficker cuando no tiene clara la información, antes o después de
  * montar (decisión 21). El texto es obligatorio y le llega al responsable de la campaña.
  */
+/** El trafficker y el community actúan solo sobre lo aprobado (por el cliente o por un aprobador). */
+const exigirAprobado = (a: { estado: string }) => {
+  if (a.estado === 'POR_APROBAR' || a.estado === 'CON_EL_CLIENTE') throw new TenantError('Todavía espera la aprobación final', 409);
+};
+
 export const devolver = async (tenant: TenantContext, id: string, body: { motivo?: unknown; texto?: unknown }) => {
   const a = await uno(tenant, id);
   exigirQuienActua(a);
+  exigirAprobado(a);
   const motivo = typeof body.motivo === 'string' && MOTIVOS[body.motivo] ? body.motivo : 'otra';
   const texto = typeof body.texto === 'string' ? body.texto.trim().slice(0, 1000) : '';
   if (!texto) throw new TenantError('Cuenta qué pasó: con eso lo arregla quien lo debe', 400);
@@ -284,6 +315,8 @@ export const devolver = async (tenant: TenantContext, id: string, body: { motivo
 export const reabrir = async (tenant: TenantContext, id: string) => {
   const a = await uno(tenant, id);
   exigirQuienActua(a);
+  // Reabrir no salta la aprobación final: solo vuelve a «por montar» lo que ya se había aprobado.
+  exigirAprobado(a);
   if (a.estado === 'POR_MONTAR') return a;
   await registrar(tenant, a, { estado: 'POR_MONTAR', novedad: null }, { tipo: 'REABIERTO' });
   return uno(tenant, id);
@@ -314,11 +347,197 @@ export const guardarDestino = async (tenant: TenantContext, id: string, body: { 
 export const pasoImplementacion = async (piezas: { id: string; estado: string }[], conjuntosSoloTexto: string[] = []) => {
   const listas = piezas.filter(p => p.estado === 'LISTA').map(p => p.id);
   const total = listas.length + conjuntosSoloTexto.length;
-  if (!total) return { listas: 0, montados: 0, conNovedad: 0 };
+  if (!total) return { listas: 0, montados: 0, conNovedad: 0, porAprobar: 0, conElCliente: 0 };
   const deEstos = { OR: [{ piezaId: { in: listas } }, { conjuntoId: { in: conjuntosSoloTexto } }] };
-  const [montados, conNovedad] = await Promise.all([
-    prisma.anuncio.count({ where: { ...deEstos, estado: 'MONTADO' } }),
-    prisma.anuncio.count({ where: { ...deEstos, estado: 'CON_NOVEDAD' } }),
-  ]);
-  return { listas: total, montados, conNovedad };
+  const porEstado = new Map(
+    (await prisma.anuncio.groupBy({ by: ['estado'], where: deEstos, _count: { _all: true } })).map(g => [g.estado, g._count._all])
+  );
+  const n = (e: string) => porEstado.get(e as never) ?? 0;
+  const conFila = [...porEstado.values()].reduce((t, c) => t + c, 0);
+  // Sin fila todavía = por aprobar: nada se monta sin la aprobación final (2026-11-24).
+  return { listas: total, montados: n('MONTADO'), conNovedad: n('CON_NOVEDAD'), porAprobar: total - conFila + n('POR_APROBAR'), conElCliente: n('CON_EL_CLIENTE') };
+};
+
+// --------------------------------------------------------------- la aprobación final (2026-11-24)
+
+/**
+ * «Autorizar implementación»: en una campaña que aprueba el equipo, quien la aprueba (responsable o función
+ * Aprobación) dice explícitamente que esto se puede montar. Solo lo listo (con destino y fecha) y por aprobar.
+ */
+export const autorizar = async (tenant: TenantContext, ids: unknown) => {
+  if (!Array.isArray(ids) || !ids.length) throw new TenantError('Elige qué autorizar', 400);
+  const hechos: string[] = [];
+  for (const id of ids.filter((x): x is string => typeof x === 'string').slice(0, 200)) {
+    const a = await uno(tenant, id);
+    if (a.campana?.modoAprobacion === 'CLIENTE') throw new TenantError('Esta campaña la aprueba el cliente: mándale el enlace', 409);
+    if (!a.campana?.puedoAutorizar) throw new TenantError('La implementación la autoriza quien aprueba la campaña', 403);
+    if (a.estado !== 'POR_APROBAR' || !a.listo) continue;
+    await registrar(tenant, a, { estado: 'POR_MONTAR', novedad: null }, { tipo: 'AUTORIZADO' });
+    hechos.push(id);
+  }
+  return { autorizados: hechos.length };
+};
+
+const DIAS_DEL_ENLACE = 14;
+const urlDe = (token: string) => `${(process.env.APP_URL || 'https://myvoice.lobueno.co').replace(/\/$/, '')}/?review=${token}`;
+
+/** El enlace abierto de la aprobación final de una campaña, si lo hay: se comparte el mismo, no se crea otro. */
+const enlaceAbierto = async (workspaceId: string, campanaId: string) => {
+  const s = await prisma.reviewSession.findFirst({
+    where: {
+      workspaceId,
+      ronda: 'IMPLEMENTACION',
+      status: { not: 'COMPLETED' },
+      expiresAt: { gt: new Date() },
+      items: { some: { anuncio: { projectId: campanaId } } },
+    },
+    orderBy: { createdAt: 'desc' },
+    select: { token: true, expiresAt: true, _count: { select: { items: true } } },
+  });
+  return s ? { url: urlDe(s.token), venceEn: s.expiresAt.toISOString(), cuantos: s._count.items } : null;
+};
+
+/**
+ * «Crear enlace para el cliente»: en una campaña que aprueba el cliente, todo lo listo y por aprobar va en un solo
+ * enlace —arte, copy, caption, destino y fechas de cada anuncio—. Lo crea quien aprueba la campaña o quien
+ * administra. Si ya hay uno abierto, devuelve ese.
+ */
+export const enlaceParaElCliente = async (tenant: TenantContext, campanaId: unknown) => {
+  if (typeof campanaId !== 'string') throw new TenantError('Falta la campaña', 400);
+  const campana = await prisma.project.findFirst({
+    where: { id: campanaId, workspaceId: tenant.workspaceId },
+    select: { id: true, name: true, modoAprobacion: true, ...SELECT_APROBADORES },
+  });
+  if (!campana?.clientId) throw new TenantError('Campaña no encontrada', 404);
+  if (campana.modoAprobacion !== 'CLIENTE') throw new TenantError('Esta campaña la aprueba el equipo: autorízala desde Implementación', 409);
+  if (!canManage(tenant.role) && !apruebaLaCampana(tenant.userId, campana))
+    throw new TenantError('El enlace lo crea quien aprueba la campaña o quien administra', 403);
+  const abierto = await enlaceAbierto(tenant.workspaceId, campana.id);
+  if (abierto) return abierto;
+  const deLaCampana = (await armar(tenant, { clientId: campana.clientId })).filter(a => a.campana?.id === campana.id);
+  const listos = deLaCampana.filter(a => a.estado === 'POR_APROBAR' && a.listo);
+  if (!listos.length) throw new TenantError('No hay nada listo para el cliente: falta el destino o la fecha, o ya está aprobado', 409);
+  const sesion = await prisma.$transaction(async tx => {
+    const anuncioIds: string[] = [];
+    for (const a of listos) {
+      const anuncio = await tx.anuncio.upsert({
+        where: a.piezaId ? { piezaId: a.piezaId } : { conjuntoId: a.conjuntoId! },
+        create: { workspaceId: tenant.workspaceId, clientId: a.clientId, projectId: campana.id, piezaId: a.piezaId, conjuntoId: a.conjuntoId, estado: 'CON_EL_CLIENTE' },
+        update: { estado: 'CON_EL_CLIENTE', projectId: campana.id },
+      });
+      await tx.anuncioEvento.create({ data: { anuncioId: anuncio.id, tipo: 'ENVIADO_AL_CLIENTE', autorId: tenant.userId } });
+      anuncioIds.push(anuncio.id);
+    }
+    return tx.reviewSession.create({
+      data: {
+        title: `${campana.name} · para implementar`,
+        ronda: 'IMPLEMENTACION',
+        workspaceId: tenant.workspaceId,
+        createdById: tenant.userId,
+        expiresAt: new Date(Date.now() + DIAS_DEL_ENLACE * 86_400_000),
+        items: { create: anuncioIds.map((anuncioId, sortOrder) => ({ anuncioId, sortOrder })) },
+      },
+      select: { token: true, expiresAt: true },
+    });
+  });
+  return { url: urlDe(sesion.token), venceEn: sesion.expiresAt.toISOString(), cuantos: listos.length };
+};
+
+/** El tenant de quien creó el enlace, para leer lo que el cliente ve con las mismas reglas. */
+const comoQuienEnvio = (s: { workspaceId: string; createdById: string }) =>
+  ({ workspaceId: s.workspaceId, userId: s.createdById, role: 'OWNER' }) as TenantContext;
+
+/**
+ * Lo que ve el cliente detrás del token, sin cuenta: por anuncio, el medio y el formato, el arte, los textos (en la
+ * pieza y los que la acompañan), el destino con su UTM y las fechas. Nada interno: ni quién lo hizo ni hallazgos.
+ */
+export const presentarParaElCliente = async (sesion: { workspaceId: string; createdById: string }, anuncioIds: string[]) => {
+  const filas = await prisma.anuncio.findMany({ where: { id: { in: anuncioIds } }, select: { id: true, piezaId: true, conjuntoId: true, clientId: true } });
+  const vistos = await Promise.all(
+    filas.map(async f => {
+      const [a] = await armar(comoQuienEnvio(sesion), { id: f.piezaId ? `pieza:${f.piezaId}` : `copy:${f.conjuntoId}` });
+      return a ? { anuncioId: f.id, a } : null;
+    })
+  );
+  const marca = filas[0] ? await prisma.client.findUnique({ where: { id: filas[0].clientId }, select: { name: true } }) : null;
+  return {
+    marca: marca?.name ?? null,
+    campana: vistos.find(v => v?.a.campana)?.a.campana?.nombre ?? null,
+    anuncios: vistos
+      .filter((v): v is NonNullable<typeof v> => !!v)
+      .map(({ anuncioId, a }) => ({
+        id: anuncioId,
+        medio: a.linea?.medio ?? a.platform,
+        formato: a.linea?.formato ?? a.formato,
+        platform: a.platform,
+        etapa: a.linea?.etapa ?? null,
+        desde: a.linea?.desde ?? null,
+        hasta: a.linea?.hasta ?? null,
+        previaUrl: a.previaUrl,
+        enlace: a.enlace,
+        soloTexto: !a.piezaId,
+        textos: a.textos.filter(t => t.zona !== 'indicacion').map(t => ({ nombre: t.nombre, texto: t.texto, zona: t.zona })),
+        url: a.url,
+      })),
+  };
+};
+
+/**
+ * La respuesta del cliente, dentro de la transacción del portal: lo aprobado queda «por montar»; lo que pide cambios
+ * vuelve a «por aprobar» con su comentario como novedad, y el responsable recibe un aviso.
+ */
+export const aplicarRespuestaDelCliente = async (
+  tx: Prisma.TransactionClient,
+  sesion: { workspaceId: string; createdById: string },
+  anuncioIds: Set<string>,
+  decisiones: { anuncioId: string; decision: 'APPROVED' | 'REJECTED'; comentario: string }[],
+  cliente: string
+) => {
+  const avisos = new Map<string, { campana: string; cambios: number; aprobados: number; clientId: string }>();
+  for (const d of decisiones) {
+    if (!anuncioIds.has(d.anuncioId)) continue;
+    const anuncio = await tx.anuncio.findUnique({
+      where: { id: d.anuncioId },
+      select: { id: true, estado: true, clientId: true, projectId: true },
+    });
+    if (!anuncio || anuncio.estado !== 'CON_EL_CLIENTE') continue;
+    const aprueba = d.decision === 'APPROVED';
+    await tx.anuncio.update({
+      where: { id: anuncio.id },
+      data: aprueba ? { estado: 'POR_MONTAR', novedad: null } : { estado: 'POR_APROBAR', novedad: `${cliente} pidió cambios: ${d.comentario}` },
+    });
+    await tx.anuncioEvento.create({
+      data: { anuncioId: anuncio.id, tipo: aprueba ? 'APROBADO_CLIENTE' : 'CAMBIOS_CLIENTE', autorId: sesion.createdById, detalle: aprueba ? cliente : `${cliente}: ${d.comentario}` },
+    });
+    const projectId = anuncio.projectId;
+    const clave = projectId ?? anuncio.clientId;
+    const previo = avisos.get(clave) ?? { campana: projectId ?? '', cambios: 0, aprobados: 0, clientId: anuncio.clientId };
+    if (aprueba) previo.aprobados++;
+    else previo.cambios++;
+    avisos.set(clave, previo);
+  }
+  // Un aviso por campaña al responsable (y nunca al cliente, que no tiene cuenta).
+  for (const [, v] of avisos) {
+    const campana = v.campana ? await tx.project.findUnique({ where: { id: v.campana }, select: { name: true, responsableId: true } }) : null;
+    if (!campana?.responsableId) continue;
+    await tx.notificacion.create({
+      data: {
+        workspaceId: sesion.workspaceId,
+        userId: campana.responsableId,
+        clientId: v.clientId,
+        tipo: 'ANUNCIO_DEVUELTO',
+        titulo: v.cambios ? 'El cliente pidió cambios para implementar' : 'El cliente aprobó lo que se va a implementar',
+        detalle: `${campana.name}: ${v.aprobados} aprobados, ${v.cambios} con cambios`,
+      },
+    });
+  }
+};
+
+/** «Por aprobar» del encabezado: lo listo para autorizar en las campañas internas que quien mira aprueba. */
+export const porAutorizarDe = async (tenant: TenantContext, clientIds: string[]) => {
+  const listas = await Promise.all(clientIds.map(id => armar(tenant, { clientId: id })));
+  return listas
+    .flat()
+    .filter(a => a.estado === 'POR_APROBAR' && a.listo && a.campana?.modoAprobacion === 'INTERNA' && a.campana.puedoAutorizar)
+    .map(a => ({ id: a.id, titulo: a.titulo, clientId: a.clientId, campana: a.campana?.nombre ?? null }));
 };

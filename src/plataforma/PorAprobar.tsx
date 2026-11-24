@@ -16,9 +16,11 @@ interface Props {
   onSabana: (clientId: string, campanaId: string) => void;
   onCopy: (clientId: string | null, campanaId: string) => void;
   onPieza: (clientId: string, piezaId: string) => void;
+  /** Lo listo para autorizar la implementación (F5): lleva a Implementación de la marca. */
+  onImplementacion: (clientId: string) => void;
 }
 
-export default function PorAprobar({ pulso, onSabana, onCopy, onPieza }: Props) {
+export default function PorAprobar({ pulso, onSabana, onCopy, onPieza, onImplementacion }: Props) {
   const [datos, setDatos] = React.useState<Pendientes | null>(null);
   const [abierta, setAbierta] = React.useState(false);
 
@@ -92,6 +94,19 @@ export default function PorAprobar({ pulso, onSabana, onCopy, onPieza }: Props) 
                           {c.campana} <span className="font-normal text-[#6E6E73]">· {c.cantidad} {c.cantidad === 1 ? 'texto' : 'textos'}</span>
                         </span>
                         <span className="text-[11.5px] text-[#86868B]">{c.marca}</span>
+                      </button>
+                    ))}
+                  </>
+                )}
+                {(datos.implementacion?.length ?? 0) > 0 && (
+                  <>
+                    <p className={titulo}>Para implementar · autorizar</p>
+                    {datos.implementacion!.map(i => (
+                      <button key={i.id} type="button" className={fila} onClick={() => ir(() => onImplementacion(i.clientId))}>
+                        <span className="text-[13px] font-medium text-[#1D1D1F]">
+                          {i.titulo}
+                          {i.campana && <span className="font-normal text-[#6E6E73]"> · {i.campana}</span>}
+                        </span>
                       </button>
                     ))}
                   </>

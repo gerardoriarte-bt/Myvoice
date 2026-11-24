@@ -331,6 +331,28 @@ dónde se está (marca, campaña, paso) se contradecía entre pantallas. Gerardo
       (`PLANNING_PARA_COPY`), con aviso y correo que llevan a Generar. Si nadie tiene la función, le llega a quien
       administra. Es el puente hasta F4, cuando la sábana se convierte en pedidos de copy con su largo.
 
+## 2026-11-24 · La aprobación final es antes de implementar
+
+32. **Nada se monta sin la aprobación final, y la del cliente es una sola, con todo** (Gerardo, 2026-11-24).
+    - **Por qué.** El cliente aprobaba el arte en una ronda de Producción, aparte del copy, del destino y de las
+      fechas. Lo que de verdad aprueba es lo que va a salir: el arte con su copy y su caption, adónde lleva y cuándo.
+    - **Se quita la ronda de piezas.** Producción termina en «Lista» también en las campañas «con cliente». La
+      columna «Con el cliente» y «Mandar al cliente» desaparecen; las piezas que estaban ahí pasaron a Lista en la
+      migración. El portal sigue mostrando las sesiones de piezas que ya existían.
+    - **Según la campaña** (`Project.modoAprobacion`):
+      - **Con cliente:** en Implementación › Por aprobar, «Crear enlace para el cliente» junta en un solo enlace
+        todo lo listo de la campaña (con destino y fecha). El cliente ve, por medio, cada anuncio con su arte, los
+        textos (en la pieza y los que la acompañan), adónde lleva y cuándo sale, y aprueba o pide cambios de a uno.
+        Lo aprobado queda «por montar»; lo que pide cambios vuelve a «por aprobar» con su comentario, y el
+        responsable recibe un aviso. El enlace lo crea quien aprueba la campaña o quien administra; si hay uno
+        abierto, se reusa.
+      - **Interna:** «Autorizar implementación» lo toca quien aprueba la campaña (el responsable o la función
+        Aprobación). Aparece también en «Por aprobar» del encabezado.
+    - **Estados del anuncio:** por aprobar → (con el cliente) → por montar → montado, o con novedad. Reabrir o
+      devolver no salta la aprobación.
+    - **Pendiente:** si el copy o el arte cambian después de aprobados para implementar, todavía no vuelven solos a
+      «por aprobar» (va con «un cambio después de montado», F5).
+
 ## Antes (2026-10-27), siguen vigentes con los nombres nuevos
 
 - La marca, su ADN y sus audiencias son la fuente de verdad (ahora en la parte común, decisión 7).

@@ -261,14 +261,20 @@ password in between. `verify:isolation` covers it.
 
 A session is also **homogeneous in `ronda`**: `COPY` carries `savedVariationId` items, `PIEZA`
 carries `piezaId` ones and, since F3b (2026-11-20), `SABANA` carries one `planningId` (the client approves a
-CDM sábana: `CON_EL_CLIENTE` → `APROBADO`/`DEVUELTO`, in `cdm/planning/planningService.ts`). A `CHECK` in the
-migration holds «exactly one of the three» (`num_nonnulls`), which Prisma cannot
+CDM sábana: `CON_EL_CLIENTE` → `APROBADO`/`DEVUELTO`, in `cdm/planning/planningService.ts`) and, since
+2026-11-24, `IMPLEMENTACION` carries `anuncioId` ones. A `CHECK` in the
+migration holds «exactly one of the four» (`num_nonnulls`), which Prisma cannot
 express, because this is content published behind an unauthenticated token and an application
-validation is the wrong last line of defence. `services/revisionDePiezas.ts` owns the second
-round: only pieces in `CON_EL_CLIENTE` of a `CLIENTE` campaign and not already in an open session
-can be sent; approval moves them to `LISTA`; any rejection must carry text and sends the piece
-back to `EN_DISENO` — **including copy-only feedback**, which until 2026-10-13 left the piece
-stranded in Lista (the responsable now fixes the copy inside the piece, `corregir-copy`).
+validation is the wrong last line of defence.
+
+**The client approves once, before implementing** (decision 32, 2026-11-24). The `PIEZA` round is retired:
+`createReviewSession` answers 410 to `piezaIds`, Producción ends in `LISTA` even in a `CLIENTE` campaign, and
+the portal only still renders old piece sessions (`services/revisionDePiezas.ts`). Every `Anuncio` starts
+`POR_APROBAR` and nothing is mounted, reopened or sent back before it leaves that state
+(`implementacion/anuncios.ts`): in a `CLIENTE` campaign `enlaceParaElCliente` puts everything ready (destination
+and date) in one `IMPLEMENTACION` session — art, texts by `zona`, destination and dates per ad, nothing internal —
+and the client's answer moves each ad to `POR_MONTAR` or back to `POR_APROBAR` with the comment as `novedad`; in an
+`INTERNA` campaign whoever approves it (`apruebaLaCampana`) calls `autorizar`.
 
 **Pieces follow the same owner rule as copy** (`services/permisosPieza.ts`, see
 `docs/plan-produccion-con-responsable.md`). That file is the single place that decides who may act
@@ -287,7 +293,8 @@ at boot closes audits cut by a restart. `Project.pideAprobacionDeCliente` is leg
 No router. `App.tsx` (~1000 lines, the god component holding nearly all state) switches on
 query params: `?review=<token>` renders `ReviewPortal` — which delegates to `RevisionDeCopy` (`COPY`: by medium and
 by piece, decided per piece; internal `indicacion` texts are hidden but carry the piece's decision), `RevisionDePiezas`
-(`PIEZA`) or `RevisionDeSabana` (`SABANA`) — `?invite=<token>` is picked up by the login components,
+(`PIEZA`, old sessions only), `RevisionDeSabana` (`SABANA`) or `src/implementacion/RevisionDeImplementacion.tsx`
+(`IMPLEMENTACION`) — `?invite=<token>` is picked up by the login components,
 and `?pieza=<id>&marca=<clientId>` is where the notification emails land (the URL is cleaned
 after reading, so a refresh does not reopen an old piece).
 
