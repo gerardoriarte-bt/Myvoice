@@ -4,6 +4,7 @@
  * textos lo están.
  */
 
+import { getPiezaSpec } from '../channels/registry.js';
 import { prisma } from '../lib/prisma.js';
 import { TenantContext } from '../lib/tenancy.js';
 
@@ -33,7 +34,9 @@ export const avanceDeLineas = async (tenant: TenantContext, lineaIds: string[]) 
  * sobre su propia tabla; la plataforma y Producción no la leen directo.
  */
 export const copyDeCampana = async (campanaId: string) =>
-  prisma.savedVariation.findMany({ where: { projectId: campanaId }, select: { id: true, isApproved: true } });
+  (await prisma.savedVariation.findMany({ where: { projectId: campanaId }, select: { id: true, isApproved: true, platform: true } })).map(
+    c => ({ id: c.id, isApproved: c.isApproved, conPieza: Boolean(getPiezaSpec(c.platform)) })
+  );
 
 /**
  * Lo que My Voice necesita saber de la línea de un pedido al guardar copy: de qué campaña es, si su sábana sigue

@@ -1,6 +1,6 @@
 # Dependencias entre módulos (generado)
 
-Generado el 2026-11-23 desde el commit `1eefbf9` con `bash scripts/mapa/actualizar.sh`. **No se edita a mano**: se corrige `scripts/mapa/modulos.json` y se vuelve a generar.
+Generado el 2026-11-24 desde el commit `ab2940f` con `bash scripts/mapa/actualizar.sh`. **No se edita a mano**: se corrige `scripts/mapa/modulos.json` y se vuelve a generar.
 
 Cada fila es un archivo que usa algo de otro archivo de **otro módulo** (importa, llama o referencia un tipo). Módulos según la decisión 12; reglas en [spec-plataforma.md](./spec-plataforma.md) § 2.
 
@@ -8,7 +8,7 @@ Cada fila es un archivo que usa algo de otro archivo de **otro módulo** (import
 
 | Desde \ Hacia | Plataforma | Parte común | My Voice | Producción | CDM | Implementación | Compartido |
 |---|---|---|---|---|---|---|---|
-| **Plataforma** | · | 30 | 27 | 8 | 10 | 3 | 34 |
+| **Plataforma** | · | 30 | 28 | 8 | 10 | 3 | 34 |
 | **Parte común** | · | · | · | · | · | · | 48 |
 | **My Voice** | · | 42 | · | · | · | · | 132 |
 | **Producción** | · | 14 | 3 | · | · | · | 25 |
@@ -16,7 +16,7 @@ Cada fila es un archivo que usa algo de otro archivo de **otro módulo** (import
 | **Implementación** | · | 4 | 1 | 1 | 1 | · | 3 |
 | **Compartido** | · | · | · | · | · | · | · |
 
-- **Hay que invertir**: 0 · **pasan por el contrato**: 75 · **permitidas**: 340
+- **Hay que invertir**: 0 · **pasan por el contrato**: 75 · **permitidas**: 341
 
 ## Hay que invertir (0)
 
@@ -44,7 +44,7 @@ Un módulo lee la parte común. Está bien, pero solo por `contrato/`: esta list
 | Implementación | `server/src/implementacion/anuncios.ts` | Parte común | `server/src/lib/tenancy.ts` | TenantContext, TenantError, tenancy.ts |
 | Implementación | `server/src/implementacion/anunciosController.ts` | Parte común | `server/src/lib/tenancy.ts` | assertClientInWorkspace(), tenancy.ts |
 | Implementación | `server/src/implementacion/anunciosController.ts` | Parte común | `server/src/middleware/auth.ts` | AuthRequest, auth.ts, handleTenantError() |
-| Implementación | `server/src/implementacion/anuncios.ts` | My Voice | `server/src/myvoice/copyParaProduccion.ts` | copyParaImplementar(), copyParaProduccion.ts |
+| Implementación | `server/src/implementacion/anuncios.ts` | My Voice | `server/src/myvoice/copyParaProduccion.ts` | copyParaImplementar(), copyParaProduccion.ts, copySinPiezaAprobado() |
 | Implementación | `server/src/implementacion/anuncios.ts` | Producción | `server/src/services/piezaService.ts` | piezaService.ts, piezasParaImplementar() |
 | My Voice | `components/AprobacionDeCampana.tsx` | Parte común | `src/comun/QuienesAprueban.tsx` | QuienesAprueban(), QuienesAprueban.tsx |
 | My Voice | `components/ParameterForm.tsx` | Parte común | `marcas.ts` | marcas.ts, nombreConMadre() |
@@ -106,7 +106,7 @@ Un módulo lee la parte común. Está bien, pero solo por `contrato/`: esta list
 | Producción | `server/src/services/piezaService.ts` | My Voice | `server/src/channels/registry.ts` | esFormatoValido(), esSlotDeInstruccion(), formatoPorDefecto(), getChannelSpec() |
 | Producción | `server/src/services/piezaService.ts` | My Voice | `server/src/myvoice/copyParaProduccion.ts` | copyOriginal(), copyParaCrear(), copyParaProduccion.ts, copyParaProponer() |
 
-## Permitidas (340)
+## Permitidas (341)
 
 El arranque importa de todos, y todos usan la infraestructura compartida.
 
@@ -120,6 +120,6 @@ El arranque importa de todos, y todos usan la infraestructura compartida.
 | Plataforma | Compartido | 34 |
 | Plataforma | Parte común | 30 |
 | Plataforma | Implementación | 3 |
-| Plataforma | My Voice | 27 |
+| Plataforma | My Voice | 28 |
 | Plataforma | Producción | 8 |
 | Producción | Compartido | 25 |

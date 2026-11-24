@@ -168,10 +168,10 @@ router.get('/por-aprobar', ...inWorkspace, porAprobar);
 router.get('/copywriting/pedidos', ...inWorkspace, pedidosDeCopy);
 // F5 · Implementación: los anuncios por montar, montar, devolver con novedad y el destino sin sábana.
 router.get('/implementacion/anuncios', ...inWorkspace, anunciosController.listar);
-router.post('/implementacion/anuncios/:piezaId/montar', ...inWorkspace, anunciosController.montar);
-router.post('/implementacion/anuncios/:piezaId/devolver', ...inWorkspace, anunciosController.devolver);
-router.post('/implementacion/anuncios/:piezaId/reabrir', ...inWorkspace, anunciosController.reabrir);
-router.put('/implementacion/anuncios/:piezaId/destino', ...inWorkspace, anunciosController.destino);
+router.post('/implementacion/anuncios/:id/montar', ...inWorkspace, anunciosController.montar);
+router.post('/implementacion/anuncios/:id/devolver', ...inWorkspace, anunciosController.devolver);
+router.post('/implementacion/anuncios/:id/reabrir', ...inWorkspace, anunciosController.reabrir);
+router.put('/implementacion/anuncios/:id/destino', ...inWorkspace, anunciosController.destino);
 router.post('/projects', ...inWorkspace, savedController.createProject);
 router.get('/projects/de-brief/:dnaProfileId', ...inWorkspace, savedController.getCampanaDeBrief);
 router.patch('/projects/:id', ...inWorkspace, savedController.updateProject);

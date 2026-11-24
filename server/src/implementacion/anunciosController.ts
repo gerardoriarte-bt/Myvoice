@@ -24,7 +24,7 @@ const accion =
     }
   };
 
-export const montar = accion(req => anuncios.montar(req.tenant!, req.params.piezaId, req.body ?? {}), 'Error al marcar el anuncio montado');
-export const devolver = accion(req => anuncios.devolver(req.tenant!, req.params.piezaId, req.body ?? {}), 'Error al devolver el anuncio');
-export const reabrir = accion(req => anuncios.reabrir(req.tenant!, req.params.piezaId), 'Error al volver el anuncio a por montar');
-export const destino = accion(req => anuncios.guardarDestino(req.tenant!, req.params.piezaId, req.body ?? {}), 'Error al guardar el destino');
+export const montar = accion(req => anuncios.montar(req.tenant!, req.params.id, req.body ?? {}), 'Error al marcar el anuncio montado');
+export const devolver = accion(req => anuncios.devolver(req.tenant!, req.params.id, req.body ?? {}), 'Error al devolver el anuncio');
+export const reabrir = accion(req => anuncios.reabrir(req.tenant!, req.params.id), 'Error al volver el anuncio a por montar');
+export const destino = accion(req => anuncios.guardarDestino(req.tenant!, req.params.id, req.body ?? {}), 'Error al guardar el destino');

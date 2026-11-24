@@ -304,7 +304,8 @@ live in the path (`src/plataforma/rutas.ts`: `/campana/:id/myvoice/copy`). Off, 
 and no routes, as before. Never build a second version of a screen for the new frame.
 
 **Implementación (F5, `server/src/implementacion/` + `src/implementacion/`, its own module and schema file)**: an
-`Anuncio` is a piece in «Lista»; `implementacion/anuncios.ts` alone decides what is ready (approved piece +
+`Anuncio` is a piece in «Lista» or — for channels with no design piece (Google search ads, WhatsApp, push) — the
+approved copy of a `conjuntoId` (key `pieza:<id>` / `copy:<conjunto>`, CHECK exactly one); `implementacion/anuncios.ts` alone decides what is ready (approved piece +
 destination + launch date if it comes from a sábana; a missing UTM only warns) and reads piece, copy and line by
 contract. Destination/UTM live on the sábana line (Planning pastes them, no new version) or, without a sábana, on the
 `Anuncio`. Mount/return need the IMPLEMENTACION step (admin, Trafficker or Community). Step ⑤ shows on brands with

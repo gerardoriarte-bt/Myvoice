@@ -8,6 +8,7 @@
 import { ModoAprobacion, Prisma } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import { TenantContext } from '../lib/tenancy.js';
+import { getChannelSpec, listChannels } from '../channels/registry.js';
 
 /** El texto original de cada copy, para comparar con lo congelado en la pieza («el copy cambió»). */
 export const copyOriginal = async (ids: string[]) => {
@@ -70,4 +71,73 @@ export const copyParaImplementar = async (ids: string[]) => {
     select: { id: true, lineaDePlanningId: true, aprobadoPorNombre: true, aprobadoEn: true, aprobadoVia: true },
   });
   return new Map(filas.map(f => [f.id, { lineaDePlanningId: f.lineaDePlanningId, aprobadoPor: f.aprobadoPorNombre, aprobadoEn: f.aprobadoEn, via: f.aprobadoVia }]));
+};
+
+/**
+ * F5, solo texto (2026-11-24): el copy aprobado de los canales que no producen pieza de diseño (búsqueda de Google
+ * Ads, WhatsApp, push). No pasa por Producción, pero se monta igual: va directo a Implementación, agrupado por
+ * pieza (`conjuntoId`). Solo el copy con pieza (desde el 2026-11-05): el de antes, texto por texto, es historia y
+ * llenaría «Por montar» de anuncios sueltos.
+ */
+export const copySinPiezaAprobado = async (tenant: TenantContext, filtro: { clientId?: string; clave?: string }) => {
+  const sinPieza = listChannels().filter(c => !c.pieza).map(c => c.id as string);
+  const filas = await prisma.savedVariation.findMany({
+    where: {
+      client: { workspaceId: tenant.workspaceId },
+      ...(filtro.clientId && { clientId: filtro.clientId }),
+      ...(filtro.clave ? { conjuntoId: filtro.clave } : { conjuntoId: { not: null } }),
+      platform: { in: sinPieza },
+      isApproved: true,
+    },
+    select: {
+      id: true,
+      clientId: true,
+      platform: true,
+      slot: true,
+      slotLabel: true,
+      content: true,
+      conjuntoId: true,
+      piezaIndex: true,
+      variationIndex: true,
+      lineaDePlanningId: true,
+      aprobadoPorNombre: true,
+      aprobadoEn: true,
+      aprobadoVia: true,
+      savedAt: true,
+      project: { select: { id: true, name: true, responsableId: true } },
+    },
+    orderBy: [{ savedAt: 'asc' }],
+  });
+  const grupos = new Map<string, typeof filas>();
+  for (const f of filas) {
+    const clave = f.conjuntoId!;
+    grupos.set(clave, [...(grupos.get(clave) ?? []), f]);
+  }
+  return [...grupos.entries()].map(([clave, textos]) => {
+    const primero = textos[0];
+    // En el orden del spec del canal y, dentro de un mismo lugar, en el de las opciones.
+    const orden = (slot: string | null) => getChannelSpec(primero.platform)?.slots.findIndex(s => s.id === slot) ?? 99;
+    const ordenados = [...textos].sort((a, b) => orden(a.slot) - orden(b.slot) || (a.variationIndex ?? 0) - (b.variationIndex ?? 0));
+    return {
+      clave,
+      clientId: primero.clientId,
+      platform: primero.platform,
+      piezaIndex: primero.piezaIndex,
+      campana: primero.project ? { id: primero.project.id, nombre: primero.project.name, responsableId: primero.project.responsableId } : null,
+      lineaDePlanningId: textos.find(t => t.lineaDePlanningId)?.lineaDePlanningId ?? null,
+      textos: ordenados.map(t => ({ slot: t.slot ?? t.id, nombre: t.slotLabel ?? 'Texto', texto: t.content, copyId: t.id })),
+      aprobaciones: [...new Map(textos.filter(t => t.aprobadoPorNombre).map(t => [`${t.aprobadoPorNombre}|${t.aprobadoVia}`, { por: t.aprobadoPorNombre!, en: t.aprobadoEn?.toISOString() ?? null, via: t.aprobadoVia }])).values()],
+      lista: primero.savedAt,
+    };
+  });
+};
+
+/** ⑤ en el encabezado: las piezas de copy aprobado sin pieza de diseño de una campaña (ya pasó por la guarda). */
+export const conjuntosSinPiezaDeCampana = async (campanaId: string) => {
+  const sinPieza = listChannels().filter(c => !c.pieza).map(c => c.id as string);
+  const filas = await prisma.savedVariation.findMany({
+    where: { projectId: campanaId, platform: { in: sinPieza }, isApproved: true, conjuntoId: { not: null } },
+    select: { conjuntoId: true },
+  });
+  return [...new Set(filas.map(f => f.conjuntoId!))];
 };

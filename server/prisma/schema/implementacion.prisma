@@ -1,13 +1,17 @@
 // Implementación (F5, ⑤): el trafficker y el community manager montan lo aprobado y dejan constancia.
 // docs/plan-plataforma-por-procesos.md § F5 y el plan de Implementación (PR #65).
 
-/// Un anuncio: una pieza lista que se monta en una plataforma. Se crea la primera vez que alguien actúa sobre la
-/// pieza (montarla, devolverla, pegarle el destino); mientras tanto, «por montar» se calcula al leer.
+/// Un anuncio: lo aprobado que se monta en una plataforma. Es una pieza lista o, en los canales que no producen
+/// pieza de diseño (búsqueda de Google Ads, WhatsApp, push), el copy aprobado de una pieza (`conjuntoId`):
+/// exactamente uno de los dos, por un CHECK de la migración. Se crea la primera vez que alguien actúa sobre él;
+/// mientras tanto, «por montar» se calcula al leer.
 model Anuncio {
   id             String          @id @default(uuid())
   workspaceId    String
   clientId       String
-  piezaId        String          @unique
+  piezaId        String?         @unique
+  /// Solo texto (2026-11-24): el conjunto de copy aprobado (la pieza del copy).
+  conjuntoId     String?         @unique
   /// Sin CDM, el destino y la UTM se pegan aquí (el puente de la fase A). Con CDM, manda la línea de la sábana.
   destino        String?
   utm            String?
@@ -20,7 +24,7 @@ model Anuncio {
   novedad        String?
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
-  pieza          Pieza           @relation(fields: [piezaId], references: [id], onDelete: Cascade)
+  pieza          Pieza?          @relation(fields: [piezaId], references: [id], onDelete: Cascade)
   eventos        AnuncioEvento[]
 
   @@index([workspaceId, clientId])

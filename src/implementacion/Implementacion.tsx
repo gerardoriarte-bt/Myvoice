@@ -80,7 +80,7 @@ export default function Implementacion({ marcaId, puedeMontar, onAviso }: Props)
   if (!anuncios) return <div className="h-48" />;
 
   const cuantos = (e: EstadoAnuncio) => anuncios.filter(a => a.estado === e).length;
-  const visibles = anuncios.filter(a => a.estado === pestana || a.piezaId === abierto);
+  const visibles = anuncios.filter(a => a.estado === pestana || a.id === abierto);
   const porCampana = new Map<string, { nombre: string; anuncios: AnuncioParaMontar[] }>();
   for (const a of visibles) {
     const clave = a.campana?.id ?? 'sin-campana';
@@ -89,7 +89,7 @@ export default function Implementacion({ marcaId, puedeMontar, onAviso }: Props)
     porCampana.set(clave, g);
   }
 
-  const actualizar = (a: AnuncioParaMontar) => setAnuncios(prev => (prev ?? []).map(x => (x.piezaId === a.piezaId ? a : x)));
+  const actualizar = (a: AnuncioParaMontar) => setAnuncios(prev => (prev ?? []).map(x => (x.id === a.id ? a : x)));
 
   return (
     <div className="space-y-5">
@@ -117,7 +117,8 @@ export default function Implementacion({ marcaId, puedeMontar, onAviso }: Props)
 
       {anuncios.length === 0 ? (
         <div className="rounded-[12px] border border-dashed border-[rgba(0,0,0,0.12)] bg-white px-6 py-10 text-center text-[13px] text-[#6E6E73]">
-          Esta marca todavía no tiene piezas listas. Cuando Producción acepte una (y el cliente, si la campaña lo pide), aparece aquí.
+          Esta marca todavía no tiene nada listo para montar. Aparece aquí cuando Producción acepta una pieza (y el cliente, si
+          la campaña lo pide) o, en los anuncios de solo texto como la búsqueda de Google Ads, cuando se aprueba el copy.
         </div>
       ) : porCampana.size === 0 ? (
         <div className="rounded-[12px] border border-dashed border-[rgba(0,0,0,0.12)] bg-white px-6 py-10 text-center text-[13px] text-[#6E6E73]">
@@ -140,10 +141,10 @@ export default function Implementacion({ marcaId, puedeMontar, onAviso }: Props)
               </header>
               <ul className="divide-y divide-[rgba(0,0,0,0.05)] border-t border-[rgba(0,0,0,0.06)]">
                 {g.anuncios.map(a => (
-                  <li key={a.piezaId}>
+                  <li key={a.id}>
                     <button
                       type="button"
-                      onClick={() => setAbierto(abierto === a.piezaId ? null : a.piezaId)}
+                      onClick={() => setAbierto(abierto === a.id ? null : a.id)}
                       className="flex w-full flex-wrap items-center gap-x-4 gap-y-1 px-4 py-2.5 text-left text-[13px] hover:bg-[#FAFAFB]"
                     >
                       <div className="min-w-0 flex-1">
@@ -170,7 +171,7 @@ export default function Implementacion({ marcaId, puedeMontar, onAviso }: Props)
                         </span>
                       )}
                     </button>
-                    {abierto === a.piezaId && (
+                    {abierto === a.id && (
                       <Detalle a={a} puedeMontar={puedeMontar} onCambio={actualizar} onAviso={onAviso} />
                     )}
                   </li>
@@ -277,7 +278,7 @@ function Detalle({
                 <button
                   type="button"
                   disabled={ocupado}
-                  onClick={() => void hacer(() => implementacionApi.destino(a.piezaId, { destino, utm }), 'Destino guardado')}
+                  onClick={() => void hacer(() => implementacionApi.destino(a.id, { destino, utm }), 'Destino guardado')}
                   className="rounded-lg bg-[#1D1D1F] px-3 py-1.5 text-[12px] font-semibold text-white disabled:opacity-40"
                 >
                   Guardar
@@ -302,7 +303,9 @@ function Detalle({
               <ExternalLink className="h-3.5 w-3.5" /> Abrir el archivo
             </a>
           )}
-          {!a.previaUrl && !a.enlace && <p className="mt-1 text-[12px] text-[#86868B]">Sin archivo adjunto.</p>}
+          {!a.previaUrl && !a.enlace && (
+            <p className="mt-1 text-[12px] text-[#86868B]">{a.piezaId ? 'Sin archivo adjunto.' : 'Solo texto: este anuncio no lleva pieza de diseño.'}</p>
+          )}
         </div>
 
         <div>
@@ -353,7 +356,7 @@ function Detalle({
               <button
                 type="button"
                 disabled={ocupado}
-                onClick={() => void hacer(() => implementacionApi.reabrir(a.piezaId), 'Volvió a por montar')}
+                onClick={() => void hacer(() => implementacionApi.reabrir(a.id), 'Volvió a por montar')}
                 className="inline-flex items-center justify-center gap-1.5 text-[12px] font-semibold text-[#6E6E73] hover:text-[#1D1D1F]"
               >
                 <RotateCcw className="h-3.5 w-3.5" /> Volver a por montar
@@ -371,7 +374,7 @@ function Detalle({
               <button
                 type="button"
                 disabled={ocupado || !plataforma.trim() || !idEnPlataforma.trim()}
-                onClick={() => void hacer(() => implementacionApi.montar(a.piezaId, { plataforma, idEnPlataforma, montadoEn: fecha }), 'Anuncio montado')}
+                onClick={() => void hacer(() => implementacionApi.montar(a.id, { plataforma, idEnPlataforma, montadoEn: fecha }), 'Anuncio montado')}
                 className="rounded-lg bg-[#0E7490] px-3 py-1.5 text-[12px] font-semibold text-white disabled:opacity-40"
               >
                 Guardar
@@ -397,7 +400,7 @@ function Detalle({
               <button
                 type="button"
                 disabled={ocupado || !texto.trim()}
-                onClick={() => void hacer(() => implementacionApi.devolver(a.piezaId, { motivo, texto }), 'Devuelto con novedad')}
+                onClick={() => void hacer(() => implementacionApi.devolver(a.id, { motivo, texto }), 'Devuelto con novedad')}
                 className="rounded-lg bg-amber-600 px-3 py-1.5 text-[12px] font-semibold text-white disabled:opacity-40"
               >
                 Devolver

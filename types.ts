@@ -985,7 +985,10 @@ export interface CampanaConPedidos {
 export type EstadoAnuncio = 'POR_MONTAR' | 'MONTADO' | 'CON_NOVEDAD';
 
 export interface AnuncioParaMontar {
-  piezaId: string;
+  /** `pieza:<id>` o, en los canales sin pieza de diseño (búsqueda de Google Ads, WhatsApp, push), `copy:<conjunto>`. */
+  id: string;
+  piezaId: string | null;
+  conjuntoId: string | null;
   clientId: string;
   titulo: string;
   platform: string;

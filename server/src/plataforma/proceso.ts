@@ -4,6 +4,7 @@ import { resolverAdn } from '../comun/adn/resolverAdn.js';
 import type { Paso } from '../contrato/proceso.js';
 import { pasoCdm } from '../cdm/planning/planningService.js';
 import { copyDeCampana } from '../myvoice/pedidosDeCopy.js';
+import { conjuntosSinPiezaDeCampana } from '../myvoice/copyParaProduccion.js';
 import { piezasDeCampana } from '../services/piezaService.js';
 import { pasoImplementacion } from '../implementacion/anuncios.js';
 
@@ -82,12 +83,18 @@ const pasosDeCampana = async (clientId: string, campanaId: string | null, conImp
 
   // ④ Producción: las piezas de la campaña. Nunca ✓ mientras quede copy aprobado sin pieza.
   const enPieza = new Set(piezas.flatMap(p => p.copyIds));
-  const aprobadosSinPieza = aprobados.filter(c => !enPieza.has(c.id)).length;
+  // Lo que no produce pieza de diseño (búsqueda de Google Ads, WhatsApp, push) no espera a Producción: va directo a
+  // Implementación, así que no cuenta como «aprobado sin pieza».
+  const aprobadosSinPieza = aprobados.filter(c => c.conPieza && !enPieza.has(c.id)).length;
   const listas = piezas.filter(p => p.estado === 'LISTA').length;
+  const aprobadosConPieza = aprobados.filter(c => c.conPieza).length;
   const produccion: Paso =
     piezas.length === 0
-      ? aprobados.length === 0
-        ? { paso: 'produccion', estado: 'bloqueado', falta: 'Espera copy aprobado', quien }
+      ? aprobadosConPieza === 0
+        ? aprobados.length > 0 && myvoice.estado === 'hecho'
+          ? // Todo el copy es de canales sin pieza de diseño: Producción no tiene nada que hacer.
+            { paso: 'produccion', estado: 'hecho', texto: 'Sin piezas de diseño' }
+          : { paso: 'produccion', estado: 'bloqueado', falta: 'Espera copy aprobado', quien }
         : { paso: 'produccion', estado: 'pendiente', texto: 'Sin piezas todavía', falta: 'Crear las piezas del copy aprobado' }
       : listas === piezas.length && aprobadosSinPieza === 0 && myvoice.estado === 'hecho'
         ? { paso: 'produccion', estado: 'hecho', texto: `${listas} piezas listas`, avance: { hechas: listas, total: listas } }
@@ -102,7 +109,7 @@ const pasosDeCampana = async (clientId: string, campanaId: string | null, conImp
   if (!conImplementacion) return [marca, myvoice, produccion];
 
   // ⑤ Implementación (F5): las piezas listas que ya están montadas. Hecho solo con todo montado y Producción hecha.
-  const imp = await pasoImplementacion(piezas);
+  const imp = await pasoImplementacion(piezas, await conjuntosSinPiezaDeCampana(campanaId));
   const implementacion: Paso =
     imp.listas === 0
       ? { paso: 'implementacion', estado: 'bloqueado', falta: 'Espera piezas listas' }
