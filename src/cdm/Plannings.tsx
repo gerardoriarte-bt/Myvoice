@@ -680,14 +680,15 @@ function Sabana({
                   <td className="px-3 py-2 text-[11.5px] text-[#6E6E73]">{textos(l)}</td>
                   <td className="px-3 py-2 text-[11.5px]">
                     {l.porConfirmar ? <span className="text-amber-700">Ubicación por confirmar</span> : <span className="text-[#047857]">Listo</span>}
+                    {/* Redes sociales orgánicas no llevan destino: solo se ofrece pegarlo, sin pedirlo (2026-11-24). */}
                     {(p.puedo.destino || l.destino) && (
                       <button
                         type="button"
                         onClick={() => setDestinoDe(destinoDe === l.id ? null : l.id)}
-                        className={`mt-0.5 block font-semibold hover:underline ${l.destino ? 'text-[#0E7490]' : 'text-amber-700'}`}
+                        className={`mt-0.5 block font-semibold hover:underline ${l.destino ? 'text-[#0E7490]' : l.medio.clase === 'REDES_SOCIALES' ? 'text-[#86868B]' : 'text-amber-700'}`}
                       >
-                        {l.destino ? 'Destino ✓' : 'Falta el destino'}
-                        {l.destino && !l.utm ? ' · sin UTM' : ''}
+                        {l.destino ? 'Destino ✓' : l.medio.clase === 'REDES_SOCIALES' ? 'Sin destino (no aplica)' : 'Falta el destino'}
+                        {l.destino && !l.utm && l.medio.clase !== 'REDES_SOCIALES' ? ' · sin UTM' : ''}
                       </button>
                     )}
                   </td>
@@ -828,7 +829,7 @@ function DestinoDeLinea({
   puede,
   onGuardar,
 }: {
-  linea: { destino: string | null; utm: string | null };
+  linea: { destino: string | null; utm: string | null; medio: { clase: string } };
   puede: boolean;
   onGuardar: (destino: string, utm: string) => Promise<void>;
 }) {
@@ -852,7 +853,7 @@ function DestinoDeLinea({
   return (
     <div className="grid gap-2 md:grid-cols-[1fr_1fr_auto]">
       <label className="block text-[11.5px] text-[#6E6E73]">
-        Destino (obligatorio para montar)
+        {linea.medio.clase === 'REDES_SOCIALES' ? 'Destino (opcional en redes sociales)' : 'Destino (obligatorio para montar)'}
         <input value={destino} onChange={e => setDestino(e.target.value)} placeholder="https://…" className={campo} />
       </label>
       <label className="block text-[11.5px] text-[#6E6E73]">
