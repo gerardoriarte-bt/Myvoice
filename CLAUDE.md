@@ -255,6 +255,8 @@ Editing an approved text or moving it to another campaign resets it to pending. 
 aprobado → en producción, or — since 2026-11-24 — straight to `EN_IMPLEMENTACION` when it carries no art) is computed on
 read, never stored. The «no art» rule is Implementación's (`directosAImplementacion`); My Voice gets it registered by the
 platform at boot (`registrarDirectosAImplementacion`), as with `lineaDePedido`, and only for brands with the module.
+Loose approved copy from before pieces (no `conjuntoId`) of a no-art channel is grouped by hand with
+`POST /saved/juntar` («Juntar en un anuncio»: same channel and campaign, approved, by whoever approves the campaign).
 
 **And filtered by brand.** A session is one `Client` and the server rejects a mixed one
 (`createReviewSession`). Workspace filtering is not enough here: inside one workspace an agency

@@ -177,6 +177,7 @@ const SavedManager: React.FC<SavedManagerProps> = ({
     const aprobar: string[] = [];
     const enviar: string[] = [];
     const producir: string[] = [];
+    const juntar: string[] = [];
     const revocar: string[] = [];
     const sinCampana: string[] = [];
     const motivos = new Set<string>();
@@ -192,6 +193,11 @@ const SavedManager: React.FC<SavedManagerProps> = ({
         motivos.add('Hay copy que no lleva arte: ya pasó a Implementación.');
       } else if (etapa === 'CON_EL_CLIENTE') {
         motivos.add('Hay copy esperando la respuesta del cliente.');
+      } else if (etapa === 'APROBADO' && v.llevaArte === false && !v.conjuntoId) {
+        // Copy de antes de las piezas, sin arte: no va a producción; se junta en un anuncio para que pase a Implementación.
+        if (isAdmin || soyResponsable(v)) juntar.push(v.id);
+        else motivos.add('Juntar copy en un anuncio lo hace quien aprueba la campaña.');
+        if (soyResponsable(v)) revocar.push(v.id);
       } else if (etapa === 'APROBADO') {
         if (isAdmin) producir.push(v.id);
         else motivos.add('Mandar a producción lo hace quien administra.');
@@ -207,7 +213,10 @@ const SavedManager: React.FC<SavedManagerProps> = ({
         motivos.add(`Lo de «${c.name}» lo aprueba ${(c.aprueban?.length ? c.aprueban : [c.responsable]).map(a => a?.name).join(' o ')}.`);
       }
     }
-    return { aprobar, enviar, producir, revocar, sinCampana, motivos: [...motivos] };
+    // Un anuncio es de un solo canal y una sola campaña: si la selección mezcla, se dice en vez de ofrecer el botón.
+    const juntables = new Set(seleccionados.filter(v => juntar.includes(v.id)).map(v => `${v.platform}·${v.projectId}`)).size === 1;
+    if (juntar.length && !juntables) motivos.add('Para juntar en un anuncio, elige textos de un solo canal y una sola campaña.');
+    return { aprobar, enviar, producir, juntar: juntables ? juntar : [], revocar, sinCampana, motivos: [...motivos] };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seleccionados, campanaPorId, currentUserId, isAdmin]);
 
@@ -245,6 +254,21 @@ const SavedManager: React.FC<SavedManagerProps> = ({
       if (aprobar) setEtapaFiltro('APROBADO');
     } catch (e) {
       addNotification(e instanceof Error ? e.message : 'No se pudo decidir la aprobación', 'error');
+    } finally {
+      setOcupado(false);
+    }
+  };
+
+  const juntarEnUnAnuncio = async (ids: string[]) => {
+    setOcupado(true);
+    try {
+      await libraryApi.juntar(ids);
+      await terminar({
+        texto: `${ids.length === 1 ? 'El texto ya es' : `Los ${ids.length} textos ya son`} un anuncio. Si la marca tiene Implementación, pasa solo allá.`,
+        ir: 'implementacion',
+      });
+    } catch (e) {
+      addNotification(e instanceof Error ? e.message : 'No se pudo juntar en un anuncio', 'error');
     } finally {
       setOcupado(false);
     }
@@ -431,6 +455,12 @@ const SavedManager: React.FC<SavedManagerProps> = ({
                       <span className={`inline-flex rounded border px-2 py-0.5 text-[11px] font-medium ${ESTILO_ETAPA[etapa]}`}>
                         {etiquetaEtapa(etapa)}
                       </span>
+                      {etapa === 'APROBADO' && v.llevaArte === false && !v.conjuntoId && (
+                        <p className="mt-1 max-w-[220px] text-[10.5px] leading-snug text-amber-700">
+                          Copy anterior a las piezas: selecciónalo con los textos de su anuncio y toca «Juntar en un anuncio» para que pase a
+                          Implementación.
+                        </p>
+                      )}
                       <p className="mt-1 truncate text-[11px] text-gray-500" title={c?.name}>
                         {c?.name ?? 'Sin campaña'}
                       </p>
@@ -651,6 +681,7 @@ const SavedManager: React.FC<SavedManagerProps> = ({
 
         <SiguientePaso
           porProducir={deLaCampana.filter(v => etapaDe(v) === 'APROBADO' && v.llevaArte !== false)}
+          porJuntar={deLaCampana.filter(v => etapaDe(v) === 'APROBADO' && v.llevaArte === false && !v.conjuntoId).length}
           directos={conteo.get('EN_IMPLEMENTACION') ?? 0}
           isAdmin={isAdmin}
           onProducir={ids => setMandandoAProduccion(ids)}
@@ -814,6 +845,15 @@ const SavedManager: React.FC<SavedManagerProps> = ({
                   className="flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-[12px] font-medium text-white hover:bg-blue-700 disabled:opacity-40"
                 >
                   <Send className="h-3.5 w-3.5" /> Enviar al cliente ({acciones.enviar.length})
+                </button>
+              )}
+              {acciones.juntar.length > 0 && (
+                <button
+                  disabled={ocupado}
+                  onClick={() => void juntarEnUnAnuncio(acciones.juntar)}
+                  className="flex items-center gap-1.5 rounded-lg bg-cyan-600 px-3 py-1.5 text-[12px] font-medium text-white hover:bg-cyan-700 disabled:opacity-40"
+                >
+                  <Link2 className="h-3.5 w-3.5" /> Juntar en un anuncio ({acciones.juntar.length})
                 </button>
               )}
               {acciones.producir.length > 0 && (
@@ -1198,6 +1238,7 @@ function CampanaYCliente({
  */
 function SiguientePaso({
   porProducir,
+  porJuntar,
   directos,
   isAdmin,
   onProducir,
@@ -1205,6 +1246,7 @@ function SiguientePaso({
   onIrAImplementacion,
 }: {
   porProducir: SavedVariation[];
+  porJuntar: number;
   directos: number;
   isAdmin: boolean;
   onProducir: (ids: string[]) => void;
@@ -1214,7 +1256,7 @@ function SiguientePaso({
   const piezas = new Set(porProducir.map(v => v.conjuntoId ?? v.id)).size;
   // Lo generado por piezas se cuenta en piezas; el copy suelto (de antes de 2026-11-05), en textos.
   const unidad = porProducir.every(v => v.conjuntoId) ? (piezas === 1 ? 'pieza aprobada' : 'piezas aprobadas') : piezas === 1 ? 'texto aprobado' : 'textos aprobados';
-  if (!piezas && !directos) return null;
+  if (!piezas && !directos && !porJuntar) return null;
   return (
     <div className="mx-5 mb-4 space-y-2">
       {piezas > 0 && (
@@ -1240,6 +1282,20 @@ function SiguientePaso({
               <LayoutGrid className="h-3.5 w-3.5" /> Mandar a producción ({piezas})
             </button>
           )}
+        </div>
+      )}
+      {porJuntar > 0 && (
+        <div className="flex flex-wrap items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+          <Link2 className="h-5 w-5 shrink-0 text-amber-700" />
+          <p className="min-w-0 flex-1 text-[13px] text-amber-900">
+            <span className="font-semibold">
+              {porJuntar} {porJuntar === 1 ? 'texto aprobado no lleva arte pero no pasa' : 'textos aprobados no llevan arte pero no pasan'} solos a Implementación
+            </span>{' '}
+            — son de antes de las piezas. Selecciona los textos de cada anuncio y toca «Juntar en un anuncio».
+          </p>
+          <button type="button" onClick={onVerAprobados} className="rounded-lg bg-white px-3 py-1.5 text-[12.5px] font-semibold text-amber-900 ring-1 ring-amber-200 hover:bg-amber-100">
+            Ver cuáles
+          </button>
         </div>
       )}
       {directos > 0 && (

@@ -162,6 +162,7 @@ router.post('/saved/bulk-delete', ...inWorkspace, savedController.bulkDeleteSave
 // Quién puede aprobar lo decide la campaña (su responsable), no el rol: va con
 // inWorkspace y la regla vive en services/aprobacion.ts.
 router.post('/saved/aprobacion', ...inWorkspace, savedController.decidirAprobacionHandler);
+router.post('/saved/juntar', ...inWorkspace, savedController.juntarEnUnAnuncio);
 router.put('/saved/:id', ...inWorkspace, savedController.updateVariation);
 router.delete('/saved/:id', ...inWorkspace, savedController.deleteVariation);
 router.get('/projects', ...inWorkspace, savedController.getProjects);

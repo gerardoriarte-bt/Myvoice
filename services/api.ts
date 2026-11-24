@@ -329,6 +329,9 @@ export const libraryApi = {
   deleteVariation: (id: string) => apiRequest(`/saved/${id}`, { method: 'DELETE' }),
   bulkDelete: (ids: string[]) => apiRequest('/saved/bulk-delete', { method: 'POST', body: JSON.stringify({ ids }) }),
   /** Aprueba o desaprueba. Solo decide el responsable de la campaña de cada copy. */
+  /** El copy aprobado de antes de las piezas, de un canal sin arte, en un anuncio: desde ahí pasa a Implementación. */
+  juntar: (ids: string[]): Promise<{ conjuntoId: string; textos: number }> =>
+    apiRequest('/saved/juntar', { method: 'POST', body: JSON.stringify({ ids }) }),
   decidirAprobacion: (ids: string[], aprobar: boolean): Promise<{ aplicados: string[]; rechazados: { id: string; motivo: string }[] }> =>
     apiRequest('/saved/aprobacion', { method: 'POST', body: JSON.stringify({ ids, aprobar }) }),
   listProjects: (clientId?: string) =>

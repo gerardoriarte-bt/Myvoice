@@ -1,5 +1,6 @@
 import { lineaDePedido } from '../myvoice/pedidosDeCopy.js';
-import { SELECT_APROBADORES, exigirElegible, quienesAprueban } from '../comun/aprobadores.js';
+import { SELECT_APROBADORES, apruebaLaCampana, exigirElegible, quienesAprueban } from '../comun/aprobadores.js';
+import { randomUUID } from 'crypto';
 import { Response } from 'express';
 import { AuthRequest, handleTenantError } from '../middleware/auth.js';
 import {
@@ -351,5 +352,42 @@ export const saveNegativeFeedback = async (req: AuthRequest, res: Response) => {
     res.status(201).json(entry);
   } catch (error) {
     handleTenantError(error, res, 'Error al guardar feedback negativo');
+  }
+};
+
+/**
+ * «Juntar en un anuncio» (2026-11-24): el copy aprobado de antes de las piezas (sin `conjuntoId`) de un canal sin
+ * arte —búsqueda de Google Ads, WhatsApp, push— no pasa solo a Implementación, porque nadie sabe qué textos van
+ * juntos. Quien aprueba la campaña o quien administra elige los textos de un anuncio y les pone un mismo
+ * `conjuntoId`: desde ahí pasan solos, como el copy nuevo. No cambia la aprobación ni el texto.
+ */
+export const juntarEnUnAnuncio = async (req: AuthRequest, res: Response) => {
+  try {
+    const tenant = req.tenant!;
+    const ids: string[] = Array.isArray(req.body?.ids) ? req.body.ids.filter((x: unknown): x is string => typeof x === 'string') : [];
+    if (!ids.length || ids.length > 50) return res.status(400).json({ error: 'Elige entre 1 y 50 textos' });
+    const textos = await prisma.savedVariation.findMany({
+      where: { id: { in: ids }, client: { workspaceId: tenant.workspaceId } },
+      select: { id: true, clientId: true, projectId: true, platform: true, conjuntoId: true, isApproved: true },
+    });
+    // Lo de otra empresa no existe para esta: 404, no 403.
+    if (textos.length !== new Set(ids).size) return res.status(404).json({ error: 'Copy no encontrado' });
+    const [primero] = textos;
+    if (textos.some(t => t.clientId !== primero.clientId || t.projectId !== primero.projectId || t.platform !== primero.platform))
+      return res.status(400).json({ error: 'Un anuncio es de un solo canal y una sola campaña' });
+    if (!primero.projectId) return res.status(400).json({ error: 'El copy no tiene campaña' });
+    if (producePieza(primero.platform)) return res.status(400).json({ error: 'Este canal lleva arte: se manda a producción' });
+    if (textos.some(t => t.conjuntoId)) return res.status(409).json({ error: 'Alguno ya es parte de un anuncio' });
+    if (textos.some(t => !t.isApproved)) return res.status(409).json({ error: 'Junta solo copy aprobado' });
+    const campana = await prisma.project.findFirst({ where: { id: primero.projectId, workspaceId: tenant.workspaceId }, select: SELECT_APROBADORES });
+    if (!canManage(tenant.role) && !apruebaLaCampana(tenant.userId, campana))
+      return res.status(403).json({ error: 'Lo junta quien aprueba la campaña o quien administra' });
+    const conjuntoId = randomUUID();
+    // `conjuntoId: null` en el where: si otro lo juntó mientras tanto, no se pisa.
+    const { count } = await prisma.savedVariation.updateMany({ where: { id: { in: ids }, conjuntoId: null }, data: { conjuntoId } });
+    if (count !== ids.length) return res.status(409).json({ error: 'Alguno ya es parte de un anuncio' });
+    res.json({ conjuntoId, textos: count });
+  } catch (error) {
+    handleTenantError(error, res, 'Error al juntar el copy en un anuncio');
   }
 };

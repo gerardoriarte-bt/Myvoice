@@ -1395,6 +1395,15 @@ async function main() {
       `respondió ${aprobacionAjena.status} ${JSON.stringify(aprobacionAjena.body)?.slice(0, 110)}`
     );
 
+    // «Juntar en un anuncio» (2026-11-24): el copy de otra empresa no existe para B, y no se le toca el conjunto.
+    const juntarAjeno = await api('/saved/juntar', B.token, { method: 'POST', body: JSON.stringify({ ids: [A.variation.id] }) });
+    const aTrasJuntar = await prisma.savedVariation.findUnique({ where: { id: A.variation.id }, select: { conjuntoId: true } });
+    record(
+      'POST /saved/juntar no alcanza copy de otro workspace',
+      juntarAjeno.status === 404 && aTrasJuntar?.conjuntoId === A.variation.conjuntoId,
+      `respondió ${juntarAjeno.status}, conjunto ${aTrasJuntar?.conjuntoId}`
+    );
+
     const aprobacionPropia = await api('/saved/aprobacion', B.token, {
       method: 'POST',
       body: JSON.stringify({ ids: [B.variation.id], aprobar: true }),
