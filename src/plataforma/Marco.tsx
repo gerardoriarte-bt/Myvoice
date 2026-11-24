@@ -71,7 +71,21 @@ export default function Marco(props: Props) {
     }
   }, [campanaId, campanas]);
 
-  // Se relee al moverse: aprobar un copy o cerrar una pieza cambia el avance sin recargar la página.
+  // Se relee al moverse y después de cada acción que cambia algo (`vt:cambio`, de services/api.ts): aprobar un copy o
+  // autorizar un anuncio cambia el avance y a quién le toca, sin recargar la página.
+  const [cambios, setCambios] = React.useState(0);
+  React.useEffect(() => {
+    let espera: ReturnType<typeof setTimeout> | undefined;
+    const alCambiar = () => {
+      clearTimeout(espera);
+      espera = setTimeout(() => setCambios(n => n + 1), 400);
+    };
+    window.addEventListener('vt:cambio', alCambiar);
+    return () => {
+      clearTimeout(espera);
+      window.removeEventListener('vt:cambio', alCambiar);
+    };
+  }, []);
   React.useEffect(() => {
     if (!marcaId) return setPasos([]);
     let vigente = true;
@@ -82,7 +96,7 @@ export default function Marco(props: Props) {
     return () => {
       vigente = false;
     };
-  }, [marcaId, campanaId, pantalla]);
+  }, [marcaId, campanaId, pantalla, cambios]);
 
   React.useEffect(() => {
     if (!marcaId) return setEnProceso([]);
@@ -196,6 +210,19 @@ export default function Marco(props: Props) {
         <Menu {...props} aqui={aqui} numero={aqui && numero(aqui) > 0 ? numero(aqui) : null} visible={visible} />
         {/* El encabezado mide dos filas: lo que se queda fijo al bajar (el formulario de Generar) va más abajo. */}
         <main className="flex-1 min-w-0 p-7" style={{ ['--tope-fijo' as string]: '133px' }}>
+          {campanaId && (
+            <Ahora
+              pasos={pasos}
+              visibles={visibles}
+              numero={numero}
+              aqui={aqui}
+              yo={usuario.id}
+              onIr={paso => {
+                const destino = primeraDe(paso);
+                if (destino) onIr(destino);
+              }}
+            />
+          )}
           {aqui && !actuaEn(usuario, administra, aqui, marcaId) && (
             <ModoLectura
               paso={aqui}
@@ -419,6 +446,79 @@ function Cuenta({ usuario, administra, onIr, onSalir, onCambiarWorkspace }: Prop
             </button>
           </div>
         </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * «Ahora» (2026-11-24, Gerardo: «en todas las etapas, un direccionamiento e indicar quién es el aprobador»): con una
+ * campaña elegida, en qué paso va, qué falta y a quién le toca —con nombre, todos los que pueden—, y un botón para ir.
+ * Antes solo se veía al pasar el mouse por el paso.
+ */
+function Ahora({
+  pasos,
+  visibles,
+  numero,
+  aqui,
+  yo,
+  onIr,
+}: {
+  pasos: PasoDeProceso[];
+  visibles: PasoDef[];
+  numero: (p: PasoDef) => number;
+  aqui: PasoDef | null;
+  yo: string;
+  onIr: (p: PasoDef) => void;
+}) {
+  if (!pasos.length) return null;
+  const pendientes = visibles.filter(v => {
+    const e = pasos.find(p => p.paso === v.id);
+    return e && e.estado !== 'hecho' && e.estado !== 'neutro';
+  });
+  // El ADN no frena el trabajo: cuenta solo cuando lo demás está hecho (igual que `pasoEnCurso` en el servidor).
+  const def = pendientes.find(v => v.id !== 'marca') ?? pendientes[0];
+  if (!def)
+    return (
+      <div className="mb-5 flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-[13px] text-emerald-900">
+        <Check className="h-4 w-4" /> La campaña está al día: todos sus pasos están hechos.
+      </div>
+    );
+  const e = pasos.find(p => p.paso === def.id)!;
+  const personas = e.quienes?.length ? e.quienes : e.quien ? [e.quien] : [];
+  const soyYo = personas.some(p => p.id === yo);
+  const nombres = personas.map(p => (p.id === yo ? `${p.nombre} (tú)` : p.nombre));
+  const lista = nombres.length <= 1 ? nombres.join('') : `${nombres.slice(0, -1).join(', ')} o ${nombres[nombres.length - 1]}`;
+  return (
+    <div
+      className={`mb-5 flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-xl border px-4 py-2.5 ${soyYo ? 'border-amber-300 bg-amber-50' : 'border-[rgba(0,0,0,0.08)] bg-white'}`}
+    >
+      <span className="text-[10.5px] font-bold uppercase tracking-[0.08em] text-[#86868B]">Ahora</span>
+      <span className="flex items-center gap-1.5 text-[13px] font-semibold text-[#1D1D1F]">
+        <span className="inline-flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-bold text-white" style={{ background: def.color }}>
+          {numero(def)}
+        </span>
+        {def.nombre}
+      </span>
+      <span className="min-w-0 flex-1 text-[13px] text-[#3A3A3C]">
+        {e.falta ?? e.texto}
+        {personas.length > 0 ? (
+          <>
+            {' · '}
+            <span className={soyYo ? 'font-semibold text-amber-900' : 'text-[#6E6E73]'}>
+              {soyYo
+                ? personas.length > 1
+                  ? `te toca (o a ${personas.filter(p => p.id !== yo).map(p => p.nombre).join(', ')})`
+                  : 'te toca'
+                : `le toca a ${lista}`}
+            </span>
+          </>
+        ) : null}
+      </span>
+      {aqui?.id !== def.id && (
+        <button type="button" onClick={() => onIr(def)} className="rounded-lg bg-[#1D1D1F] px-3 py-1.5 text-[12px] font-semibold text-white hover:bg-black">
+          Ir a {def.nombre}
+        </button>
       )}
     </div>
   );

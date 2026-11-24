@@ -1130,6 +1130,7 @@ const App: React.FC = () => {
         <Implementacion
           key={activeClient.id}
           marcaId={activeClient.id}
+          campanaId={campanaId}
           onAviso={(m, tipo) => addNotification(m, tipo)}
         />
       )}
