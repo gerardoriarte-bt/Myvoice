@@ -3,9 +3,9 @@ import { SCREENS } from '../screens';
 import { Check, Circle } from 'lucide-react';
 import { Client, ContentDNAProfile, BrandConfig, FeedbackExample, Platform, SavedVariation } from '../types';
 import TagInput from './TagInput';
-import VoiceFingerprintCard from './VoiceFingerprintCard';
+import ManualYHuella from './adn/ManualYHuella';
 import BrandHubHero from './BrandHubHero';
-import { clientApi, analyticsApi } from '../services/api';
+import { clientApi, analyticsApi, libraryApi } from '../services/api';
 import { Copy, CornerDownRight, Network, Plus, ShieldAlert, ArrowRight } from 'lucide-react';
 import RevisionDeAdn from './RevisionDeAdn';
 import AdnDeMarca from './adn/AdnDeMarca';
@@ -54,6 +54,16 @@ interface ClientManagerProps {
   onAdnConfirmado?: () => void;
   /** Después de corregir una sección en la revisión: recargar para que el formulario muestre lo nuevo. */
   onAdnCorregido?: () => void;
+  /**
+   * Un solo ADN (2026-11-24): con el marco por procesos el ADN tiene su pantalla (Marca › ADN), así que el detalle de
+   * la marca no lo repite —ni la pestaña, ni el manual, ni el fingerprint— y sus enlaces llevan allá.
+   */
+  adnEnPantallaPropia?: boolean;
+  onIrAlAdn?: () => void;
+  /** Marca › Campañas: solo las campañas de esta marca, sin el resto del detalle (2026-11-24). */
+  soloCampanasDe?: string | null;
+  /** Sube cada vez que alguien pide «+ Nueva campaña» desde el encabezado: abre el brief vacío. */
+  abrirNuevaCampana?: number;
 }
 
 const ClientManager: React.FC<ClientManagerProps> = ({
@@ -79,10 +89,20 @@ const ClientManager: React.FC<ClientManagerProps> = ({
   onRevisionAbierta,
   onAdnConfirmado,
   onAdnCorregido,
+  adnEnPantallaPropia = false,
+  onIrAlAdn,
+  soloCampanasDe = null,
+  abrirNuevaCampana = 0,
 }) => {
   const [isAddingClient, setIsAddingClient] = React.useState(false);
   const [showGlobalSettings, setShowGlobalSettings] = React.useState(false);
-  const [activeClientHub, setActiveClientHub] = React.useState<string | null>(null);
+  const [activeClientHub, setActiveClientHub] = React.useState<string | null>(soloCampanasDe);
+  const soloCampanas = Boolean(soloCampanasDe);
+  /** Las campañas sin brief de la marca abierta (creadas desde Copy o antes de 2026-11-24): se completan desde acá. */
+  const [sinBrief, setSinBrief] = React.useState<{ id: string; name: string }[]>([]);
+  /** La campaña sin brief cuyo brief se está escribiendo. */
+  const [completando, setCompletando] = React.useState<string | null>(null);
+  const irAlAdn = () => (adnEnPantallaPropia && onIrAlAdn ? onIrAlAdn() : setClientDetailView('adn'));
   const [editingProfileId, setEditingProfileId] = React.useState<string | null>(null);
   const [clientForm, setClientForm] = React.useState({ name: '', industry: '', logo: '', marcaMadreId: '' });
   /** La tarjeta con nombre repetido que se está resolviendo, y el nombre nuevo si se renombra. */
@@ -124,20 +144,29 @@ const ClientManager: React.FC<ClientManagerProps> = ({
   const [newFeedback, setNewFeedback] = React.useState<FeedbackExample>({ platform: Platform.INSTAGRAM_POST, content: '' });
 
   // Brand-guideline PDF upload state
-  const [uploadingGuideline, setUploadingGuideline] = React.useState(false);
-  const [deletingGuideline, setDeletingGuideline] = React.useState(false);
-  const [uploadError, setUploadError] = React.useState<string | null>(null);
-  const [extractedSummary, setExtractedSummary] = React.useState<string | null>(null);
 
   // Voice fingerprint state
-  const [computingFingerprint, setComputingFingerprint] = React.useState(false);
-  const [fingerprintError, setFingerprintError] = React.useState<string | null>(null);
 
   // Duplicate campaign state
   const [duplicatingId, setDuplicatingId] = React.useState<string | null>(null);
 
   // Client detail view state
   const [clientDetailView, setClientDetailView] = React.useState<'adn' | 'campaigns' | 'metrics'>('campaigns');
+  React.useEffect(() => {
+    if (soloCampanasDe) {
+      setActiveClientHub(soloCampanasDe);
+      setClientDetailView('campaigns');
+    }
+  }, [soloCampanasDe]);
+  React.useEffect(() => {
+    if (!activeClientHub) return setSinBrief([]);
+    libraryApi
+      .listProjects(activeClientHub)
+      .then((ps: { id: string; name: string; clientId?: string | null; dnaProfileId?: string | null }[]) =>
+        setSinBrief(ps.filter(c => c.clientId === activeClientHub && !c.dnaProfileId).map(c => ({ id: c.id, name: c.name })))
+      )
+      .catch(() => setSinBrief([]));
+  }, [activeClientHub, dnaProfiles.length]);
   /** Sube cada vez que algo cambia el ADN: la pantalla del ADN y la franja de revisión lo vuelven a leer. */
   const [adnRecarga, setAdnRecarga] = React.useState(0);
 
@@ -167,84 +196,6 @@ const ClientManager: React.FC<ClientManagerProps> = ({
       alert(err?.message || 'Error al duplicar la campaña');
     } finally {
       setDuplicatingId(null);
-    }
-  };
-
-  const handleComputeFingerprint = async (clientId: string) => {
-    setFingerprintError(null);
-    setComputingFingerprint(true);
-    try {
-      const result = await clientApi.computeFingerprint(clientId);
-      onUpdate(clientId, {
-        brandFingerprint: result.client.brandFingerprint,
-        brandFingerprintAt: result.client.brandFingerprintAt,
-      } as Partial<Client>);
-    } catch (err: any) {
-      setFingerprintError(err?.message || 'Error calculando fingerprint');
-    } finally {
-      setComputingFingerprint(false);
-    }
-  };
-
-  const handleDeleteGuideline = async (clientId: string) => {
-    if (!window.confirm('¿Eliminar el manual de marca? Se perderá la extracción de IA guardada.')) return;
-    setDeletingGuideline(true);
-    setUploadError(null);
-    setExtractedSummary(null);
-    try {
-      await clientApi.deleteBrandGuideline(clientId);
-      onUpdate(clientId, {
-        brandGuidelinePdfUrl: null,
-        brandGuidelineFileName: null,
-        brandGuidelineExtractedAt: null,
-      } as Partial<Client>);
-    } catch (err: any) {
-      setUploadError(err?.message || 'Error al eliminar el manual');
-    } finally {
-      setDeletingGuideline(false);
-    }
-  };
-
-  const handleUploadGuideline = async (clientId: string, file: File) => {
-    setUploadError(null);
-    setExtractedSummary(null);
-
-    const MAX_MB = 15;
-    const IDEAL_MB = 5;
-    if (file.type !== 'application/pdf') {
-      setUploadError(`Formato no válido: "${file.name}" no es un PDF. Solo se aceptan archivos .pdf.`);
-      return;
-    }
-    const fileMb = file.size / 1024 / 1024;
-    if (fileMb > MAX_MB) {
-      setUploadError(`El archivo pesa ${fileMb.toFixed(1)} MB y supera el límite de ${MAX_MB} MB. Comprime el PDF antes de subirlo.`);
-      return;
-    }
-    if (fileMb > IDEAL_MB) {
-      // Warn but allow — just clear previous error
-      setUploadError(null);
-    }
-
-    setUploadingGuideline(true);
-    try {
-      const result = await clientApi.uploadBrandGuideline(clientId, file);
-      // Sync local state through the existing onUpdate prop (server already persisted).
-      const c = result.client as Partial<Client>;
-      onUpdate(clientId, {
-        voice: c.voice,
-        valueProposition: c.valueProposition,
-        brandVoiceGuidelines: c.brandVoiceGuidelines,
-        brandKeywords: c.brandKeywords,
-        brandProhibitions: c.brandProhibitions,
-        brandGuidelinePdfUrl: c.brandGuidelinePdfUrl,
-        brandGuidelineFileName: c.brandGuidelineFileName,
-        brandGuidelineExtractedAt: c.brandGuidelineExtractedAt,
-      } as Partial<Client>);
-      setExtractedSummary(result.extracted?.summary || 'Marca actualizada con la información del PDF.');
-    } catch (err: any) {
-      setUploadError(err?.message || 'Error procesando el PDF');
-    } finally {
-      setUploadingGuideline(false);
     }
   };
 
@@ -326,11 +277,12 @@ const ClientManager: React.FC<ClientManagerProps> = ({
       return;
     }
     if (editingProfileId) onUpdateProfile(editingProfileId, dnaForm);
-    else onSaveProfile({ ...dnaForm, clientId: activeClientHub });
+    else onSaveProfile({ ...dnaForm, clientId: activeClientHub, ...(completando && { campanaId: completando }) } as any);
     resetDnaForm();
   };
 
   const resetDnaForm = () => {
+    setCompletando(null);
     setDnaForm({
       name: '',
       campaignConcept: '',
@@ -351,13 +303,22 @@ const ClientManager: React.FC<ClientManagerProps> = ({
   };
 
   /** `vista` fuerza la pestaña; sin ella, una marca que no llega al mínimo del ADN abre en el ADN. */
+  React.useEffect(() => {
+    if (!abrirNuevaCampana) return;
+    resetDnaForm();
+    setShowDnaForm(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [abrirNuevaCampana]);
+
   const enterHub = (clientId: string, vista?: 'adn' | 'campaigns') => {
     setActiveClientHub(clientId);
     onAbrirMarca?.(clientId);
     resetDnaForm();
     setShowGlobalSettings(false);
     const marca = clients.find(c => c.id === clientId);
-    setClientDetailView(vista ?? (marca?.adn && !marca.adn.apta ? 'adn' : 'campaigns'));
+    // Con el ADN en su pantalla, entrar a la marca abre sus campañas; el aviso de ADN incompleto lleva allá.
+    setClientDetailView(adnEnPantallaPropia ? 'campaigns' : vista ?? (marca?.adn && !marca.adn.apta ? 'adn' : 'campaigns'));
     setAnalyticsData(null);
     setAnalyticsError(null);
   };
@@ -1035,7 +996,7 @@ const ClientManager: React.FC<ClientManagerProps> = ({
 
           return (
             <div className="animate-in fade-in duration-300 space-y-6">
-               <BrandHubHero
+               {!soloCampanas && <BrandHubHero
                  client={client}
                  profilesCount={profiles.length}
                  approvedCount={0}
@@ -1043,11 +1004,11 @@ const ClientManager: React.FC<ClientManagerProps> = ({
                  onBack={exitHub}
                  madre={madreDe(client, clients)}
                  onAbrirMadre={() => client.marcaMadreId && enterHub(client.marcaMadreId)}
-               />
+               />}
 
                <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
-                  {/* DETAIL LEFT: CONSTITUCION DE MARCA (GLOBAL DNA) */}
-                  <div className="xl:col-span-3 xl:sticky xl:top-[76px] space-y-4">
+                  {/* DETAIL LEFT: CONSTITUCION DE MARCA (GLOBAL DNA) — no va en Marca › Campañas */}
+                  <div className={`xl:col-span-3 xl:sticky xl:top-[76px] space-y-4 ${soloCampanas ? 'hidden' : ''}`}>
                      {/* FAMILIA — la relación entre marcas, separada del ADN: no se hereda nada,
                          así que no va entre los campos que definen la voz. */}
                      {(() => {
@@ -1141,7 +1102,7 @@ const ClientManager: React.FC<ClientManagerProps> = ({
                         </div>
                         {client.adn && (
                           <button
-                            onClick={() => setClientDetailView('adn')}
+                            onClick={irAlAdn}
                             className="mt-4 block w-full rounded-lg border border-gray-200 p-3 text-left hover:border-gray-400"
                           >
                             <div className="flex items-center justify-between">
@@ -1157,112 +1118,15 @@ const ClientManager: React.FC<ClientManagerProps> = ({
                               />
                             </div>
                             <span className="mt-2 inline-flex items-center gap-1 text-[11.5px] text-gray-600">
-                              {clientDetailView === 'adn' ? 'Abierto a la derecha' : 'Abrir el ADN'} <ArrowRight className="h-3 w-3" />
+                              {clientDetailView === 'adn' && !adnEnPantallaPropia ? 'Abierto a la derecha' : 'Abrir el ADN'} <ArrowRight className="h-3 w-3" />
                             </span>
                           </button>
                         )}
                      </div>
 
-                     {/* BRAND GUIDELINE PDF UPLOADER */}
-                     <div className="bg-white rounded-xl p-5 border border-gray-200 shadow-sm space-y-3">
-                        <div>
-                           <h4 className="text-[13px] font-medium text-gray-900">Manual de Marca</h4>
-                           <p className="text-[11px] text-gray-500 mt-0.5">
-                             Solo PDF · Ideal: menos de 5 MB · Máximo: 15 MB
-                           </p>
-                           <p className="text-[10px] text-gray-400 mt-0.5">
-                             La IA extrae automáticamente voz de marca, propuesta de valor y guías de tono.
-                           </p>
-                        </div>
-
-                        {client.brandGuidelineFileName ? (
-                           <div className="flex items-center gap-2 p-2.5 bg-gray-50 rounded-lg border border-gray-100">
-                              <svg className="w-4 h-4 text-red-400 shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm-1 1.5L18.5 9H13V3.5zM9.5 17l-1.5-1.5L10.5 13 8 10.5 9.5 9l2.5 2.5L14.5 9l1.5 1.5L13.5 13l2.5 2.5-1.5 1.5L12 14.5 9.5 17z" opacity=".3"/><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zM13 3.5L18.5 9H13V3.5zM15 17h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
-                              <div className="flex-1 min-w-0">
-                                 <p className="text-[12px] font-medium text-gray-700 truncate">{client.brandGuidelineFileName}</p>
-                                 {client.brandGuidelineExtractedAt && (
-                                   <p className="text-[10px] text-gray-400">
-                                     Extraído {new Date(client.brandGuidelineExtractedAt as any).toLocaleString()}
-                                   </p>
-                                 )}
-                              </div>
-                              {client.brandGuidelinePdfUrl && (
-                                <a
-                                  href={client.brandGuidelinePdfUrl}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  title="Ver PDF"
-                                  className="p-1 text-blue-500 hover:text-blue-700 shrink-0"
-                                >
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
-                                </a>
-                              )}
-                              <button
-                                onClick={() => handleDeleteGuideline(client.id)}
-                                disabled={deletingGuideline || uploadingGuideline}
-                                title="Eliminar manual"
-                                className="p-1 text-gray-300 hover:text-red-500 transition-colors shrink-0 disabled:opacity-40"
-                              >
-                                {deletingGuideline
-                                  ? <span className="w-4 h-4 border-2 border-gray-300 border-t-red-400 rounded-full animate-spin block" />
-                                  : <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                                }
-                              </button>
-                           </div>
-                        ) : (
-                           <div className="flex items-center gap-2 p-2.5 bg-gray-50 rounded-lg border border-dashed border-gray-200 text-[11px] text-gray-400">
-                             <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
-                             Sin manual cargado
-                           </div>
-                        )}
-
-                        <label className={`block w-full py-2 rounded-lg font-medium text-[12px] text-center cursor-pointer transition-colors border ${
-                          uploadingGuideline
-                            ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
-                            : 'bg-ink text-white border-gray-900 hover:bg-ink-hover'
-                        }`}>
-                           {uploadingGuideline ? (
-                             <span className="inline-flex items-center gap-2">
-                               <span className="w-3 h-3 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                               Procesando…
-                             </span>
-                           ) : (
-                             client.brandGuidelinePdfUrl ? 'Reemplazar PDF' : 'Subir PDF y procesar'
-                           )}
-                           <input
-                             type="file"
-                             accept="application/pdf"
-                             className="hidden"
-                             disabled={uploadingGuideline || deletingGuideline}
-                             onChange={e => {
-                               const file = e.target.files?.[0];
-                               if (file) handleUploadGuideline(client.id, file);
-                               e.target.value = '';
-                             }}
-                           />
-                        </label>
-
-                        {uploadError && (
-                          <div className="flex items-start gap-2 text-[11px] text-red-700 bg-red-50 border border-red-200 rounded-lg p-2.5">
-                            <svg className="w-3.5 h-3.5 mt-0.5 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" /></svg>
-                            <span>{uploadError}</span>
-                          </div>
-                        )}
-                        {extractedSummary && !uploadError && (
-                          <div className="text-[11px] text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-lg p-2.5 leading-relaxed">
-                            <span className="font-medium block mb-1">Síntesis IA</span>
-                            {extractedSummary}
-                          </div>
-                        )}
-                     </div>
-
-                     <VoiceFingerprintCard
-                       fingerprint={client.brandFingerprint}
-                       computedAt={client.brandFingerprintAt}
-                       computing={computingFingerprint}
-                       error={fingerprintError}
-                       onCompute={() => handleComputeFingerprint(client.id)}
-                     />
+                     {/* El manual en PDF y el Voice Fingerprint son parte del ADN: con el marco por procesos viven en la
+                         pantalla ADN; acá quedan para el marco clásico, que no la tiene. */}
+                     {!adnEnPantallaPropia && <ManualYHuella client={client} onActualizado={u => onUpdate(client.id, u)} />}
 
                      <button onClick={() => { if(window.confirm('¿Eliminar marca?')) { onRemove(client.id); exitHub(); } }} className="w-full text-center text-[12px] text-gray-400 hover:text-red-500 transition-colors">
                         Eliminar Marca
@@ -1270,7 +1134,7 @@ const ClientManager: React.FC<ClientManagerProps> = ({
                   </div>
 
                   {/* DETAIL RIGHT: WORKSPACE CAMPAÑAS / METRICAS */}
-                  <div className="xl:col-span-9 space-y-6">
+                  <div className={`${soloCampanas ? 'xl:col-span-12' : 'xl:col-span-9'} space-y-6`}>
                      {clientDetailView !== 'adn' && client.adn && !client.adn.apta && (
                        // En v1 el ADN bajo el mínimo solo avisa (docs/plan-adn-2.md, decisión 2): en v2 no deja crear la campaña.
                        <div className="flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5">
@@ -1279,7 +1143,7 @@ const ClientManager: React.FC<ClientManagerProps> = ({
                            Al ADN de {client.name} le falta{client.adn.faltan.length === 1 ? '' : 'n'} {client.adn.faltan.length} para el mínimo:{' '}
                            {client.adn.faltan.map(f => f.nombre).join(', ')}. Se puede generar, pero el copy sale más genérico.
                          </p>
-                         <button onClick={() => setClientDetailView('adn')} className="inline-flex shrink-0 items-center gap-1 text-[12px] font-semibold text-gray-900 hover:underline">
+                         <button onClick={irAlAdn} className="inline-flex shrink-0 items-center gap-1 text-[12px] font-semibold text-gray-900 hover:underline">
                            Completar el ADN <ArrowRight className="h-3.5 w-3.5" />
                          </button>
                        </div>
@@ -1291,25 +1155,39 @@ const ClientManager: React.FC<ClientManagerProps> = ({
                                ? `${client.name} · ADN`
                                : clientDetailView === 'metrics'
                                ? 'Métricas'
-                               : showDnaForm ? (editingProfileId ? 'Editor de Campaña' : 'Nueva Campaña') : 'Campañas Activas'}
+                               : showDnaForm
+                               ? editingProfileId
+                                 ? 'Editar la campaña'
+                                 : completando
+                                 ? 'Completar el brief'
+                                 : 'Nueva campaña'
+                               : soloCampanas
+                               ? `Campañas de ${client.name}`
+                               : 'Campañas Activas'}
                           </h4>
                           <p className="text-[12px] text-gray-500 mt-0.5">
                              {clientDetailView === 'adn'
                                ? 'Lo que el motor sabe de la marca: qué decir, cómo suena y qué no se toca'
                                : clientDetailView === 'metrics'
                                ? 'Resumen de rendimiento por cliente'
-                               : showDnaForm ? 'Parametriza el brief estratégico' : `${profiles.length} campañas configuradas`}
+                               : showDnaForm
+                               ? 'El brief de la campaña: lo que el motor lee además del ADN de la marca'
+                               : `${profiles.length + sinBrief.length} ${profiles.length + sinBrief.length === 1 ? 'campaña' : 'campañas'}`}
                           </p>
                         </div>
                         <div className="flex items-center gap-3">
-                          {/* Sub-tab toggle */}
+                          {/* Sub-tab toggle (en Marca › Campañas no hace falta: es solo eso) */}
+                          {!soloCampanas && (
+                          <>
                           <div className="flex items-center bg-gray-100 rounded-lg p-1 gap-1">
-                            <button
-                              onClick={() => setClientDetailView('adn')}
-                              className={`px-3 py-1.5 rounded-md text-[12px] font-medium transition-colors ${clientDetailView === 'adn' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-                            >
-                              ADN
-                            </button>
+                            {!adnEnPantallaPropia && (
+                              <button
+                                onClick={irAlAdn}
+                                className={`px-3 py-1.5 rounded-md text-[12px] font-medium transition-colors ${clientDetailView === 'adn' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                              >
+                                ADN
+                              </button>
+                            )}
                             <button
                               onClick={() => setClientDetailView('campaigns')}
                               className={`px-3 py-1.5 rounded-md text-[12px] font-medium transition-colors ${clientDetailView === 'campaigns' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
@@ -1323,12 +1201,14 @@ const ClientManager: React.FC<ClientManagerProps> = ({
                               Métricas
                             </button>
                           </div>
+                          </>
+                          )}
                           {clientDetailView === 'campaigns' && !showDnaForm && (
                             <button
                               onClick={() => { resetDnaForm(); setShowDnaForm(true); }}
                               className="bg-ink text-white px-4 py-2 rounded-lg text-[13px] font-medium shadow-sm hover:bg-ink-hover transition-colors"
                             >
-                              + Crear Campaña
+                              + Nueva campaña
                             </button>
                           )}
                         </div>
@@ -1490,7 +1370,33 @@ const ClientManager: React.FC<ClientManagerProps> = ({
                                </div>
                              </div>
                            ))}
-                           {profiles.length === 0 && (
+                           {/* Las campañas sin brief (creadas desde Copy o antes del 2026-11-24): existen en el encabezado,
+                               en CDM y en Copy, así que también acá, con lo que les falta. */}
+                           {sinBrief.map(c => (
+                             <div key={c.id} className="flex h-full flex-col justify-between rounded-xl border border-dashed border-amber-300 bg-amber-50/40 p-5">
+                               <div>
+                                 <h5 className="text-[14px] font-semibold text-gray-900">{c.name}</h5>
+                                 <span className="mt-1.5 inline-block rounded border border-amber-200 bg-white px-1.5 py-0.5 text-[10px] font-medium text-amber-800">Sin brief</span>
+                                 <p className="mt-2 text-[12px] text-gray-600">
+                                   La campaña existe, pero sin brief el motor solo conoce el ADN de la marca.
+                                 </p>
+                               </div>
+                               <button
+                                 type="button"
+                                 onClick={() => {
+                                   resetDnaForm();
+                                   setCompletando(c.id);
+                                   setDnaForm(f => ({ ...f, name: c.name }));
+                                   setShowDnaForm(true);
+                                   window.scrollTo({ top: 0, behavior: 'smooth' });
+                                 }}
+                                 className="mt-4 self-start rounded-lg bg-ink px-3 py-1.5 text-[12px] font-semibold text-white hover:bg-ink-hover"
+                               >
+                                 Completar el brief
+                               </button>
+                             </div>
+                           ))}
+                           {profiles.length === 0 && sinBrief.length === 0 && (
                               <div className="col-span-full py-12 border border-dashed border-gray-200 rounded-xl flex flex-col items-center justify-center text-center bg-gray-50/50">
                                  <p className="text-[13px] font-medium text-gray-900 mb-0.5">Sin Campañas</p>
                                  <p className="text-[12px] text-gray-500">Crea una campaña para empezar a generar copy.</p>
@@ -1622,7 +1528,26 @@ const ClientManager: React.FC<ClientManagerProps> = ({
 
                             {/* TAGS */}
                             <section id="sec-tags" className="bg-white border border-gray-200 rounded-xl p-5 space-y-3">
-                              <h6 className="text-[13px] font-medium text-gray-900">Léxico</h6>
+                              {/* Un solo ADN (2026-11-24): lo de la marca ya aplica siempre; acá va solo lo de esta campaña,
+                                  y se muestra lo del ADN en gris para no escribirlo dos veces. */}
+                              <div>
+                                <h6 className="text-[13px] font-medium text-gray-900">Léxico solo para esta campaña</h6>
+                                <p className="mt-0.5 text-[11px] text-gray-500">Se suma al del ADN de {client.name}, que aplica siempre.</p>
+                              </div>
+                              {(client.brandKeywords || client.brandProhibitions) && (
+                                <div className="space-y-1 rounded-lg bg-gray-50 px-3 py-2 text-[11px] text-gray-500">
+                                  {client.brandKeywords && (
+                                    <p>
+                                      <span className="font-semibold text-gray-600">Keywords del ADN:</span> {client.brandKeywords}
+                                    </p>
+                                  )}
+                                  {client.brandProhibitions && (
+                                    <p>
+                                      <span className="font-semibold text-gray-600">Prohibiciones del ADN:</span> {client.brandProhibitions}
+                                    </p>
+                                  )}
+                                </div>
+                              )}
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                   <label className="block text-[11px] font-medium text-gray-700 mb-1">Keywords (favorecer)</label>
@@ -1638,8 +1563,10 @@ const ClientManager: React.FC<ClientManagerProps> = ({
                             {/* FEW-SHOT */}
                             <section id="sec-fewshot" className="bg-white border border-gray-200 rounded-xl p-5 space-y-4">
                               <div>
-                                <h6 className="text-[13px] font-medium text-gray-900">Ejemplos Exitosos (Few-Shot)</h6>
-                                <p className="text-[11px] text-gray-500 mt-0.5">Copys pasados que el motor IA tomará como referencia tonal.</p>
+                                <h6 className="text-[13px] font-medium text-gray-900">Ejemplos solo para esta campaña</h6>
+                                <p className="text-[11px] text-gray-500 mt-0.5">
+                                  Copys que el motor toma como referencia de tono en esta campaña, además de «Así suena» del ADN.
+                                </p>
                               </div>
                               <div className="flex flex-col md:flex-row gap-2">
                                 <select className="md:w-40 px-3 py-2 bg-white border border-gray-200 rounded-lg text-gray-900 text-[12px] outline-none focus:border-gray-400 transition-colors" value={newFeedback.platform} onChange={e => setNewFeedback({ ...newFeedback, platform: e.target.value })}>

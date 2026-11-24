@@ -48,6 +48,17 @@ export interface Novedad {
 
 export const NOVEDADES: Novedad[] = [
   {
+    id: 'campanas-a-la-vista',
+    fecha: '2026-11-24',
+    titulo: 'Crear una campaña, a un clic',
+    cambios: [
+      '«+ Nueva campaña» está en el selector de campaña, arriba, desde cualquier pantalla. Y Marca tiene su pantalla «Campañas».',
+      'Una campaña y su brief son lo mismo: apenas la creas aparece en el selector, en CDM («Nuevo planning») y en Copy, con un solo nombre.',
+      'Las campañas que no tenían brief aparecen en Marca › Campañas con «Completar el brief».',
+      'El ADN está en un solo lugar, Marca › ADN, con el manual en PDF y el Voice Fingerprint. En el brief, el léxico y los ejemplos son solo los de esa campaña.',
+    ],
+  },
+  {
     id: 'ahora-y-quien',
     fecha: '2026-11-24',
     titulo: 'Siempre sabes qué sigue y a quién le toca',

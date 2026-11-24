@@ -440,6 +440,17 @@ async function main() {
       method: 'POST',
       body: JSON.stringify({ texto: 'x' }),
     });
+    // Una campaña es su brief (2026-11-24): completar el brief de una campaña ajena no la toca ni confirma que existe.
+    const briefAjeno = await api('/dna-profiles', B.token, {
+      method: 'POST',
+      body: JSON.stringify({ clientId: B.client.id, campanaId: A.project.id, name: 'Intruso', voice: 'x', goal: 'x', product: 'x', targetAudience: 'x', theme: 'x' }),
+    });
+    const aTrasBrief = await prisma.project.findUnique({ where: { id: A.project.id }, select: { name: true, dnaProfileId: true } });
+    record(
+      'POST /dna-profiles no completa una campaña de otro workspace',
+      briefAjeno.status === 404 && aTrasBrief?.name !== 'Intruso' && aTrasBrief?.dnaProfileId === (A.project as any).dnaProfileId,
+      `respondió ${briefAjeno.status}, quedó ${JSON.stringify(aTrasBrief)}`
+    );
     // La eficiencia está por encima de los workspaces: quien no es super admin no sabe que existe (decisión 27).
     await expectDenied('GET /control/eficiencia sin ser super admin', '/control/eficiencia', B.token);
     await expectDenied('GET /campanas/:id/reporte-implementacion de A', `/campanas/${A.project.id}/reporte-implementacion`, B.token);

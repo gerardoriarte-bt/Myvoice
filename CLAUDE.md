@@ -236,7 +236,12 @@ session must be workspace-filtered.
 
 **Approval is per campaign and always has an owner** (`services/aprobacion.ts`, see
 `docs/plan-aprobacion-por-campana.md`). A `Project` (campaign) is tied 1:1 to its brief
-(`dnaProfileId`) and carries `modoAprobacion` (`INTERNA` | `CLIENTE`) and `responsableId`. **Since decision 30
+(`dnaProfileId`) — **and since 2026-11-24 they are one thing**: `saveDNAProfile` creates the campaign in the same
+transaction (or, with `campanaId`, completes a campaign that had no brief), renaming the brief renames the campaign, and
+migration `20261125000002_campana_es_su_brief` backfilled the rest. Before, the campaign was born lazily the first time
+someone generated copy, so Marca (briefs) and the header selector / «Nuevo planning» (campaigns) listed different things.
+Campaigns are created from **Marca › Campañas** (`campanas` screen, the same `ClientManager` with `soloCampanasDe`) or
+from «+ Nueva campaña» in the header selector and carries `modoAprobacion` (`INTERNA` | `CLIENTE`) and `responsableId`. **Since decision 30
 (2026-11-20, changed 2026-11-23) approvers come from Equipo**: the responsable plus everyone with the `APROBACION`
 function for the campaign's brand (or all brands) decides sábana, copy and pieces; the first one wins. Permissions are
 managed in Equipo, not per campaign (`AprobadorDeCampana` is unused). Ask `server/src/comun/aprobadores.ts` (`apruebaLaCampana`, `quienesAprueban`,

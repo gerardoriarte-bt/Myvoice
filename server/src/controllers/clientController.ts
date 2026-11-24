@@ -442,12 +442,30 @@ export const postConfirmarAdn = async (req: AuthRequest, res: Response) => {
 
 // ------------------------------------------------------------ DNA Profiles
 
+/**
+ * Una campaña es su brief (Gerardo, 2026-11-24): crear el brief crea la campaña en la misma transacción, con el mismo
+ * nombre. Antes la campaña nacía la primera vez que alguien generaba copy, y hasta entonces el brief no aparecía en el
+ * selector del encabezado ni en «Nuevo planning». Con `campanaId`, el brief completa una campaña que no tenía (las
+ * creadas sin brief): se le pone su nombre y se enlaza.
+ */
 export const saveDNAProfile = async (req: AuthRequest, res: Response) => {
-  const { clientId } = req.body;
+  const { clientId, campanaId } = req.body;
   try {
-    await assertClientInWorkspace(req.tenant!, clientId);
-    const profile = await prisma.contentDNAProfile.create({
-      data: { ...(pickFields(req.body, DNA_UPDATABLE) as any), clientId },
+    const tenant = req.tenant!;
+    await assertClientInWorkspace(tenant, clientId);
+    const existente =
+      typeof campanaId === 'string' && campanaId
+        ? await prisma.project.findFirst({ where: { id: campanaId, workspaceId: tenant.workspaceId }, select: { id: true, clientId: true, dnaProfileId: true } })
+        : null;
+    if (campanaId && !existente) return res.status(404).json({ error: 'Campaña no encontrada' });
+    if (existente && existente.clientId && existente.clientId !== clientId) return res.status(400).json({ error: 'La campaña es de otra marca' });
+    if (existente?.dnaProfileId) return res.status(409).json({ error: 'Esta campaña ya tiene su brief' });
+    const profile = await prisma.$transaction(async tx => {
+      const brief = await tx.contentDNAProfile.create({ data: { ...(pickFields(req.body, DNA_UPDATABLE) as any), clientId } });
+      if (existente)
+        await tx.project.update({ where: { id: existente.id }, data: { dnaProfileId: brief.id, name: brief.name, clientId } });
+      else await tx.project.create({ data: { name: brief.name, workspaceId: tenant.workspaceId, clientId, dnaProfileId: brief.id } });
+      return brief;
     });
     res.status(201).json(profile);
   } catch (error) {
@@ -463,6 +481,8 @@ export const updateDNAProfile = async (req: AuthRequest, res: Response) => {
       where: { id },
       data: pickFields(req.body, DNA_UPDATABLE) as any,
     });
+    // Un solo nombre: renombrar el brief renombra su campaña (la del encabezado, la sábana y el portal).
+    await prisma.project.updateMany({ where: { dnaProfileId: id, NOT: { name: profile.name } }, data: { name: profile.name } });
     res.json(profile);
   } catch (error) {
     handleTenantError(error, res, 'Error al actualizar perfil de ADN');
@@ -474,12 +494,17 @@ export const duplicateDNAProfile = async (req: AuthRequest, res: Response) => {
   try {
     const original = await assertDnaProfileInWorkspace(req.tenant!, id);
     const { id: _id, createdAt: _createdAt, feedbackExamples, client: _client, ...fields } = original;
-    const copy = await prisma.contentDNAProfile.create({
-      data: {
-        ...fields,
-        name: `Copia de ${original.name}`,
-        feedbackExamples: feedbackExamples ?? Prisma.JsonNull,
-      },
+    const copy = await prisma.$transaction(async tx => {
+      const brief = await tx.contentDNAProfile.create({
+        data: {
+          ...fields,
+          name: `Copia de ${original.name}`,
+          feedbackExamples: feedbackExamples ?? Prisma.JsonNull,
+        },
+      });
+      // La copia es otra campaña: nace con la suya, como cualquier brief.
+      await tx.project.create({ data: { name: brief.name, workspaceId: req.tenant!.workspaceId, clientId: brief.clientId, dnaProfileId: brief.id } });
+      return brief;
     });
     res.status(201).json(copy);
   } catch (error) {
