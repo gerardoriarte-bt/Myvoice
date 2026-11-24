@@ -401,6 +401,12 @@ las tablas de CDM van en `cdm.prisma`.
   por Producción, pero se montan. Su copy aprobado llega directo a «Por montar», agrupado por pieza (`conjuntoId`):
   el anuncio apunta a una pieza o a ese conjunto (`Anuncio.conjuntoId`). En el encabezado, ese copy ya no cuenta como
   «aprobado sin pieza», y una campaña solo de texto pasa Producción como «Sin piezas de diseño».
+- **El formato decide y la clase reparte (2026-11-24, Gerardo):**
+  - Con sábana, el formato de CDM decide: solo texto va directo a Implementación y con archivo espera su pieza. Sin
+    sábana decide el canal del motor.
+  - Un verificador en Control › Marcas lista los formatos cuyo tipo no coincide con su canal.
+  - Redes sociales las publica el community manager («Marcar publicado») y lo demás lo monta el trafficker. Cada uno
+    ve solo lo suyo y quien administra lo ve todo.
 - **Falta:**
   - T5, el reporte de lo planeado contra lo montado, con el historial de aprobaciones (fase B);
   - «Mi cola» de todas las marcas;

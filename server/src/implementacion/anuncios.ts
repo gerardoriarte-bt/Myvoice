@@ -8,13 +8,19 @@
  * - **Listo para montar:** copy y pieza aprobados (una pieza en «Lista» ya lo está), destino y, si viene de una
  *   sábana, su fecha de salida. La UTM no bloquea: avisa (decisión 20).
  * - Con CDM, el destino y la UTM son de la línea y los pega Planning; sin CDM, se pegan en el anuncio.
- * - Monta o devuelve quien administra o tiene la función Trafficker o Community (paso IMPLEMENTACION).
+ * - **El formato decide el camino** (2026-11-24): con sábana, un formato de solo texto va directo aquí y uno con
+ *   archivo espera su pieza; sin sábana decide el canal. Control lista los formatos desalineados con su canal.
+ * - **La clase decide quién** (decisión 29): redes sociales las publica el community manager; pagos y lo demás lo
+ *   monta el trafficker. Cada uno ve y decide lo suyo; quien administra, todo; quien no tiene ninguna de las dos
+ *   funciones lo ve todo, sin actuar.
  */
 
+type Clase = 'PAGOS' | 'REDES_SOCIALES' | 'PROPIOS' | 'TRADICIONAL';
+
 import { prisma } from '../lib/prisma.js';
-import { TenantContext, TenantError } from '../lib/tenancy.js';
-import { exigirPaso } from '../comun/permisos.js';
-import { piezasParaImplementar } from '../services/piezaService.js';
+import { canManage, TenantContext, TenantError } from '../lib/tenancy.js';
+import { copyEnPiezas, piezasParaImplementar } from '../services/piezaService.js';
+import { claseDeCanal, producePieza } from '../channels/registry.js';
 import { copyParaImplementar, copySinPiezaAprobado } from '../myvoice/copyParaProduccion.js';
 import { lineasParaImplementar } from '../cdm/planning/planningService.js';
 
@@ -54,6 +60,9 @@ interface Fuente {
   enlace: string | null;
   aprobacionesDeCopy: { por: string; en: string | null; via: string | null }[];
   aprobacionDePieza: { por: string; en: string; via: string } | null;
+  /** Solo para el copy sin pieza: si el canal dice que no produce pieza (sin sábana, es lo que decide). */
+  soloTextoPorCanal: boolean;
+  copyIds: string[];
 }
 
 const leerClave = (id: string) =>
@@ -87,6 +96,8 @@ const fuentes = async (tenant: TenantContext, filtro: { clientId?: string; id?: 
       enlace: p.enlace,
       aprobacionesDeCopy: [...aprobaciones.values()],
       aprobacionDePieza: p.aprobadaPor ? { por: p.aprobadaPor.por, en: p.aprobadaPor.createdAt.toISOString(), via: p.aprobadaPor.via } : null,
+      soloTextoPorCanal: false,
+      copyIds: [],
     };
   });
   const soloTexto: Fuente[] = sinPieza.map(g => ({
@@ -104,14 +115,33 @@ const fuentes = async (tenant: TenantContext, filtro: { clientId?: string; id?: 
     enlace: null,
     aprobacionesDeCopy: g.aprobaciones,
     aprobacionDePieza: null,
+    soloTextoPorCanal: !producePieza(g.platform),
+    copyIds: g.textos.map(t => t.copyId),
   }));
   return [...deLasPiezas, ...soloTexto];
 };
 
 /** Lo que se monta de una marca (o uno solo), con su línea y su anuncio, y lo que le falta. */
 const armar = async (tenant: TenantContext, filtro: { clientId?: string; id?: string }) => {
-  const todas = await fuentes(tenant, filtro);
-  const lineas = await lineasParaImplementar(tenant, todas.map(f => f.lineaId).filter((id): id is string => !!id));
+  const candidatas = await fuentes(tenant, filtro);
+  const lineas = await lineasParaImplementar(tenant, candidatas.map(f => f.lineaId).filter((id): id is string => !!id));
+  // El copy sin pieza entra si su formato (o, sin sábana, su canal) es de solo texto, y si nadie le armó una pieza.
+  const enPieza = await copyEnPiezas(tenant, candidatas.flatMap(f => f.copyIds));
+  const todas = candidatas.filter(f => {
+    if (f.piezaId) return true;
+    const linea = f.lineaId ? lineas.get(f.lineaId) : null;
+    return (linea ? linea.soloTexto : f.soloTextoPorCanal) && !f.copyIds.some(id => enPieza.has(id));
+  });
+  const funciones = await prisma.miembroFuncion.findMany({
+    where: { workspaceId: tenant.workspaceId, userId: tenant.userId, funcion: { in: ['TRAFFICKER', 'COMMUNITY'] } },
+    select: { funcion: true, clientId: true },
+  });
+  const administra = canManage(tenant.role);
+  const actuaEn = (clase: Clase | null, clientId: string) =>
+    administra ||
+    funciones.some(
+      f => (!f.clientId || f.clientId === clientId) && (clase === 'REDES_SOCIALES' ? f.funcion === 'COMMUNITY' : f.funcion === 'TRAFFICKER')
+    );
   const filas = await prisma.anuncio.findMany({
     where: {
       workspaceId: tenant.workspaceId,
@@ -123,9 +153,10 @@ const armar = async (tenant: TenantContext, filtro: { clientId?: string; id?: st
   });
   const anuncioDe = (f: Fuente) => filas.find(a => (f.piezaId ? a.piezaId === f.piezaId : a.conjuntoId === f.conjuntoId)) ?? null;
 
-  return todas.map(f => {
+  const armados = todas.map(f => {
     const linea = f.lineaId ? lineas.get(f.lineaId) ?? null : null;
     const anuncio = anuncioDe(f);
+    const clase = ((linea?.clase as Clase | undefined) ?? claseDeCanal(f.platform)) as Clase | null;
     const destino = linea ? linea.destino : anuncio?.destino ?? null;
     const utm = linea ? linea.utm : anuncio?.utm ?? null;
     const quienPega = linea ? 'Planning, en la sábana' : 'El responsable de la campaña';
@@ -159,8 +190,20 @@ const armar = async (tenant: TenantContext, filtro: { clientId?: string; id?: st
       aprobaciones: { copy: f.aprobacionesDeCopy, pieza: f.aprobacionDePieza },
       // El destino lo pega aquí el responsable solo sin sábana; con sábana se pega en la línea.
       destinoEnLaLinea: Boolean(linea),
+      clase,
+      /** Redes sociales se publican (community); lo demás se monta (trafficker). */
+      accion: clase === 'REDES_SOCIALES' ? ('publicar' as const) : ('montar' as const),
+      puedo: actuaEn(clase, f.clientId),
     };
   });
+  // Cada uno ve lo suyo: el community, redes sociales; el trafficker, lo demás. Sin ninguna de las dos, todo.
+  return administra || funciones.length === 0 ? armados : armados.filter(a => a.puedo);
+};
+
+/** Monta o publica quien administra, o quien tiene la función de la clase del anuncio para su marca. */
+const exigirQuienActua = (a: { puedo: boolean; accion: 'publicar' | 'montar' }) => {
+  if (!a.puedo)
+    throw new TenantError(a.accion === 'publicar' ? 'Esto lo publica el community manager' : 'Esto lo monta el trafficker', 403);
 };
 
 export const anunciosDeMarca = (tenant: TenantContext, clientId: string) => armar(tenant, { clientId });
@@ -190,7 +233,7 @@ const registrar = async (
 /** T2 · «Marcar montado y seguir»: plataforma, ID del anuncio y fecha real. Solo si está listo. */
 export const montar = async (tenant: TenantContext, id: string, body: { plataforma?: unknown; idEnPlataforma?: unknown; montadoEn?: unknown }) => {
   const a = await uno(tenant, id);
-  await exigirPaso(tenant, 'IMPLEMENTACION', a.clientId);
+  exigirQuienActua(a);
   if (!a.listo) throw new TenantError(a.faltas.filter(f => f.bloquea).map(f => `${f.texto} (${f.quien})`).join('. '), 409);
   const plataforma = typeof body.plataforma === 'string' ? body.plataforma.trim().slice(0, 80) : '';
   const idEnPlataforma = typeof body.idEnPlataforma === 'string' ? body.idEnPlataforma.trim().slice(0, 200) : '';
@@ -214,7 +257,7 @@ const MOTIVOS: Record<string, string> = {
  */
 export const devolver = async (tenant: TenantContext, id: string, body: { motivo?: unknown; texto?: unknown }) => {
   const a = await uno(tenant, id);
-  await exigirPaso(tenant, 'IMPLEMENTACION', a.clientId);
+  exigirQuienActua(a);
   const motivo = typeof body.motivo === 'string' && MOTIVOS[body.motivo] ? body.motivo : 'otra';
   const texto = typeof body.texto === 'string' ? body.texto.trim().slice(0, 1000) : '';
   if (!texto) throw new TenantError('Cuenta qué pasó: con eso lo arregla quien lo debe', 400);
@@ -240,7 +283,7 @@ export const devolver = async (tenant: TenantContext, id: string, body: { motivo
 /** Vuelve a «por montar»: la novedad se resolvió, o lo montado cambió y hay que montarlo otra vez. */
 export const reabrir = async (tenant: TenantContext, id: string) => {
   const a = await uno(tenant, id);
-  await exigirPaso(tenant, 'IMPLEMENTACION', a.clientId);
+  exigirQuienActua(a);
   if (a.estado === 'POR_MONTAR') return a;
   await registrar(tenant, a, { estado: 'POR_MONTAR', novedad: null }, { tipo: 'REABIERTO' });
   return uno(tenant, id);

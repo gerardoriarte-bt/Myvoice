@@ -150,6 +150,7 @@ export default function Control() {
       )}
 
       {pestana === 'marcas' && (
+        <>
         <Tabla columnas={['Marca', 'Workspace', 'CDM', 'Implementación']}>
           {marcas.map(m => (
             <tr key={m.id} className="border-t border-[rgba(0,0,0,0.06)]">
@@ -186,6 +187,8 @@ export default function Control() {
             </tr>
           ))}
         </Tabla>
+        <VerificadorDeFormatos />
+        </>
       )}
 
       {pestana === 'usuarios' && (
@@ -337,5 +340,46 @@ function FilaUsuario({
         )}
       </td>
     </tr>
+  );
+}
+
+/**
+ * El verificador de formatos (2026-11-24): la biblioteca de CDM y el motor tienen que decir lo mismo de cada
+ * formato. Uno de solo texto va directo a Implementación; uno con archivo espera su pieza. Si no coinciden, el copy
+ * puede perderse entre Producción e Implementación.
+ */
+function VerificadorDeFormatos() {
+  const [datos, setDatos] = React.useState<Awaited<ReturnType<typeof controlApi.formatos>> | null>(null);
+  React.useEffect(() => {
+    controlApi.formatos().then(setDatos).catch(() => setDatos(null));
+  }, []);
+  if (!datos) return null;
+  return (
+    <section className="mt-4 rounded-[12px] border border-[rgba(0,0,0,0.08)] bg-white px-4 py-3">
+      <h3 className="text-[13px] font-bold text-[#1D1D1F]">Formatos y canales</h3>
+      {datos.problemas.length === 0 ? (
+        <p className="mt-1 text-[12.5px] text-emerald-700">
+          Los {datos.revisados} formatos de la biblioteca coinciden con su canal: los de solo texto van directo a Implementación y los
+          que llevan archivo esperan su pieza.
+        </p>
+      ) : (
+        <>
+          <p className="mt-1 text-[12.5px] text-amber-800">
+            {datos.problemas.length} de {datos.revisados} formatos no coinciden con su canal. Corrígelos en la biblioteca o en el motor:
+            si no, su copy puede quedarse sin llegar a Implementación.
+          </p>
+          <ul className="mt-2 space-y-1 text-[12.5px] text-[#3A3A3C]">
+            {datos.problemas.map((p, i) => (
+              <li key={i}>
+                <span className="font-semibold">
+                  {p.medio} · {p.formato}
+                </span>{' '}
+                ({p.workspace}, canal {p.canal}, {p.tipoArchivo.toLowerCase()}): {p.problema}
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </section>
   );
 }

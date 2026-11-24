@@ -53,6 +53,7 @@ export const NOVEDADES: Novedad[] = [
     titulo: 'Los anuncios de solo texto también se montan',
     cambios: [
       'Los anuncios de búsqueda de Google Ads, WhatsApp y push no tienen pieza de diseño. Ahora, apenas se aprueba su copy, llegan a Implementación › Por montar, con sus textos y el destino de la sábana.',
+      'En Implementación, el community manager ve y publica lo de redes sociales («Marcar publicado») y el trafficker monta los pagos y lo demás. Quien administra ve todo.',
     ],
   },
   {

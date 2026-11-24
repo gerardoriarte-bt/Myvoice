@@ -1,3 +1,5 @@
+import { formatosConCanal } from '../cdm/planning/planningService.js';
+import { listChannels, producePieza } from '../channels/registry.js';
 import { Response } from 'express';
 import { ModuloPlataforma, Prisma, WorkspaceRole } from '@prisma/client';
 import { AuthRequest, handleTenantError } from '../middleware/auth.js';
@@ -219,5 +221,30 @@ export const cambiarModulo = async (req: AuthRequest, res: Response) => {
     res.json({ id: clientId, modulos: modulos.map(m => m.modulo) });
   } catch (error) {
     handleTenantError(error, res, 'Error al cambiar el módulo');
+  }
+};
+
+/**
+ * El verificador de formatos (2026-11-24): que la biblioteca de CDM y el motor no se desalineen. Un formato de
+ * solo texto (TEXTO) va directo a Implementación; uno con archivo espera su pieza en Producción. Si el canal que lo
+ * escribe dice lo contrario, el copy podría perderse entre los dos. Lista lo que no coincide, de todas las empresas.
+ */
+export const formatosDesalineados = async (_req: AuthRequest, res: Response) => {
+  try {
+    const formatos = await formatosConCanal();
+    const conocidos = new Set(listChannels().map(c => c.id as string));
+    const problemas = formatos.flatMap(f => {
+      const donde = { workspace: f.medio.workspace.name, medio: f.medio.nombre, formato: f.nombre, canal: f.canal!, tipoArchivo: f.tipoArchivo };
+      if (!conocidos.has(f.canal!)) return [{ ...donde, problema: `El canal «${f.canal}» no existe en el motor` }];
+      const soloTexto = f.tipoArchivo === 'TEXTO';
+      if (soloTexto && producePieza(f.canal!))
+        return [{ ...donde, problema: 'El formato es de solo texto, pero su canal produce pieza de diseño' }];
+      if (!soloTexto && !producePieza(f.canal!))
+        return [{ ...donde, problema: 'El formato lleva archivo, pero su canal no produce pieza de diseño' }];
+      return [];
+    });
+    res.json({ revisados: formatos.length, problemas });
+  } catch (error) {
+    handleTenantError(error, res, 'Error al verificar los formatos');
   }
 };

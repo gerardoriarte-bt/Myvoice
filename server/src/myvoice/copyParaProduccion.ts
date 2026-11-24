@@ -86,7 +86,9 @@ export const copySinPiezaAprobado = async (tenant: TenantContext, filtro: { clie
       client: { workspaceId: tenant.workspaceId },
       ...(filtro.clientId && { clientId: filtro.clientId }),
       ...(filtro.clave ? { conjuntoId: filtro.clave } : { conjuntoId: { not: null } }),
-      platform: { in: sinPieza },
+      // Candidatos: los canales sin pieza y todo lo que vino de un pedido de CDM, cuyo formato decide (Implementación
+      // descarta lo que sí espera pieza).
+      OR: [{ platform: { in: sinPieza } }, { lineaDePlanningId: { not: null } }],
       isApproved: true,
     },
     select: {

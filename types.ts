@@ -1008,4 +1008,9 @@ export interface AnuncioParaMontar {
   novedad: string | null;
   aprobaciones: { copy: { por: string; en: string | null; via: string | null }[]; pieza: { por: string; en: string; via: string } | null };
   destinoEnLaLinea: boolean;
+  /** La clase del medio (decisión 29): redes sociales las publica el community; lo demás lo monta el trafficker. */
+  clase: 'PAGOS' | 'REDES_SOCIALES' | 'PROPIOS' | 'TRADICIONAL' | null;
+  accion: 'publicar' | 'montar';
+  /** Quien mira puede marcarlo o devolverlo. */
+  puedo: boolean;
 }

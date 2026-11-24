@@ -211,6 +211,7 @@ router.put('/cdm/plannings/:id/lineas/:lineaId/destino', ...inWorkspace, plannin
  */
 const asSuperAdmin = [authenticateToken, requireSuperAdmin] as const;
 router.get('/control/workspaces', ...asSuperAdmin, controlController.listarWorkspaces);
+router.get('/control/formatos', ...asSuperAdmin, controlController.formatosDesalineados);
 router.put('/control/workspaces/:id/plataforma', ...asSuperAdmin, controlController.cambiarPlataforma);
 router.get('/control/usuarios', ...asSuperAdmin, controlController.listarUsuarios);
 router.put('/control/membresias', ...asSuperAdmin, controlController.guardarMembresia);

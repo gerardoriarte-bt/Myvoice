@@ -1129,12 +1129,6 @@ const App: React.FC = () => {
         <Implementacion
           key={activeClient.id}
           marcaId={activeClient.id}
-          puedeMontar={
-            isAdmin ||
-            (currentUser?.funciones ?? []).some(
-              f => (f.funcion === 'TRAFFICKER' || f.funcion === 'COMMUNITY') && (!f.clientId || f.clientId === activeClient.id)
-            )
-          }
           onAviso={(m, tipo) => addNotification(m, tipo)}
         />
       )}
