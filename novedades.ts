@@ -57,6 +57,15 @@ export const NOVEDADES: Novedad[] = [
     ],
   },
   {
+    id: 'juntar-en-un-anuncio',
+    fecha: '2026-11-24',
+    titulo: 'El copy anterior se junta en un anuncio',
+    cambios: [
+      'El copy aprobado de antes de las piezas (Google Ads, WhatsApp, push) no pasaba a Implementación porque no se sabía qué textos iban juntos.',
+      'Ahora la fila lo avisa: selecciona los textos de cada anuncio en Copy y toca «Juntar en un anuncio». Desde ahí pasan solos.',
+    ],
+  },
+  {
     id: 'aprobacion-final',
     fecha: '2026-11-24',
     titulo: 'El cliente aprueba una sola vez, antes de implementar',
