@@ -75,6 +75,10 @@ Las reglas:
   con `prisma` las tablas de CDM, My Voice y Producción. Ahora cada módulo dice cómo va su paso (`pasoCdm`,
   `copyDeCampana`, `piezasDeCampana`) y la plataforma los junta. El tipo `Paso` está en `contrato/proceso.ts`.
 - **Con esto no quedan lecturas directas entre módulos.** El contador del contrato queda en 68.
+- **2026-11-23/24, F5 Implementación** (módulo propio, `implementacion/`): lee lo aprobado de My Voice, Producción
+  y CDM (copy, pieza, línea) por contrato, y nadie la lee a ella salvo la plataforma. La aprobación final (decisión
+  32) le suma la pregunta a `comun/aprobadores.ts` y el portal arma una cuarta ronda (`IMPLEMENTACION`). El contador
+  queda en 76, con 0 por invertir.
 
 **Lo que hay que invertir antes de partir carpetas (3).** La parte común no puede depender de My Voice:
 
