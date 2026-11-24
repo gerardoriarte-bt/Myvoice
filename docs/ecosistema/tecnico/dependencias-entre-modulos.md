@@ -1,6 +1,6 @@
 # Dependencias entre módulos (generado)
 
-Generado el 2026-11-24 desde el commit `55e99c4` con `bash scripts/mapa/actualizar.sh`. **No se edita a mano**: se corrige `scripts/mapa/modulos.json` y se vuelve a generar.
+Generado el 2026-11-24 desde el commit `cff7e35` con `bash scripts/mapa/actualizar.sh`. **No se edita a mano**: se corrige `scripts/mapa/modulos.json` y se vuelve a generar.
 
 Cada fila es un archivo que usa algo de otro archivo de **otro módulo** (importa, llama o referencia un tipo). Módulos según la decisión 12; reglas en [spec-plataforma.md](./spec-plataforma.md) § 2.
 
@@ -8,7 +8,7 @@ Cada fila es un archivo que usa algo de otro archivo de **otro módulo** (import
 
 | Desde \ Hacia | Plataforma | Parte común | My Voice | Producción | CDM | Implementación | Compartido |
 |---|---|---|---|---|---|---|---|
-| **Plataforma** | · | 31 | 29 | 8 | 11 | 6 | 35 |
+| **Plataforma** | · | 31 | 30 | 8 | 11 | 7 | 35 |
 | **Parte común** | · | · | · | · | · | · | 48 |
 | **My Voice** | · | 42 | · | · | · | · | 132 |
 | **Producción** | · | 14 | 3 | · | · | · | 23 |
@@ -16,7 +16,7 @@ Cada fila es un archivo que usa algo de otro archivo de **otro módulo** (import
 | **Implementación** | · | 4 | 2 | 1 | 1 | · | 7 |
 | **Compartido** | · | · | · | · | · | · | · |
 
-- **Hay que invertir**: 0 · **pasan por el contrato**: 76 · **permitidas**: 350
+- **Hay que invertir**: 0 · **pasan por el contrato**: 76 · **permitidas**: 352
 
 ## Hay que invertir (0)
 
@@ -107,7 +107,7 @@ Un módulo lee la parte común. Está bien, pero solo por `contrato/`: esta list
 | Producción | `server/src/services/piezaService.ts` | My Voice | `server/src/channels/registry.ts` | esFormatoValido(), esSlotDeInstruccion(), formatoPorDefecto(), getChannelSpec() |
 | Producción | `server/src/services/piezaService.ts` | My Voice | `server/src/myvoice/copyParaProduccion.ts` | copyOriginal(), copyParaCrear(), copyParaProduccion.ts, copyParaProponer() |
 
-## Permitidas (350)
+## Permitidas (352)
 
 El arranque importa de todos, y todos usan la infraestructura compartida.
 
@@ -120,7 +120,7 @@ El arranque importa de todos, y todos usan la infraestructura compartida.
 | Plataforma | CDM | 11 |
 | Plataforma | Compartido | 35 |
 | Plataforma | Parte común | 31 |
-| Plataforma | Implementación | 6 |
-| Plataforma | My Voice | 29 |
+| Plataforma | Implementación | 7 |
+| Plataforma | My Voice | 30 |
 | Plataforma | Producción | 8 |
 | Producción | Compartido | 23 |

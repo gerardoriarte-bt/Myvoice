@@ -81,6 +81,7 @@ Cada función con su estado en las tres pistas. Se actualiza en el mismo PR que 
 | Trafficker, community | Por montar: copiar, marcar montado y devolver con novedad (T1 a T4) | ○ | ✓ | ✓ | F5 (1), 2026-11-23, sin el `.pen` |
 | Planning | Destino y UTM por línea, sin versión nueva (P6) | ○ | ✓ | ✓ | F5 (1) · decisión 20 |
 | Responsable, cliente | Aprobación final antes de montar: enlace del cliente con arte, copy, destino y fechas, o «Autorizar implementación» | ○ | ✓ | ✓ | F5 (2), 2026-11-24 · decisión 32, sin el `.pen` |
+| Copy, responsable | Copy dice qué sigue: Aprobado → En producción o Directo a Implementación, barra «Siguiente paso» | ○ | ✓ | ✓ | F5, 2026-11-24 (#120), sin el `.pen` |
 | Responsable | Reporte de implementación e historial de aprobaciones (T5) | ○ | ○ | ○ | fase B |
 | Trafficker | Mi cola de todas las marcas | ○ | ○ | ○ | |
 
