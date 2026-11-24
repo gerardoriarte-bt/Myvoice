@@ -1,6 +1,6 @@
 # Dependencias entre módulos (generado)
 
-Generado el 2026-11-24 desde el commit `baac6b2` con `bash scripts/mapa/actualizar.sh`. **No se edita a mano**: se corrige `scripts/mapa/modulos.json` y se vuelve a generar.
+Generado el 2026-11-24 desde el commit `6112ecf` con `bash scripts/mapa/actualizar.sh`. **No se edita a mano**: se corrige `scripts/mapa/modulos.json` y se vuelve a generar.
 
 Cada fila es un archivo que usa algo de otro archivo de **otro módulo** (importa, llama o referencia un tipo). Módulos según la decisión 12; reglas en [spec-plataforma.md](./spec-plataforma.md) § 2.
 
@@ -8,15 +8,15 @@ Cada fila es un archivo que usa algo de otro archivo de **otro módulo** (import
 
 | Desde \ Hacia | Plataforma | Parte común | My Voice | Producción | CDM | Implementación | Compartido |
 |---|---|---|---|---|---|---|---|
-| **Plataforma** | · | 34 | 32 | 10 | 13 | 10 | 39 |
-| **Parte común** | · | · | · | · | · | · | 48 |
+| **Plataforma** | · | 36 | 32 | 10 | 13 | 10 | 39 |
+| **Parte común** | · | · | · | · | · | · | 50 |
 | **My Voice** | · | 42 | · | · | · | · | 132 |
 | **Producción** | · | 14 | 3 | · | · | · | 23 |
 | **CDM** | · | 9 | · | · | · | · | 20 |
 | **Implementación** | · | 4 | 2 | 1 | 1 | · | 9 |
 | **Compartido** | · | · | · | · | · | · | · |
 
-- **Hay que invertir**: 0 · **pasan por el contrato**: 76 · **permitidas**: 370
+- **Hay que invertir**: 0 · **pasan por el contrato**: 76 · **permitidas**: 374
 
 ## Hay que invertir (0)
 
@@ -40,7 +40,7 @@ Un módulo lee la parte común. Está bien, pero solo por `contrato/`: esta list
 | CDM | `server/src/cdm/planning/planningService.ts` | Parte común | `server/src/services/notificationService.ts` | notificationService.ts, notifyAviso() |
 | CDM | `src/cdm/Plannings.tsx` | Parte común | `src/comun/QuienesAprueban.tsx` | QuienesAprueban(), QuienesAprueban.tsx |
 | Implementación | `server/src/implementacion/anuncios.ts` | CDM | `server/src/cdm/planning/planningService.ts` | lineasParaImplementar(), planningService.ts |
-| Implementación | `server/src/implementacion/anuncios.ts` | Parte común | `server/src/comun/aprobadores.ts` | SELECT_APROBADORES, aprobadores.ts, apruebaLaCampana() |
+| Implementación | `server/src/implementacion/anuncios.ts` | Parte común | `server/src/comun/aprobadores.ts` | SELECT_APROBADORES, aprobadores.ts, apruebaLaCampana(), quienesAprueban() |
 | Implementación | `server/src/implementacion/anuncios.ts` | Parte común | `server/src/lib/tenancy.ts` | TenantContext, TenantError, canManage(), tenancy.ts |
 | Implementación | `server/src/implementacion/anunciosController.ts` | Parte común | `server/src/lib/tenancy.ts` | assertClientInWorkspace(), tenancy.ts |
 | Implementación | `server/src/implementacion/anunciosController.ts` | Parte común | `server/src/middleware/auth.ts` | AuthRequest, auth.ts, handleTenantError() |
@@ -107,19 +107,19 @@ Un módulo lee la parte común. Está bien, pero solo por `contrato/`: esta list
 | Producción | `server/src/services/piezaService.ts` | My Voice | `server/src/channels/registry.ts` | esFormatoValido(), esSlotDeInstruccion(), formatoPorDefecto(), getChannelSpec() |
 | Producción | `server/src/services/piezaService.ts` | My Voice | `server/src/myvoice/copyParaProduccion.ts` | copyOriginal(), copyParaCrear(), copyParaProduccion.ts, copyParaProponer() |
 
-## Permitidas (370)
+## Permitidas (374)
 
 El arranque importa de todos, y todos usan la infraestructura compartida.
 
 | Desde | Hacia | Pares |
 |---|---|---|
 | CDM | Compartido | 20 |
-| Parte común | Compartido | 48 |
+| Parte común | Compartido | 50 |
 | Implementación | Compartido | 9 |
 | My Voice | Compartido | 132 |
 | Plataforma | CDM | 13 |
 | Plataforma | Compartido | 39 |
-| Plataforma | Parte común | 34 |
+| Plataforma | Parte común | 36 |
 | Plataforma | Implementación | 10 |
 | Plataforma | My Voice | 32 |
 | Plataforma | Producción | 10 |

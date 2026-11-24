@@ -380,6 +380,24 @@ dónde se está (marca, campaña, paso) se contradecía entre pantallas. Gerardo
     - Solo el super admin (decisión 27). Se calcula al leer; la única tabla nueva es `EventoDeCopy`, que guarda cada
       decisión interna sobre el copy.
 
+## 2026-11-24 · Una campaña es su brief, y el ADN es uno solo
+
+34. **Crear una campaña está a la vista, y una campaña es su brief** (Gerardo, 2026-11-24).
+    - **Dónde se crea:** «+ Nueva campaña» en el selector de campaña del encabezado, desde cualquier pantalla, y la
+      pantalla **Marca › Campañas**, la primera del menú de ①. El ADN se carga una vez y las campañas se crean
+      seguido: no pueden quedar a tres clics, dentro del detalle de la marca.
+    - **Una sola cosa:** crear el brief crea la campaña en la misma transacción, con el mismo nombre; renombrar el brief
+      renombra la campaña; duplicarlo duplica la campaña. Las campañas sin brief (creadas desde Copy o antes de hoy)
+      salen en Marca › Campañas con «Completar el brief», que las enlaza sin crear otra. Antes la campaña nacía la
+      primera vez que alguien generaba copy, así que Marca, el selector y «Nuevo planning» mostraban cosas distintas.
+    - **Lo que ya existía** (migración `20261125000002_campana_es_su_brief`): cada brief sin campaña recibe la suya, y
+      donde los nombres no coincidían el brief toma el de la campaña, que es el que ya conocen la sábana, las
+      aprobaciones y el cliente.
+    - **Un solo ADN:** vive en Marca › ADN, con el manual en PDF y el Voice Fingerprint. El detalle de la marca queda
+      para la familia y las campañas, y su tarjeta de ADN lleva a esa pantalla. En el brief, el léxico y los ejemplos
+      dicen «solo para esta campaña» y muestran en gris los del ADN, que aplican siempre. En el marco clásico (sin
+      procesos), que no tiene la pantalla ADN, todo sigue como antes.
+
 ## Antes (2026-10-27), siguen vigentes con los nombres nuevos
 
 - La marca, su ADN y sus audiencias son la fuente de verdad (ahora en la parte común, decisión 7).

@@ -18,6 +18,7 @@
 import {
   BarChart3,
   FileBarChart,
+  Flag,
   BookOpen,
   Building2,
   ClipboardCheck,
@@ -57,7 +58,8 @@ export type ScreenId =
   | 'plannings'
   | 'pedidos'
   | 'implementacion'
-  | 'reporteImplementacion';
+  | 'reporteImplementacion'
+  | 'campanas';
 
 /**
  * Cinco etapas, no cuatro: cuando entra la pieza, «producir» dejaba de
@@ -222,6 +224,19 @@ export const SCREENS: Record<ScreenId, ScreenDef> = {
     icon: Rocket,
     stage: 'producir',
     adminOnly: false,
+    soloPorProcesos: true,
+  },
+  /**
+   * Marca › Campañas (2026-11-24): el ADN se carga una vez y las campañas se crean seguido, así que tienen su pantalla y
+   * no quedan dentro del detalle de la marca. Una campaña es su brief: crearla aquí la pone en el encabezado y en CDM.
+   */
+  campanas: {
+    id: 'campanas',
+    name: 'Campañas',
+    description: 'Las campañas de la marca, cada una con su brief. Crear una la deja lista en el encabezado, en CDM y en Copy.',
+    icon: Flag,
+    stage: 'preparar',
+    adminOnly: true,
     soloPorProcesos: true,
   },
   /** T5: lo planeado contra lo montado de una campaña y su historial de aprobaciones, como archivo para el cliente. */

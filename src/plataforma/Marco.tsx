@@ -33,6 +33,8 @@ interface Props {
   onIr: (pantalla: ScreenId) => void;
   campanaId: string | null;
   onElegirCampana: (id: string | null) => void;
+  /** «+ Nueva campaña» en el selector: abre Marca › Campañas con el brief vacío. Solo quien puede crearla. */
+  onNuevaCampana?: () => void;
   /** Avisa algo en la notificación de la app: cambiar de marca por una campaña ajena, por ejemplo. */
   onAviso: (mensaje: string) => void;
   bandeja: React.ReactNode;
@@ -53,24 +55,6 @@ export default function Marco(props: Props) {
   const visible = (id: ScreenId) => puedeVer(SCREENS[id], { administra, superAdmin: Boolean(usuario.superAdmin), porProcesos: true });
   const primeraDe = (paso: PasoDef) => paso.grupos.flatMap(g => g.pantallas).find(visible) ?? null;
 
-  // Las campañas del workspace, una vez: así una campaña de otra marca (un enlace, un aviso) se reconoce.
-  React.useEffect(() => {
-    libraryApi.listProjects().then(setCampanas).catch(() => setCampanas([]));
-  }, [usuario.workspaceId]);
-
-  // Abrir la campaña de otra marca cambia la marca y lo dice; una campaña que ya no existe se suelta.
-  React.useEffect(() => {
-    if (!campanaId || !campanas) return;
-    const campana = campanas.find(c => c.id === campanaId);
-    if (!campana?.clientId) {
-      props.onElegirCampana(null);
-    } else if (campana.clientId !== marcaId) {
-      props.onElegirMarca(campana.clientId);
-      const marca = marcas.find(m => m.id === campana.clientId);
-      props.onAviso(`Cambiaste a ${marca?.name ?? 'otra marca'}: la campaña «${campana.name}» es suya`);
-    }
-  }, [campanaId, campanas]);
-
   // Se relee al moverse y después de cada acción que cambia algo (`vt:cambio`, de services/api.ts): aprobar un copy o
   // autorizar un anuncio cambia el avance y a quién le toca, sin recargar la página.
   const [cambios, setCambios] = React.useState(0);
@@ -86,6 +70,34 @@ export default function Marco(props: Props) {
       window.removeEventListener('vt:cambio', alCambiar);
     };
   }, []);
+  // Las campañas del workspace: así una campaña de otra marca (un enlace, un aviso) se reconoce. Se releen después de
+  // cada cambio (2026-11-24): antes se leían una vez, y una campaña recién creada no salía en el selector.
+  React.useEffect(() => {
+    libraryApi.listProjects().then(setCampanas).catch(() => setCampanas([]));
+  }, [usuario.workspaceId, cambios]);
+
+  // Abrir la campaña de otra marca cambia la marca y lo dice; una campaña que ya no existe se suelta.
+  React.useEffect(() => {
+    if (!campanaId || !campanas) return;
+    const campana = campanas.find(c => c.id === campanaId);
+    if (!campana) {
+      // Puede ser recién creada (Marca › Campañas la elige al guardar): se relee la lista antes de soltarla.
+      libraryApi
+        .listProjects()
+        .then((lista: Project[]) => {
+          if (lista.some(c => c.id === campanaId && c.clientId)) setCampanas(lista);
+          else props.onElegirCampana(null);
+        })
+        .catch(() => props.onElegirCampana(null));
+    } else if (!campana.clientId) {
+      props.onElegirCampana(null);
+    } else if (campana.clientId !== marcaId) {
+      props.onElegirMarca(campana.clientId);
+      const marca = marcas.find(m => m.id === campana.clientId);
+      props.onAviso(`Cambiaste a ${marca?.name ?? 'otra marca'}: la campaña «${campana.name}» es suya`);
+    }
+  }, [campanaId, campanas]);
+
   React.useEffect(() => {
     if (!marcaId) return setPasos([]);
     let vigente = true;
@@ -155,9 +167,11 @@ export default function Marco(props: Props) {
               aria-label="Campaña"
               className="mt-0.5 -ml-1 bg-transparent text-[13px] font-medium text-[#1D1D1F] outline-none cursor-pointer truncate rounded focus-visible:ring-1 focus-visible:ring-[#1D1D1F]"
               value={campanaId ?? ''}
-              onChange={e => props.onElegirCampana(e.target.value || null)}
+              onChange={e => (e.target.value === '__nueva__' ? props.onNuevaCampana?.() : props.onElegirCampana(e.target.value || null))}
             >
               <option value="">Todas las campañas</option>
+              {/* A un clic desde cualquier pantalla (2026-11-24): el ADN se carga una vez; las campañas, seguido. */}
+              {props.onNuevaCampana && <option value="__nueva__">+ Nueva campaña</option>}
               {deLaMarca.map(c => {
                 const paso = enProceso.find(e => e.id === c.id);
                 const def = paso?.enCurso ? PASOS.find(p => p.id === paso.enCurso!.paso) : null;

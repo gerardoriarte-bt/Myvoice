@@ -18,6 +18,7 @@ import CrearPiezasModal from './components/produccion/CrearPiezasModal';
 import PedidosDeCopy from './src/myvoice/PedidosDeCopy';
 import Implementacion from './src/implementacion/Implementacion';
 import ReporteDeImplementacion from './src/implementacion/ReporteDeImplementacion';
+import ManualYHuella from './components/adn/ManualYHuella';
 import PorAprobar from './src/plataforma/PorAprobar';
 import Bandeja, { DestinoAviso } from './components/Bandeja';
 import { NAV_STAGES, SCREENS, ScreenId, puedeVer } from './screens';
@@ -186,6 +187,8 @@ const App: React.FC = () => {
   const plataforma = Boolean(currentUser?.plataformaPorProcesos);
   const quien = { administra: isAdmin, superAdmin, porProcesos: plataforma };
   const [campanaId, setCampanaId] = React.useState<string | null>(() => leerRuta(window.location.pathname).campanaId);
+  /** Sube con cada «+ Nueva campaña» del encabezado: Marca › Campañas abre el brief vacío (2026-11-24). */
+  const [nuevaCampana, setNuevaCampana] = React.useState(0);
   React.useEffect(() => {
     if (!plataforma) {
       // Recién apagado (la sesión guardada todavía decía encendido): la ruta vuelve a «/».
@@ -644,9 +647,14 @@ const App: React.FC = () => {
       // activa global, y un brief creado dentro de otra marca caía en la equivocada.
       const savedProfile = await clientApi.saveDNA({ ...profile, clientId: profile.clientId || activeClientId });
       setDnaProfiles(prev => [savedProfile, ...prev]);
-      addNotification('ADN Estratégico guardado en DB', 'success');
+      // Una campaña es su brief (2026-11-24): ya existe, así que queda elegida en el encabezado para seguir con ella.
+      if (plataforma) {
+        const campana = await libraryApi.campanaDeBrief(savedProfile.id).catch(() => null);
+        if (campana?.id) setCampanaId(campana.id);
+      }
+      addNotification(`Campaña «${savedProfile.name}» lista: ya está en el selector de campaña`, 'success');
     } catch (err) {
-      addNotification('Error al guardar ADN', 'error');
+      addNotification(err instanceof Error ? err.message : 'No se pudo guardar la campaña', 'error');
     }
   };
 
@@ -654,9 +662,9 @@ const App: React.FC = () => {
     try {
       const updatedProfile = await clientApi.updateDNA(id, updates);
       setDnaProfiles(prev => prev.map(p => p.id === id ? updatedProfile : p));
-      addNotification('ADN Estratégico actualizado', 'success');
+      addNotification('Campaña actualizada', 'success');
     } catch (err) {
-      addNotification('Error al actualizar ADN', 'error');
+      addNotification(err instanceof Error ? err.message : 'No se pudo actualizar la campaña', 'error');
     }
   };
 
@@ -922,8 +930,14 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {activeTab === 'clients' && isAdmin && (
-        <ClientManager 
+      {/* Marcas y Marca › Campañas (2026-11-24) montan lo mismo: la segunda, solo las campañas de la marca activa. */}
+      {(activeTab === 'clients' || (activeTab === 'campanas' && plataforma && activeClient)) && isAdmin && (
+        <ClientManager
+          key={activeTab === 'campanas' ? `campanas-${activeClient?.id}` : 'marcas'}
+          adnEnPantallaPropia={plataforma}
+          onIrAlAdn={() => setActiveTab('adn')}
+          soloCampanasDe={activeTab === 'campanas' ? activeClient?.id ?? null : null}
+          abrirNuevaCampana={activeTab === 'campanas' ? nuevaCampana : 0}
           clients={clients} 
           dnaProfiles={dnaProfiles}
           voices={customVoices}
@@ -1186,6 +1200,11 @@ const App: React.FC = () => {
             onCambio={() => void recargarMarcas()}
             soloLectura={!actuaEn(currentUser, isAdmin, PASOS[0], activeClient.id)}
           />
+          {/* Un solo ADN (2026-11-24): el manual y el fingerprint son fuentes del ADN y viven con él. */}
+          <section className="space-y-2">
+            <h3 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#86868B]">De dónde sale</h3>
+            <ManualYHuella enFila client={activeClient} onActualizado={() => void recargarMarcas()} />
+          </section>
         </div>
       )}
       {activeTab === 'panorama' && isAdmin && plataforma && (
@@ -1316,6 +1335,14 @@ const App: React.FC = () => {
           onIr={setActiveTab}
           campanaId={campanaId}
           onElegirCampana={setCampanaId}
+          onNuevaCampana={
+            isAdmin && activeClient
+              ? () => {
+                  setActiveTab('campanas');
+                  setNuevaCampana(n => n + 1);
+                }
+              : undefined
+          }
           onAviso={m => addNotification(m, 'info')}
           bandeja={encabezado}
           novedadPendiente={Boolean(pendiente)}
