@@ -172,9 +172,12 @@ const armar = async (tenant: TenantContext, filtro: { clientId?: string; id?: st
     const utm = linea ? linea.utm : anuncio?.utm ?? null;
     const quienPega = linea ? 'Planning, en la sábana' : 'El responsable de la campaña';
     const faltas: Falta[] = [];
-    if (!destino) faltas.push({ que: 'destino', texto: 'Falta el destino', bloquea: true, quien: quienPega });
+    // Una publicación orgánica en redes sociales no lleva destino ni UTM (Gerardo, 2026-11-24): si tiene, se muestra,
+    // pero no se exige. Un anuncio pagado —Meta Ads, Google Ads— sí, porque la plataforma lo pide para montarlo.
+    const organico = clase === 'REDES_SOCIALES';
+    if (!destino && !organico) faltas.push({ que: 'destino', texto: 'Falta el destino', bloquea: true, quien: quienPega });
     if (linea && !linea.desde) faltas.push({ que: 'fecha', texto: 'Falta la fecha de salida', bloquea: true, quien: 'Planning, en la sábana' });
-    if (!utm) faltas.push({ que: 'utm', texto: 'Falta la UTM', bloquea: false, quien: quienPega });
+    if (!utm && !organico) faltas.push({ que: 'utm', texto: 'Falta la UTM', bloquea: false, quien: quienPega });
     return {
       id: f.id,
       piezaId: f.piezaId,

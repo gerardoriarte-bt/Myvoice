@@ -309,6 +309,8 @@ function Detalle({
               <span className="min-w-0 flex-1 truncate font-mono text-[12px] text-[#1D1D1F]">{a.url}</span>
               <Copiar texto={a.url} />
             </div>
+          ) : a.clase === 'REDES_SOCIALES' ? (
+            <p className="mt-1.5 text-[12px] text-[#6E6E73]">No aplica: es una publicación en redes sociales.</p>
           ) : null}
           {a.faltas.length > 0 && (
             <ul className="mt-1.5 space-y-1">
@@ -322,7 +324,7 @@ function Detalle({
           )}
           {!a.destinoEnLaLinea && modo !== 'destino' && (
             <button type="button" onClick={() => setModo('destino')} className="mt-1.5 text-[12px] font-semibold text-[#0E7490] hover:underline">
-              {a.destino ? 'Cambiar el destino o la UTM' : 'Pegar el destino y la UTM'}
+              {a.destino ? 'Cambiar el destino o la UTM' : a.clase === 'REDES_SOCIALES' ? 'Agregar un destino (opcional)' : 'Pegar el destino y la UTM'}
             </button>
           )}
           {modo === 'destino' && (
