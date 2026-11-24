@@ -917,6 +917,8 @@ export interface PlanningDetalle {
     /** F5 (P6): adónde lleva el anuncio y su UTM; los pega Planning. */
     destino: string | null;
     utm: string | null;
+    /** Marcado a propósito: no lleva URL (2026-11-24). */
+    sinDestino: boolean;
   }[];
   resumen: { medios: number; formatos: number; lineas: number; piezas: number };
   eventos: { tipo: string; version: number; autor: string | null; comentario: string | null; fecha: string }[];
@@ -1022,6 +1024,8 @@ export interface AnuncioParaMontar {
   novedad: string | null;
   aprobaciones: { copy: { por: string; en: string | null; via: string | null }[]; pieza: { por: string; en: string; via: string } | null };
   destinoEnLaLinea: boolean;
+  /** Marcado a propósito: no lleva URL (2026-11-24). Sin destino ni esta marca, no se puede aprobar. */
+  sinDestino: boolean;
   /** La clase del medio (decisión 29): redes sociales las publica el community; lo demás lo monta el trafficker. */
   clase: 'PAGOS' | 'REDES_SOCIALES' | 'PROPIOS' | 'TRADICIONAL' | null;
   accion: 'publicar' | 'montar';

@@ -355,8 +355,11 @@ dónde se está (marca, campaña, paso) se contradecía entre pantallas. Gerardo
       canal sin arte no sabe con qué textos va, así que no pasa solo. En Copy, quien aprueba la campaña selecciona los
       textos de un anuncio y toca «Juntar en un anuncio»; desde ahí pasa a Implementación como el copy nuevo. La fila
       y una barra ámbar lo avisan.
-    - **Destino solo donde aplica** (Gerardo, 2026-11-24): una publicación orgánica en redes sociales no lleva
-      destino ni UTM; si tiene, se muestra, pero no se exige. Un anuncio pagado —Meta Ads, Google Ads— sí.
+    - **Lo que no lleva URL se marca** (Gerardo, 2026-11-24, reemplaza «las redes orgánicas no lo exigen» del mismo
+      día): todo anuncio tiene un destino o la marca «No lleva destino», en la línea de la sábana (Planning) o en el
+      anuncio (el responsable). Sin ninguna de las dos, no se puede aprobar. Así lo que no lleva URL —una publicación
+      orgánica, un push— es una decisión registrada y no un hueco; el responsable sigue marcando si se montó. La UTM
+      solo avisa cuando hay destino.
     - **Estados del anuncio:** por aprobar → (con el cliente) → por montar → montado, o con novedad. Reabrir o
       devolver no salta la aprobación.
     - **Pendiente:** si el copy o el arte cambian después de aprobados para implementar, todavía no vuelven solos a

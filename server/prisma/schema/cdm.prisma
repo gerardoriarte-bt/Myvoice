@@ -225,6 +225,8 @@ model LineaDePlanning {
   /// El destino es obligatorio para montar; la UTM solo avisa (decisión 20).
   destino          String?
   utm              String?
+  /// Marcado a propósito: este anuncio no lleva URL (2026-11-24). Sin destino ni esta marca, no se puede aprobar.
+  sinDestino       Boolean       @default(false)
   orden            Int           @default(0)
 
   planning Planning       @relation(fields: [planningId], references: [id], onDelete: Cascade)

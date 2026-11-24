@@ -317,8 +317,8 @@ and no routes, as before. Never build a second version of a screen for the new f
 **Implementación (F5, `server/src/implementacion/` + `src/implementacion/`, its own module and schema file)**: an
 `Anuncio` is a piece in «Lista» or — for channels with no design piece (Google search ads, WhatsApp, push) — the
 approved copy of a `conjuntoId` (key `pieza:<id>` / `copy:<conjunto>`, CHECK exactly one); `implementacion/anuncios.ts` alone decides what is ready (approved piece +
-destination + launch date if it comes from a sábana; a missing UTM only warns; an organic `REDES_SOCIALES` post
-needs neither destination nor UTM, a paid one such as Meta Ads does) and reads piece, copy and line by
+destination + launch date if it comes from a sábana; a missing UTM only warns when there is a destination; an ad
+with no URL — an organic post, a push — needs the explicit `sinDestino` mark, on the sábana line or on the `Anuncio`) and reads piece, copy and line by
 contract. **The format decides the path**: with a sábana line, a `TEXTO` format goes straight to Implementación and
 a file format waits for its piece; without a line, the channel spec decides (`producePieza`). Control › Marcas shows
 formats whose type disagrees with their channel (`GET /control/formatos`). **The class decides who** (decision 29):

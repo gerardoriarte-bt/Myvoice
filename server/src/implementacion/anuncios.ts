@@ -170,14 +170,15 @@ const armar = async (tenant: TenantContext, filtro: { clientId?: string; id?: st
     const clase = ((linea?.clase as Clase | undefined) ?? claseDeCanal(f.platform)) as Clase | null;
     const destino = linea ? linea.destino : anuncio?.destino ?? null;
     const utm = linea ? linea.utm : anuncio?.utm ?? null;
+    const sinDestino = !destino && (linea ? Boolean(linea.sinDestino) : Boolean(anuncio?.sinDestino));
     const quienPega = linea ? 'Planning, en la sábana' : 'El responsable de la campaña';
     const faltas: Falta[] = [];
-    // Una publicación orgánica en redes sociales no lleva destino ni UTM (Gerardo, 2026-11-24): si tiene, se muestra,
-    // pero no se exige. Un anuncio pagado —Meta Ads, Google Ads— sí, porque la plataforma lo pide para montarlo.
-    const organico = clase === 'REDES_SOCIALES';
-    if (!destino && !organico) faltas.push({ que: 'destino', texto: 'Falta el destino', bloquea: true, quien: quienPega });
+    // Todo anuncio tiene un destino o la marca «No lleva destino» (Gerardo, 2026-11-24): lo que no lleva URL —una
+    // publicación orgánica, un push— se decide a propósito, y no pasa en silencio. La UTM solo avisa si hay URL.
+    if (!destino && !sinDestino)
+      faltas.push({ que: 'destino', texto: 'Falta el destino o marcar que no lleva', bloquea: true, quien: quienPega });
     if (linea && !linea.desde) faltas.push({ que: 'fecha', texto: 'Falta la fecha de salida', bloquea: true, quien: 'Planning, en la sábana' });
-    if (!utm && !organico) faltas.push({ que: 'utm', texto: 'Falta la UTM', bloquea: false, quien: quienPega });
+    if (destino && !utm) faltas.push({ que: 'utm', texto: 'Falta la UTM', bloquea: false, quien: quienPega });
     return {
       id: f.id,
       piezaId: f.piezaId,
@@ -213,6 +214,7 @@ const armar = async (tenant: TenantContext, filtro: { clientId?: string; id?: st
       aprobaciones: { copy: f.aprobacionesDeCopy, pieza: f.aprobacionDePieza },
       // El destino lo pega aquí el responsable solo sin sábana; con sábana se pega en la línea.
       destinoEnLaLinea: Boolean(linea),
+      sinDestino,
       clase,
       /** Redes sociales se publican (community); lo demás se monta (trafficker). */
       accion: clase === 'REDES_SOCIALES' ? ('publicar' as const) : ('montar' as const),
@@ -329,7 +331,7 @@ export const reabrir = async (tenant: TenantContext, id: string) => {
  * Sin sábana (el puente de la fase A): el destino y la UTM se pegan en el anuncio. Lo hace quien administra o el
  * responsable de la campaña. Con sábana se pegan en la línea, en CDM.
  */
-export const guardarDestino = async (tenant: TenantContext, id: string, body: { destino?: unknown; utm?: unknown }) => {
+export const guardarDestino = async (tenant: TenantContext, id: string, body: { destino?: unknown; utm?: unknown; sinDestino?: unknown }) => {
   const a = await uno(tenant, id);
   if (a.destinoEnLaLinea) throw new TenantError('Esta pieza viene de una sábana: el destino lo pega Planning en la línea', 409);
   const campana = a.campana ? await prisma.project.findUnique({ where: { id: a.campana.id }, select: { responsableId: true } }) : null;
@@ -339,7 +341,16 @@ export const guardarDestino = async (tenant: TenantContext, id: string, body: { 
   const destino = texto(body.destino, 2000);
   if (destino && !/^https?:\/\/\S+$/i.test(destino)) throw new TenantError('El destino tiene que ser una URL que empiece por http:// o https://', 400);
   const utm = texto(body.utm, 500);
-  await registrar(tenant, a, { ...(destino !== undefined && { destino }), ...(utm !== undefined && { utm }) }, { tipo: 'DESTINO', detalle: destino ?? undefined });
+  if (body.sinDestino === true) {
+    await registrar(tenant, a, { destino: null, utm: null, sinDestino: true }, { tipo: 'DESTINO', detalle: 'No lleva destino' });
+    return uno(tenant, id);
+  }
+  await registrar(
+    tenant,
+    a,
+    { ...(destino !== undefined && { destino }), ...(destino && { sinDestino: false }), ...(utm !== undefined && { utm }) },
+    { tipo: 'DESTINO', detalle: destino ?? undefined }
+  );
   return uno(tenant, id);
 };
 

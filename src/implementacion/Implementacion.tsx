@@ -309,8 +309,8 @@ function Detalle({
               <span className="min-w-0 flex-1 truncate font-mono text-[12px] text-[#1D1D1F]">{a.url}</span>
               <Copiar texto={a.url} />
             </div>
-          ) : a.clase === 'REDES_SOCIALES' ? (
-            <p className="mt-1.5 text-[12px] text-[#6E6E73]">No aplica: es una publicación en redes sociales.</p>
+          ) : a.sinDestino ? (
+            <p className="mt-1.5 text-[12px] text-[#6E6E73]">No lleva destino (marcado a propósito).</p>
           ) : null}
           {a.faltas.length > 0 && (
             <ul className="mt-1.5 space-y-1">
@@ -324,7 +324,7 @@ function Detalle({
           )}
           {!a.destinoEnLaLinea && modo !== 'destino' && (
             <button type="button" onClick={() => setModo('destino')} className="mt-1.5 text-[12px] font-semibold text-[#0E7490] hover:underline">
-              {a.destino ? 'Cambiar el destino o la UTM' : a.clase === 'REDES_SOCIALES' ? 'Agregar un destino (opcional)' : 'Pegar el destino y la UTM'}
+              {a.destino || a.sinDestino ? 'Cambiar el destino' : 'Pegar el destino o marcar que no lleva'}
             </button>
           )}
           {modo === 'destino' && (
@@ -340,6 +340,16 @@ function Detalle({
                 >
                   Guardar
                 </button>
+                {!a.sinDestino && (
+                  <button
+                    type="button"
+                    disabled={ocupado}
+                    onClick={() => void hacer(() => implementacionApi.destino(a.id, { sinDestino: true }), 'Marcado: no lleva destino')}
+                    className="rounded-lg px-3 py-1.5 text-[12px] font-semibold text-[#1D1D1F] ring-1 ring-[rgba(0,0,0,0.12)] hover:bg-[#F5F5F7] disabled:opacity-40"
+                  >
+                    No lleva destino
+                  </button>
+                )}
                 <button type="button" onClick={() => setModo('ver')} className="text-[12px] text-[#6E6E73]">
                   Cancelar
                 </button>

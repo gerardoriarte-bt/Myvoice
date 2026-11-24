@@ -48,6 +48,15 @@ export interface Novedad {
 
 export const NOVEDADES: Novedad[] = [
   {
+    id: 'no-lleva-destino',
+    fecha: '2026-11-24',
+    titulo: '«No lleva destino»: lo que no tiene URL se marca',
+    cambios: [
+      'Cada anuncio necesita su URL de destino o la marca «No lleva destino» (una publicación orgánica, un push sin enlace). Sin ninguna de las dos, no se puede aprobar para implementar.',
+      'Se marca en la sábana, junto al destino de cada línea, o en Implementación, en el anuncio.',
+    ],
+  },
+  {
     id: 'copy-siguiente-paso',
     fecha: '2026-11-24',
     titulo: 'Copy dice qué sigue después de aprobar',
