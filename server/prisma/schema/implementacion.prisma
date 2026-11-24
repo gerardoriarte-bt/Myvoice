@@ -17,6 +17,8 @@ model Anuncio {
   /// Sin CDM, el destino y la UTM se pegan aquí (el puente de la fase A). Con CDM, manda la línea de la sábana.
   destino         String?
   utm             String?
+  /// Marcado a propósito: este anuncio no lleva URL (2026-11-24), como en la línea de la sábana.
+  sinDestino      Boolean             @default(false)
   estado          EstadoAnuncio       @default(POR_APROBAR)
   plataforma      String?
   idEnPlataforma  String?

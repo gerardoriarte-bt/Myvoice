@@ -167,6 +167,7 @@ export const detallePlanning = async (tenant: TenantContext, id: string) => {
       // F5 (P6): adónde lleva el anuncio; lo pega Planning, en cualquier estado.
       destino: l.destino,
       utm: l.utm,
+      sinDestino: l.sinDestino,
     })),
     resumen: resumen(p.lineas),
     eventos: p.eventos.map(e => ({ tipo: e.tipo, version: e.version, autor: autores.get(e.autorId) ?? null, comentario: e.comentario, fecha: e.createdAt.toISOString() })),
@@ -681,6 +682,7 @@ export const lineasParaImplementar = async (tenant: TenantContext, ids: string[]
       planningId: true,
       destino: true,
       utm: true,
+      sinDestino: true,
       etapa: true,
       desde: true,
       hasta: true,
@@ -696,6 +698,7 @@ export const lineasParaImplementar = async (tenant: TenantContext, ids: string[]
         planningId: l.planningId,
         destino: l.destino,
         utm: l.utm,
+        sinDestino: l.sinDestino,
         etapa: l.etapa,
         desde: (l.desde ?? l.planning.desde)?.toISOString() ?? null,
         hasta: (l.hasta ?? l.planning.hasta)?.toISOString() ?? null,
@@ -714,7 +717,12 @@ export const lineasParaImplementar = async (tenant: TenantContext, ids: string[]
  * P6: Planning pega el destino y la UTM de una línea, en cualquier estado de la sábana y **sin versión nueva**
  * (decisión 20): suelen llegar al final. Lo hace quien administra o Planning.
  */
-export const guardarDestinoDeLinea = async (tenant: TenantContext, id: string, lineaId: string, body: { destino?: unknown; utm?: unknown }) => {
+export const guardarDestinoDeLinea = async (
+  tenant: TenantContext,
+  id: string,
+  lineaId: string,
+  body: { destino?: unknown; utm?: unknown; sinDestino?: unknown }
+) => {
   const p = await assertPlanningInWorkspace(tenant, id);
   await exigirPlanning(tenant);
   const linea = await prisma.lineaDePlanning.findFirst({ where: { id: lineaId, planningId: p.id }, select: { id: true } });
@@ -722,9 +730,18 @@ export const guardarDestinoDeLinea = async (tenant: TenantContext, id: string, l
   const texto = (x: unknown, max: number) => (typeof x === 'string' ? x.trim().slice(0, max) || null : undefined);
   const destino = texto(body.destino, 2000);
   if (destino && !/^https?:\/\/\S+$/i.test(destino)) throw new TenantError('El destino tiene que ser una URL que empiece por http:// o https://', 400);
+  // «No lleva destino» (2026-11-24) borra la URL y la UTM; pegar una URL quita la marca.
   await prisma.lineaDePlanning.update({
     where: { id: linea.id },
-    data: { ...(destino !== undefined && { destino }), ...(body.utm !== undefined && { utm: texto(body.utm, 500) ?? null }) },
+    data:
+      body.sinDestino === true
+        ? { destino: null, utm: null, sinDestino: true }
+        : {
+            ...(destino !== undefined && { destino }),
+            ...(destino && { sinDestino: false }),
+            ...(body.sinDestino === false && { sinDestino: false }),
+            ...(body.utm !== undefined && { utm: texto(body.utm, 500) ?? null }),
+          },
   });
   return detallePlanning(tenant, id);
 };

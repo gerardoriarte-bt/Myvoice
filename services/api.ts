@@ -149,7 +149,7 @@ export const cdmApi = {
   /** F3b: el enlace para que el cliente apruebe la sábana. Si ya hay uno abierto, devuelve ese. */
   enlaceCliente: (id: string): Promise<{ url: string; venceEn: string }> => apiRequest(`/cdm/plannings/${id}/enlace`, { method: 'POST' }),
   /** P6 (F5): el destino y la UTM de una línea, sin versión nueva de la sábana. */
-  destinoDeLinea: (id: string, lineaId: string, datos: { destino?: string; utm?: string }): Promise<PlanningDetalle> =>
+  destinoDeLinea: (id: string, lineaId: string, datos: { destino?: string; utm?: string; sinDestino?: boolean }): Promise<PlanningDetalle> =>
     apiRequest(`/cdm/plannings/${id}/lineas/${lineaId}/destino`, { method: 'PUT', body: JSON.stringify(datos) }),
   reabrirPlanning: (id: string): Promise<PlanningDetalle> => apiRequest(`/cdm/plannings/${id}/reabrir`, { method: 'POST' }),
   medios: (): Promise<MedioResumen[]> => apiRequest('/cdm/biblioteca'),
@@ -513,6 +513,6 @@ export const implementacionApi = {
   /** La aprobación final en una campaña con cliente: el enlace con todo lo listo. Si hay uno abierto, devuelve ese. */
   enlace: (campanaId: string): Promise<{ url: string; venceEn: string; cuantos: number }> =>
     apiRequest('/implementacion/enlace', { method: 'POST', body: JSON.stringify({ campanaId }) }),
-  destino: (piezaId: string, datos: { destino?: string; utm?: string }): Promise<AnuncioParaMontar> =>
+  destino: (piezaId: string, datos: { destino?: string; utm?: string; sinDestino?: boolean }): Promise<AnuncioParaMontar> =>
     apiRequest(`/implementacion/anuncios/${piezaId}/destino`, { method: 'PUT', body: JSON.stringify(datos) }),
 };

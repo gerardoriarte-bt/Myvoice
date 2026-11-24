@@ -378,7 +378,12 @@ function Planning({ id, onVolver, onAviso }: { id: string; onVolver: () => void;
           onDevolver={comentario => hacer(() => cdmApi.devolverPlanning(p.id, comentario), 'Sábana devuelta con tu comentario')}
           onReabrir={() => hacer(() => cdmApi.reabrirPlanning(p.id))}
           onUbicaciones={(lineaId, ids) => hacer(() => cdmApi.elegirUbicaciones(p.id, lineaId, ids))}
-          onDestino={(lineaId, destino, utm) => hacer(() => cdmApi.destinoDeLinea(p.id, lineaId, { destino, utm }), 'Destino guardado')}
+          onDestino={(lineaId, destino, utm, sinDestino) =>
+            hacer(
+              () => cdmApi.destinoDeLinea(p.id, lineaId, sinDestino ? { sinDestino: true } : { destino, utm }),
+              sinDestino ? 'Marcada: no lleva destino' : 'Destino guardado'
+            )
+          }
           onEnlace={async () => {
             setError(null);
             try {
@@ -623,7 +628,7 @@ function Sabana({
   onReabrir: () => void;
   onUbicaciones: (lineaId: string, ubicacionIds: string[]) => void;
   onEnlace: () => void;
-  onDestino: (lineaId: string, destino: string, utm: string) => Promise<void>;
+  onDestino: (lineaId: string, destino: string, utm: string, sinDestino?: boolean) => Promise<void>;
 }) {
   const [comentario, setComentario] = React.useState('');
   const [abierta, setAbierta] = React.useState<string | null>(null);
@@ -680,15 +685,15 @@ function Sabana({
                   <td className="px-3 py-2 text-[11.5px] text-[#6E6E73]">{textos(l)}</td>
                   <td className="px-3 py-2 text-[11.5px]">
                     {l.porConfirmar ? <span className="text-amber-700">Ubicación por confirmar</span> : <span className="text-[#047857]">Listo</span>}
-                    {/* Redes sociales orgánicas no llevan destino: solo se ofrece pegarlo, sin pedirlo (2026-11-24). */}
-                    {(p.puedo.destino || l.destino) && (
+                    {/* Cada línea tiene un destino o la marca «No lleva destino»: lo que no lleva URL se decide (2026-11-24). */}
+                    {(p.puedo.destino || l.destino || l.sinDestino) && (
                       <button
                         type="button"
                         onClick={() => setDestinoDe(destinoDe === l.id ? null : l.id)}
-                        className={`mt-0.5 block font-semibold hover:underline ${l.destino ? 'text-[#0E7490]' : l.medio.clase === 'REDES_SOCIALES' ? 'text-[#86868B]' : 'text-amber-700'}`}
+                        className={`mt-0.5 block font-semibold hover:underline ${l.destino ? 'text-[#0E7490]' : l.sinDestino ? 'text-[#6E6E73]' : 'text-amber-700'}`}
                       >
-                        {l.destino ? 'Destino ✓' : l.medio.clase === 'REDES_SOCIALES' ? 'Sin destino (no aplica)' : 'Falta el destino'}
-                        {l.destino && !l.utm && l.medio.clase !== 'REDES_SOCIALES' ? ' · sin UTM' : ''}
+                        {l.destino ? 'Destino ✓' : l.sinDestino ? 'No lleva destino ✓' : 'Falta el destino'}
+                        {l.destino && !l.utm ? ' · sin UTM' : ''}
                       </button>
                     )}
                   </td>
@@ -696,7 +701,12 @@ function Sabana({
                 {destinoDe === l.id && (
                   <tr className="bg-cyan-50/40">
                     <td colSpan={8} className="px-3 py-3">
-                      <DestinoDeLinea linea={l} puede={p.puedo.destino} onGuardar={(destino, utm) => onDestino(l.id, destino, utm)} />
+                      <DestinoDeLinea
+                      linea={l}
+                      puede={p.puedo.destino}
+                      onGuardar={(destino, utm) => onDestino(l.id, destino, utm)}
+                      onSinDestino={() => onDestino(l.id, '', '', true)}
+                    />
                     </td>
                   </tr>
                 )}
@@ -828,10 +838,12 @@ function DestinoDeLinea({
   linea,
   puede,
   onGuardar,
+  onSinDestino,
 }: {
-  linea: { destino: string | null; utm: string | null; medio: { clase: string } };
+  linea: { destino: string | null; utm: string | null; sinDestino: boolean };
   puede: boolean;
   onGuardar: (destino: string, utm: string) => Promise<void>;
+  onSinDestino: () => Promise<void>;
 }) {
   const [destino, setDestino] = React.useState(linea.destino ?? '');
   const [utm, setUtm] = React.useState(linea.utm ?? '');
@@ -839,21 +851,26 @@ function DestinoDeLinea({
   if (!puede)
     return (
       <p className="text-[12px] text-[#3A3A3C]">
-        Destino: <span className="font-mono">{linea.destino}</span>
+        {linea.sinDestino ? 'No lleva destino.' : null}
+        {linea.destino && (
+          <>
+            Destino: <span className="font-mono">{linea.destino}</span>
+          </>
+        )}
         {linea.utm ? (
           <>
             {' '}
             · UTM: <span className="font-mono">{linea.utm}</span>
           </>
-        ) : (
+        ) : linea.destino ? (
           ' · sin UTM'
-        )}
+        ) : null}
       </p>
     );
   return (
     <div className="grid gap-2 md:grid-cols-[1fr_1fr_auto]">
       <label className="block text-[11.5px] text-[#6E6E73]">
-        {linea.medio.clase === 'REDES_SOCIALES' ? 'Destino (opcional en redes sociales)' : 'Destino (obligatorio para montar)'}
+        Destino (o márcalo: no lleva)
         <input value={destino} onChange={e => setDestino(e.target.value)} placeholder="https://…" className={campo} />
       </label>
       <label className="block text-[11.5px] text-[#6E6E73]">
@@ -866,6 +883,15 @@ function DestinoDeLinea({
         className="self-end rounded-lg bg-[#1D1D1F] px-3 py-1.5 text-[12.5px] font-semibold text-white"
       >
         Guardar
+      </button>
+      {/* Una publicación orgánica, un push sin enlace: se marca a propósito, para que no quede como «falta». */}
+      <button
+        type="button"
+        disabled={linea.sinDestino}
+        onClick={() => void onSinDestino()}
+        className="justify-self-start text-[12px] font-semibold text-[#6E6E73] hover:text-[#1D1D1F] hover:underline disabled:no-underline disabled:opacity-60 md:col-span-3"
+      >
+        {linea.sinDestino ? 'Marcada: no lleva destino' : 'No lleva destino'}
       </button>
     </div>
   );
