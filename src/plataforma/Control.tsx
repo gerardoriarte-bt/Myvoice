@@ -150,35 +150,41 @@ export default function Control() {
       )}
 
       {pestana === 'marcas' && (
-        <Tabla columnas={['Marca', 'Workspace', 'CDM']}>
-          {marcas.map(m => {
-            const cdm = m.modulos.includes('CDM');
-            return (
-              <tr key={m.id} className="border-t border-[rgba(0,0,0,0.06)]">
-                <td className="px-4 py-3 text-[13.5px] font-bold text-[#1D1D1F]">
-                  {m.name}
-                  {m.submarca && <span className="ml-2 text-[11px] font-normal text-[#86868B]">submarca</span>}
-                </td>
-                <td className="px-4 py-3 text-[13px] text-[#3A3A3C]">{m.workspaceName}</td>
-                <td className="px-4 py-3">
-                  {/* CDM por marca (ModuloDeMarca): sin él, el paso ② no aparece y el copy se genera como hoy. */}
-                  <label className="inline-flex items-center gap-2 cursor-pointer">
-                    <button
-                      type="button"
-                      role="switch"
-                      aria-checked={cdm}
-                      aria-label={`CDM en ${m.name}`}
-                      onClick={() => void hacer(() => controlApi.cambiarModulo(m.id, 'CDM', !cdm))}
-                      className={`relative w-[34px] h-5 rounded-full transition-colors ${cdm ? 'bg-emerald-500' : 'bg-[#D1D1D6]'}`}
-                    >
-                      <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${cdm ? 'translate-x-[14px]' : ''}`} />
-                    </button>
-                    <span className={`text-[12.5px] font-semibold ${cdm ? 'text-emerald-700' : 'text-[#86868B]'}`}>{cdm ? 'Prendido' : 'Apagado'}</span>
-                  </label>
-                </td>
-              </tr>
-            );
-          })}
+        <Tabla columnas={['Marca', 'Workspace', 'CDM', 'Implementación']}>
+          {marcas.map(m => (
+            <tr key={m.id} className="border-t border-[rgba(0,0,0,0.06)]">
+              <td className="px-4 py-3 text-[13.5px] font-bold text-[#1D1D1F]">
+                {m.name}
+                {m.submarca && <span className="ml-2 text-[11px] font-normal text-[#86868B]">submarca</span>}
+              </td>
+              <td className="px-4 py-3 text-[13px] text-[#3A3A3C]">{m.workspaceName}</td>
+              {/*
+                Los módulos por marca (ModuloDeMarca). Sin CDM, el paso ② no aparece y el copy se genera como hoy; sin
+                Implementación, el paso ⑤ no aparece (F5).
+              */}
+              {(['CDM', 'IMPLEMENTACION'] as const).map(modulo => {
+                const prendido = m.modulos.includes(modulo);
+                const nombre = modulo === 'CDM' ? 'CDM' : 'Implementación';
+                return (
+                  <td key={modulo} className="px-4 py-3">
+                    <label className="inline-flex items-center gap-2 cursor-pointer">
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={prendido}
+                        aria-label={`${nombre} en ${m.name}`}
+                        onClick={() => void hacer(() => controlApi.cambiarModulo(m.id, modulo, !prendido))}
+                        className={`relative w-[34px] h-5 rounded-full transition-colors ${prendido ? 'bg-emerald-500' : 'bg-[#D1D1D6]'}`}
+                      >
+                        <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${prendido ? 'translate-x-[14px]' : ''}`} />
+                      </button>
+                      <span className={`text-[12.5px] font-semibold ${prendido ? 'text-emerald-700' : 'text-[#86868B]'}`}>{prendido ? 'Prendido' : 'Apagado'}</span>
+                    </label>
+                  </td>
+                );
+              })}
+            </tr>
+          ))}
         </Tabla>
       )}
 
