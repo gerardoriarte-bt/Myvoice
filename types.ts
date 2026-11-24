@@ -408,18 +408,26 @@ export interface Project {
  * El paso del recorrido de un copy. Lo calcula el servidor al leer
  * (server/src/services/aprobacion.ts) y el orden de acá es el del proceso.
  */
-export type EtapaCopy = 'SIN_CAMPANA' | 'POR_APROBAR' | 'DEVUELTO' | 'CON_EL_CLIENTE' | 'APROBADO' | 'EN_PRODUCCION';
+export type EtapaCopy = 'SIN_CAMPANA' | 'POR_APROBAR' | 'DEVUELTO' | 'CON_EL_CLIENTE' | 'APROBADO' | 'EN_PRODUCCION' | 'EN_IMPLEMENTACION';
 
 export const ETAPAS_COPY: { id: EtapaCopy; label: string; que: string }[] = [
   { id: 'SIN_CAMPANA', label: 'Sin campaña', que: 'Guardado antes de que el copy perteneciera a una campaña. Asígnale una para que pueda avanzar.' },
   { id: 'POR_APROBAR', label: 'Por aprobar', que: 'Espera la aprobación del responsable o el envío al cliente.' },
   { id: 'DEVUELTO', label: 'Devuelto', que: 'El cliente lo rechazó. Edítalo y vuelve a mandarlo.' },
   { id: 'CON_EL_CLIENTE', label: 'Con el cliente', que: 'En una revisión abierta, esperando respuesta.' },
-  { id: 'APROBADO', label: 'Aprobado', que: 'Listo para mandar a producción.' },
+  { id: 'APROBADO', label: 'Aprobado', que: 'Lleva arte: selecciónalo y mándalo a producción.' },
   { id: 'EN_PRODUCCION', label: 'En producción', que: 'Ya forma parte de una pieza.' },
+  // Un desvío, no un paso más (2026-11-24): lo que no lleva arte (búsqueda de Google Ads, WhatsApp, push) salta Producción.
+  {
+    id: 'EN_IMPLEMENTACION',
+    label: 'Directo a Implementación',
+    que: 'No lleva arte: pasó solo a Implementación, donde espera la aprobación final y se monta.',
+  },
 ];
 
 export interface SavedVariation extends CopyVariation {
+  /** Si su canal produce pieza de diseño (lo calcula el servidor al leer). */
+  llevaArte?: boolean;
   projectId?: string | null;
   project?: Project | null;
   clientId?: string;

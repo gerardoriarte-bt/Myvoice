@@ -22,10 +22,14 @@ import * as anunciosController from '../implementacion/anunciosController.js';
 import { pedidos as pedidosDeCopy } from '../plataforma/pedidosDeCopy.js';
 import { registrarLineasDePedido } from '../myvoice/pedidosDeCopy.js';
 import { lineaParaPedido } from '../cdm/planning/planningService.js';
+import { registrarDirectosAImplementacion } from '../services/aprobacion.js';
+import { directosAImplementacion } from '../implementacion/anuncios.js';
 
 // My Voice valida el pedido al guardar copy preguntándole a CDM por la línea, sin importarlo: la plataforma los
 // conecta aquí, al arrancar (deuda de lectura directa pagada el 2026-11-23).
 registrarLineasDePedido(lineaParaPedido);
+// Copy dice qué va directo a Implementación (sin arte) con la regla de Implementación, sin importarla (2026-11-24).
+registrarDirectosAImplementacion(directosAImplementacion);
 
 const router = Router();
 const pdfUpload = multer({

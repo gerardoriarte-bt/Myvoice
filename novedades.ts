@@ -48,6 +48,15 @@ export interface Novedad {
 
 export const NOVEDADES: Novedad[] = [
   {
+    id: 'copy-siguiente-paso',
+    fecha: '2026-11-24',
+    titulo: 'Copy dice qué sigue después de aprobar',
+    cambios: [
+      'Lo aprobado que lleva arte muestra «Siguiente paso: mandar a producción», con el botón a la mano.',
+      'Lo que no lleva arte (búsqueda de Google Ads, WhatsApp, push) aparece como «Directo a Implementación»: no pasa por Producción y se aprueba y monta allá.',
+    ],
+  },
+  {
     id: 'aprobacion-final',
     fecha: '2026-11-24',
     titulo: 'El cliente aprueba una sola vez, antes de implementar',

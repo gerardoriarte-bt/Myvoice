@@ -62,6 +62,7 @@ const ESTILO_ETAPA: Record<EtapaCopy, string> = {
   CON_EL_CLIENTE: 'bg-blue-50 text-blue-700 border-blue-200',
   APROBADO: 'bg-emerald-50 text-emerald-700 border-emerald-200',
   EN_PRODUCCION: 'bg-violet-50 text-violet-700 border-violet-200',
+  EN_IMPLEMENTACION: 'bg-cyan-50 text-cyan-800 border-cyan-200',
 };
 
 const etiquetaEtapa = (e: EtapaCopy) => ETAPAS_COPY.find(x => x.id === e)?.label ?? e;
@@ -187,6 +188,8 @@ const SavedManager: React.FC<SavedManagerProps> = ({
         else motivos.add('Hay copy sin campaña: quien administra se la asigna.');
       } else if (etapa === 'EN_PRODUCCION') {
         motivos.add('Hay copy que ya está en producción.');
+      } else if (etapa === 'EN_IMPLEMENTACION') {
+        motivos.add('Hay copy que no lleva arte: ya pasó a Implementación.');
       } else if (etapa === 'CON_EL_CLIENTE') {
         motivos.add('Hay copy esperando la respuesta del cliente.');
       } else if (etapa === 'APROBADO') {
@@ -236,7 +239,7 @@ const SavedManager: React.FC<SavedManagerProps> = ({
       const que = sueltos ? `copy${n === 1 ? '' : 's'}` : `pieza${n === 1 ? '' : 's'}`;
       await terminar({
         texto: aprobar
-          ? `${n} ${que} aprobad${sueltos ? 'o' : 'a'}${n === 1 ? '' : 's'}. Ya se pueden mandar a producción.`
+          ? `${n} ${que} aprobad${sueltos ? 'o' : 'a'}${n === 1 ? '' : 's'}. Siguiente paso: lo que lleva arte se manda a producción; lo de solo texto pasa solo a Implementación.`
           : `${n} ${que} volvi${n === 1 ? 'ó' : 'eron'} a «Por aprobar».`,
       });
       if (aprobar) setEtapaFiltro('APROBADO');
@@ -607,7 +610,7 @@ const SavedManager: React.FC<SavedManagerProps> = ({
           «Devuelto» solo aparecen si hay algo: son desvíos, no pasos por los que todo pasa.
         */}
         <div className="flex flex-wrap items-stretch gap-2 px-5 py-4">
-          {ETAPAS_COPY.filter(e => (e.id !== 'SIN_CAMPANA' && e.id !== 'DEVUELTO') || (conteo.get(e.id) ?? 0) > 0).map(
+          {ETAPAS_COPY.filter(e => !['SIN_CAMPANA', 'DEVUELTO', 'EN_IMPLEMENTACION'].includes(e.id) || (conteo.get(e.id) ?? 0) > 0).map(
             (e, i, arr) => (
               <React.Fragment key={e.id}>
                 <button
@@ -620,7 +623,13 @@ const SavedManager: React.FC<SavedManagerProps> = ({
                   <span className="block text-[24px] font-bold leading-none tabular-nums">{conteo.get(e.id) ?? 0}</span>
                   <span className="mt-1.5 block text-[12.5px] font-semibold">{e.label}</span>
                 </button>
-                {i < arr.length - 1 && <ArrowRight className="h-4 w-4 shrink-0 self-center text-gray-300" />}
+                {i < arr.length - 1 &&
+                  (arr[i + 1].id === 'EN_IMPLEMENTACION' ? (
+                    // Un camino u otro: con arte va a producción; sin arte, directo a Implementación.
+                    <span className="shrink-0 self-center text-[11px] font-semibold text-gray-400">o</span>
+                  ) : (
+                    <ArrowRight className="h-4 w-4 shrink-0 self-center text-gray-300" />
+                  ))}
               </React.Fragment>
             )
           )}
@@ -639,6 +648,15 @@ const SavedManager: React.FC<SavedManagerProps> = ({
             </>
           )}
         </p>
+
+        <SiguientePaso
+          porProducir={deLaCampana.filter(v => etapaDe(v) === 'APROBADO' && v.llevaArte !== false)}
+          directos={conteo.get('EN_IMPLEMENTACION') ?? 0}
+          isAdmin={isAdmin}
+          onProducir={ids => setMandandoAProduccion(ids)}
+          onVerAprobados={() => setEtapaFiltro('APROBADO')}
+          onIrAImplementacion={() => onIrA('implementacion')}
+        />
 
         {campanaElegida ? (
           <CampanaYCliente
@@ -1170,6 +1188,74 @@ function CampanaYCliente({
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+/**
+ * Qué sigue después de aprobar (2026-11-24, Gerardo: «hace falta un indicador claro»). Lo aprobado que lleva arte
+ * espera que alguien lo mande a producción; lo de solo texto ya pasó solo a Implementación. Se cuenta por pieza.
+ */
+function SiguientePaso({
+  porProducir,
+  directos,
+  isAdmin,
+  onProducir,
+  onVerAprobados,
+  onIrAImplementacion,
+}: {
+  porProducir: SavedVariation[];
+  directos: number;
+  isAdmin: boolean;
+  onProducir: (ids: string[]) => void;
+  onVerAprobados: () => void;
+  onIrAImplementacion: () => void;
+}) {
+  const piezas = new Set(porProducir.map(v => v.conjuntoId ?? v.id)).size;
+  // Lo generado por piezas se cuenta en piezas; el copy suelto (de antes de 2026-11-05), en textos.
+  const unidad = porProducir.every(v => v.conjuntoId) ? (piezas === 1 ? 'pieza aprobada' : 'piezas aprobadas') : piezas === 1 ? 'texto aprobado' : 'textos aprobados';
+  if (!piezas && !directos) return null;
+  return (
+    <div className="mx-5 mb-4 space-y-2">
+      {piezas > 0 && (
+        <div className="flex flex-wrap items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+          <LayoutGrid className="h-5 w-5 shrink-0 text-emerald-700" />
+          <div className="min-w-0 flex-1">
+            <p className="text-[13px] font-semibold text-emerald-900">
+              Siguiente paso: mandar a producción {piezas} {unidad}
+            </p>
+            <p className="text-[12px] text-emerald-800">
+              Llevan arte. {isAdmin ? 'Revisa cómo se agrupan y mándalos: Producción crea las piezas y las asigna.' : 'Los manda quien administra.'}
+            </p>
+          </div>
+          <button type="button" onClick={onVerAprobados} className="rounded-lg px-3 py-1.5 text-[12.5px] font-semibold text-emerald-800 hover:bg-emerald-100">
+            Ver cuáles
+          </button>
+          {isAdmin && (
+            <button
+              type="button"
+              onClick={() => onProducir(porProducir.map(v => v.id))}
+              className="flex items-center gap-1.5 rounded-lg bg-emerald-700 px-3 py-1.5 text-[12.5px] font-semibold text-white hover:bg-emerald-800"
+            >
+              <LayoutGrid className="h-3.5 w-3.5" /> Mandar a producción ({piezas})
+            </button>
+          )}
+        </div>
+      )}
+      {directos > 0 && (
+        <div className="flex flex-wrap items-center gap-3 rounded-xl border border-cyan-200 bg-cyan-50 px-4 py-3">
+          <ArrowRight className="h-5 w-5 shrink-0 text-cyan-800" />
+          <p className="min-w-0 flex-1 text-[13px] text-cyan-900">
+            <span className="font-semibold">
+              {directos} {directos === 1 ? 'anuncio no lleva arte y ya está' : 'anuncios no llevan arte y ya están'} en Implementación
+            </span>{' '}
+            — no pasan por Producción. Allí esperan la aprobación final y se montan.
+          </p>
+          <button type="button" onClick={onIrAImplementacion} className="rounded-lg bg-white px-3 py-1.5 text-[12.5px] font-semibold text-cyan-900 ring-1 ring-cyan-200 hover:bg-cyan-100">
+            Ver en Implementación
+          </button>
+        </div>
+      )}
     </div>
   );
 }

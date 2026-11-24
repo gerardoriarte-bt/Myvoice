@@ -26,7 +26,21 @@ import {
  * piezas, y un estado guardado tendría que mantenerse en sincronía desde cada
  * uno de esos lugares — el día que uno se olvide, la pantalla mentiría.
  */
-export type Etapa = 'SIN_CAMPANA' | 'POR_APROBAR' | 'CON_EL_CLIENTE' | 'DEVUELTO' | 'APROBADO' | 'EN_PRODUCCION';
+export type Etapa = 'SIN_CAMPANA' | 'POR_APROBAR' | 'CON_EL_CLIENTE' | 'DEVUELTO' | 'APROBADO' | 'EN_PRODUCCION' | 'EN_IMPLEMENTACION';
+
+/**
+ * Qué conjuntos aprobados no llevan arte y van directo a Implementación. La regla es de Implementación (el formato
+ * de la sábana o, sin sábana, el canal) y My Voice no la importa: la plataforma registra la función al arrancar
+ * (`routes/index.ts`), como con las líneas de los pedidos. Sin registrar, nada va directo.
+ */
+type BuscarDirectos = (
+  tenant: TenantContext,
+  grupos: { conjuntoId: string; platform: string; lineaId: string | null; clientId: string }[]
+) => Promise<Set<string>>;
+let buscarDirectos: BuscarDirectos = async () => new Set();
+export const registrarDirectosAImplementacion = (fn: BuscarDirectos) => {
+  buscarDirectos = fn;
+};
 
 /** Los campos de una aprobación, vacíos. Desaprobar es escribir esto entero. */
 export const SIN_APROBACION = {
@@ -46,7 +60,16 @@ export const aprobadoPorCliente = (nombre: string | null | undefined) => ({
 });
 
 export const etapasDe = async (
-  variaciones: { id: string; projectId: string | null; isApproved: boolean }[]
+  variaciones: {
+    id: string;
+    projectId: string | null;
+    isApproved: boolean;
+    conjuntoId?: string | null;
+    platform?: string;
+    lineaDePlanningId?: string | null;
+    clientId?: string;
+  }[],
+  tenant?: TenantContext
 ): Promise<Map<string, Etapa>> => {
   const ids = variaciones.map(v => v.id);
   if (!ids.length) return new Map();
@@ -71,6 +94,12 @@ export const etapasDe = async (
   ]);
 
   const producidos = new Set(enPieza.map(s => s.savedVariationId));
+  // Lo aprobado que no lleva arte (2026-11-24): un grupo por conjunto, con su canal y su línea.
+  const aprobadosSinPieza = new Map<string, { conjuntoId: string; platform: string; lineaId: string | null; clientId: string }>();
+  for (const v of variaciones)
+    if (v.isApproved && v.conjuntoId && v.platform && v.clientId && !producidos.has(v.id) && !aprobadosSinPieza.has(v.conjuntoId))
+      aprobadosSinPieza.set(v.conjuntoId, { conjuntoId: v.conjuntoId, platform: v.platform, lineaId: v.lineaDePlanningId ?? null, clientId: v.clientId });
+  const directos = tenant ? await buscarDirectos(tenant, [...aprobadosSinPieza.values()]) : new Set<string>();
   const conElCliente = new Set(enRevision.map(i => i.savedVariationId));
   // La respuesta que cuenta es la última: la lista viene ordenada de la más
   // nueva a la más vieja, así que la primera que aparece por copy es esa.
@@ -84,7 +113,7 @@ export const etapasDe = async (
       let etapa: Etapa;
       if (producidos.has(v.id)) etapa = 'EN_PRODUCCION';
       else if (!v.projectId) etapa = 'SIN_CAMPANA';
-      else if (v.isApproved) etapa = 'APROBADO';
+      else if (v.isApproved) etapa = v.conjuntoId && directos.has(v.conjuntoId) ? 'EN_IMPLEMENTACION' : 'APROBADO';
       else if (conElCliente.has(v.id)) etapa = 'CON_EL_CLIENTE';
       else if (ultima.get(v.id) === 'REJECTED') etapa = 'DEVUELTO';
       else etapa = 'POR_APROBAR';
