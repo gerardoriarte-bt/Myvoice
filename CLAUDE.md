@@ -311,7 +311,10 @@ Generar and Historial read it instead of keeping their own selector; only «Lo m
 `src/plataforma/Marco.tsx` — a two-row header with the campaign and the steps (② CDM only for brands with
 `ModuloDeMarca` CDM, switched on per brand in Control) (state from
 `GET /clients/:id/proceso`, `server/src/plataforma/proceso.ts`, which composes each module's own step) and a menu per step — and the screen and campaign
-live in the path (`src/plataforma/rutas.ts`: `/campana/:id/myvoice/copy`). Off, the sidebar of `NAV_STAGES`
+live in the path (`src/plataforma/rutas.ts`: `/campana/:id/myvoice/copy`). With a campaign chosen, the frame shows an
+**«Ahora»** strip (2026-11-24): the step in progress, what is missing and every person who can unblock it (`Paso.quienes`:
+the campaign's approvers, or whoever mounts — the workspace admins when nobody has the function), with a button to go
+there; it re-reads after any non-GET call (`vt:cambio`, dispatched by `services/api.ts`). Off, the sidebar of `NAV_STAGES`
 and no routes, as before. Never build a second version of a screen for the new frame.
 
 **Implementación (F5, `server/src/implementacion/` + `src/implementacion/`, its own module and schema file)**: an

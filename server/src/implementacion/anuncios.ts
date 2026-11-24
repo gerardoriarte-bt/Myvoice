@@ -22,7 +22,7 @@ import { prisma } from '../lib/prisma.js';
 import { canManage, TenantContext, TenantError } from '../lib/tenancy.js';
 import { copyEnPiezas, piezasParaImplementar } from '../services/piezaService.js';
 import { claseDeCanal, producePieza, zonaDe } from '../channels/registry.js';
-import { SELECT_APROBADORES, apruebaLaCampana } from '../comun/aprobadores.js';
+import { SELECT_APROBADORES, apruebaLaCampana, quienesAprueban } from '../comun/aprobadores.js';
 import { copyParaImplementar, copySinPiezaAprobado } from '../myvoice/copyParaProduccion.js';
 import { lineasParaImplementar } from '../cdm/planning/planningService.js';
 
@@ -139,6 +139,18 @@ const armar = async (tenant: TenantContext, filtro: { clientId?: string; id?: st
     select: { funcion: true, clientId: true },
   });
   const administra = canManage(tenant.role);
+  // Quiénes montan o publican, de todo el workspace: cada anuncio dice con nombre a quién le toca (2026-11-24).
+  const montadores = await prisma.miembroFuncion.findMany({
+    where: { workspaceId: tenant.workspaceId, funcion: { in: ['TRAFFICKER', 'COMMUNITY'] } },
+    select: { funcion: true, clientId: true, user: { select: { id: true, name: true } } },
+  });
+  const montanDe = (clase: Clase | null, clientId: string) => [
+    ...new Map(
+      montadores
+        .filter(m => (!m.clientId || m.clientId === clientId) && m.funcion === (clase === 'REDES_SOCIALES' ? 'COMMUNITY' : 'TRAFFICKER'))
+        .map(m => [m.user.id, { id: m.user.id, nombre: m.user.name }])
+    ).values(),
+  ];
   // La aprobación final (2026-11-24): según la campaña, la del cliente por enlace o la de un aprobador.
   const campanas = new Map(
     (
@@ -193,6 +205,8 @@ const armar = async (tenant: TenantContext, filtro: { clientId?: string; id?: st
             modoAprobacion: campanas.get(f.campana.id)?.modoAprobacion ?? 'INTERNA',
             // Autoriza quien aprueba la campaña (responsable o función Aprobación); el enlace también lo crea quien administra.
             puedoAutorizar: apruebaLaCampana(tenant.userId, campanas.get(f.campana.id)),
+            // Con nombre, para que siempre se sepa quién decide (2026-11-24).
+            aprueban: quienesAprueban(campanas.get(f.campana.id)).map(a => ({ id: a.id, nombre: a.name })),
             puedoEnlace: administra || apruebaLaCampana(tenant.userId, campanas.get(f.campana.id)),
           }
         : null,
@@ -218,6 +232,8 @@ const armar = async (tenant: TenantContext, filtro: { clientId?: string; id?: st
       clase,
       /** Redes sociales se publican (community); lo demás se monta (trafficker). */
       accion: clase === 'REDES_SOCIALES' ? ('publicar' as const) : ('montar' as const),
+      /** Quiénes lo montan o publican; vacío = nadie tiene la función: lo hace quien administra. */
+      montan: montanDe(clase, f.clientId),
       puedo: actuaEn(clase, f.clientId),
     };
   });
@@ -361,7 +377,7 @@ export const guardarDestino = async (tenant: TenantContext, id: string, body: { 
 export const pasoImplementacion = async (piezas: { id: string; estado: string }[], conjuntosSoloTexto: string[] = []) => {
   const listas = piezas.filter(p => p.estado === 'LISTA').map(p => p.id);
   const total = listas.length + conjuntosSoloTexto.length;
-  if (!total) return { listas: 0, montados: 0, conNovedad: 0, porAprobar: 0, conElCliente: 0 };
+  if (!total) return { listas: 0, montados: 0, conNovedad: 0, porAprobar: 0, conElCliente: 0, porMontar: 0 };
   const deEstos = { OR: [{ piezaId: { in: listas } }, { conjuntoId: { in: conjuntosSoloTexto } }] };
   const porEstado = new Map(
     (await prisma.anuncio.groupBy({ by: ['estado'], where: deEstos, _count: { _all: true } })).map(g => [g.estado, g._count._all])
@@ -369,7 +385,7 @@ export const pasoImplementacion = async (piezas: { id: string; estado: string }[
   const n = (e: string) => porEstado.get(e as never) ?? 0;
   const conFila = [...porEstado.values()].reduce((t, c) => t + c, 0);
   // Sin fila todavía = por aprobar: nada se monta sin la aprobación final (2026-11-24).
-  return { listas: total, montados: n('MONTADO'), conNovedad: n('CON_NOVEDAD'), porAprobar: total - conFila + n('POR_APROBAR'), conElCliente: n('CON_EL_CLIENTE') };
+  return { listas: total, montados: n('MONTADO'), conNovedad: n('CON_NOVEDAD'), porAprobar: total - conFila + n('POR_APROBAR'), conElCliente: n('CON_EL_CLIENTE'), porMontar: n('POR_MONTAR') };
 };
 
 // --------------------------------------------------------------- la aprobación final (2026-11-24)
@@ -636,4 +652,18 @@ export const eficienciaDeAnuncios = async (campanaIds: string[]) => {
       ];
     })
   );
+};
+
+/**
+ * Quiénes montan o publican lo de una marca (2026-11-24): el trafficker y el community con la función para esa marca
+ * o para todas. Para decir con nombre a quién le toca el paso ⑤ y cada anuncio. Sin nadie, lo hace quien administra.
+ */
+export const quienesMontan = async (workspaceId: string, clientId: string) => {
+  const fs = await prisma.miembroFuncion.findMany({
+    where: { workspaceId, funcion: { in: ['TRAFFICKER', 'COMMUNITY'] }, OR: [{ clientId }, { clientId: null }] },
+    select: { funcion: true, user: { select: { id: true, name: true } } },
+  });
+  const de = (f: 'TRAFFICKER' | 'COMMUNITY') =>
+    [...new Map(fs.filter(x => x.funcion === f).map(x => [x.user.id, { id: x.user.id, nombre: x.user.name }])).values()];
+  return { trafficker: de('TRAFFICKER'), community: de('COMMUNITY') };
 };

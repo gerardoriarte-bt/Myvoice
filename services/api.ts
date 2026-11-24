@@ -52,6 +52,8 @@ export const apiRequest = async (endpoint: string, options: RequestInit = {}) =>
     throw new Error(error.error || 'Error en la petición');
   }
 
+  // Algo cambió (aprobar, autorizar, montar…): el encabezado del proceso se relee para que «Ahora» no quede viejo.
+  if (options.method && options.method !== 'GET') window.dispatchEvent(new CustomEvent('vt:cambio'));
   return response.json();
 };
 

@@ -48,6 +48,16 @@ export interface Novedad {
 
 export const NOVEDADES: Novedad[] = [
   {
+    id: 'ahora-y-quien',
+    fecha: '2026-11-24',
+    titulo: 'Siempre sabes qué sigue y a quién le toca',
+    cambios: [
+      'Con una campaña elegida, arriba aparece «Ahora»: en qué paso va, qué falta y quién lo tiene, con nombre. Si te toca a ti, se ve en ámbar, con un botón para ir.',
+      'En Implementación, cada anuncio dice su siguiente paso: quién lo autoriza o le manda el enlace al cliente, y quién lo monta o lo publica. Si te toca, el botón está ahí mismo.',
+      'Anuncios muestra solo la campaña elegida y abre en la pestaña que tiene trabajo. En Copy, lo pendiente nombra a todos los que pueden aprobarlo.',
+    ],
+  },
+  {
     id: 'reporte-implementacion',
     fecha: '2026-11-24',
     titulo: 'El reporte de implementación',

@@ -6,7 +6,8 @@ import { pasoCdm, piezasPlaneadasDeCampana } from '../cdm/planning/planningServi
 import { copyDeCampana } from '../myvoice/pedidosDeCopy.js';
 import { conjuntosSinPiezaDeCampana } from '../myvoice/copyParaProduccion.js';
 import { piezasDeCampana } from '../services/piezaService.js';
-import { pasoImplementacion } from '../implementacion/anuncios.js';
+import { pasoImplementacion, quienesMontan } from '../implementacion/anuncios.js';
+import { SELECT_APROBADORES, quienesAprueban } from '../comun/aprobadores.js';
 
 /**
  * El estado de cada paso del encabezado (F0, docs/plan-plataforma-por-procesos.md): cómo va UNA campaña
@@ -48,12 +49,14 @@ const pasosDeCampana = async (clientId: string, campanaId: string | null, conImp
     resolverAdn(clientId).then(a => completitudAdn(a)),
     prisma.project.findUniqueOrThrow({
       where: { id: campanaId },
-      select: { responsable: { select: { id: true, name: true } } },
+      select: { ...SELECT_APROBADORES, modoAprobacion: true, workspaceId: true },
     }),
     copyDeCampana(campanaId),
     piezasDeCampana(campanaId),
   ]);
   const quien = campana.responsable ? { id: campana.responsable.id, nombre: campana.responsable.name } : undefined;
+  // Quiénes pueden decidir: el responsable y la función Aprobación de la marca (decisión 30). Se nombran todos.
+  const aprueban = quienesAprueban(campana).map(a => ({ id: a.id, nombre: a.name }));
 
   // ① Marca: el ADN de la marca, con el mismo mínimo que Marcas y Generar.
   const marca: Paso = adn.apta
@@ -76,8 +79,9 @@ const pasosDeCampana = async (clientId: string, campanaId: string | null, conImp
             paso: 'myvoice',
             estado: 'activo',
             texto: `${aprobados.length} de ${copy.length} aprobados`,
-            falta: 'Aprobar el copy',
+            falta: campana.modoAprobacion === 'CLIENTE' ? 'Mandar el copy al cliente' : 'Aprobar el copy',
             quien,
+            quienes: aprueban,
             avance: { hechas: aprobados.length, total: copy.length },
           };
 
@@ -103,6 +107,9 @@ const pasosDeCampana = async (clientId: string, campanaId: string | null, conImp
             estado: 'activo',
             texto: `${listas} de ${piezas.length} piezas`,
             avance: { hechas: listas, total: piezas.length },
+            // Aceptar o devolver las piezas lo deciden los aprobadores de la campaña.
+            quien,
+            quienes: aprueban,
             ...(aprobadosSinPieza > 0 && { falta: `${aprobadosSinPieza} aprobados sin pieza` }),
           };
 
@@ -110,10 +117,24 @@ const pasosDeCampana = async (clientId: string, campanaId: string | null, conImp
 
   // ⑤ Implementación (F5): lo listo que ya está montado, y lo que espera la aprobación final (del cliente o de un
   // aprobador). Hecho solo con todo montado y Producción hecha.
-  const [imp, planeadas] = await Promise.all([
+  const [imp, planeadas, montan] = await Promise.all([
     pasoImplementacion(piezas, await conjuntosSinPiezaDeCampana(campanaId)),
     piezasPlaneadasDeCampana(campanaId),
+    quienesMontan(campana.workspaceId, clientId),
   ]);
+  // A quién le toca: lo que espera la aprobación final, a los aprobadores (autorizan o mandan el enlace); lo que espera
+  // montarse, al trafficker y al community de la marca.
+  const montadores = [...montan.trafficker, ...montan.community.filter(c => !montan.trafficker.some(t => t.id === c.id))];
+  // Si nadie tiene Trafficker ni Community para la marca, monta quien administra: se nombra, para que no quede sin dueño.
+  const administran = montadores.length
+    ? []
+    : (
+        await prisma.membership.findMany({
+          where: { workspaceId: campana.workspaceId, role: { in: ['OWNER', 'ADMIN'] } },
+          select: { user: { select: { id: true, name: true } } },
+        })
+      ).map(m => ({ id: m.user.id, nombre: m.user.name }));
+  const quienesDeImplementacion = imp.porAprobar > 0 ? aprueban : imp.conElCliente > 0 ? [] : montadores.length ? montadores : administran;
   // Contra lo planeado en la sábana, si la hay: con 1 de 3 montado, la campaña no terminó aunque el único anuncio
   // que existe esté montado (2026-11-24).
   const total = Math.max(imp.listas, planeadas ?? 0);
@@ -128,10 +149,13 @@ const pasosDeCampana = async (clientId: string, campanaId: string | null, conImp
             estado: 'activo',
             texto: `${imp.montados} de ${total} montados`,
             avance: { hechas: imp.montados, total },
-            ...((imp.porAprobar > 0 || imp.conElCliente > 0 || imp.conNovedad > 0 || faltanPorLlegar > 0) && {
+            quienes: quienesDeImplementacion,
+            ...((imp.porAprobar > 0 || imp.conElCliente > 0 || imp.porMontar > 0 || imp.conNovedad > 0 || faltanPorLlegar > 0) && {
               falta: [
-                imp.porAprobar > 0 && `${imp.porAprobar} por aprobar`,
+                imp.porAprobar > 0 &&
+                  `${imp.porAprobar} por ${campana.modoAprobacion === 'CLIENTE' ? 'mandar al cliente' : 'autorizar'}`,
                 imp.conElCliente > 0 && `${imp.conElCliente} con el cliente`,
+                imp.porMontar > 0 && `${imp.porMontar} por montar`,
                 imp.conNovedad > 0 && `${imp.conNovedad} con novedad`,
                 faltanPorLlegar > 0 && `${faltanPorLlegar} planeados sin llegar`,
               ]

@@ -20,5 +20,7 @@ export interface Paso {
   falta?: string;
   /** A quién le toca destrabarlo. */
   quien?: { id: string; nombre: string };
+  /** Todos los que pueden destrabarlo (2026-11-24): los aprobadores de la campaña, o quienes montan. */
+  quienes?: { id: string; nombre: string }[];
   avance?: { hechas: number; total: number };
 }

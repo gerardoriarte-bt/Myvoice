@@ -135,11 +135,13 @@ export interface UsuarioDeControl {
  * (`server/src/comun/proceso.ts`). `neutro` = sin campaña: el paso solo navega.
  */
 export interface PasoDeProceso {
-  paso: 'marca' | 'cdm' | 'myvoice' | 'produccion';
+  paso: 'marca' | 'cdm' | 'myvoice' | 'produccion' | 'implementacion';
   estado: 'hecho' | 'activo' | 'pendiente' | 'bloqueado' | 'neutro';
   texto?: string;
   falta?: string;
   quien?: { id: string; nombre: string };
+  /** Todos los que pueden destrabarlo: los aprobadores de la campaña, o quienes montan. */
+  quienes?: { id: string; nombre: string }[];
   avance?: { hechas: number; total: number };
 }
 
@@ -1009,7 +1011,15 @@ export interface AnuncioParaMontar {
   platform: string;
   formato: string;
   /** La aprobación final: por enlace del cliente (CLIENTE) o autorizada por un aprobador (INTERNA). */
-  campana: { id: string; nombre: string; modoAprobacion: 'INTERNA' | 'CLIENTE'; puedoAutorizar: boolean; puedoEnlace: boolean } | null;
+  campana: {
+    id: string;
+    nombre: string;
+    modoAprobacion: 'INTERNA' | 'CLIENTE';
+    puedoAutorizar: boolean;
+    puedoEnlace: boolean;
+    /** Quiénes deciden la aprobación final, con nombre (2026-11-24). */
+    aprueban: { id: string; nombre: string }[];
+  } | null;
   linea: { id: string; planningId: string; medio: string; formato: string; etapa: EtapaDeFunnel; desde: string | null; hasta: string | null } | null;
   textos: { slot: string; nombre: string; texto: string }[];
   previaUrl: string | null;
@@ -1029,6 +1039,8 @@ export interface AnuncioParaMontar {
   /** La clase del medio (decisión 29): redes sociales las publica el community; lo demás lo monta el trafficker. */
   clase: 'PAGOS' | 'REDES_SOCIALES' | 'PROPIOS' | 'TRADICIONAL' | null;
   accion: 'publicar' | 'montar';
+  /** Quiénes lo montan o publican; vacío = nadie tiene la función: lo hace quien administra. */
+  montan: { id: string; nombre: string }[];
   /** Quien mira puede marcarlo o devolverlo. */
   puedo: boolean;
 }

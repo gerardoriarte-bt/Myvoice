@@ -638,19 +638,21 @@ export const pasoCdm = async (campanaId: string): Promise<Paso> => {
     select: {
       estado: true,
       lineas: { select: { piezas: true } },
-      campana: { select: { responsable: { select: { id: true, name: true } } } },
+      campana: { select: SELECT_APROBADORES },
     },
   });
   if (!p) return { paso: 'cdm', estado: 'pendiente', texto: 'Sin planning todavía', falta: 'Armar el planning' };
   const piezas = p.lineas.reduce((s, l) => s + l.piezas, 0);
   const quien = p.campana.responsable ? { id: p.campana.responsable.id, nombre: p.campana.responsable.name } : undefined;
+  // Decide cualquiera de los aprobadores de la campaña (decisión 30): se nombran todos.
+  const quienes = quienesAprueban(p.campana).map(a => ({ id: a.id, nombre: a.name }));
   switch (p.estado) {
     case 'APROBADO':
       return { paso: 'cdm', estado: 'hecho', texto: `Sábana aprobada · ${piezas} piezas` };
     case 'CON_EL_CLIENTE':
       return { paso: 'cdm', estado: 'activo', texto: 'Sábana con el cliente', falta: 'Respuesta del cliente por enlace', quien };
     case 'POR_APROBAR':
-      return { paso: 'cdm', estado: 'activo', texto: 'Sábana por aprobar', falta: 'Aprobar la sábana', quien };
+      return { paso: 'cdm', estado: 'activo', texto: 'Sábana por aprobar', falta: 'Aprobar la sábana', quien, quienes };
     case 'DEVUELTO':
       return { paso: 'cdm', estado: 'activo', texto: 'Sábana devuelta', falta: 'Ajustar lo que pidió el responsable' };
     default:

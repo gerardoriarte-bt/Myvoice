@@ -59,6 +59,8 @@ const Copiar = ({ texto }: { texto: string }) => {
 
 interface Props {
   marcaId: string;
+  /** La campaña del encabezado: si hay una elegida, solo se ven sus anuncios (2026-11-24). */
+  campanaId?: string | null;
   onAviso: (mensaje: string, tipo: 'success' | 'error' | 'info' | 'warning') => void;
 }
 
@@ -66,8 +68,8 @@ interface Props {
  * Cada uno ve lo suyo (decisión 29): el community manager, las publicaciones de redes sociales; el trafficker, los
  * pagos y lo demás. El servidor filtra y dice en cada anuncio si quien mira puede actuar (`puedo`).
  */
-export default function Implementacion({ marcaId, onAviso }: Props) {
-  const [anuncios, setAnuncios] = React.useState<AnuncioParaMontar[] | null>(null);
+export default function Implementacion({ marcaId, campanaId, onAviso }: Props) {
+  const [todos, setAnuncios] = React.useState<AnuncioParaMontar[] | null>(null);
   const [pestana, setPestana] = React.useState<EstadoAnuncio>('POR_APROBAR');
   const [enlaces, setEnlaces] = React.useState<Record<string, string>>({});
   const [abierto, setAbierto] = React.useState<string | null>(null);
@@ -83,7 +85,19 @@ export default function Implementacion({ marcaId, onAviso }: Props) {
     leer();
   }, [leer]);
 
-  if (!anuncios) return <div className="h-48" />;
+  // Abre en la primera pestaña que tiene algo: llegar a «Por aprobar · 0» con trabajo en «Por montar» despista.
+  React.useEffect(() => {
+    if (!todos) return;
+    const deAca = campanaId ? todos.filter(a => a.campana?.id === campanaId) : todos;
+    if (deAca.some(a => a.estado === pestana)) return;
+    const primera = PESTANAS.find(t => deAca.some(a => a.estado === t.estado));
+    if (primera) setPestana(primera.estado);
+    // Solo al cargar o al cambiar de campaña, no cada vez que alguien actúa.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [todos === null, campanaId]);
+
+  if (!todos) return <div className="h-48" />;
+  const anuncios = campanaId ? todos.filter(a => a.campana?.id === campanaId) : todos;
 
   const cuantos = (e: EstadoAnuncio) => anuncios.filter(a => a.estado === e).length;
   const visibles = anuncios.filter(a => a.estado === pestana || a.id === abierto);
@@ -280,6 +294,13 @@ function Detalle({
   return (
     <div className="grid gap-4 border-t border-cyan-100 bg-cyan-50/30 px-4 py-4 md:grid-cols-[1fr_260px]">
       <div className="space-y-4">
+        <SiguientePaso a={a} ocupado={ocupado} onAutorizar={() =>
+            void hacer(async () => {
+              await implementacionApi.autorizar([a.id]);
+              // Se relee para mostrar lo que quedó, no lo que se pidió.
+              return (await implementacionApi.anuncios(a.clientId)).find(x => x.id === a.id) ?? a;
+            }, 'Autorizado: pasa a «Por montar»')
+          } />
         {a.novedad && (
           <p className="flex gap-2 rounded-lg bg-amber-50 px-3 py-2 text-[12.5px] text-amber-900">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
@@ -543,7 +564,7 @@ function AprobacionFinal({
             Crear enlace para el cliente ({listos.length})
           </button>
         ) : (
-          <span className="text-[12px] text-[#86868B]">El cliente lo aprueba por enlace</span>
+          <span className="text-[12px] text-[#86868B]">El enlace para el cliente lo crea {nombresDe(campana.aprueban)}</span>
         )}
       </div>
     );
@@ -569,6 +590,90 @@ function AprobacionFinal({
       Autorizar implementación ({listos.length})
     </button>
   ) : (
-    <span className="text-[12px] text-[#86868B]">Lo autoriza quien aprueba la campaña</span>
+    <span className="text-[12px] text-[#86868B]">Lo autoriza {nombresDe(campana.aprueban)}</span>
+  );
+}
+
+const nombresDe = (ps: { nombre: string }[]) =>
+  ps.length === 0 ? 'quien administra' : ps.length === 1 ? ps[0].nombre : `${ps.slice(0, -1).map(p => p.nombre).join(', ')} o ${ps[ps.length - 1].nombre}`;
+
+/**
+ * El siguiente paso de un anuncio, con quién lo tiene (2026-11-24, Gerardo: «no sé dónde se debe aprobar»): qué falta,
+ * quién decide —con nombre— y, si es quien mira, el botón ahí mismo.
+ */
+function SiguientePaso({ a, ocupado, onAutorizar }: { a: AnuncioParaMontar; ocupado: boolean; onAutorizar: () => void }) {
+  const c = a.campana;
+  const montan = `${a.accion === 'publicar' ? 'Lo publica' : 'Lo monta'} ${nombresDe(a.montan)}`;
+  let texto: React.ReactNode;
+  let boton: React.ReactNode = null;
+  let tono = 'border-[rgba(0,0,0,0.08)] bg-white text-[#1D1D1F]';
+  if (a.estado === 'POR_APROBAR' && !a.listo) {
+    texto = (
+      <>
+        Primero: {a.faltas.filter(f => f.bloquea).map(f => `${f.texto.toLowerCase()} (lo pega ${f.quien})`).join('; ')}. Después lo aprueba{' '}
+        {c?.modoAprobacion === 'CLIENTE' ? 'el cliente por enlace' : nombresDe(c?.aprueban ?? [])}.
+      </>
+    );
+    tono = 'border-amber-200 bg-amber-50 text-amber-900';
+  } else if (a.estado === 'POR_APROBAR' && c?.modoAprobacion === 'CLIENTE') {
+    texto = c.puedoEnlace ? (
+      <>
+        Listo para el cliente: <strong>crea el enlace</strong> con «Crear enlace para el cliente», arriba en la campaña.
+      </>
+    ) : (
+      <>Listo para el cliente. El enlace lo crea {nombresDe(c.aprueban)}.</>
+    );
+    tono = 'border-violet-200 bg-violet-50 text-violet-900';
+  } else if (a.estado === 'POR_APROBAR') {
+    texto = c?.puedoAutorizar ? (
+      <>
+        Listo para aprobar. <strong>Te toca autorizarlo</strong>
+        {(c.aprueban.length ?? 0) > 1 ? ` (o a ${nombresDe(c.aprueban)})` : ''}.
+      </>
+    ) : (
+      <>Listo para aprobar. Lo autoriza {nombresDe(c?.aprueban ?? [])}, con «Autorizar implementación» en la campaña.</>
+    );
+    if (c?.puedoAutorizar)
+      boton = (
+        <button
+          type="button"
+          disabled={ocupado}
+          onClick={onAutorizar}
+          className="rounded-lg bg-[#047857] px-3 py-1.5 text-[12.5px] font-semibold text-white hover:bg-emerald-800 disabled:opacity-40"
+        >
+          Autorizar este anuncio
+        </button>
+      );
+    tono = 'border-violet-200 bg-violet-50 text-violet-900';
+  } else if (a.estado === 'CON_EL_CLIENTE') {
+    texto = <>Esperando al cliente: lo tiene en el enlace. Si tarda, escríbele a {nombresDe(c?.aprueban ?? [])}, que lo mandó.</>;
+    tono = 'border-violet-200 bg-violet-50 text-violet-900';
+  } else if (a.estado === 'POR_MONTAR') {
+    texto = a.puedo ? (
+      <>
+        Aprobado. <strong>Te toca {a.accion === 'publicar' ? 'publicarlo' : 'montarlo'}</strong> y dejar constancia.
+      </>
+    ) : (
+      <>Aprobado. {montan}.</>
+    );
+    tono = 'border-cyan-200 bg-cyan-50 text-cyan-900';
+  } else if (a.estado === 'CON_NOVEDAD') {
+    texto = <>Devuelto con novedad: lo corrige {nombresDe(c?.aprueban ?? [])} y vuelve a «por montar».</>;
+    tono = 'border-amber-200 bg-amber-50 text-amber-900';
+  } else {
+    texto = (
+      <>
+        {a.accion === 'publicar' ? 'Publicado' : 'Montado'}
+        {a.montado ? ` el ${dia(a.montado.en)} en ${a.montado.plataforma} · ${a.montado.idEnPlataforma}` : ''}.
+      </>
+    );
+    tono = 'border-emerald-200 bg-emerald-50 text-emerald-900';
+  }
+  return (
+    <div className={`flex flex-wrap items-center gap-3 rounded-lg border px-3 py-2.5 text-[12.5px] ${tono}`}>
+      <span className="text-[10.5px] font-bold uppercase tracking-[0.08em] opacity-70">Siguiente paso</span>
+      <span className="min-w-0 flex-1">{texto}</span>
+      {boton}
+    </div>
   );
 }

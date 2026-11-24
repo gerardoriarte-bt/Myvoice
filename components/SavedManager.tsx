@@ -468,8 +468,8 @@ const SavedManager: React.FC<SavedManagerProps> = ({
                         <QuienAprueba
                           compacto
                           rotulo={c.modoAprobacion === 'CLIENTE' ? 'Al cliente lo manda' : 'Lo aprueba'}
-                          personas={c.responsable ? [c.responsable] : []}
-                          soyYo={!!currentUserId && c.responsableId === currentUserId}
+                          personas={c.aprueban?.length ? c.aprueban : c.responsable ? [c.responsable] : []}
+                          soyYo={!!currentUserId && (c.responsableId === currentUserId || !!c.aprueban?.some(p => p.id === currentUserId))}
                           sinNadie={!c.responsable}
                           detalle={c.responsable ? undefined : 'la campaña no tiene responsable'}
                         />
@@ -588,8 +588,8 @@ const SavedManager: React.FC<SavedManagerProps> = ({
               <QuienAprueba
                 compacto
                 rotulo={c.modoAprobacion === 'CLIENTE' ? 'Al cliente lo manda' : 'Lo aprueba'}
-                personas={c.responsable ? [c.responsable] : []}
-                soyYo={!!currentUserId && c.responsableId === currentUserId}
+                personas={c.aprueban?.length ? c.aprueban : c.responsable ? [c.responsable] : []}
+                soyYo={!!currentUserId && (c.responsableId === currentUserId || !!c.aprueban?.some(p => p.id === currentUserId))}
                 sinNadie={!c.responsable}
                 detalle={c.responsable ? undefined : 'la campaña no tiene responsable'}
               />
