@@ -110,7 +110,7 @@ rechazo además aparece como anti-ejemplo en la marca.
 
 ### 4. Producir — el tablero (Laura, Sofía)
 
-Cada columna tiene un dueño, y Por revisar y Con el cliente lo dicen con nombre: Laura, responsable
+Cada columna tiene un dueño, y Por revisar lo dice con nombre: Laura, responsable
 de Lanzamiento. El tablero tiene una pieza en cada situación que vale mostrar:
 
 | Columna | Pieza | Lo que enseña |
@@ -118,9 +118,9 @@ de Lanzamiento. El tablero tiene una pieza en cada situación que vale mostrar:
 | Por asignar | Carrusel — Adivine cuál es su marca | Crear y asignar son dos decisiones |
 | En diseño | Post de feed (B) — Le medimos la voz | El A/B (comparte cuerpo con el post A) y el aviso **«El copy cambió después de aprobarse»** |
 | Por revisar | Historia — ¿Su copy suena a su marca? | Una auditoría con **2 hallazgos** esperando decisión |
-| Con el cliente | Post de feed — Rápido escribe cualquiera | La historia completa: v1 devuelta, v2 aceptada y enviada |
-| Con el cliente | Email de lanzamiento | Un hallazgo **Ilegible** aceptado con nota: ilegible no es «mal» |
-| Con el cliente | TikTok | Sin enviar. El video se entrega con enlace, sin archivo ni auditoría |
+| Lista | Post de feed — Rápido escribe cualquiera | La historia completa: v1 devuelta, v2 aceptada |
+| Lista | Email de lanzamiento | Un hallazgo **Ilegible** aceptado con nota: ilegible no es «mal» |
+| Lista | TikTok | El video se entrega con enlace, sin archivo ni auditoría |
 
 **Mostrar.** Abrir el Post de feed y recorrer sus versiones: en la v1 la auditoría encontró
 «Rapido» sin tilde (un **hecho**: muestra lo esperado y lo encontrado lado a lado) y un «¡Pida su
@@ -145,25 +145,28 @@ el responsable.
    `server/capacitacion-artes/1-post-ab-1080x1080.png`. La tarjeta dice «Auditando la versión 1» y
    la pieza recién pasa a Por revisar cuando llega el informe real.
 4. **Subir la corrección (Sofía) y aceptar (Laura).** En la Historia devuelta, subir
-   `2-historia-corregida-1080x1920.png` (v2). Cuando termina la auditoría, Laura la acepta: como
-   Lanzamiento es una campaña del cliente, va a **Con el cliente**, no a Lista.
+   `2-historia-corregida-1080x1920.png` (v2). Cuando termina la auditoría, Laura la acepta y va a
+   **Lista**: aunque Lanzamiento es una campaña del cliente, el cliente la aprueba después, con su copy, en
+   Implementación.
 
 > Si en el paso 3 Sofía sube el arte **sin** que Laura actualice la orden, la auditoría marca el
 > hook como diferente: el arte tiene el texto nuevo y la pieza todavía el viejo. Es un buen error
 > para cometer a propósito.
 
-### 5. Aprobar el arte — la ronda de piezas (clienta)
+### 5. La aprobación final — antes de implementar (Laura, clienta)
 
-Lanzamiento es una campaña del cliente, así que lo que el equipo acepta espera en **Con el
-cliente**. Ya hay una revisión abierta con el Post y el Email («Enviada el… · esperando»); el
-TikTok y la Historia del paso 4 dicen «Sin enviar».
+Para este paso, LoBueno necesita **Implementación** prendida (Control › Marcas). Desde el 2026-11-24 el cliente no
+aprueba piezas sueltas en Producción: aprueba, una sola vez, lo que va a salir (decisión 32).
 
-**En vivo.** Laura toca «Mandar 2 sin enviar al cliente» en la cabecera de la columna. Después
-abrir el enlace **«Piezas, campaña 1»**: aprobar el Email —va a Lista, «Aprobada por el cliente»— y
-en el Post pedir cambios **del mensaje**. Probar primero «Pedir cambios» sin escribir nada: el
-portal no deja enviar. Volver al tablero: el Post está en En diseño, «Devuelta por Natalia», con
-«Espera el copy corregido». Laura abre la orden de trabajo, toca «Corregir el copy», corrige el
-hook y la tarjeta deja de esperar: ahora Sofía actualiza el arte.
+**En vivo.** En ⑤ Implementación › Por aprobar, la campaña Lanzamiento muestra sus piezas listas. Las que no
+tienen destino dicen «Falta el destino»: pegarlo en cada una («Cambiar el destino o la UTM»). Laura toca
+**«Crear enlace para el cliente»** y el enlace queda copiado. Abrirlo como la clienta: por medio, cada anuncio con
+su arte, los textos, adónde lleva y cuándo sale. Aprobar el Email y el TikTok, y en el Post pedir cambios (probar
+antes a enviar sin escribir cuáles: el portal no deja). Volver a Laura: Email y TikTok están en «Por montar», el
+Post vuelve a «Por aprobar» con el comentario de la clienta, y a Laura le llega el aviso.
+
+**Mostrar.** En Talento 2026, que es interna, no hay enlace: quien aprueba la campaña toca **«Autorizar
+implementación»**. Lo mismo aparece en «Por aprobar» del encabezado.
 
 ### 6. Medir — Métricas (Laura)
 

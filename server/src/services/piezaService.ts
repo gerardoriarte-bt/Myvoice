@@ -18,7 +18,7 @@
 
 import { copyOriginal, copyParaCrear, copyParaProponer, corregirCopyAprobado, textoActual } from '../myvoice/copyParaProduccion.js';
 import { createHash } from 'node:crypto';
-import { ModoAprobacion, Prisma, PiezaEstado, PiezaTipo, RondaRevision, WorkspaceRole } from '@prisma/client';
+import { Prisma, PiezaEstado, PiezaTipo, RondaRevision, WorkspaceRole } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import { TenantContext, TenantError } from '../lib/tenancy.js';
 import { SELECT_APROBADORES } from '../comun/aprobadores.js';
@@ -797,11 +797,9 @@ export const ejecutarAccion = async (
   const permiso = PERMISO_DE[accion];
   if (permiso) exigir(tenant, actual, permiso);
 
-  // Aceptar en una campaña «del cliente» no es el final: queda esperándolo.
-  const hacia =
-    accion === 'aceptar' && actual.project?.modoAprobacion === ModoAprobacion.CLIENTE
-      ? PiezaEstado.CON_EL_CLIENTE
-      : transicion.hacia;
+  // Aceptar es el final de Producción, también en una campaña «con cliente» (2026-11-24): el cliente aprueba el arte,
+  // con su copy, en la aprobación final de Implementación, no en una ronda de piezas aparte.
+  const hacia = transicion.hacia;
 
   // Pasar por alto un hallazgo es una decisión, y queda escrita.
   if (accion === 'aceptar') {

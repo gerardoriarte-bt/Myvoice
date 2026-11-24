@@ -379,6 +379,7 @@ export const reviewApi = {
         | { savedVariationId: string; decision: string; comment?: string }
         | { piezaId: string; decision: string; feedbackCopy?: string; feedbackDiseno?: string }
         | { planningId: string; decision: string; feedbackCopy?: string }
+        | { anuncioId: string; decision: string; feedbackCopy?: string }
       >;
     }
   ) =>
@@ -504,6 +505,11 @@ export const implementacionApi = {
   devolver: (piezaId: string, datos: { motivo: string; texto: string }): Promise<AnuncioParaMontar> =>
     apiRequest(`/implementacion/anuncios/${piezaId}/devolver`, { method: 'POST', body: JSON.stringify(datos) }),
   reabrir: (piezaId: string): Promise<AnuncioParaMontar> => apiRequest(`/implementacion/anuncios/${piezaId}/reabrir`, { method: 'POST' }),
+  /** La aprobación final en una campaña interna: un aprobador autoriza lo listo. */
+  autorizar: (ids: string[]): Promise<{ autorizados: number }> => apiRequest('/implementacion/autorizar', { method: 'POST', body: JSON.stringify({ ids }) }),
+  /** La aprobación final en una campaña con cliente: el enlace con todo lo listo. Si hay uno abierto, devuelve ese. */
+  enlace: (campanaId: string): Promise<{ url: string; venceEn: string; cuantos: number }> =>
+    apiRequest('/implementacion/enlace', { method: 'POST', body: JSON.stringify({ campanaId }) }),
   destino: (piezaId: string, datos: { destino?: string; utm?: string }): Promise<AnuncioParaMontar> =>
     apiRequest(`/implementacion/anuncios/${piezaId}/destino`, { method: 'PUT', body: JSON.stringify(datos) }),
 };

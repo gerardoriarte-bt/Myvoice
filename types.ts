@@ -485,7 +485,7 @@ export interface ReviewItemFeedbackDetail {
 }
 
 /** Qué se revisa. Una sesión es homogénea: o copy o piezas, nunca las dos. */
-export type RondaRevision = 'COPY' | 'PIEZA' | 'SABANA';
+export type RondaRevision = 'COPY' | 'PIEZA' | 'SABANA' | 'IMPLEMENTACION';
 
 /** Lo que el cliente ve de una pieza en la ronda 2. */
 export interface PiezaEnRevision {
@@ -525,6 +525,8 @@ export interface ReviewSession {
   piezas?: PiezaEnRevision[];
   /** Ronda de copy: las campañas que lleva, con su objetivo, para darle contexto al cliente. */
   campanas?: { nombre: string; objetivo: string | null }[];
+  /** Solo en la ronda IMPLEMENTACION (F5): lo que se va a montar, por anuncio. */
+  implementacion?: ImplementacionEnRevision;
   /** Solo en la ronda SABANA (F3b): la sábana del planning, sin nada interno. */
   sabana?: SabanaEnRevision;
   submission?: {
@@ -949,6 +951,8 @@ export interface PorAprobar {
   sabanas: { planningId: string; campanaId: string; campana: string; clientId: string; marca: string | null; desde: string }[];
   copy: { campanaId: string; campana: string; clientId: string | null; marca: string | null; cantidad: number }[];
   piezas: { piezaId: string; pieza: string; campanaId: string | null; campana: string | null; clientId: string; marca: string | null }[];
+  /** Lo listo para autorizar la implementación (campañas internas). */
+  implementacion?: { id: string; titulo: string; clientId: string; campana: string | null }[];
   total: number;
 }
 
@@ -982,7 +986,8 @@ export interface CampanaConPedidos {
 
 
 /** F5 · Implementación: un anuncio (una pieza lista) con lo que le falta para montarse. */
-export type EstadoAnuncio = 'POR_MONTAR' | 'MONTADO' | 'CON_NOVEDAD';
+/** POR_APROBAR → (CON_EL_CLIENTE) → POR_MONTAR → MONTADO; CON_NOVEDAD si el trafficker lo devuelve (2026-11-24). */
+export type EstadoAnuncio = 'POR_APROBAR' | 'CON_EL_CLIENTE' | 'POR_MONTAR' | 'MONTADO' | 'CON_NOVEDAD';
 
 export interface AnuncioParaMontar {
   /** `pieza:<id>` o, en los canales sin pieza de diseño (búsqueda de Google Ads, WhatsApp, push), `copy:<conjunto>`. */
@@ -993,7 +998,8 @@ export interface AnuncioParaMontar {
   titulo: string;
   platform: string;
   formato: string;
-  campana: { id: string; nombre: string } | null;
+  /** La aprobación final: por enlace del cliente (CLIENTE) o autorizada por un aprobador (INTERNA). */
+  campana: { id: string; nombre: string; modoAprobacion: 'INTERNA' | 'CLIENTE'; puedoAutorizar: boolean; puedoEnlace: boolean } | null;
   linea: { id: string; planningId: string; medio: string; formato: string; etapa: EtapaDeFunnel; desde: string | null; hasta: string | null } | null;
   textos: { slot: string; nombre: string; texto: string }[];
   previaUrl: string | null;
@@ -1013,4 +1019,24 @@ export interface AnuncioParaMontar {
   accion: 'publicar' | 'montar';
   /** Quien mira puede marcarlo o devolverlo. */
   puedo: boolean;
+}
+
+/** Lo que el cliente aprueba antes de implementar (F5, 2026-11-24): por anuncio, arte, textos, destino y fechas. */
+export interface ImplementacionEnRevision {
+  marca: string | null;
+  campana: string | null;
+  anuncios: {
+    id: string;
+    medio: string;
+    formato: string;
+    platform: string;
+    etapa: EtapaDeFunnel | null;
+    desde: string | null;
+    hasta: string | null;
+    previaUrl: string | null;
+    enlace: string | null;
+    soloTexto: boolean;
+    textos: { nombre: string; texto: string; zona: string }[];
+    url: string | null;
+  }[];
 }

@@ -8,7 +8,6 @@ import { COLORES_ESTADO, COLUMNAS } from './columnas';
 import { exportPiezasToExcel } from '../../services/exportPiezasToExcel';
 import { authApi, piezasApi } from '../../services/api';
 import TarjetaPieza from './TarjetaPieza';
-import MandarAlCliente from './MandarAlCliente';
 import OrdenDeTrabajo from './OrdenDeTrabajo';
 import { nombreConMadre } from '../../marcas';
 
@@ -149,11 +148,6 @@ export default function TableroProduccion({
       titulo: 'Devueltas',
       que: 'Volvieron a tus manos, con el motivo.',
       piezas: piezas.filter(p => p.estado === 'EN_DISENO' && p.devolucion && p.puedo.entregar),
-    },
-    {
-      titulo: 'Para mandar al cliente',
-      que: 'Aceptadas por el equipo y todavía sin enviar.',
-      piezas: piezas.filter(p => p.estado === 'CON_EL_CLIENTE' && !p.enviadaAlCliente && p.puedo.mandarAlCliente),
     },
     {
       titulo: 'En diseño',
@@ -301,14 +295,7 @@ export default function TableroProduccion({
                       Exportar a Excel
                     </button>
                   )}
-                  {col.estado === 'CON_EL_CLIENTE' && suyas.length > 0 && (
-                    <MandarAlCliente
-                      piezas={suyas}
-                      marca={clients.find(c => c.id === clientId)?.name ?? 'la marca'}
-                      onCambio={cargar}
-                      onError={m => addNotification(m, 'error')}
-                    />
-                  )}
+
                   <p className="mt-1.5 text-[10px] font-semibold" style={{ color: color.texto }}>
                     {duenoDe(col.delResponsable, col.dueño, suyas)}
                   </p>

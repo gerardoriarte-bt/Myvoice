@@ -108,7 +108,8 @@ const pasosDeCampana = async (clientId: string, campanaId: string | null, conImp
 
   if (!conImplementacion) return [marca, myvoice, produccion];
 
-  // ⑤ Implementación (F5): las piezas listas que ya están montadas. Hecho solo con todo montado y Producción hecha.
+  // ⑤ Implementación (F5): lo listo que ya está montado, y lo que espera la aprobación final (del cliente o de un
+  // aprobador). Hecho solo con todo montado y Producción hecha.
   const imp = await pasoImplementacion(piezas, await conjuntosSinPiezaDeCampana(campanaId));
   const implementacion: Paso =
     imp.listas === 0
@@ -120,7 +121,15 @@ const pasosDeCampana = async (clientId: string, campanaId: string | null, conImp
             estado: 'activo',
             texto: `${imp.montados} de ${imp.listas} montados`,
             avance: { hechas: imp.montados, total: imp.listas },
-            ...(imp.conNovedad > 0 && { falta: `${imp.conNovedad} con novedad` }),
+            ...((imp.porAprobar > 0 || imp.conElCliente > 0 || imp.conNovedad > 0) && {
+              falta: [
+                imp.porAprobar > 0 && `${imp.porAprobar} por aprobar`,
+                imp.conElCliente > 0 && `${imp.conElCliente} con el cliente`,
+                imp.conNovedad > 0 && `${imp.conNovedad} con novedad`,
+              ]
+                .filter(Boolean)
+                .join(' · '),
+            }),
           };
   return [marca, myvoice, produccion, implementacion];
 };

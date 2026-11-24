@@ -1265,6 +1265,10 @@ const App: React.FC = () => {
         setDestinoProduccion({ clientId, piezaId });
         setActiveTab('produccion');
       }}
+      onImplementacion={clientId => {
+        setActiveClientId(clientId);
+        setActiveTab('implementacion');
+      }}
     />
   );
   const encabezado = (

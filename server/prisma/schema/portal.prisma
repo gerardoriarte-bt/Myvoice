@@ -26,13 +26,16 @@ model ReviewSessionItem {
   /// lo sostienen el servicio y un CHECK escrito a mano en la migración.
   savedVariationId String?
   piezaId          String?
-  /// F3b: en la ronda SABANA. Exactamente uno de los tres, por un CHECK de la migración.
+  /// F3b: en la ronda SABANA. Exactamente uno de los cuatro, por un CHECK de la migración.
   planningId       String?
+  /// F5: en la ronda IMPLEMENTACION.
+  anuncioId        String?
   sortOrder        Int             @default(0)
   reviewSession    ReviewSession   @relation(fields: [reviewSessionId], references: [id], onDelete: Cascade)
   savedVariation   SavedVariation? @relation(fields: [savedVariationId], references: [id], onDelete: Cascade)
   pieza            Pieza?          @relation(fields: [piezaId], references: [id], onDelete: Cascade)
   planning         Planning?       @relation(fields: [planningId], references: [id], onDelete: Cascade)
+  anuncio          Anuncio?        @relation(fields: [anuncioId], references: [id], onDelete: Cascade)
 }
 
 model ReviewSubmission {
@@ -51,6 +54,7 @@ model ReviewItemFeedback {
   savedVariationId   String?
   piezaId            String?
   planningId         String?
+  anuncioId          String?
   decision           ReviewDecision
   /// Era `comment`. En la ronda de copy TODO comentario es sobre copy, así que
   /// la columna ya significaba esto sin decirlo; se renombra en vez de agregar
@@ -77,6 +81,9 @@ enum RondaRevision {
   PIEZA
   /// F3b: el cliente aprueba la sábana de un planning (campañas «con cliente», decisión 24).
   SABANA
+  /// F5 (2026-11-24): la aprobación final antes de implementar: arte, copy, caption, destino y fechas de cada anuncio.
+  /// Reemplaza la ronda de piezas en Producción para lo nuevo.
+  IMPLEMENTACION
 }
 
 enum ReviewDecision {

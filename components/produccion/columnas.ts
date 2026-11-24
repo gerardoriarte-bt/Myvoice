@@ -66,19 +66,12 @@ export const COLUMNAS: Columna[] = [
     dueño: 'El responsable de la campaña',
     delResponsable: true,
   },
-  {
-    estado: 'CON_EL_CLIENTE',
-    numero: 4,
-    nombre: 'Con el cliente',
-    que: 'Aceptada por el equipo. La campaña es «del cliente»: falta su aprobación.',
-    dueño: 'El responsable de la campaña, que se la manda',
-    delResponsable: true,
-  },
+  // «Con el cliente» se retiró el 2026-11-24: el cliente aprueba el arte, con su copy, en Implementación.
   {
     estado: 'LISTA',
-    numero: 5,
+    numero: 4,
     nombre: 'Lista',
-    que: 'Aprobada por quien correspondía. Terminada.',
+    que: 'Aceptada por el equipo. Sigue en Implementación, donde se aprueba con su copy y se monta.',
     dueño: 'Nadie: es el final',
   },
 ];

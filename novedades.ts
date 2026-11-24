@@ -48,6 +48,17 @@ export interface Novedad {
 
 export const NOVEDADES: Novedad[] = [
   {
+    id: 'aprobacion-final',
+    fecha: '2026-11-24',
+    titulo: 'El cliente aprueba una sola vez, antes de implementar',
+    cambios: [
+      'En Implementación, lo listo de cada campaña espera la aprobación final en «Por aprobar». Nada se monta sin ella.',
+      'Si la campaña es con cliente, «Crear enlace para el cliente» le manda todo junto: el arte con su copy y su caption, adónde lleva y cuándo sale. Lo que aprueba pasa a «Por montar»; lo que no, vuelve con su comentario.',
+      'Si la campaña la aprueba el equipo, quien la aprueba toca «Autorizar implementación». También aparece en «Por aprobar», arriba.',
+      'Producción termina en «Lista»: ya no hay columna «Con el cliente» ni se mandan piezas sueltas al cliente.',
+    ],
+  },
+  {
     id: 'implementacion-solo-texto',
     fecha: '2026-11-24',
     titulo: 'Los anuncios de solo texto también se montan',

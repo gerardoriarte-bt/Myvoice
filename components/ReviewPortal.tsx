@@ -3,6 +3,7 @@ import { ReviewSession } from '../types';
 import { reviewApi } from '../services/api';
 import RevisionDePiezas from './RevisionDePiezas';
 import RevisionDeCopy from './RevisionDeCopy';
+import RevisionDeImplementacion from '../src/implementacion/RevisionDeImplementacion';
 import RevisionDeSabana from '../src/cdm/RevisionDeSabana';
 
 interface ReviewPortalProps {
@@ -54,6 +55,11 @@ export default function ReviewPortal({ token, onBack }: ReviewPortalProps) {
         onError={() => setPhase('error')}
       />
     );
+  }
+
+  // La aprobación final antes de implementar (F5, 2026-11-24): arte, copy, destino y fechas por anuncio.
+  if (phase === 'reviewing' && session?.ronda === 'IMPLEMENTACION' && session.implementacion) {
+    return <RevisionDeImplementacion token={token} sesion={session} onEnviada={() => setPhase('submitted')} onError={() => setPhase('error')} />;
   }
 
   // La ronda de copy (2026-11-23): por pieza y por medio, con contexto e instrucciones.

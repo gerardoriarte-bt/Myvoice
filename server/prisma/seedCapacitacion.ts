@@ -701,14 +701,15 @@ async function main() {
             nota: extra.nota ?? null, categoria: extra.categoria ?? null,
           },
         });
-      const { POR_ASIGNAR, EN_DISENO, POR_REVISAR, CON_EL_CLIENTE } = PiezaEstado;
+      // Desde el 2026-11-24 Producción termina en «Lista»: el cliente aprueba el arte con su copy en Implementación.
+      const { POR_ASIGNAR, EN_DISENO, POR_REVISAR, LISTA } = PiezaEstado;
       const grupoFeed = randomUUID();
 
       // 1. Post de feed — CON EL CLIENTE, enviado. La historia completa: v1 con
       //    errores, devuelta, v2 limpia, aceptada y mandada a la clienta.
       const pPost = await crearPieza({
         canal: 'Instagram Post', tipo: PiezaTipo.GRAFICA, formato: '1080×1080',
-        titulo: 'Post de feed — Rápido escribe cualquiera', estado: CON_EL_CLIENTE, grupoId: grupoFeed,
+        titulo: 'Post de feed — Rápido escribe cualquiera', estado: LISTA, grupoId: grupoFeed,
         slots: [{ clave: 'Instagram Post/hook/1' }, { clave: 'Instagram Post/body/1' }, { clave: 'Instagram Post/hashtags/1' }, { clave: 'Instagram Post/visualBrief/1' }],
         asignadaA: 'mateo', creada: hace(12, 3), estadoDesde: hace(1, 5),
       });
@@ -720,7 +721,7 @@ async function main() {
         nota: 'Falta la tilde de «Rápido» y sobra el «¡Pida su demo!»: el CTA va en el caption y la marca no usa exclamaciones.',
       });
       await evento(pPost.id, 'ENTREGADA', hace(2, 6), 'mateo', { de: EN_DISENO, a: POR_REVISAR, nota: 'Versión 2' });
-      await evento(pPost.id, 'ACEPTADA', hace(1, 5), 'laura', { de: POR_REVISAR, a: CON_EL_CLIENTE });
+      await evento(pPost.id, 'ACEPTADA', hace(1, 5), 'laura', { de: POR_REVISAR, a: LISTA });
       await tx.piezaVersion.create({
         data: {
           piezaId: pPost.id, numero: 1, ...arteSubido.postV1, subidaPorId: u.mateo, createdAt: hace(6, 7),
@@ -816,14 +817,14 @@ async function main() {
       // 5. Email — CON EL CLIENTE, enviado, con un hallazgo ILEGIBLE que Laura aceptó con nota.
       const pEmail = await crearPieza({
         canal: 'Email', tipo: PiezaTipo.GRAFICA, formato: '600 px de ancho',
-        titulo: 'Email de lanzamiento — Su marca ya sabe hablar', estado: CON_EL_CLIENTE,
+        titulo: 'Email de lanzamiento — Su marca ya sabe hablar', estado: LISTA,
         slots: [{ clave: 'Email/header/1' }, { clave: 'Email/body/1' }, { clave: 'Email/cta/2' }],
         asignadaA: 'mateo', creada: hace(12, 3), estadoDesde: hace(6, 2),
       });
       await evento(pEmail.id, 'CREADA', hace(12, 3), 'laura', { a: POR_ASIGNAR });
       await evento(pEmail.id, 'ASIGNADA', hace(12, 2), 'laura', { de: POR_ASIGNAR, a: EN_DISENO });
       await evento(pEmail.id, 'ENTREGADA', hace(7, 4), 'mateo', { de: EN_DISENO, a: POR_REVISAR, nota: 'Versión 1' });
-      await evento(pEmail.id, 'ACEPTADA', hace(6, 2), 'laura', { de: POR_REVISAR, a: CON_EL_CLIENTE });
+      await evento(pEmail.id, 'ACEPTADA', hace(6, 2), 'laura', { de: POR_REVISAR, a: LISTA });
       await tx.piezaVersion.create({
         data: {
           piezaId: pEmail.id, numero: 1, ...arteSubido.email, subidaPorId: u.mateo, createdAt: hace(7, 4),
@@ -844,7 +845,7 @@ async function main() {
       //    entrega con enlace, sin archivo ni auditoría.
       const pTikTok = await crearPieza({
         canal: 'TikTok', tipo: PiezaTipo.VIDEO, formato: '1080×1920',
-        titulo: 'TikTok — Seis titulares, seis marcas', estado: CON_EL_CLIENTE,
+        titulo: 'TikTok — Seis titulares, seis marcas', estado: LISTA,
         slots: [{ clave: 'TikTok/verbalHook/1' }, { clave: 'TikTok/narrative/1' }, { clave: 'TikTok/caption/1' }, { clave: 'TikTok/cta/1' }],
         asignadaA: 'mateo', creada: hace(12, 3), estadoDesde: hace(4, 3),
         enlace: 'https://drive.google.com/drive/folders/capacitacion-lobueno-tiktok',
@@ -852,20 +853,9 @@ async function main() {
       await evento(pTikTok.id, 'CREADA', hace(12, 3), 'laura', { a: POR_ASIGNAR });
       await evento(pTikTok.id, 'ASIGNADA', hace(12, 2), 'laura', { de: POR_ASIGNAR, a: EN_DISENO });
       await evento(pTikTok.id, 'ENTREGADA', hace(5, 1), 'mateo', { de: EN_DISENO, a: POR_REVISAR, nota: 'Enlace al corte v2' });
-      await evento(pTikTok.id, 'ACEPTADA', hace(4, 3), 'laura', { de: POR_REVISAR, a: CON_EL_CLIENTE });
+      await evento(pTikTok.id, 'ACEPTADA', hace(4, 3), 'laura', { de: POR_REVISAR, a: LISTA });
 
-      // -- Aprobar, ronda de piezas: el arte terminado espera a la clienta
-      const ronda3 = await tx.reviewSession.create({
-        data: {
-          title: 'Lanzamiento My Voice — piezas para aprobar',
-          ronda: RondaRevision.PIEZA,
-          expiresAt: dentroDe(7),
-          createdAt: hace(0, 20),
-          workspaceId: ws.id,
-          createdById: u.laura,
-          items: { createMany: { data: [pPost.id, pEmail.id].map((piezaId, i) => ({ piezaId, sortOrder: i })) } },
-        },
-      });
+      // La ronda de piezas con la clienta se retiró (2026-11-24): la aprobación final es en Implementación.
 
       // -- La bandeja de cada uno
       const aviso = (para: ClaveEquipo, d: { tipo: 'ASIGNACION' | 'ENTREGA'; titulo: string; detalle: string; piezaId?: string; cantidad?: number; cuando: Date; leida?: Date }) =>
@@ -882,7 +872,7 @@ async function main() {
       await aviso('sofia', { tipo: 'ASIGNACION', titulo: 'Te asignaron una pieza', detalle: `${pAB.titulo} · LoBueno`, piezaId: pAB.id, cuando: hace(1, 4) });
       await aviso('laura', { tipo: 'ENTREGA', titulo: 'Una pieza espera tu visto bueno', detalle: `${pHistoria.titulo} · LoBueno`, piezaId: pHistoria.id, cuando: hace(0, 3) });
 
-      return { ronda2: ronda2.token, ronda3: ronda3.token, workspace: ws.name };
+      return { ronda2: ronda2.token, workspace: ws.name };
     },
     { timeout: 120_000, maxWait: 20_000 }
   );
@@ -895,7 +885,6 @@ async function main() {
   for (const p of EQUIPO) console.log(`  ${`${p.clave}@${DOMINIO}`.padEnd(32)} ${p.nombre} — ${p.puesto} (${p.rol})`);
   console.log('\nEnlaces del cliente (sin login)');
   console.log(`  Copy, campaña 2:   ${base}/?review=${resumen.ronda2}`);
-  console.log(`  Piezas, campaña 1: ${base}/?review=${resumen.ronda3}`);
   console.log(`\nArtes para subir en vivo: ${DIR_ARTES}`);
   console.log('\nGuion: docs/capacitacion-lobueno.md');
 }
