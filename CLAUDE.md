@@ -325,7 +325,15 @@ formats whose type disagrees with their channel (`GET /control/formatos`). **The
 `REDES_SOCIALES` is published by `COMMUNITY`, the rest mounted by `TRAFFICKER`; each sees only theirs (admins see
 all). Destination/UTM live on the sábana line (Planning pastes them, no new version) or, without a sábana, on the
 `Anuncio`. Step ⑤ shows on brands with
-the `IMPLEMENTACION` module.
+the `IMPLEMENTACION` module. **The report (T5)** is `plataforma/reporteImplementacion.ts` (`GET /campanas/:id/reporte-implementacion`):
+it asks each module for its part (`sabanaParaReporte`, `aprobacionesDeCopyDeCampana`, `decisionesDePiezasDeCampana`,
+`anunciosParaReporte`) and returns planned vs mounted per sábana line, its deviations, and one approval history merged
+on read (no migration); the front delivers it as Excel or a printable page. Internal copy approvals are logged in
+`EventoDeCopy` (approve, revoke, back to pending on edit or on sending to the client; `eventosDeCopy` in
+`services/aprobacion.ts`) because `SavedVariation` only keeps the current one. **Control › Eficiencia**
+(`plataforma/eficiencia.ts`, `GET /control/eficiencia`, super admin only) measures each campaign's phases
+(planning, copy, production, final approval, mounting), the client's and the team's adjustments, and its AI cost,
+again asking each module (`eficienciaDe*`) and computing on read.
 
 **`screens.ts` is the single source of screen names and of the stage order**, and the stages are
 the process: Preparar · Escribir · Aprobar · Producir · Medir · Administrar. They were reordered

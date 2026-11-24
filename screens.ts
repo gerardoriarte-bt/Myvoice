@@ -17,6 +17,7 @@
 
 import {
   BarChart3,
+  FileBarChart,
   BookOpen,
   Building2,
   ClipboardCheck,
@@ -55,7 +56,8 @@ export type ScreenId =
   | 'biblioteca'
   | 'plannings'
   | 'pedidos'
-  | 'implementacion';
+  | 'implementacion'
+  | 'reporteImplementacion';
 
 /**
  * Cinco etapas, no cuatro: cuando entra la pieza, «producir» dejaba de
@@ -218,6 +220,16 @@ export const SCREENS: Record<ScreenId, ScreenDef> = {
     name: 'Anuncios',
     description: 'Los anuncios listos de cada campaña: la aprobación final, y después copiar, montar y dejar constancia, o devolver con novedad.',
     icon: Rocket,
+    stage: 'producir',
+    adminOnly: false,
+    soloPorProcesos: true,
+  },
+  /** T5: lo planeado contra lo montado de una campaña y su historial de aprobaciones, como archivo para el cliente. */
+  reporteImplementacion: {
+    id: 'reporteImplementacion',
+    name: 'Reporte',
+    description: 'Lo planeado contra lo montado, con las desviaciones y el historial de aprobaciones de la campaña. Se descarga en Excel o PDF.',
+    icon: FileBarChart,
     stage: 'producir',
     adminOnly: false,
     soloPorProcesos: true,

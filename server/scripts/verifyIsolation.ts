@@ -440,6 +440,9 @@ async function main() {
       method: 'POST',
       body: JSON.stringify({ texto: 'x' }),
     });
+    // La eficiencia está por encima de los workspaces: quien no es super admin no sabe que existe (decisión 27).
+    await expectDenied('GET /control/eficiencia sin ser super admin', '/control/eficiencia', B.token);
+    await expectDenied('GET /campanas/:id/reporte-implementacion de A', `/campanas/${A.project.id}/reporte-implementacion`, B.token);
     await expectDenied('POST /implementacion/enlace con la campaña de A', '/implementacion/enlace', B.token, {
       method: 'POST',
       body: JSON.stringify({ campanaId: A.project.id }),

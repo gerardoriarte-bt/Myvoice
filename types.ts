@@ -1052,3 +1052,98 @@ export interface ImplementacionEnRevision {
     url: string | null;
   }[];
 }
+
+/** T5 · El reporte de implementación de una campaña (2026-11-24): lo planeado contra lo montado y el historial. */
+export interface ReporteImplementacion {
+  campana: { id: string; nombre: string; marca: string | null; modoAprobacion: 'INTERNA' | 'CLIENTE'; responsable: string | null };
+  generadoEn: string;
+  sabana: { version: number; estado: string } | null;
+  resumen: { planeadas: number | null; anuncios: number; porAprobar: number; porMontar: number; montados: number; conNovedad: number; desviaciones: number };
+  lineas: {
+    id: string;
+    medio: string;
+    formato: string;
+    etapa: EtapaDeFunnel | null;
+    /** `null` = sin sábana: no hay plan contra qué comparar. */
+    planeadas: number | null;
+    desde: string | null;
+    hasta: string | null;
+    destino: string | null;
+    sinDestino: boolean;
+    utm: string | null;
+    montados: number;
+    anuncios: {
+      titulo: string;
+      platform: string;
+      estado: EstadoAnuncio;
+      accion: 'publicar' | 'montar';
+      plataforma: string | null;
+      idEnPlataforma: string | null;
+      montadoEn: string | null;
+      url: string | null;
+      sinDestino: boolean;
+      utm: string | null;
+      novedad: string | null;
+    }[];
+    desviaciones: string[];
+  }[];
+  historial: {
+    en: string;
+    paso: 'Sábana' | 'Copy' | 'Pieza' | 'Implementación';
+    que: string;
+    /** Cuando la fila junta varias decisiones iguales: cuáles. */
+    cuales: string[];
+    accion: string;
+    quien: string;
+    externo: boolean;
+    comentario: string | null;
+    tono: 'aprueba' | 'devuelve' | 'info';
+  }[];
+}
+
+/** Control › Eficiencia (super admin, 2026-11-24): el tiempo de cada fase, los ajustes y el costo, por campaña. */
+export type FaseDeEficiencia = 'planeacion' | 'copy' | 'produccion' | 'aprobacionFinal' | 'montaje';
+export interface EficienciaDeControl {
+  dias: number;
+  resumen: {
+    campanas: number;
+    terminadas: number;
+    medianaTotalHoras: number | null;
+    medianaPorFase: Record<FaseDeEficiencia, number | null>;
+    cambiosDelCliente: number;
+    campanasConCambiosDelCliente: number;
+    ajustesInternos: number;
+    montados: number;
+    costoUsd: number;
+    costoPorMontadoUsd: number | null;
+  };
+  campanas: {
+    id: string;
+    campana: string;
+    marca: string | null;
+    workspace: string;
+    modoAprobacion: 'INTERNA' | 'CLIENTE';
+    creada: string;
+    total: { horas: number | null; enCurso: boolean };
+    fases: Record<FaseDeEficiencia, { horas: number | null; enCurso: boolean } | null>;
+    revisiones: Record<
+      | 'sabanaDevueltaPorEquipo'
+      | 'sabanaDevueltaPorCliente'
+      | 'sabanaVersiones'
+      | 'copyCambiosDelCliente'
+      | 'copyRevocado'
+      | 'copyReeditado'
+      | 'copyRondasConCliente'
+      | 'piezasDevueltasPorEquipo'
+      | 'piezasDevueltasPorCliente'
+      | 'versionesDeArte'
+      | 'implementacionCambiosDelCliente'
+      | 'novedadesAlMontar',
+      number
+    >;
+    volumen: { piezasDeCopy: number; piezas: number; anuncios: number; montados: number; generaciones: number };
+    costoUsd: { copy: number; auditoria: number; total: number };
+    cambiosDelCliente: number;
+    ajustesInternos: number;
+  }[];
+}

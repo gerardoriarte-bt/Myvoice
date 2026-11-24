@@ -51,6 +51,20 @@ export const SIN_APROBACION = {
   aprobadoVia: null,
 } as const;
 
+/**
+ * El historial de la aprobación interna del copy (2026-11-24): cada cambio deja un `EventoDeCopy`, porque
+ * `SavedVariation` guarda solo la vigente. Devuelve la operación para meterla en la transacción de quien llama.
+ */
+export const eventosDeCopy = (
+  ids: string[],
+  tipo: 'APROBADO' | 'DESAPROBADO' | 'VUELTO_A_PENDIENTE',
+  autor: { id: string | null; nombre: string | null },
+  detalle?: string
+) =>
+  prisma.eventoDeCopy.createMany({
+    data: ids.map(savedVariationId => ({ savedVariationId, tipo, autorId: autor.id, autorNombre: autor.nombre, detalle: detalle ?? null })),
+  });
+
 export const aprobadoPorCliente = (nombre: string | null | undefined) => ({
   isApproved: true,
   aprobadoPorId: null,
@@ -175,18 +189,21 @@ export const decidirAprobacion = async (tenant: TenantContext, ids: string[], ap
   }
 
   if (aplicar.length) {
-    await prisma.savedVariation.updateMany({
-      where: { id: { in: aplicar } },
-      data: aprobar
-        ? {
-            isApproved: true,
-            aprobadoPorId: tenant.userId,
-            aprobadoPorNombre: yo?.name ?? null,
-            aprobadoEn: new Date(),
-            aprobadoVia: ModoAprobacion.INTERNA,
-          }
-        : SIN_APROBACION,
-    });
+    await prisma.$transaction([
+      prisma.savedVariation.updateMany({
+        where: { id: { in: aplicar } },
+        data: aprobar
+          ? {
+              isApproved: true,
+              aprobadoPorId: tenant.userId,
+              aprobadoPorNombre: yo?.name ?? null,
+              aprobadoEn: new Date(),
+              aprobadoVia: ModoAprobacion.INTERNA,
+            }
+          : SIN_APROBACION,
+      }),
+      eventosDeCopy(aplicar, aprobar ? 'APROBADO' : 'DESAPROBADO', { id: tenant.userId, nombre: yo?.name ?? null }),
+    ]);
   }
   return { aplicados: aplicar, rechazados };
 };

@@ -365,6 +365,21 @@ dónde se está (marca, campaña, paso) se contradecía entre pantallas. Gerardo
     - **Pendiente:** si el copy o el arte cambian después de aprobados para implementar, todavía no vuelven solos a
       «por aprobar» (va con «un cambio después de montado», F5).
 
+## 2026-11-24 · El super admin mide la eficiencia del flujo
+
+33. **Control mide el tiempo, los ajustes y el costo de cada campaña** (Gerardo, 2026-11-24: «no solo el consumo de
+    IA, sino el tiempo que lleva todo el flujo, las revisiones y ajustes solicitados por el cliente»).
+    - **Fases:** planeación (sábana creada → aprobada), copy (sábana aprobada o primer copy → último aprobado),
+      producción (primera pieza → última aceptada), aprobación final (primer envío → última aprobación) y montaje
+      (primera aprobación → último montado). El total va de la campaña creada al último montado; mientras no
+      termina, cuenta hasta hoy y se marca «en curso». Arriba, la mediana de cada fase entre las que la terminaron.
+    - **Ajustes**, separados por quién los pidió: el cliente (sábana devuelta, copy con cambios, piezas devueltas,
+      cambios antes de publicar) y el equipo (sábana devuelta, aprobación quitada, copy reeditado, piezas devueltas,
+      novedades al montar). Más las rondas y versiones.
+    - **Costo de IA** por campaña: la generación de su copy (por su brief) y la auditoría de sus piezas.
+    - Solo el super admin (decisión 27). Se calcula al leer; la única tabla nueva es `EventoDeCopy`, que guarda cada
+      decisión interna sobre el copy.
+
 ## Antes (2026-10-27), siguen vigentes con los nombres nuevos
 
 - La marca, su ADN y sus audiencias son la fuente de verdad (ahora en la parte común, decisión 7).

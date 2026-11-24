@@ -753,3 +753,88 @@ export const formatosConCanal = () =>
     select: { nombre: true, canal: true, tipoArchivo: true, medio: { select: { nombre: true, workspace: { select: { name: true } } } } },
     orderBy: [{ canal: 'asc' }],
   });
+
+/**
+ * T5 (reporte de implementación, 2026-11-24): lo planeado de una campaña —la sábana con sus líneas— y su historial,
+ * para que la plataforma lo ponga junto a lo montado. `null` si la campaña no tiene sábana. Solo del workspace.
+ */
+export const sabanaParaReporte = async (tenant: TenantContext, campanaId: string) => {
+  const p = await prisma.planning.findFirst({
+    where: { campanaId, workspaceId: tenant.workspaceId },
+    select: {
+      version: true,
+      estado: true,
+      desde: true,
+      hasta: true,
+      lineas: {
+        orderBy: { orden: 'asc' },
+        select: {
+          id: true,
+          etapa: true,
+          piezas: true,
+          desde: true,
+          hasta: true,
+          destino: true,
+          utm: true,
+          sinDestino: true,
+          formato: { select: { nombre: true, medio: { select: { nombre: true, clase: true } } } },
+        },
+      },
+      eventos: { orderBy: { createdAt: 'asc' }, select: { tipo: true, version: true, autorId: true, comentario: true, createdAt: true } },
+    },
+  });
+  if (!p) return null;
+  return {
+    version: p.version,
+    estado: p.estado,
+    lineas: p.lineas.map(l => ({
+      id: l.id,
+      medio: l.formato.medio.nombre,
+      clase: l.formato.medio.clase,
+      formato: l.formato.nombre,
+      etapa: l.etapa,
+      piezas: l.piezas,
+      desde: (l.desde ?? p.desde)?.toISOString() ?? null,
+      hasta: (l.hasta ?? p.hasta)?.toISOString() ?? null,
+      destino: l.destino,
+      utm: l.utm,
+      sinDestino: l.sinDestino,
+    })),
+    eventos: p.eventos.map(e => ({ tipo: e.tipo, version: e.version, autorId: e.autorId, comentario: e.comentario, en: e.createdAt.toISOString() })),
+  };
+};
+
+/**
+ * El paso ⑤ del encabezado (2026-11-24): cuántas piezas planeó la sábana aprobada de la campaña, para que
+ * Implementación no se dé por terminada con menos anuncios de los planeados. `null` sin sábana aprobada.
+ */
+export const piezasPlaneadasDeCampana = async (campanaId: string) => {
+  const p = await prisma.planning.findUnique({ where: { campanaId }, select: { estado: true, lineas: { select: { piezas: true } } } });
+  return p?.estado === 'APROBADO' ? p.lineas.reduce((t, l) => t + l.piezas, 0) : null;
+};
+
+/**
+ * Eficiencia (super admin, 2026-11-24): por campaña, cuándo se creó y se aprobó su sábana, cuántas versiones tuvo y
+ * cuántas veces la devolvieron el equipo y el cliente. Por encima de los workspaces: lo llama solo Control.
+ */
+export const eficienciaDeSabanas = async (campanaIds: string[]) => {
+  const ps = await prisma.planning.findMany({
+    where: { campanaId: { in: campanaIds } },
+    select: { campanaId: true, version: true, estado: true, createdAt: true, eventos: { select: { tipo: true, createdAt: true } } },
+  });
+  return new Map(
+    ps.map(p => {
+      const aprobada = p.eventos.filter(e => e.tipo === 'APROBADO' || e.tipo === 'APROBADO_POR_CLIENTE').map(e => e.createdAt.getTime());
+      return [
+        p.campanaId,
+        {
+          creada: p.createdAt.toISOString(),
+          aprobada: p.estado === 'APROBADO' && aprobada.length ? new Date(Math.max(...aprobada)).toISOString() : null,
+          versiones: p.version,
+          devueltaPorEquipo: p.eventos.filter(e => e.tipo === 'DEVUELTO').length,
+          devueltaPorCliente: p.eventos.filter(e => e.tipo === 'DEVUELTO_POR_CLIENTE').length,
+        },
+      ];
+    })
+  );
+};

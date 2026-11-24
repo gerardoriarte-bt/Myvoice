@@ -1,6 +1,6 @@
 # Dependencias entre módulos (generado)
 
-Generado el 2026-11-24 desde el commit `cff7e35` con `bash scripts/mapa/actualizar.sh`. **No se edita a mano**: se corrige `scripts/mapa/modulos.json` y se vuelve a generar.
+Generado el 2026-11-24 desde el commit `baac6b2` con `bash scripts/mapa/actualizar.sh`. **No se edita a mano**: se corrige `scripts/mapa/modulos.json` y se vuelve a generar.
 
 Cada fila es un archivo que usa algo de otro archivo de **otro módulo** (importa, llama o referencia un tipo). Módulos según la decisión 12; reglas en [spec-plataforma.md](./spec-plataforma.md) § 2.
 
@@ -8,15 +8,15 @@ Cada fila es un archivo que usa algo de otro archivo de **otro módulo** (import
 
 | Desde \ Hacia | Plataforma | Parte común | My Voice | Producción | CDM | Implementación | Compartido |
 |---|---|---|---|---|---|---|---|
-| **Plataforma** | · | 31 | 30 | 8 | 11 | 7 | 35 |
+| **Plataforma** | · | 34 | 32 | 10 | 13 | 10 | 39 |
 | **Parte común** | · | · | · | · | · | · | 48 |
 | **My Voice** | · | 42 | · | · | · | · | 132 |
 | **Producción** | · | 14 | 3 | · | · | · | 23 |
 | **CDM** | · | 9 | · | · | · | · | 20 |
-| **Implementación** | · | 4 | 2 | 1 | 1 | · | 7 |
+| **Implementación** | · | 4 | 2 | 1 | 1 | · | 9 |
 | **Compartido** | · | · | · | · | · | · | · |
 
-- **Hay que invertir**: 0 · **pasan por el contrato**: 76 · **permitidas**: 352
+- **Hay que invertir**: 0 · **pasan por el contrato**: 76 · **permitidas**: 370
 
 ## Hay que invertir (0)
 
@@ -69,7 +69,7 @@ Un módulo lee la parte común. Está bien, pero solo por `contrato/`: esta list
 | My Voice | `server/src/controllers/refineController.ts` | Parte común | `server/src/lib/tenancy.ts` | assertClientInWorkspace(), tenancy.ts |
 | My Voice | `server/src/controllers/refineController.ts` | Parte común | `server/src/lib/workspaceSecret.ts` | decryptWorkspaceApiKey(), workspaceSecret.ts |
 | My Voice | `server/src/controllers/refineController.ts` | Parte común | `server/src/middleware/auth.ts` | AuthRequest, auth.ts, handleTenantError() |
-| My Voice | `server/src/controllers/savedController.ts` | Parte común | `server/src/comun/aprobadores.ts` | SELECT_APROBADORES, aprobadores.ts, exigirElegible(), quienesAprueban() |
+| My Voice | `server/src/controllers/savedController.ts` | Parte común | `server/src/comun/aprobadores.ts` | SELECT_APROBADORES, aprobadores.ts, apruebaLaCampana(), exigirElegible() |
 | My Voice | `server/src/controllers/savedController.ts` | Parte común | `server/src/comun/permisos.ts` | assertPuedeActuar(), permisos.ts |
 | My Voice | `server/src/controllers/savedController.ts` | Parte común | `server/src/lib/tenancy.ts` | TenantContext, TenantError, assertClientInWorkspace(), assertMemberOfWorkspace() |
 | My Voice | `server/src/controllers/savedController.ts` | Parte común | `server/src/middleware/auth.ts` | AuthRequest, auth.ts, handleTenantError() |
@@ -107,7 +107,7 @@ Un módulo lee la parte común. Está bien, pero solo por `contrato/`: esta list
 | Producción | `server/src/services/piezaService.ts` | My Voice | `server/src/channels/registry.ts` | esFormatoValido(), esSlotDeInstruccion(), formatoPorDefecto(), getChannelSpec() |
 | Producción | `server/src/services/piezaService.ts` | My Voice | `server/src/myvoice/copyParaProduccion.ts` | copyOriginal(), copyParaCrear(), copyParaProduccion.ts, copyParaProponer() |
 
-## Permitidas (352)
+## Permitidas (370)
 
 El arranque importa de todos, y todos usan la infraestructura compartida.
 
@@ -115,12 +115,12 @@ El arranque importa de todos, y todos usan la infraestructura compartida.
 |---|---|---|
 | CDM | Compartido | 20 |
 | Parte común | Compartido | 48 |
-| Implementación | Compartido | 7 |
+| Implementación | Compartido | 9 |
 | My Voice | Compartido | 132 |
-| Plataforma | CDM | 11 |
-| Plataforma | Compartido | 35 |
-| Plataforma | Parte común | 31 |
-| Plataforma | Implementación | 7 |
-| Plataforma | My Voice | 30 |
-| Plataforma | Producción | 8 |
+| Plataforma | CDM | 13 |
+| Plataforma | Compartido | 39 |
+| Plataforma | Parte común | 34 |
+| Plataforma | Implementación | 10 |
+| Plataforma | My Voice | 32 |
+| Plataforma | Producción | 10 |
 | Producción | Compartido | 23 |

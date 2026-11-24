@@ -20,6 +20,8 @@ import { porAprobar } from '../plataforma/porAprobar.js';
 import * as procesoController from '../plataforma/procesoController.js';
 import * as anunciosController from '../implementacion/anunciosController.js';
 import { pedidos as pedidosDeCopy } from '../plataforma/pedidosDeCopy.js';
+import { reporteDeImplementacion } from '../plataforma/reporteImplementacion.js';
+import { eficiencia } from '../plataforma/eficiencia.js';
 import { registrarLineasDePedido } from '../myvoice/pedidosDeCopy.js';
 import { lineaParaPedido } from '../cdm/planning/planningService.js';
 import { registrarDirectosAImplementacion } from '../services/aprobacion.js';
@@ -178,6 +180,7 @@ router.post('/implementacion/anuncios/:id/devolver', ...inWorkspace, anunciosCon
 router.post('/implementacion/anuncios/:id/reabrir', ...inWorkspace, anunciosController.reabrir);
 router.put('/implementacion/anuncios/:id/destino', ...inWorkspace, anunciosController.destino);
 router.post('/implementacion/autorizar', ...inWorkspace, anunciosController.autorizar);
+router.get('/campanas/:id/reporte-implementacion', ...inWorkspace, reporteDeImplementacion);
 router.post('/implementacion/enlace', ...inWorkspace, anunciosController.enlace);
 router.post('/projects', ...inWorkspace, savedController.createProject);
 router.get('/projects/de-brief/:dnaProfileId', ...inWorkspace, savedController.getCampanaDeBrief);
@@ -224,6 +227,7 @@ router.get('/control/usuarios', ...asSuperAdmin, controlController.listarUsuario
 router.put('/control/membresias', ...asSuperAdmin, controlController.guardarMembresia);
 router.delete('/control/membresias/:userId/:workspaceId', ...asSuperAdmin, controlController.quitarMembresia);
 router.get('/control/gasto', ...asSuperAdmin, analyticsController.getUsageAnalytics);
+router.get('/control/eficiencia', ...asSuperAdmin, eficiencia);
 router.get('/control/marcas', ...asSuperAdmin, controlController.listarMarcas);
 router.put('/control/marcas/:id/modulos', ...asSuperAdmin, controlController.cambiarModulo);
 

@@ -1423,3 +1423,60 @@ export const copyEnPiezas = async (tenant: TenantContext, copyIds: string[]) =>
       })
     ).map(s => s.savedVariationId!)
   );
+
+/**
+ * T5 (reporte de implementación, 2026-11-24): las decisiones sobre las piezas de una campaña —aceptar, devolver,
+ * reabrir, del equipo o del cliente— para el historial de aprobaciones. La campaña ya pasó por la guarda.
+ */
+export const decisionesDePiezasDeCampana = async (campanaId: string) =>
+  (
+    await prisma.piezaEvento.findMany({
+      where: { pieza: { projectId: campanaId }, tipo: { in: ['ACEPTADA', 'DEVUELTA', 'REABIERTA'] } },
+      orderBy: { createdAt: 'asc' },
+      select: { tipo: true, autorId: true, autorExterno: true, nota: true, createdAt: true, pieza: { select: { titulo: true } } },
+    })
+  ).map(e => ({
+    tipo: e.tipo,
+    pieza: e.pieza.titulo,
+    autorId: e.autorId,
+    autorExterno: e.autorExterno,
+    nota: e.nota,
+    en: e.createdAt.toISOString(),
+  }));
+
+/**
+ * Eficiencia (super admin, 2026-11-24): por campaña, cuándo se creó la primera pieza y se aceptó la última, cuántas
+ * devolvió el equipo y cuántas el cliente, cuántas versiones de arte se subieron y cuánto costó auditarlas.
+ */
+export const eficienciaDePiezas = async (campanaIds: string[]) => {
+  const piezas = await prisma.pieza.findMany({
+    where: { projectId: { in: campanaIds }, canceladaEn: null },
+    select: {
+      projectId: true,
+      createdAt: true,
+      eventos: { select: { tipo: true, autorId: true, createdAt: true } },
+      versiones: { select: { costoUsd: true } },
+    },
+  });
+  return new Map(
+    campanaIds.map(id => {
+      const suyas = piezas.filter(p => p.projectId === id);
+      const eventos = suyas.flatMap(p => p.eventos);
+      const aceptadas = eventos.filter(e => e.tipo === 'ACEPTADA').map(e => e.createdAt.getTime());
+      const versiones = suyas.flatMap(p => p.versiones);
+      return [
+        id,
+        {
+          piezas: suyas.length,
+          primera: suyas.length ? new Date(Math.min(...suyas.map(p => p.createdAt.getTime()))).toISOString() : null,
+          ultimaAceptada: aceptadas.length ? new Date(Math.max(...aceptadas)).toISOString() : null,
+          devueltasPorEquipo: eventos.filter(e => e.tipo === 'DEVUELTA' && e.autorId).length,
+          // Las rondas de piezas con el cliente se retiraron el 2026-11-24; quedan las de antes.
+          devueltasPorCliente: eventos.filter(e => e.tipo === 'DEVUELTA' && !e.autorId).length,
+          versiones: versiones.length,
+          costoAuditoriaUsd: versiones.reduce((t, v) => t + Number(v.costoUsd ?? 0), 0),
+        },
+      ];
+    })
+  );
+};

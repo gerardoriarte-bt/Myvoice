@@ -2,7 +2,7 @@ import { prisma } from '../lib/prisma.js';
 import { completitudAdn, MINIMO_ADN } from '../comun/adn/completitudAdn.js';
 import { resolverAdn } from '../comun/adn/resolverAdn.js';
 import type { Paso } from '../contrato/proceso.js';
-import { pasoCdm } from '../cdm/planning/planningService.js';
+import { pasoCdm, piezasPlaneadasDeCampana } from '../cdm/planning/planningService.js';
 import { copyDeCampana } from '../myvoice/pedidosDeCopy.js';
 import { conjuntosSinPiezaDeCampana } from '../myvoice/copyParaProduccion.js';
 import { piezasDeCampana } from '../services/piezaService.js';
@@ -110,22 +110,30 @@ const pasosDeCampana = async (clientId: string, campanaId: string | null, conImp
 
   // ⑤ Implementación (F5): lo listo que ya está montado, y lo que espera la aprobación final (del cliente o de un
   // aprobador). Hecho solo con todo montado y Producción hecha.
-  const imp = await pasoImplementacion(piezas, await conjuntosSinPiezaDeCampana(campanaId));
+  const [imp, planeadas] = await Promise.all([
+    pasoImplementacion(piezas, await conjuntosSinPiezaDeCampana(campanaId)),
+    piezasPlaneadasDeCampana(campanaId),
+  ]);
+  // Contra lo planeado en la sábana, si la hay: con 1 de 3 montado, la campaña no terminó aunque el único anuncio
+  // que existe esté montado (2026-11-24).
+  const total = Math.max(imp.listas, planeadas ?? 0);
+  const faltanPorLlegar = total - imp.listas;
   const implementacion: Paso =
     imp.listas === 0
       ? { paso: 'implementacion', estado: 'bloqueado', falta: 'Espera piezas listas' }
-      : imp.montados === imp.listas && produccion.estado === 'hecho'
-        ? { paso: 'implementacion', estado: 'hecho', texto: `${imp.montados} montados`, avance: { hechas: imp.montados, total: imp.listas } }
+      : imp.montados >= total && produccion.estado === 'hecho'
+        ? { paso: 'implementacion', estado: 'hecho', texto: `${imp.montados} montados`, avance: { hechas: imp.montados, total } }
         : {
             paso: 'implementacion',
             estado: 'activo',
-            texto: `${imp.montados} de ${imp.listas} montados`,
-            avance: { hechas: imp.montados, total: imp.listas },
-            ...((imp.porAprobar > 0 || imp.conElCliente > 0 || imp.conNovedad > 0) && {
+            texto: `${imp.montados} de ${total} montados`,
+            avance: { hechas: imp.montados, total },
+            ...((imp.porAprobar > 0 || imp.conElCliente > 0 || imp.conNovedad > 0 || faltanPorLlegar > 0) && {
               falta: [
                 imp.porAprobar > 0 && `${imp.porAprobar} por aprobar`,
                 imp.conElCliente > 0 && `${imp.conElCliente} con el cliente`,
                 imp.conNovedad > 0 && `${imp.conNovedad} con novedad`,
+                faltanPorLlegar > 0 && `${faltanPorLlegar} planeados sin llegar`,
               ]
                 .filter(Boolean)
                 .join(' · '),

@@ -20,7 +20,7 @@ import type {
   PorAprobar,
   AprobadoresDeCampana,
   CampanaConPedidos,
-  AnuncioParaMontar,
+  AnuncioParaMontar, ReporteImplementacion, EficienciaDeControl,
 } from '../types';
 
 
@@ -112,6 +112,9 @@ export const workspaceApi = {
 
 /** Control, la pantalla del super admin (decisión 27). Todo responde 404 a quien no lo es. */
 export const controlApi = {
+  /** La eficiencia del flujo por campaña: tiempos por fase, ajustes del cliente y del equipo, y costo de IA. */
+  eficiencia: (dias: number, workspaceId?: string): Promise<EficienciaDeControl> =>
+    apiRequest(`/control/eficiencia?dias=${dias}${workspaceId ? `&workspaceId=${encodeURIComponent(workspaceId)}` : ''}`),
   /** El verificador: formatos de la biblioteca que no coinciden con su canal (pieza o solo texto). */
   formatos: (): Promise<{ revisados: number; problemas: { workspace: string; medio: string; formato: string; canal: string; tipoArchivo: string; problema: string }[] }> =>
     apiRequest('/control/formatos'),
@@ -502,6 +505,8 @@ export const copywritingApi = {
 
 /** F5 · Implementación: los anuncios por montar de una marca y lo que se hace con cada uno. */
 export const implementacionApi = {
+  /** T5: lo planeado contra lo montado y el historial de aprobaciones de una campaña. */
+  reporte: (campanaId: string): Promise<ReporteImplementacion> => apiRequest(`/campanas/${campanaId}/reporte-implementacion`),
   anuncios: (clientId: string): Promise<AnuncioParaMontar[]> => apiRequest(`/implementacion/anuncios?clientId=${encodeURIComponent(clientId)}`),
   montar: (piezaId: string, datos: { plataforma: string; idEnPlataforma: string; montadoEn?: string }): Promise<AnuncioParaMontar> =>
     apiRequest(`/implementacion/anuncios/${piezaId}/montar`, { method: 'POST', body: JSON.stringify(datos) }),
