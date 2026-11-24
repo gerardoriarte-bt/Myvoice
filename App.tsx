@@ -17,6 +17,7 @@ import TableroProduccion from './components/produccion/TableroProduccion';
 import CrearPiezasModal from './components/produccion/CrearPiezasModal';
 import PedidosDeCopy from './src/myvoice/PedidosDeCopy';
 import Implementacion from './src/implementacion/Implementacion';
+import ReporteDeImplementacion from './src/implementacion/ReporteDeImplementacion';
 import PorAprobar from './src/plataforma/PorAprobar';
 import Bandeja, { DestinoAviso } from './components/Bandeja';
 import { NAV_STAGES, SCREENS, ScreenId, puedeVer } from './screens';
@@ -1131,6 +1132,9 @@ const App: React.FC = () => {
           marcaId={activeClient.id}
           onAviso={(m, tipo) => addNotification(m, tipo)}
         />
+      )}
+      {activeTab === 'reporteImplementacion' && plataforma && activeClient && (
+        <ReporteDeImplementacion key={activeClient.id} marcaId={activeClient.id} campanaId={campanaId} onElegirCampana={setCampanaId} />
       )}
       {activeTab === 'pedidos' && plataforma && activeClient && (
         <PedidosDeCopy

@@ -2,15 +2,16 @@ import React from 'react';
 import { SCREENS } from '../../screens';
 import { controlApi } from '../../services/api';
 import { GastoDeIA } from '../../components/Analytics';
+import Eficiencia from './Eficiencia';
 import { WORKSPACE_ROLE_LABELS, type MarcaDeControl, type UsuarioDeControl, type WorkspaceDeControl, type WorkspaceRole } from '../../types';
 
 /**
  * Control, la pantalla del super admin (decisión 27; en el `.pen`, «§ Marco · Control»). Está por encima de
- * los workspaces: el interruptor de cada uno, todas las personas con su rol en cada empresa y el gasto de
- * IA. Es la única pantalla que muestra costos. El servidor responde 404 a quien no es super admin.
+ * los workspaces: el interruptor de cada uno, todas las personas con su rol en cada empresa, el gasto de
+ * IA y la eficiencia del flujo (2026-11-24). Es la única pantalla que muestra costos. El servidor responde 404 a quien no es super admin.
  */
 
-type Pestana = 'workspaces' | 'marcas' | 'usuarios' | 'gasto';
+type Pestana = 'workspaces' | 'marcas' | 'usuarios' | 'gasto' | 'eficiencia';
 const ROLES: WorkspaceRole[] = ['OWNER', 'ADMIN', 'MEMBER'];
 const contar = (n: number, uno: string, varios: string) => `${n} ${n === 1 ? uno : varios}`;
 const usd = (n: number) => `USD ${n.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -73,6 +74,7 @@ export default function Control() {
               ['marcas', 'Marcas'],
               ['usuarios', 'Usuarios'],
               ['gasto', 'Gasto de IA'],
+              ['eficiencia', 'Eficiencia'],
             ] as [Pestana, string][]
           ).map(([id, nombre]) => (
             <button
@@ -198,6 +200,8 @@ export default function Control() {
           ))}
         </Tabla>
       )}
+
+      {pestana === 'eficiencia' && <Eficiencia workspaces={workspaces} />}
 
       {pestana === 'gasto' && (
         <div className="space-y-4">

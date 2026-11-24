@@ -23,6 +23,7 @@ import {
   campanaDeBrief,
   decidirAprobacion,
   etapasDe,
+  eventosDeCopy,
   SIN_APROBACION,
 } from '../services/aprobacion.js';
 
@@ -188,7 +189,12 @@ export const updateVariation = async (req: AuthRequest, res: Response) => {
       updates.previousVersions = [...versions, newVersion].slice(-10);
     }
 
+    const vuelveAPendiente = current.isApproved && (cambiaTexto || cambiaCampana);
     const variation = await prisma.savedVariation.update({ where: { id }, data: updates });
+    if (vuelveAPendiente) {
+      const yo = await prisma.user.findUnique({ where: { id: tenant.userId }, select: { name: true } });
+      await eventosDeCopy([id], 'VUELTO_A_PENDIENTE', { id: tenant.userId, nombre: yo?.name ?? null }, cambiaTexto ? 'Se editó el texto' : 'Cambió de campaña');
+    }
     res.json(variation);
   } catch (error) {
     handleTenantError(error, res, 'Error al actualizar contenido');

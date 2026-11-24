@@ -582,3 +582,58 @@ export const directosAImplementacion = async (
     deEstas.filter(g => (g.lineaId && lineas.get(g.lineaId) ? lineas.get(g.lineaId).soloTexto : !producePieza(g.platform))).map(g => g.conjuntoId)
   );
 };
+
+/**
+ * T5 (reporte de implementación, 2026-11-24): los anuncios de una campaña, como los ve Implementación, y su historial
+ * (autorizar, el cliente, montar, devolver). La plataforma los pone junto a lo planeado en la sábana.
+ */
+export const anunciosParaReporte = async (tenant: TenantContext, clientId: string, campanaId: string) => {
+  const anuncios = (await armar(tenant, { clientId })).filter(a => a.campana?.id === campanaId);
+  const filas = await prisma.anuncio.findMany({
+    where: {
+      workspaceId: tenant.workspaceId,
+      OR: [
+        { piezaId: { in: anuncios.map(a => a.piezaId).filter((id): id is string => !!id) } },
+        { conjuntoId: { in: anuncios.map(a => a.conjuntoId).filter((id): id is string => !!id) } },
+      ],
+    },
+    select: { piezaId: true, conjuntoId: true, eventos: { orderBy: { createdAt: 'asc' }, select: { tipo: true, autorId: true, detalle: true, createdAt: true } } },
+  });
+  const tituloDe = new Map(anuncios.map(a => [a.piezaId ?? a.conjuntoId, a.titulo]));
+  const eventos = filas.flatMap(f =>
+    f.eventos.map(e => ({ anuncio: tituloDe.get(f.piezaId ?? f.conjuntoId) ?? 'Anuncio', tipo: e.tipo, autorId: e.autorId, detalle: e.detalle, en: e.createdAt.toISOString() }))
+  );
+  return { anuncios, eventos };
+};
+
+/**
+ * Eficiencia (super admin, 2026-11-24): por campaña, cuándo se mandó a aprobar lo primero, cuándo quedó aprobado lo
+ * último, cuándo se montó lo primero y lo último, cuántos cambios pidió el cliente y cuántas novedades hubo.
+ */
+export const eficienciaDeAnuncios = async (campanaIds: string[]) => {
+  const anuncios = await prisma.anuncio.findMany({
+    where: { OR: [{ projectId: { in: campanaIds } }, { pieza: { projectId: { in: campanaIds } } }] },
+    select: { projectId: true, estado: true, pieza: { select: { projectId: true } }, eventos: { select: { tipo: true, createdAt: true } } },
+  });
+  const t = (xs: Date[], f: (...n: number[]) => number) => (xs.length ? new Date(f(...xs.map(x => x.getTime()))).toISOString() : null);
+  return new Map(
+    campanaIds.map(id => {
+      const suyos = anuncios.filter(a => (a.projectId ?? a.pieza?.projectId) === id);
+      const ev = (tipos: string[]) => suyos.flatMap(a => a.eventos.filter(e => tipos.includes(e.tipo)).map(e => e.createdAt));
+      return [
+        id,
+        {
+          anuncios: suyos.length,
+          montados: suyos.filter(a => a.estado === 'MONTADO').length,
+          primerEnvio: t(ev(['ENVIADO_AL_CLIENTE', 'AUTORIZADO']), Math.min),
+          primeraAprobacion: t(ev(['APROBADO_CLIENTE', 'AUTORIZADO']), Math.min),
+          ultimaAprobacion: t(ev(['APROBADO_CLIENTE', 'AUTORIZADO']), Math.max),
+          primerMontado: t(ev(['MONTADO']), Math.min),
+          ultimoMontado: t(ev(['MONTADO']), Math.max),
+          cambiosDelCliente: ev(['CAMBIOS_CLIENTE']).length,
+          novedades: ev(['DEVUELTO']).length,
+        },
+      ];
+    })
+  );
+};

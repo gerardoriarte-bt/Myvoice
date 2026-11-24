@@ -10,7 +10,7 @@ import * as anunciosImpl from '../implementacion/anuncios.js';
 import { prepararAviso } from '../services/piezaService.js';
 import { AvisoEscrito, enviarEnSegundoPlano, notificar } from '../services/notificacionService.js';
 import { WorkspaceRole } from '@prisma/client';
-import { aprobadoPorCliente, motivosParaNoRevisar, SIN_APROBACION } from '../services/aprobacion.js';
+import { aprobadoPorCliente, eventosDeCopy, motivosParaNoRevisar, SIN_APROBACION } from '../services/aprobacion.js';
 
 export const createReviewSession = async (req: AuthRequest, res: Response) => {
   const tenant = req.tenant!;
@@ -79,11 +79,16 @@ export const createReviewSession = async (req: AuthRequest, res: Response) => {
 
     // Lo que el equipo había aprobado vuelve a quedar pendiente: ahora decide el cliente. Junto con la sesión,
     // para que no quede copy desaprobado sin enlace ni un enlace con copy que figura aprobado.
-    const [, session] = await prisma.$transaction([
+    const devueltos = conAprobado
+      ? (await prisma.savedVariation.findMany({ where: { id: { in: items }, isApproved: true, aprobadoVia: 'INTERNA' }, select: { id: true } })).map(v => v.id)
+      : [];
+    const yo = await prisma.user.findUnique({ where: { id: tenant.userId }, select: { name: true } });
+    const [, , session] = await prisma.$transaction([
       prisma.savedVariation.updateMany({
-        where: { id: { in: conAprobado ? items : [] }, isApproved: true, aprobadoVia: 'INTERNA' },
+        where: { id: { in: devueltos } },
         data: SIN_APROBACION,
       }),
+      eventosDeCopy(devueltos, 'VUELTO_A_PENDIENTE', { id: tenant.userId, nombre: yo?.name ?? null }, 'Mandado al cliente'),
       prisma.reviewSession.create({
       data: {
         title,

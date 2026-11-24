@@ -48,6 +48,16 @@ export interface Novedad {
 
 export const NOVEDADES: Novedad[] = [
   {
+    id: 'reporte-implementacion',
+    fecha: '2026-11-24',
+    titulo: 'El reporte de implementación',
+    cambios: [
+      'En ⑤ Implementación › Reporte, cada campaña muestra lo planeado en la sábana contra lo montado, línea por línea: qué falta, qué salió tarde, qué tiene novedad.',
+      'Abajo, todas las aprobaciones de la campaña en orden —sábana, copy, piezas y la aprobación final—, del equipo y del cliente.',
+      'Se descarga en Excel o se imprime como PDF para mandárselo al cliente.',
+    ],
+  },
+  {
     id: 'no-lleva-destino',
     fecha: '2026-11-24',
     titulo: '«No lleva destino»: lo que no tiene URL se marca',

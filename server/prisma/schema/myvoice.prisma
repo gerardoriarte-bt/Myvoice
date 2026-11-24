@@ -175,6 +175,7 @@ model SavedVariation {
   project           Project?            @relation(fields: [projectId], references: [id])
   reviewItems       ReviewSessionItem[]
   piezaSlots        PiezaSlot[]
+  eventos           EventoDeCopy[]
 
   /// La consulta de H2.A: todos los slots de un canal para una marca. Es el
   /// primer índice de la tabla.
@@ -202,4 +203,26 @@ model GenerationPreset {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   workspace   Workspace @relation(fields: [workspaceId], references: [id])
+}
+
+/// El historial de la aprobación del copy (2026-11-24): `SavedVariation` guarda solo la vigente, y el reporte de
+/// implementación necesita todas —aprobar, revocar, volver a pendiente por una edición o por mandarlo al cliente—.
+/// Append-only, como `PiezaEvento`. Las decisiones del cliente siguen en `ReviewItemFeedback`.
+model EventoDeCopy {
+  id               String         @id @default(uuid())
+  savedVariationId String
+  tipo             TipoEventoCopy
+  autorId          String?
+  autorNombre      String?
+  detalle          String?
+  createdAt        DateTime       @default(now())
+  savedVariation   SavedVariation @relation(fields: [savedVariationId], references: [id], onDelete: Cascade)
+
+  @@index([savedVariationId])
+}
+
+enum TipoEventoCopy {
+  APROBADO
+  DESAPROBADO
+  VUELTO_A_PENDIENTE
 }

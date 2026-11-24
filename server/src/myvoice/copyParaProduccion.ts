@@ -143,3 +143,146 @@ export const conjuntosSinPiezaDeCampana = async (campanaId: string) => {
   });
   return [...new Set(filas.map(f => f.conjuntoId!))];
 };
+
+/**
+ * T5 (reporte de implementación, 2026-11-24): las aprobaciones del copy de una campaña, agrupadas por pieza
+ * (`conjuntoId`) para que 40 textos de un Google Ads no sean 40 filas. La interna es la vigente (el copy guarda la
+ * última); las del cliente salen de sus respuestas en el portal, una por pieza y por envío.
+ */
+export const aprobacionesDeCopyDeCampana = async (campanaId: string) => {
+  const nombreDe = (v: { platform: string; piezaIndex: number | null }) => `${v.platform}${v.piezaIndex ? ` ${v.piezaIndex}` : ''}`;
+  const copy = await prisma.savedVariation.findMany({
+    where: { projectId: campanaId },
+    select: { id: true, conjuntoId: true, platform: true, piezaIndex: true, isApproved: true, aprobadoVia: true, aprobadoPorNombre: true, aprobadoEn: true },
+  });
+  const porId = new Map(copy.map(v => [v.id, v]));
+  // Desde el 2026-11-24 cada decisión interna deja un evento; el copy anterior solo tiene la vigente.
+  const eventos = await prisma.eventoDeCopy.findMany({
+    where: { savedVariationId: { in: [...porId.keys()] } },
+    orderBy: { createdAt: 'asc' },
+    select: { savedVariationId: true, tipo: true, autorNombre: true, detalle: true, createdAt: true },
+  });
+  const conEventos = new Set(eventos.map(e => e.savedVariationId));
+  const internas = copy.filter(v => v.isApproved && v.aprobadoVia === ModoAprobacion.INTERNA && !conEventos.has(v.id));
+  const feedbacks = await prisma.reviewItemFeedback.findMany({
+    where: { savedVariationId: { in: [...porId.keys()] } },
+    select: { decision: true, feedbackCopy: true, savedVariationId: true, reviewSubmission: { select: { id: true, reviewerName: true, submittedAt: true } } },
+  });
+  const delCliente = feedbacks.map(f => ({ ...f, savedVariation: f.savedVariationId ? porId.get(f.savedVariationId) ?? null : null }));
+  const grupos = new Map<
+    string,
+    { que: string; textos: number; decision: 'APROBADO' | 'CAMBIOS' | 'REVOCADO' | 'PENDIENTE'; por: string; externo: boolean; en: string; comentario: string | null }
+  >();
+  for (const e of eventos) {
+    const v = porId.get(e.savedVariationId)!;
+    const decision = e.tipo === 'APROBADO' ? 'APROBADO' : e.tipo === 'DESAPROBADO' ? 'REVOCADO' : 'PENDIENTE';
+    // Un mismo gesto sobre los textos de una pieza (aprobar los 10 títulos de un Google Ads) es una fila.
+    const clave = `e:${v.conjuntoId ?? v.id}:${decision}:${e.autorNombre}:${e.createdAt.toISOString()}`;
+    const g = grupos.get(clave);
+    if (g) g.textos++;
+    else
+      grupos.set(clave, {
+        que: nombreDe(v),
+        textos: 1,
+        decision,
+        por: e.autorNombre ?? 'Alguien del equipo',
+        externo: false,
+        en: e.createdAt.toISOString(),
+        comentario: e.detalle,
+      });
+  }
+  for (const v of internas) {
+    const clave = `i:${v.conjuntoId ?? v.id}:${v.aprobadoPorNombre}`;
+    const g = grupos.get(clave);
+    if (g) g.textos++;
+    else
+      grupos.set(clave, {
+        que: nombreDe(v),
+        textos: 1,
+        decision: 'APROBADO',
+        por: v.aprobadoPorNombre ?? 'El equipo',
+        externo: false,
+        en: (v.aprobadoEn ?? new Date(0)).toISOString(),
+        comentario: null,
+      });
+  }
+  for (const f of delCliente) {
+    if (!f.savedVariation) continue;
+    const decision = f.decision === 'APPROVED' ? 'APROBADO' : 'CAMBIOS';
+    const clave = `c:${f.reviewSubmission.id}:${f.savedVariation.conjuntoId ?? f.savedVariation.id}:${decision}`;
+    const g = grupos.get(clave);
+    if (g) {
+      g.textos++;
+      if (f.feedbackCopy && !g.comentario) g.comentario = f.feedbackCopy;
+    } else
+      grupos.set(clave, {
+        que: nombreDe(f.savedVariation),
+        textos: 1,
+        decision,
+        por: f.reviewSubmission.reviewerName ?? 'El cliente',
+        externo: true,
+        en: f.reviewSubmission.submittedAt.toISOString(),
+        comentario: f.feedbackCopy,
+      });
+  }
+  return [...grupos.values()];
+};
+
+/**
+ * Eficiencia (super admin, 2026-11-24): por campaña, cuándo se escribió el primer copy y cuándo quedó aprobado el
+ * último, cuántas piezas de copy pidió cambiar el cliente, cuántas veces el equipo revocó o reeditó lo aprobado,
+ * cuántas rondas con el cliente hubo y cuánto costó generarlo. Solo lo ve Control.
+ */
+export const eficienciaDeCopy = async (campanas: { id: string; dnaProfileId: string | null }[]) => {
+  const ids = campanas.map(c => c.id);
+  const copy = await prisma.savedVariation.findMany({
+    where: { projectId: { in: ids } },
+    select: { id: true, projectId: true, conjuntoId: true, savedAt: true, isApproved: true, aprobadoEn: true },
+  });
+  const deCampana = new Map(copy.map(v => [v.id, v.projectId!]));
+  const [feedbacks, eventos, sesiones, costos] = await Promise.all([
+    prisma.reviewItemFeedback.findMany({
+      where: { savedVariationId: { in: [...deCampana.keys()] } },
+      select: { savedVariationId: true, decision: true, reviewSubmissionId: true },
+    }),
+    prisma.eventoDeCopy.findMany({ where: { savedVariationId: { in: [...deCampana.keys()] } }, select: { savedVariationId: true, tipo: true, detalle: true } }),
+    prisma.reviewSessionItem.findMany({
+      where: { savedVariationId: { in: [...deCampana.keys()] }, reviewSession: { ronda: 'COPY' } },
+      select: { savedVariationId: true, reviewSessionId: true },
+    }),
+    prisma.generationLog.groupBy({
+      by: ['dnaProfileId'],
+      where: { dnaProfileId: { in: campanas.map(c => c.dnaProfileId).filter((x): x is string => !!x) } },
+      _sum: { costUsd: true },
+      _count: { _all: true },
+    }),
+  ]);
+  const conjuntoDe = new Map(copy.map(v => [v.id, v.conjuntoId ?? v.id]));
+  const costoDe = new Map(costos.map(c => [c.dnaProfileId, { usd: Number(c._sum.costUsd ?? 0), generaciones: c._count._all }]));
+  return new Map(
+    campanas.map(c => {
+      const suyos = copy.filter(v => v.projectId === c.id);
+      const suyo = (id: string | null) => !!id && deCampana.get(id) === c.id;
+      const aprobados = suyos.filter(v => v.isApproved && v.aprobadoEn).map(v => v.aprobadoEn!.getTime());
+      const rechazos = feedbacks.filter(f => suyo(f.savedVariationId) && f.decision === 'REJECTED');
+      return [
+        c.id,
+        {
+          primero: suyos.length ? new Date(Math.min(...suyos.map(v => v.savedAt.getTime()))).toISOString() : null,
+          ultimoAprobado: aprobados.length ? new Date(Math.max(...aprobados)).toISOString() : null,
+          piezas: new Set(suyos.map(v => v.conjuntoId ?? v.id)).size,
+          aprobadas: new Set(suyos.filter(v => v.isApproved).map(v => v.conjuntoId ?? v.id)).size,
+          // Por pieza de copy: los 10 títulos de un Google Ads rechazados son un pedido de cambio, no diez.
+          cambiosDelCliente: new Set(rechazos.map(f => `${f.reviewSubmissionId}:${conjuntoDe.get(f.savedVariationId!)}`)).size,
+          revocadas: new Set(eventos.filter(e => suyo(e.savedVariationId) && e.tipo === 'DESAPROBADO').map(e => conjuntoDe.get(e.savedVariationId))).size,
+          reeditadas: new Set(
+            eventos.filter(e => suyo(e.savedVariationId) && e.tipo === 'VUELTO_A_PENDIENTE' && e.detalle !== 'Mandado al cliente').map(e => conjuntoDe.get(e.savedVariationId))
+          ).size,
+          rondasConCliente: new Set(sesiones.filter(s => suyo(s.savedVariationId)).map(s => s.reviewSessionId)).size,
+          costoUsd: c.dnaProfileId ? costoDe.get(c.dnaProfileId)?.usd ?? 0 : 0,
+          generaciones: c.dnaProfileId ? costoDe.get(c.dnaProfileId)?.generaciones ?? 0 : 0,
+        },
+      ];
+    })
+  );
+};
