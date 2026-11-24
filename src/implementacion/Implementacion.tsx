@@ -12,7 +12,7 @@ import type { AnuncioParaMontar, EstadoAnuncio, EtapaDeFunnel } from '../../type
 const PESTANAS: { estado: EstadoAnuncio; nombre: string }[] = [
   { estado: 'POR_MONTAR', nombre: 'Por montar' },
   { estado: 'CON_NOVEDAD', nombre: 'Con novedad' },
-  { estado: 'MONTADO', nombre: 'Montados' },
+  { estado: 'MONTADO', nombre: 'Hechos' },
 ];
 const ETAPA: Record<EtapaDeFunnel, string> = { RECONOCIMIENTO: 'Reconocimiento', CONSIDERACION: 'Consideración', CONVERSION: 'Conversión', RETENCION: 'Retención' };
 const MOTIVOS: [string, string][] = [
@@ -56,12 +56,14 @@ const Copiar = ({ texto }: { texto: string }) => {
 
 interface Props {
   marcaId: string;
-  /** Quien administra o tiene Trafficker o Community monta y devuelve (paso IMPLEMENTACION). */
-  puedeMontar: boolean;
   onAviso: (mensaje: string, tipo: 'success' | 'error' | 'info' | 'warning') => void;
 }
 
-export default function Implementacion({ marcaId, puedeMontar, onAviso }: Props) {
+/**
+ * Cada uno ve lo suyo (decisión 29): el community manager, las publicaciones de redes sociales; el trafficker, los
+ * pagos y lo demás. El servidor filtra y dice en cada anuncio si quien mira puede actuar (`puedo`).
+ */
+export default function Implementacion({ marcaId, onAviso }: Props) {
   const [anuncios, setAnuncios] = React.useState<AnuncioParaMontar[] | null>(null);
   const [pestana, setPestana] = React.useState<EstadoAnuncio>('POR_MONTAR');
   const [abierto, setAbierto] = React.useState<string | null>(null);
@@ -80,7 +82,7 @@ export default function Implementacion({ marcaId, puedeMontar, onAviso }: Props)
   if (!anuncios) return <div className="h-48" />;
 
   const cuantos = (e: EstadoAnuncio) => anuncios.filter(a => a.estado === e).length;
-  const visibles = anuncios.filter(a => a.estado === pestana || a.piezaId === abierto);
+  const visibles = anuncios.filter(a => a.estado === pestana || a.id === abierto);
   const porCampana = new Map<string, { nombre: string; anuncios: AnuncioParaMontar[] }>();
   for (const a of visibles) {
     const clave = a.campana?.id ?? 'sin-campana';
@@ -89,14 +91,15 @@ export default function Implementacion({ marcaId, puedeMontar, onAviso }: Props)
     porCampana.set(clave, g);
   }
 
-  const actualizar = (a: AnuncioParaMontar) => setAnuncios(prev => (prev ?? []).map(x => (x.piezaId === a.piezaId ? a : x)));
+  const actualizar = (a: AnuncioParaMontar) => setAnuncios(prev => (prev ?? []).map(x => (x.id === a.id ? a : x)));
 
   return (
     <div className="space-y-5">
       <div>
         <h1 className="text-[22px] font-bold text-[#1D1D1F]">Por montar</h1>
         <p className="mt-1 text-[13px] text-[#6E6E73]">
-          Los anuncios aprobados de cada campaña. Abre uno, copia lo que va en la plataforma y deja constancia de que quedó montado.
+          Lo aprobado de cada campaña. Abre uno, copia lo que va en la plataforma y deja constancia: el trafficker lo monta y el
+          community manager publica lo de redes sociales.
         </p>
       </div>
 
@@ -117,11 +120,12 @@ export default function Implementacion({ marcaId, puedeMontar, onAviso }: Props)
 
       {anuncios.length === 0 ? (
         <div className="rounded-[12px] border border-dashed border-[rgba(0,0,0,0.12)] bg-white px-6 py-10 text-center text-[13px] text-[#6E6E73]">
-          Esta marca todavía no tiene piezas listas. Cuando Producción acepte una (y el cliente, si la campaña lo pide), aparece aquí.
+          Esta marca todavía no tiene nada listo para montar. Aparece aquí cuando Producción acepta una pieza (y el cliente, si
+          la campaña lo pide) o, en los anuncios de solo texto como la búsqueda de Google Ads, cuando se aprueba el copy.
         </div>
       ) : porCampana.size === 0 ? (
         <div className="rounded-[12px] border border-dashed border-[rgba(0,0,0,0.12)] bg-white px-6 py-10 text-center text-[13px] text-[#6E6E73]">
-          {pestana === 'POR_MONTAR' ? 'No hay nada por montar.' : pestana === 'CON_NOVEDAD' ? 'Ningún anuncio tiene novedad.' : 'Todavía no hay anuncios montados.'}
+          {pestana === 'POR_MONTAR' ? 'No hay nada por montar ni por publicar.' : pestana === 'CON_NOVEDAD' ? 'Nada tiene novedad.' : 'Todavía no hay nada montado ni publicado.'}
         </div>
       ) : (
         [...porCampana.entries()].map(([clave, g]) => {
@@ -135,15 +139,15 @@ export default function Implementacion({ marcaId, puedeMontar, onAviso }: Props)
                   <div className="h-full rounded-full bg-[#0E7490]" style={{ width: `${deLaCampana.length ? (montados / deLaCampana.length) * 100 : 0}%` }} />
                 </div>
                 <span className="text-[12px] font-semibold tabular-nums text-[#3A3A3C]">
-                  {montados} de {deLaCampana.length} montados
+                  {montados} de {deLaCampana.length} hechos
                 </span>
               </header>
               <ul className="divide-y divide-[rgba(0,0,0,0.05)] border-t border-[rgba(0,0,0,0.06)]">
                 {g.anuncios.map(a => (
-                  <li key={a.piezaId}>
+                  <li key={a.id}>
                     <button
                       type="button"
-                      onClick={() => setAbierto(abierto === a.piezaId ? null : a.piezaId)}
+                      onClick={() => setAbierto(abierto === a.id ? null : a.id)}
                       className="flex w-full flex-wrap items-center gap-x-4 gap-y-1 px-4 py-2.5 text-left text-[13px] hover:bg-[#FAFAFB]"
                     >
                       <div className="min-w-0 flex-1">
@@ -156,7 +160,7 @@ export default function Implementacion({ marcaId, puedeMontar, onAviso }: Props)
                       {a.linea?.desde && <span className="text-[12px] text-[#6E6E73]">Sale el {dia(a.linea.desde)}</span>}
                       {a.estado === 'MONTADO' ? (
                         <span className="rounded-full bg-cyan-50 px-2.5 py-0.5 text-[11.5px] font-semibold text-[#0E7490]">
-                          Montado · {a.montado?.plataforma}
+                          {a.accion === 'publicar' ? 'Publicado' : 'Montado'} · {a.montado?.plataforma}
                         </span>
                       ) : a.estado === 'CON_NOVEDAD' ? (
                         <span className="rounded-full bg-amber-50 px-2.5 py-0.5 text-[11.5px] font-semibold text-amber-800">Con novedad</span>
@@ -170,8 +174,8 @@ export default function Implementacion({ marcaId, puedeMontar, onAviso }: Props)
                         </span>
                       )}
                     </button>
-                    {abierto === a.piezaId && (
-                      <Detalle a={a} puedeMontar={puedeMontar} onCambio={actualizar} onAviso={onAviso} />
+                    {abierto === a.id && (
+                      <Detalle a={a} onCambio={actualizar} onAviso={onAviso} />
                     )}
                   </li>
                 ))}
@@ -186,12 +190,10 @@ export default function Implementacion({ marcaId, puedeMontar, onAviso }: Props)
 
 function Detalle({
   a,
-  puedeMontar,
   onCambio,
   onAviso,
 }: {
   a: AnuncioParaMontar;
-  puedeMontar: boolean;
   onCambio: (a: AnuncioParaMontar) => void;
   onAviso: (mensaje: string, tipo: 'success' | 'error' | 'info' | 'warning') => void;
 }) {
@@ -277,7 +279,7 @@ function Detalle({
                 <button
                   type="button"
                   disabled={ocupado}
-                  onClick={() => void hacer(() => implementacionApi.destino(a.piezaId, { destino, utm }), 'Destino guardado')}
+                  onClick={() => void hacer(() => implementacionApi.destino(a.id, { destino, utm }), 'Destino guardado')}
                   className="rounded-lg bg-[#1D1D1F] px-3 py-1.5 text-[12px] font-semibold text-white disabled:opacity-40"
                 >
                   Guardar
@@ -302,7 +304,9 @@ function Detalle({
               <ExternalLink className="h-3.5 w-3.5" /> Abrir el archivo
             </a>
           )}
-          {!a.previaUrl && !a.enlace && <p className="mt-1 text-[12px] text-[#86868B]">Sin archivo adjunto.</p>}
+          {!a.previaUrl && !a.enlace && (
+            <p className="mt-1 text-[12px] text-[#86868B]">{a.piezaId ? 'Sin archivo adjunto.' : 'Solo texto: este anuncio no lleva pieza de diseño.'}</p>
+          )}
         </div>
 
         <div>
@@ -326,11 +330,14 @@ function Detalle({
 
         {a.montado && (
           <p className="text-[12px] text-[#0E7490]">
-            Montado en {a.montado.plataforma} · ID {a.montado.idEnPlataforma} · {dia(a.montado.en)}
+            {a.accion === 'publicar' ? 'Publicado' : 'Montado'} en {a.montado.plataforma} · ID {a.montado.idEnPlataforma} · {dia(a.montado.en)}
           </p>
         )}
 
-        {puedeMontar && modo === 'ver' && (
+        {!a.puedo && (
+          <p className="text-[12px] text-[#86868B]">{a.accion === 'publicar' ? 'Lo publica el community manager.' : 'Lo monta el trafficker.'}</p>
+        )}
+        {a.puedo && modo === 'ver' && (
           <div className="flex flex-col gap-2">
             {a.estado !== 'MONTADO' && (
               <button
@@ -339,7 +346,7 @@ function Detalle({
                 onClick={() => setModo('montar')}
                 className="rounded-lg bg-[#0E7490] px-3 py-2 text-[13px] font-semibold text-white hover:bg-cyan-800 disabled:opacity-40"
               >
-                Marcar montado
+                {a.accion === 'publicar' ? 'Marcar publicado' : 'Marcar montado'}
               </button>
             )}
             <button
@@ -353,7 +360,7 @@ function Detalle({
               <button
                 type="button"
                 disabled={ocupado}
-                onClick={() => void hacer(() => implementacionApi.reabrir(a.piezaId), 'Volvió a por montar')}
+                onClick={() => void hacer(() => implementacionApi.reabrir(a.id), 'Volvió a por montar')}
                 className="inline-flex items-center justify-center gap-1.5 text-[12px] font-semibold text-[#6E6E73] hover:text-[#1D1D1F]"
               >
                 <RotateCcw className="h-3.5 w-3.5" /> Volver a por montar
@@ -365,13 +372,13 @@ function Detalle({
         {modo === 'montar' && (
           <div className="space-y-2 rounded-lg bg-white p-3 ring-1 ring-[rgba(0,0,0,0.08)]">
             <input value={plataforma} onChange={e => setPlataforma(e.target.value)} placeholder="Plataforma (Meta, Google Ads…)" className={campo} />
-            <input value={idEnPlataforma} onChange={e => setIdEnPlataforma(e.target.value)} placeholder="ID del anuncio en la plataforma" className={campo} />
+            <input value={idEnPlataforma} onChange={e => setIdEnPlataforma(e.target.value)} placeholder={a.accion === 'publicar' ? 'ID o enlace de la publicación' : 'ID del anuncio en la plataforma'} className={campo} />
             <input type="date" value={fecha} onChange={e => setFecha(e.target.value)} className={campo} />
             <div className="flex gap-2">
               <button
                 type="button"
                 disabled={ocupado || !plataforma.trim() || !idEnPlataforma.trim()}
-                onClick={() => void hacer(() => implementacionApi.montar(a.piezaId, { plataforma, idEnPlataforma, montadoEn: fecha }), 'Anuncio montado')}
+                onClick={() => void hacer(() => implementacionApi.montar(a.id, { plataforma, idEnPlataforma, montadoEn: fecha }), a.accion === 'publicar' ? 'Publicación registrada' : 'Anuncio montado')}
                 className="rounded-lg bg-[#0E7490] px-3 py-1.5 text-[12px] font-semibold text-white disabled:opacity-40"
               >
                 Guardar
@@ -397,7 +404,7 @@ function Detalle({
               <button
                 type="button"
                 disabled={ocupado || !texto.trim()}
-                onClick={() => void hacer(() => implementacionApi.devolver(a.piezaId, { motivo, texto }), 'Devuelto con novedad')}
+                onClick={() => void hacer(() => implementacionApi.devolver(a.id, { motivo, texto }), 'Devuelto con novedad')}
                 className="rounded-lg bg-amber-600 px-3 py-1.5 text-[12px] font-semibold text-white disabled:opacity-40"
               >
                 Devolver

@@ -1414,3 +1414,14 @@ export const piezasParaImplementar = async (tenant: TenantContext, filtro: { cli
     }))
   );
 };
+
+/** F5: cuáles de estos copys ya están en una pieza (no cancelada): Implementación no los muestra también como texto. */
+export const copyEnPiezas = async (tenant: TenantContext, copyIds: string[]) =>
+  new Set(
+    (
+      await prisma.piezaSlot.findMany({
+        where: { savedVariationId: { in: [...new Set(copyIds)] }, pieza: { workspaceId: tenant.workspaceId, canceladaEn: null } },
+        select: { savedVariationId: true },
+      })
+    ).map(s => s.savedVariationId!)
+  );

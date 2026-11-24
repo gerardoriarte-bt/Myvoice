@@ -985,7 +985,10 @@ export interface CampanaConPedidos {
 export type EstadoAnuncio = 'POR_MONTAR' | 'MONTADO' | 'CON_NOVEDAD';
 
 export interface AnuncioParaMontar {
-  piezaId: string;
+  /** `pieza:<id>` o, en los canales sin pieza de diseño (búsqueda de Google Ads, WhatsApp, push), `copy:<conjunto>`. */
+  id: string;
+  piezaId: string | null;
+  conjuntoId: string | null;
   clientId: string;
   titulo: string;
   platform: string;
@@ -1005,4 +1008,9 @@ export interface AnuncioParaMontar {
   novedad: string | null;
   aprobaciones: { copy: { por: string; en: string | null; via: string | null }[]; pieza: { por: string; en: string; via: string } | null };
   destinoEnLaLinea: boolean;
+  /** La clase del medio (decisión 29): redes sociales las publica el community; lo demás lo monta el trafficker. */
+  clase: 'PAGOS' | 'REDES_SOCIALES' | 'PROPIOS' | 'TRADICIONAL' | null;
+  accion: 'publicar' | 'montar';
+  /** Quien mira puede marcarlo o devolverlo. */
+  puedo: boolean;
 }

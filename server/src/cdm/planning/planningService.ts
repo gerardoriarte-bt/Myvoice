@@ -685,7 +685,7 @@ export const lineasParaImplementar = async (tenant: TenantContext, ids: string[]
       desde: true,
       hasta: true,
       planning: { select: { desde: true, hasta: true } },
-      formato: { select: { nombre: true, medio: { select: { nombre: true } } } },
+      formato: { select: { nombre: true, tipoArchivo: true, medio: { select: { nombre: true, clase: true } } } },
     },
   });
   return new Map(
@@ -701,6 +701,10 @@ export const lineasParaImplementar = async (tenant: TenantContext, ids: string[]
         hasta: (l.hasta ?? l.planning.hasta)?.toISOString() ?? null,
         medio: l.formato.medio.nombre,
         formato: l.formato.nombre,
+        // Lo que decide el camino (2026-11-24): un formato de solo texto va directo a Implementación; uno con
+        // archivo espera su pieza. La clase dice quién lo monta o publica.
+        soloTexto: l.formato.tipoArchivo === 'TEXTO',
+        clase: l.formato.medio.clase,
       },
     ])
   );
@@ -724,3 +728,11 @@ export const guardarDestinoDeLinea = async (tenant: TenantContext, id: string, l
   });
   return detallePlanning(tenant, id);
 };
+
+/** Para el verificador de Control: los formatos de la biblioteca que dicen qué canal los escribe. */
+export const formatosConCanal = () =>
+  prisma.formato.findMany({
+    where: { canal: { not: null } },
+    select: { nombre: true, canal: true, tipoArchivo: true, medio: { select: { nombre: true, workspace: { select: { name: true } } } } },
+    orderBy: [{ canal: 'asc' }],
+  });

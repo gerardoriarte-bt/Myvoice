@@ -52,3 +52,4 @@ Módulos: parte común · My Voice · CDM   (los que se tocaron)
 - [2026-11-19](./2026-11-19.md) · De F0 a F3a: el marco, el super admin, CDM y el planning, en producción.
 - [2026-11-20](./2026-11-20.md) · F3b, varios aprobadores con «Por aprobar» (decisiones 30 y 31) y los pedidos de copy (F4), sin el `.pen`.
 - [2026-11-23](./2026-11-23.md) · Copy: el flujo primero, el enlace para el cliente a la vista y la aprobación desde Equipo.
+- [2026-11-24](./2026-11-24.md) · Implementación: el interruptor y los anuncios de solo texto.

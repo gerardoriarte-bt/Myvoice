@@ -168,10 +168,10 @@ router.get('/por-aprobar', ...inWorkspace, porAprobar);
 router.get('/copywriting/pedidos', ...inWorkspace, pedidosDeCopy);
 // F5 · Implementación: los anuncios por montar, montar, devolver con novedad y el destino sin sábana.
 router.get('/implementacion/anuncios', ...inWorkspace, anunciosController.listar);
-router.post('/implementacion/anuncios/:piezaId/montar', ...inWorkspace, anunciosController.montar);
-router.post('/implementacion/anuncios/:piezaId/devolver', ...inWorkspace, anunciosController.devolver);
-router.post('/implementacion/anuncios/:piezaId/reabrir', ...inWorkspace, anunciosController.reabrir);
-router.put('/implementacion/anuncios/:piezaId/destino', ...inWorkspace, anunciosController.destino);
+router.post('/implementacion/anuncios/:id/montar', ...inWorkspace, anunciosController.montar);
+router.post('/implementacion/anuncios/:id/devolver', ...inWorkspace, anunciosController.devolver);
+router.post('/implementacion/anuncios/:id/reabrir', ...inWorkspace, anunciosController.reabrir);
+router.put('/implementacion/anuncios/:id/destino', ...inWorkspace, anunciosController.destino);
 router.post('/projects', ...inWorkspace, savedController.createProject);
 router.get('/projects/de-brief/:dnaProfileId', ...inWorkspace, savedController.getCampanaDeBrief);
 router.patch('/projects/:id', ...inWorkspace, savedController.updateProject);
@@ -211,6 +211,7 @@ router.put('/cdm/plannings/:id/lineas/:lineaId/destino', ...inWorkspace, plannin
  */
 const asSuperAdmin = [authenticateToken, requireSuperAdmin] as const;
 router.get('/control/workspaces', ...asSuperAdmin, controlController.listarWorkspaces);
+router.get('/control/formatos', ...asSuperAdmin, controlController.formatosDesalineados);
 router.put('/control/workspaces/:id/plataforma', ...asSuperAdmin, controlController.cambiarPlataforma);
 router.get('/control/usuarios', ...asSuperAdmin, controlController.listarUsuarios);
 router.put('/control/membresias', ...asSuperAdmin, controlController.guardarMembresia);

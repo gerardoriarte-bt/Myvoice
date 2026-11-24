@@ -126,3 +126,15 @@ export const specParaGeneracion = (
 
 /** Cuántos textos lleva una pieza de este spec (para repartir las piezas en tandas). */
 export const textosPorPieza = (spec: ChannelSpec): number => spec.slots.reduce((n, s) => n + (s.porPieza || 1), 0);
+
+/**
+ * La clase de medio de un canal (decisión 29), para Implementación cuando el copy no viene de una sábana: con
+ * sábana manda la clase del medio en CDM. Redes sociales las publica el community manager; lo demás, el trafficker.
+ */
+export const claseDeCanal = (platformId: string): 'PAGOS' | 'REDES_SOCIALES' | 'PROPIOS' | 'TRADICIONAL' | null => {
+  const grupo = getChannelSpec(platformId)?.group;
+  return grupo === 'social' ? 'REDES_SOCIALES' : grupo === 'performance' ? 'PAGOS' : grupo === 'engagement' ? 'PROPIOS' : grupo === 'audio' ? 'TRADICIONAL' : null;
+};
+
+/** Si el canal produce pieza de diseño. Con sábana manda el formato de CDM (solo texto = no). */
+export const producePieza = (platformId: string): boolean => Boolean(getChannelSpec(platformId)?.pieza);

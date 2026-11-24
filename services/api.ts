@@ -112,6 +112,9 @@ export const workspaceApi = {
 
 /** Control, la pantalla del super admin (decisión 27). Todo responde 404 a quien no lo es. */
 export const controlApi = {
+  /** El verificador: formatos de la biblioteca que no coinciden con su canal (pieza o solo texto). */
+  formatos: (): Promise<{ revisados: number; problemas: { workspace: string; medio: string; formato: string; canal: string; tipoArchivo: string; problema: string }[] }> =>
+    apiRequest('/control/formatos'),
   workspaces: (): Promise<{ periodo: string; workspaces: WorkspaceDeControl[] }> => apiRequest('/control/workspaces'),
   cambiarPlataforma: (workspaceId: string, encendida: boolean) =>
     apiRequest(`/control/workspaces/${workspaceId}/plataforma`, { method: 'PUT', body: JSON.stringify({ encendida }) }),
