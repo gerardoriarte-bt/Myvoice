@@ -15,7 +15,7 @@ import {
 } from '../lib/tenancy.js';
 import { assertPuedeActuar } from '../comun/permisos.js';
 import { prisma } from '../lib/prisma.js';
-import { resolveSlotLabel, zonaDe } from '../channels/registry.js';
+import { resolveSlotLabel, zonaDe, producePieza } from '../channels/registry.js';
 import { ModoAprobacion } from '@prisma/client';
 import {
   assertCampanaDeLaMarca,
@@ -62,9 +62,10 @@ export const getSavedVariations = async (req: AuthRequest, res: Response) => {
     });
     // El paso del recorrido viaja con cada copy: la pantalla no tiene cómo
     // saber, sin tres consultas más, si algo está con el cliente o ya en una pieza.
-    const etapas = await etapasDe(variations);
+    const etapas = await etapasDe(variations, req.tenant!);
     // La zona se calcula al leer, como la etapa: depende del spec del canal, no se guarda.
-    res.json(variations.map(v => ({ ...v, etapa: etapas.get(v.id), zona: zonaDe(v.platform, v.slot) })));
+    // `llevaArte`: si el canal produce pieza de diseño. Copy lo usa para no pedir «mandar a producción» lo que no la lleva.
+    res.json(variations.map(v => ({ ...v, etapa: etapas.get(v.id), zona: zonaDe(v.platform, v.slot), llevaArte: producePieza(v.platform) })));
   } catch (error) {
     handleTenantError(error, res, 'Error al obtener el copy');
   }

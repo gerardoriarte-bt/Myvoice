@@ -348,6 +348,9 @@ dónde se está (marca, campaña, paso) se contradecía entre pantallas. Gerardo
         abierto, se reusa.
       - **Interna:** «Autorizar implementación» lo toca quien aprueba la campaña (el responsable o la función
         Aprobación). Aparece también en «Por aprobar» del encabezado.
+    - **Copy dice qué sigue** (Gerardo, 2026-11-24): en el carril, «Aprobado» se abre en dos —«En producción» o
+      «Directo a Implementación»— y una barra «Siguiente paso» dice cuántas piezas aprobadas llevan arte y esperan que
+      alguien las mande a producción (con el botón), y cuántos anuncios sin arte ya están en Implementación.
     - **Destino solo donde aplica** (Gerardo, 2026-11-24): una publicación orgánica en redes sociales no lleva
       destino ni UTM; si tiene, se muestra, pero no se exige. Un anuncio pagado —Meta Ads, Google Ads— sí.
     - **Estados del anuncio:** por aprobar → (con el cliente) → por montar → montado, o con novedad. Reabrir o

@@ -544,3 +544,30 @@ export const porAutorizarDe = async (tenant: TenantContext, clientIds: string[])
     .filter(a => a.estado === 'POR_APROBAR' && a.listo && a.campana?.modoAprobacion === 'INTERNA' && a.campana.puedoAutorizar)
     .map(a => ({ id: a.id, titulo: a.titulo, clientId: a.clientId, campana: a.campana?.nombre ?? null }));
 };
+
+/**
+ * Qué copy aprobado va directo a Implementación, sin pieza de diseño (2026-11-24): la misma regla que `armar` —con
+ * sábana, el formato de la línea es de solo texto; sin sábana, el canal no produce pieza—. My Voice la usa para
+ * decir en Copy «Directo a Implementación» en vez de «Mandar a producción»; la plataforma la conecta al arrancar.
+ */
+export const directosAImplementacion = async (
+  tenant: TenantContext,
+  grupos: { conjuntoId: string; platform: string; lineaId: string | null; clientId: string }[]
+): Promise<Set<string>> => {
+  if (!grupos.length) return new Set();
+  // Solo en las marcas con Implementación prendida: sin el módulo, lo de solo texto sigue en «Aprobado».
+  const conModulo = new Set(
+    (
+      await prisma.moduloDeMarca.findMany({
+        where: { modulo: 'IMPLEMENTACION', clientId: { in: [...new Set(grupos.map(g => g.clientId))] }, client: { workspaceId: tenant.workspaceId } },
+        select: { clientId: true },
+      })
+    ).map(m => m.clientId)
+  );
+  const deEstas = grupos.filter(g => conModulo.has(g.clientId));
+  if (!deEstas.length) return new Set();
+  const lineas = await lineasParaImplementar(tenant, deEstas.map(g => g.lineaId).filter((id): id is string => !!id));
+  return new Set(
+    deEstas.filter(g => (g.lineaId && lineas.get(g.lineaId) ? lineas.get(g.lineaId).soloTexto : !producePieza(g.platform))).map(g => g.conjuntoId)
+  );
+};

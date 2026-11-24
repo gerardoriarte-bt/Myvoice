@@ -252,7 +252,9 @@ from `submitReview`, which now ignores ids outside its own session and **un-appr
 never copy already in a piece): it is reset to pending in the same transaction that creates the session.
 Editing an approved text or moving it to another campaign resets it to pending. Production requires
 `isApproved` plus a campaign with a responsable. A copy's `etapa` (por aprobar → con el cliente →
-aprobado → en producción) is computed on read, never stored.
+aprobado → en producción, or — since 2026-11-24 — straight to `EN_IMPLEMENTACION` when it carries no art) is computed on
+read, never stored. The «no art» rule is Implementación's (`directosAImplementacion`); My Voice gets it registered by the
+platform at boot (`registrarDirectosAImplementacion`), as with `lineaDePedido`, and only for brands with the module.
 
 **And filtered by brand.** A session is one `Client` and the server rejects a mixed one
 (`createReviewSession`). Workspace filtering is not enough here: inside one workspace an agency
