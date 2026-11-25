@@ -79,6 +79,9 @@ Las reglas:
   y CDM (copy, pieza, línea) por contrato, y nadie la lee a ella salvo la plataforma. La aprobación final (decisión
   32) le suma la pregunta a `comun/aprobadores.ts` y el portal arma una cuarta ronda (`IMPLEMENTACION`). El contador
   queda en 76, con 0 por invertir.
+- **2026-11-25:** 77. My Voice lee de la parte común qué secciones ★ del ADN faltan (`esencialesQueFaltan`) para
+  bloquear la generación (decisión 35). La biblioteca de Google y DV360 y la validación por ubicación quedan dentro de
+  CDM.
 
 **Lo que hay que invertir antes de partir carpetas (3).** La parte común no puede depender de My Voice:
 
