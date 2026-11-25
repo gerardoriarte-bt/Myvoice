@@ -1,6 +1,7 @@
 // pdf-parse v2 uses a class-based API: PDFParse({ data }) + .getText()
 import { PDFParse } from "pdf-parse";
 import { createAIClient, resolveModel, serverAIConfig, WorkspaceAIConfig, jsonObjectFormat, stripJsonFence, TIEMPOS, chatCompletionConRetry } from "./aiClient.js";
+import { extractUsage, type UsageEntry } from "./pricing.js";
 
 export interface ExtractedBrand {
   voice: string;
@@ -9,6 +10,10 @@ export interface ExtractedBrand {
   keywords: string;
   prohibitions: string;
   summary: string;
+  /** TU | USTED | VOS, o vacío si el manual no lo dice (2026-11-25). */
+  tratamiento: string;
+  /** A quién le habla la marca, si el manual lo dice (2026-11-25). */
+  audiencias: { nombre: string; quienEs: string; queLeImporta: string; queLaFrena: string; comoHabla: string }[];
 }
 
 const MAX_CHARS = 18000; // ~5k tokens, suficiente para guidelines típicos
@@ -30,6 +35,8 @@ Devuelve un JSON con:
 - "brandVoiceGuidelines": reglas concretas de redacción extraídas del manual: persona gramatical, longitud de frase preferida, uso de emojis/signos, tics lingüísticos, registros prohibidos. Lista en bullets dentro de un string (separados por \\n).
 - "keywords": palabras y frases que la marca SÍ usa frecuentemente o quiere usar (separadas por coma).
 - "prohibitions": palabras, frases o conceptos que la marca explícitamente EVITA (separadas por coma). Si el manual menciona "evitar", "no usar", "prohibido", capturalo aquí.
+- "tratamiento": cómo le habla la marca a su público: "TU", "USTED" o "VOS". Vacío si el documento no lo dice.
+- "audiencias": a quién le habla la marca, si el documento lo dice. Lista de { "nombre", "quienEs", "queLeImporta", "queLaFrena", "comoHabla" } en frases cortas; lista vacía si no lo dice.
 
 Formato:
 {
@@ -38,7 +45,9 @@ Formato:
   "valueProposition": "string",
   "brandVoiceGuidelines": "string",
   "keywords": "string",
-  "prohibitions": "string"
+  "prohibitions": "string",
+  "tratamiento": "string",
+  "audiencias": []
 }
 `.trim();
 
@@ -46,7 +55,9 @@ export const extractBrandFromPdf = async (
   buffer: Buffer,
   clientName: string,
   industry: string,
-  aiConfig?: WorkspaceAIConfig
+  aiConfig?: WorkspaceAIConfig,
+  /** Lo que costó la llamada, para registrarlo en Control (2026-11-25). No viaja en la respuesta al equipo. */
+  alUsar?: (uso: UsageEntry | null) => Promise<void> | void
 ): Promise<ExtractedBrand> => {
   const parser = new PDFParse({ data: new Uint8Array(buffer) });
   const parsed = await parser.getText();
@@ -75,6 +86,7 @@ export const extractBrandFromPdf = async (
     { etapa: "extraccion", timeoutMs: TIEMPOS.llamada.extraccion, intentosMax: 2 }
   );
 
+  await alUsar?.(extractUsage(response, model, "extraccion"));
   const raw = response.choices[0].message.content;
   if (!raw) throw new Error("La IA devolvió respuesta vacía.");
 
@@ -86,5 +98,7 @@ export const extractBrandFromPdf = async (
     brandVoiceGuidelines: parsedJson.brandVoiceGuidelines || "",
     keywords: parsedJson.keywords || "",
     prohibitions: parsedJson.prohibitions || "",
+    tratamiento: typeof parsedJson.tratamiento === "string" ? parsedJson.tratamiento : "",
+    audiencias: Array.isArray(parsedJson.audiencias) ? parsedJson.audiencias : [],
   };
 };

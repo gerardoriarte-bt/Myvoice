@@ -451,6 +451,19 @@ async function main() {
       briefAjeno.status === 404 && aTrasBrief?.name !== 'Intruso' && aTrasBrief?.dnaProfileId === (A.project as any).dnaProfileId,
       `respondió ${briefAjeno.status}, quedó ${JSON.stringify(aTrasBrief)}`
     );
+    // «Completar con IA» (2026-11-25): la entrevista de otra marca no existe para B, ni deja propuestas en ella.
+    await expectDenied('GET /clients/:id/adn/asistente de A', `/clients/${A.client.id}/adn/asistente`, B.token);
+    await expectDenied('POST /clients/:id/adn/asistente de A', `/clients/${A.client.id}/adn/asistente`, B.token, {
+      method: 'POST',
+      body: JSON.stringify({ respuestas: { tratamiento: 'TU' } }),
+    });
+    // «Mi cola» cruza marcas, pero nunca empresas (2026-11-25).
+    const colaB = await api('/implementacion/mi-cola', B.token);
+    record(
+      'GET /implementacion/mi-cola no trae anuncios de otro workspace',
+      colaB.status === 200 && Array.isArray(colaB.body) && colaB.body.every((a: { clientId: string }) => a.clientId !== A.client.id),
+      `respondió ${colaB.status} con ${Array.isArray(colaB.body) ? colaB.body.length : '?'} anuncios`
+    );
     // La eficiencia está por encima de los workspaces: quien no es super admin no sabe que existe (decisión 27).
     await expectDenied('GET /control/eficiencia sin ser super admin', '/control/eficiencia', B.token);
     await expectDenied('GET /campanas/:id/reporte-implementacion de A', `/campanas/${A.project.id}/reporte-implementacion`, B.token);

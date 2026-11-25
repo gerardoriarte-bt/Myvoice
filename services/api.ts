@@ -20,7 +20,7 @@ import type {
   PorAprobar,
   AprobadoresDeCampana,
   CampanaConPedidos,
-  AnuncioParaMontar, ReporteImplementacion, EficienciaDeControl,
+  AnuncioParaMontar, AnuncioEnCola, ReporteImplementacion, EficienciaDeControl,
 } from '../types';
 
 
@@ -271,6 +271,14 @@ export const clientApi = {
   confirmarAdn: (id: string) => apiRequest(`/clients/${id}/adn/confirmar`, { method: 'POST' }),
   /** ADN 2.0 (docs/plan-adn-2.md): el ADN resuelto con su completitud y lo de cada sección. */
   adn: (id: string) => apiRequest(`/clients/${id}/adn`),
+  /** «Completar con IA» (2026-11-25): las preguntas de la entrevista para lo que falta del ADN. */
+  preguntasAdn: (
+    id: string
+  ): Promise<{ clave: string; seccion: string; pregunta: string; ayuda: string; opciones?: { valor: string; nombre: string }[] }[]> =>
+    apiRequest(`/clients/${id}/adn/asistente`),
+  /** Con las respuestas, la IA deja una propuesta por sección para aprobar. Gasta crédito. */
+  entrevistaAdn: (id: string, respuestas: Record<string, string>): Promise<{ secciones: string[]; audiencias: number }> =>
+    apiRequest(`/clients/${id}/adn/asistente`, { method: 'POST', body: JSON.stringify({ respuestas }) }),
   /** Las campañas de la marca con el paso en que va cada una (el selector del encabezado). */
   campanasEnProceso: (id: string): Promise<CampanaEnProceso[]> => apiRequest(`/clients/${id}/campanas/proceso`),
   /** El Panorama (decisión 24): las campañas en curso de todas las marcas. Solo OWNER/ADMIN. */
@@ -509,6 +517,8 @@ export const copywritingApi = {
 export const implementacionApi = {
   /** T5: lo planeado contra lo montado y el historial de aprobaciones de una campaña. */
   reporte: (campanaId: string): Promise<ReporteImplementacion> => apiRequest(`/campanas/${campanaId}/reporte-implementacion`),
+  /** «Mi cola»: lo que te toca en todas las marcas con Implementación, por fecha de salida. */
+  miCola: (): Promise<AnuncioEnCola[]> => apiRequest('/implementacion/mi-cola'),
   anuncios: (clientId: string): Promise<AnuncioParaMontar[]> => apiRequest(`/implementacion/anuncios?clientId=${encodeURIComponent(clientId)}`),
   montar: (piezaId: string, datos: { plataforma: string; idEnPlataforma: string; montadoEn?: string }): Promise<AnuncioParaMontar> =>
     apiRequest(`/implementacion/anuncios/${piezaId}/montar`, { method: 'POST', body: JSON.stringify(datos) }),

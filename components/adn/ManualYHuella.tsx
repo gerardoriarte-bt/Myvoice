@@ -5,8 +5,8 @@ import type { Client } from '../../types';
 
 /**
  * El manual de marca en PDF y el Voice Fingerprint (2026-11-24, «un solo ADN»): salieron de la columna del detalle de la
- * marca para vivir con el resto del ADN. La IA extrae del PDF voz, propuesta de valor y guías; el fingerprint mide cómo
- * suena lo aprobado. Mismo comportamiento que antes: se movió, no cambió.
+ * marca para vivir con el resto del ADN. Desde el 2026-11-25 lo que la IA saca del PDF queda como propuesta en cada
+ * sección, para aprobar; el fingerprint mide cómo suena lo aprobado.
  */
 export default function ManualYHuella({
   client,
@@ -95,7 +95,13 @@ export default function ManualYHuella({
         brandGuidelineFileName: c.brandGuidelineFileName,
         brandGuidelineExtractedAt: c.brandGuidelineExtractedAt,
       } as Partial<Client>);
-      setExtractedSummary(result.extracted?.summary || 'Marca actualizada con la información del PDF.');
+      // Desde el 2026-11-25 el PDF no escribe el ADN: deja propuestas para aprobar en cada sección.
+      const n = (result.propuestas?.secciones?.length ?? 0) + (result.propuestas?.audiencias ?? 0);
+      setExtractedSummary(
+        `${result.extracted?.summary ? `${result.extracted.summary}\n\n` : ''}${
+          n ? `La IA dejó ${n} ${n === 1 ? 'propuesta' : 'propuestas'} en el ADN: revísalas arriba y apruébalas, corrígelas o descártalas.` : 'El manual no trajo nada nuevo para el ADN.'
+        }`
+      );
     } catch (err: any) {
       setUploadError(err?.message || 'Error procesando el PDF');
     } finally {
@@ -113,7 +119,7 @@ export default function ManualYHuella({
               Solo PDF · Ideal: menos de 5 MB · Máximo: 15 MB
             </p>
             <p className="text-[10px] text-gray-400 mt-0.5">
-              La IA extrae automáticamente voz de marca, propuesta de valor y guías de tono.
+              La IA lee el manual y propone cada sección del ADN; nada entra hasta que alguien lo aprueba.
             </p>
          </div>
 
@@ -193,7 +199,7 @@ export default function ManualYHuella({
          {extractedSummary && !uploadError && (
            <div className="text-[11px] text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-lg p-2.5 leading-relaxed">
              <span className="font-medium block mb-1">Síntesis IA</span>
-             {extractedSummary}
+             <span className="whitespace-pre-line">{extractedSummary}</span>
            </div>
          )}
       </div>

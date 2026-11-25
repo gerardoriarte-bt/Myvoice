@@ -667,3 +667,28 @@ export const quienesMontan = async (workspaceId: string, clientId: string) => {
     [...new Map(fs.filter(x => x.funcion === f).map(x => [x.user.id, { id: x.user.id, nombre: x.user.name }])).values()];
   return { trafficker: de('TRAFFICKER'), community: de('COMMUNITY') };
 };
+
+/**
+ * «Mi cola» (F5, 2026-11-25; el plan de Implementación, pantalla 7): lo que le toca a quien mira en todas las marcas con
+ * Implementación, por fecha de salida. Montar o publicar lo aprobado (si tiene la función o administra), autorizar lo
+ * listo de las campañas internas que aprueba y corregir lo devuelto con novedad en las que aprueba. Sin fecha, al final.
+ */
+export const miCola = async (tenant: TenantContext) => {
+  const marcas = await prisma.client.findMany({
+    where: { workspaceId: tenant.workspaceId, modulos: { some: { modulo: 'IMPLEMENTACION' } } },
+    select: { id: true, name: true },
+  });
+  if (!marcas.length) return [];
+  const nombre = new Map(marcas.map(m => [m.id, m.name]));
+  const anuncios = (await armar(tenant, {})).filter(a => nombre.has(a.clientId));
+  const tareaDe = (a: (typeof anuncios)[number]) => {
+    if (a.estado === 'POR_MONTAR' && a.puedo) return a.accion === 'publicar' ? ('publicar' as const) : ('montar' as const);
+    if (a.estado === 'POR_APROBAR' && a.listo && a.campana?.modoAprobacion === 'INTERNA' && a.campana.puedoAutorizar) return 'autorizar' as const;
+    if (a.estado === 'CON_NOVEDAD' && a.campana?.aprueban.some(p => p.id === tenant.userId)) return 'corregir' as const;
+    return null;
+  };
+  return anuncios
+    .map(a => ({ ...a, marca: nombre.get(a.clientId)!, tarea: tareaDe(a) }))
+    .filter((a): a is typeof a & { tarea: NonNullable<ReturnType<typeof tareaDe>> } => a.tarea !== null)
+    .sort((x, y) => (x.linea?.desde ?? '9999').localeCompare(y.linea?.desde ?? '9999') || x.marca.localeCompare(y.marca));
+};

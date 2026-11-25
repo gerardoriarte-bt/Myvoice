@@ -34,6 +34,7 @@ export const RUTAS: Record<ScreenId, string> = {
   pedidos: '/myvoice/pedidos',
   implementacion: '/implementacion',
   reporteImplementacion: '/implementacion/reporte',
+  miCola: '/implementacion/mi-cola',
 };
 
 export interface Ubicacion {
@@ -104,7 +105,8 @@ export const PASOS: PasoDef[] = [
   { id: 'produccion', nombre: 'Producción', tema: 'Piezas', color: '#B45309', grupos: [{ titulo: 'Trabajo', pantallas: ['loMio', 'produccion'] }], trabajo: 'PRODUCCION', funcion: 'DISENO' },
   // ⑤ F5: el trafficker y el community manager montan lo aprobado. Solo en marcas con el módulo prendido.
   { id: 'implementacion', nombre: 'Implementación', tema: 'Anuncios', color: '#0E7490', grupos: [
-      { titulo: 'Trabajo', pantallas: ['implementacion'] },
+      // «Mi cola» primero: es la entrada del trafficker y del community (cruza marcas, como «Lo mío» en Producción).
+      { titulo: 'Trabajo', pantallas: ['miCola', 'implementacion'] },
       { titulo: 'Seguimiento', pantallas: ['reporteImplementacion'] },
     ], trabajo: 'IMPLEMENTACION', funcion: 'TRAFFICKER' },
 ];

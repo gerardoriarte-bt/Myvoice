@@ -79,8 +79,9 @@ export default function GenerationHistory({ clients = [], dnaProfiles = [], init
       .finally(() => setIsLoading(false));
   }, [clientFilter]);
 
-  const clientName = (id: string) => clients.find(c => c.id === id)?.name ?? id;
-  const dnaName = (id: string) => dnaProfiles.find(p => p.id === id)?.name ?? 'Perfil ADN';
+  // Nunca un id: si la marca o el brief ya no están, se dice (2026-11-25).
+  const clientName = (id: string) => clients.find(c => c.id === id)?.name ?? 'Marca eliminada';
+  const dnaName = (id: string) => dnaProfiles.find(p => p.id === id)?.name ?? 'Campaña sin brief';
   const grouped = groupByDate(logs);
 
   return (
@@ -139,9 +140,10 @@ export default function GenerationHistory({ clients = [], dnaProfiles = [], init
 
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap mb-2">
-                            <span className="text-[13px] font-semibold text-gray-900">{clientName(log.clientId)}</span>
+                            {/* La campaña primero: dentro de una marca es lo que distingue una corrida de otra. */}
+                            <span className="text-[13px] font-semibold text-gray-900">{dnaName(log.dnaProfileId)}</span>
                             <span className="text-[11px] text-gray-400">·</span>
-                            <span className="text-[11px] text-gray-500">{dnaName(log.dnaProfileId)}</span>
+                            <span className="text-[11px] text-gray-500">{clientName(log.clientId)}</span>
                             <span className="text-[11px] text-gray-300 ml-auto shrink-0">{formatRelative(log.createdAt)}</span>
                           </div>
 

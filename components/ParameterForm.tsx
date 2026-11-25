@@ -204,7 +204,9 @@ const ParameterForm: React.FC<ParameterFormProps> = ({
 
   const activeClient = clients.find(c => c.id === clientId);
   const activeProfile = clientProfiles.find(p => p.id === activeProfileId);
-  const canSubmit = !sinPermiso && !isLoading && !!activeProfileId && selectedPlatforms.length > 0;
+  // Lo esencial del ADN es obligatorio (2026-11-25): el servidor responde 409 y la pantalla lo dice antes.
+  const faltaLoEsencial = (activeClient?.adn?.esenciales?.length ?? 0) > 0;
+  const canSubmit = !sinPermiso && !faltaLoEsencial && !isLoading && !!activeProfileId && selectedPlatforms.length > 0;
 
   return (
     <form
@@ -216,8 +218,30 @@ const ParameterForm: React.FC<ParameterFormProps> = ({
           Generar es para quien tiene la función <strong>Copy</strong> de esta marca. Pídela a quien administra, en Equipo.
         </div>
       )}
-      {/* ADN bajo el mínimo (docs/plan-adn-2.md, F3): en v1 avisa y deja generar. */}
-      {activeClient?.adn && !activeClient.adn.apta && (
+      {/* Sin lo esencial (las ★) no se genera (2026-11-25); bajo el mínimo pero con lo esencial, solo avisa. */}
+      {faltaLoEsencial && activeClient && (
+        <div className="flex items-start gap-2 border-b border-red-200 bg-red-50 px-5 py-3">
+          <span className="mt-[5px] h-2 w-2 shrink-0 rounded-full bg-red-500" />
+          <div className="min-w-0 flex-1">
+            <p className="text-[12px] font-semibold text-gray-900">Para generar, completa lo esencial del ADN de {activeClient.name}</p>
+            <p className="text-[11px] leading-snug text-gray-600">
+              Falta: {activeClient.adn!.esenciales!.map(f => f.nombre).join(', ')}. La IA te propone el texto con una entrevista corta o desde el manual en PDF, y tú
+              lo apruebas.
+            </p>
+            {onIrAlAdn && (
+              <button
+                type="button"
+                onClick={() => onIrAlAdn(activeClient.id)}
+                className="mt-1 inline-flex items-center gap-0.5 text-[11px] font-semibold text-gray-900 hover:underline"
+              >
+                Completar con IA <ChevronRight className="h-3 w-3" />
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+      {/* ADN bajo el mínimo (docs/plan-adn-2.md, F3): con lo esencial completo, avisa y deja generar. */}
+      {!faltaLoEsencial && activeClient?.adn && !activeClient.adn.apta && (
         <div className="flex items-start gap-2 border-b border-amber-200 bg-amber-50 px-5 py-3">
           <span className="mt-[5px] h-2 w-2 shrink-0 rounded-full bg-amber-500" />
           <div className="min-w-0 flex-1">

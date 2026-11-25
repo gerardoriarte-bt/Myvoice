@@ -398,6 +398,20 @@ dónde se está (marca, campaña, paso) se contradecía entre pantallas. Gerardo
       dicen «solo para esta campaña» y muestran en gris los del ADN, que aplican siempre. En el marco clásico (sin
       procesos), que no tiene la pantalla ADN, todo sigue como antes.
 
+## 2026-11-25 · Lo esencial del ADN es obligatorio, y la IA propone
+
+35. **Sin lo esencial no se genera, y la IA ayuda a completarlo** (Gerardo, 2026-11-25: «el ADN no suelen tener o saber
+    toda la información»).
+    - **Obligatorio:** las secciones ★ (propuesta de valor, audiencias, voz, tratamiento, prohibiciones). Sin ellas
+      completas no se genera copy; Generar lo dice antes y lleva a completarlo. Lo ya generado no se toca.
+    - **La IA propone, el equipo aprueba:** «Completar con IA» hace una entrevista corta —una pregunta por cada sección
+      que falta— y la IA redacta solo lo respondido, sin agregar datos. El manual en PDF también deja propuestas (antes
+      escribía directo en el ADN). Toda propuesta se aprueba, corrige o descarta; no cuenta hasta aprobarse.
+    - **El costo queda en Control** (`ConsumoIa`): la entrevista y la lectura del manual suman al gasto del mes y aparecen
+      por marca y por etapa.
+    - **Sigue (fase 2):** que cada texto generado diga de qué secciones del ADN sale y qué alertas tuvo, con «Mejorar esta
+      sección» y, al rechazar, una propuesta de cambio al ADN para aprobar.
+
 ## Antes (2026-10-27), siguen vigentes con los nombres nuevos
 
 - La marca, su ADN y sus audiencias son la fuente de verdad (ahora en la parte común, decisión 7).

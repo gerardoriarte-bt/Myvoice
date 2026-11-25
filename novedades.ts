@@ -48,6 +48,25 @@ export interface Novedad {
 
 export const NOVEDADES: Novedad[] = [
   {
+    id: 'adn-esencial-con-ia',
+    fecha: '2026-11-25',
+    titulo: 'Lo esencial del ADN, obligatorio y con ayuda de la IA',
+    cambios: [
+      'Para generar copy, la marca necesita completas sus secciones esenciales (★): propuesta de valor, audiencias, voz, tratamiento y prohibiciones. Generar te dice cuáles faltan.',
+      '«Completar con IA», en Marca › ADN: respondes unas preguntas cortas y la IA redacta cada sección. Tú la apruebas, la corriges o la descartas; nada entra sin tu aprobación.',
+      'El manual en PDF también propone en vez de escribir directo en el ADN.',
+    ],
+  },
+  {
+    id: 'mi-cola',
+    fecha: '2026-11-25',
+    titulo: 'Mi cola: lo que te toca, en todas las marcas',
+    cambios: [
+      'En Implementación, «Mi cola» junta lo que te toca en todas las marcas: montar o publicar lo aprobado, autorizar lo listo de tus campañas y corregir lo devuelto con novedad.',
+      'Va por fecha de salida, con lo atrasado arriba. Cada anuncio se abre ahí mismo, sin cambiar de marca.',
+    ],
+  },
+  {
     id: 'campanas-a-la-vista',
     fecha: '2026-11-24',
     titulo: 'Crear una campaña, a un clic',

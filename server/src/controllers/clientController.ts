@@ -14,6 +14,8 @@ import {
 } from '../lib/tenancy.js';
 import { normalizarNombre } from '../lib/nombreDeMarca.js';
 import { unirMarcas } from '../services/unirMarcas.js';
+import { entrevistar, preguntasDeEntrevista, proponer } from '../comun/adn/propuestas.js';
+import { registrarConsumo } from '../comun/consumoIa.js';
 import { prisma } from '../lib/prisma.js';
 import { claveGuiaDeMarca, storage } from '../lib/storage.js';
 import { guardarAdnDesdeColumnas } from '../comun/adn/guardarAdn.js';
@@ -111,7 +113,14 @@ export const getClients = async (req: AuthRequest, res: Response) => {
         const nombres = new Map(c.secciones.map(s => [s.clave, s.nombre]));
         return {
           ...m,
-          adn: { porcentaje: c.porcentaje, minimo: c.minimo, apta: c.apta, faltan: c.faltan.map(clave => ({ clave, nombre: nombres.get(clave)! })) },
+          adn: {
+            porcentaje: c.porcentaje,
+            minimo: c.minimo,
+            apta: c.apta,
+            faltan: c.faltan.map(clave => ({ clave, nombre: nombres.get(clave)! })),
+            // Lo que bloquea generar (2026-11-25): las ★ que no están completas.
+            esenciales: c.secciones.filter(s => s.critica && s.estado !== 'COMPLETA').map(s => ({ clave: s.clave, nombre: s.nombre })),
+          },
         };
       })
     );
@@ -631,32 +640,35 @@ export const uploadBrandGuideline = async (
       });
     }
 
-    const extracted = await extractBrandFromPdf(
-      req.file.buffer,
-      client.name,
-      client.industry,
-      serverAIConfig()
+    const extracted = await extractBrandFromPdf(req.file.buffer, client.name, client.industry, serverAIConfig(), uso =>
+      registrarConsumo({ workspaceId: req.tenant!.workspaceId, clientId: id, etapa: 'extraccion-pdf', uso, autorId: req.tenant!.userId })
     );
 
-    const updated = await prisma.$transaction(async tx => {
-      const actualizada = await tx.client.update({
-        where: { id },
-        data: {
-          brandGuidelinePdfUrl: clave,
-          brandGuidelineFileName: req.file!.originalname,
-          brandGuidelineExtractedAt: new Date(),
-          voice: extracted.voice || client.voice,
-          valueProposition: extracted.valueProposition || client.valueProposition,
-          brandVoiceGuidelines: extracted.brandVoiceGuidelines || client.brandVoiceGuidelines,
-          brandKeywords: extracted.keywords || client.brandKeywords,
-          brandProhibitions: extracted.prohibitions || client.brandProhibitions,
-        },
-      });
-      await guardarAdnDesdeColumnas(id, { autorId: req.tenant!.userId, tx });
-      return actualizada;
+    // La IA propone, el equipo aprueba (2026-11-25): lo que sale del manual queda como propuesta en cada sección, para
+    // revisar en Marca › ADN. Antes escribía directo en el ADN y llegaba al motor sin que nadie lo leyera.
+    const updated = await prisma.client.update({
+      where: { id },
+      data: { brandGuidelinePdfUrl: clave, brandGuidelineFileName: req.file!.originalname, brandGuidelineExtractedAt: new Date() },
     });
+    const propuestas = await proponer(
+      id,
+      {
+        voz: extracted.voice,
+        propuestaDeValor: extracted.valueProposition,
+        reglasDeEstilo: extracted.brandVoiceGuidelines,
+        keywords: extracted.keywords,
+        prohibiciones: extracted.prohibitions,
+        tratamiento: extracted.tratamiento,
+      },
+      extracted.audiencias.map(a => ({
+        nombre: String(a.nombre ?? ''),
+        descriptores: { quienEs: String(a.quienEs ?? ''), queLeImporta: String(a.queLeImporta ?? ''), queLaFrena: String(a.queLaFrena ?? ''), comoHabla: String(a.comoHabla ?? '') },
+      })),
+      'pdf',
+      req.tenant!.userId
+    );
 
-    res.json({ client: await conUrlDeGuia(updated), extracted });
+    res.json({ client: await conUrlDeGuia(updated), extracted, propuestas });
   } catch (error: any) {
     handleTenantError(error, res, error?.message || 'Error procesando el PDF');
   }
@@ -711,3 +723,24 @@ export const unirConOtra = async (req: AuthRequest, res: Response) => {
   }
 };
 
+
+/** «Completar con IA» (2026-11-25): las preguntas de la entrevista para lo que le falta al ADN de la marca. */
+export const getAsistenteAdn = async (req: AuthRequest, res: Response) => {
+  try {
+    await assertClientInWorkspace(req.tenant!, req.params.id);
+    res.json(await preguntasDeEntrevista(req.params.id));
+  } catch (error) {
+    handleTenantError(error, res, 'Error al preparar la entrevista');
+  }
+};
+
+/** Con las respuestas, la IA deja propuestas por sección; el equipo las aprueba en Marca › ADN. Gasta crédito. */
+export const postAsistenteAdn = async (req: AuthRequest, res: Response) => {
+  try {
+    await assertClientInWorkspace(req.tenant!, req.params.id);
+    await exigirPaso(req.tenant!, 'ADN', req.params.id);
+    res.json(await entrevistar(req.params.id, req.body?.respuestas, req.tenant!.userId, req.tenant!.workspaceId));
+  } catch (error) {
+    handleTenantError(error, res, 'Error al proponer el ADN');
+  }
+};

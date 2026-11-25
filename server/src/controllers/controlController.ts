@@ -23,7 +23,7 @@ const ROLES = Object.values(WorkspaceRole) as string[];
 export const listarWorkspaces = async (_req: AuthRequest, res: Response) => {
   try {
     const desde = currentPeriodStart();
-    const [workspaces, generaciones, auditorias] = await Promise.all([
+    const [workspaces, generaciones, auditorias, consumos] = await Promise.all([
       prisma.workspace.findMany({
         select: {
           id: true,
@@ -46,14 +46,17 @@ export const listarWorkspaces = async (_req: AuthRequest, res: Response) => {
           FROM "PiezaVersion" v JOIN "Pieza" p ON p.id = v."piezaId"
          WHERE v."auditadaAt" >= ${desde}
          GROUP BY p."workspaceId"`,
+      // La entrevista y la extracción del manual (2026-11-25): IA fuera del motor, también cuenta.
+      prisma.consumoIa.groupBy({ by: ['workspaceId'], where: { createdAt: { gte: desde } }, _sum: { costUsd: true } }),
     ]);
     const motor = new Map(generaciones.map(g => [g.workspaceId, aNumero(g._sum.costUsd)]));
     const auditoria = new Map(auditorias.map(a => [a.workspaceId, aNumero(a.costo)]));
+    const fueraDelMotor = new Map(consumos.map(c => [c.workspaceId, aNumero(c._sum.costUsd)]));
     res.json({
       periodo: desde.toISOString(),
       workspaces: workspaces.map(w => {
         const plan = resolvePlanLimits(w.plan);
-        const gastoUsd = (motor.get(w.id) ?? 0) + (auditoria.get(w.id) ?? 0);
+        const gastoUsd = (motor.get(w.id) ?? 0) + (auditoria.get(w.id) ?? 0) + (fueraDelMotor.get(w.id) ?? 0);
         return {
           id: w.id,
           name: w.name,
