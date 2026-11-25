@@ -204,6 +204,7 @@ router.get('/cdm/biblioteca/medios/:id', ...inWorkspace, bibliotecaController.de
 router.post('/cdm/biblioteca/cargas', ...inWorkspace, bibliotecaController.cargarPlanilla);
 router.put('/cdm/biblioteca/medios/:id/estado', ...inWorkspace, bibliotecaController.cambiarEstadoDeMedio);
 router.put('/cdm/biblioteca/medios/:id/clase', ...inWorkspace, bibliotecaController.cambiarClaseDeMedio);
+router.put('/cdm/biblioteca/ubicaciones/:id/revision', ...inWorkspace, bibliotecaController.revisarUbicacion);
 // El planning de una campaña (F3): lo arma Planning; lo aprueba el responsable de la campaña.
 router.get('/cdm/plannings', ...inWorkspace, planningController.listar);
 router.post('/cdm/plannings', ...inWorkspace, planningController.crear);

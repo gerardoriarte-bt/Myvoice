@@ -1,4 +1,5 @@
 import { metaAds } from "./specs/metaAds.js";
+import { googleRecursos } from "./specs/googleRecursos.js";
 import { ChannelSpec, PiezaSpec, SlotSpec, ZonaSlot } from "./types.js";
 import { instagramPost } from "./specs/instagramPost.js";
 import { instagramHistoria } from "./specs/instagramHistoria.js";
@@ -31,6 +32,7 @@ const ALL: ChannelSpec[] = [
   email,
   whatsapp,
   metaAds,
+  googleRecursos,
 ];
 
 export const CHANNEL_REGISTRY: Map<string, ChannelSpec> = new Map(
@@ -97,19 +99,26 @@ export const slidesValidas = (slides?: number | null): number =>
  */
 export const specParaGeneracion = (
   spec: ChannelSpec,
-  opciones: { slides?: number | null; textosDelPedido?: { slot: string; max: number | null }[] | null } = {}
+  opciones: { slides?: number | null; textosDelPedido?: { slot: string; max: number | null; porPieza?: number | null }[] | null } = {}
 ): ChannelSpec => {
   let slots = spec.slots.filter(s => !s.legado);
-  // F4: lo que pidió CDM manda sobre el spec: qué textos lleva la pieza y su largo. Solo si alguno coincide con
-  // los slots del canal; si no, el pedido no aplica a este spec y se sigue con el de siempre.
+  // F4: lo que pidió CDM manda sobre el spec: qué textos lleva la pieza, su largo y cuántos. Solo si alguno coincide
+  // con los slots del canal; si no, el pedido no aplica a este spec y se sigue con el de siempre.
   const pedido = (opciones.textosDelPedido ?? []).filter(t => slots.some(s => s.id === t.slot));
   if (pedido.length) {
     slots = slots
       .filter(s => pedido.some(t => t.slot === s.id))
       .map(s => {
-        const max = pedido.find(t => t.slot === s.id)?.max;
-        return typeof max === "number" && max > 0 ? { ...s, max } : s;
+        const t = pedido.find(x => x.slot === s.id)!;
+        return {
+          ...s,
+          ...(typeof t.max === "number" && t.max > 0 ? { max: t.max } : {}),
+          ...(typeof t.porPieza === "number" && t.porPieza > 0 ? { porPieza: t.porPieza } : {}),
+        };
       });
+  } else {
+    // Sin pedido, lo que solo se escribe si se pide (rutas, CTA, tarjetas de Google) queda afuera.
+    slots = slots.filter(s => !s.soloSiSePide);
   }
   if (esCarrusel(spec.id)) {
     const n = slidesValidas(opciones.slides);

@@ -24,6 +24,11 @@ export interface PlanillaDeMedio {
   fuente: string;
   /** AAAA-MM-DD: la fecha de la guía. Con la fuente, es la versión (meta.md, regla 5). */
   fecha: string;
+  /**
+   * El canal del motor que escribe los textos de plataforma de estas piezas (F4). Sin él, Meta Ads, que fue la
+   * primera planilla. Google lo trae (`Google Recursos`, 2026-11-25). Las piezas sin textos no llevan canal.
+   */
+  canal?: string;
   especificaciones: Record<string, unknown>[];
   zonasSeguras?: Record<string, unknown>[];
   alertas?: { numero: number; formato: string; ubicacion: string; inconsistencia: string; accion: string }[];
@@ -35,6 +40,8 @@ interface CampoPlaneado {
   zona: ZonaDeCampo;
   minimo: number | null;
   maximo: number | null;
+  /** Cuántos de ese texto lleva la pieza («Título (3-15)» → 15). Solo se guarda cuando es más de uno. */
+  repeticiones?: number;
 }
 
 interface UbicacionPlaneada {
@@ -109,7 +116,45 @@ const porcentaje = (v: unknown): number | null => {
   return m ? Number(m[1].replace(',', '.')) : null;
 };
 
-const TIPOS: Record<string, TipoDeArchivo> = { imagen: 'IMAGEN', video: 'VIDEO' };
+const TIPOS: Record<string, TipoDeArchivo> = { imagen: 'IMAGEN', video: 'VIDEO', texto: 'TEXTO', html5: 'HTML' };
+
+/**
+ * Los textos de una planilla que los trae en una columna (Google, 2026-11-25): «Título (3-15): 30 · Título largo
+ * (1-5): 90 · Negocio: 25». Cada tramo es un texto con su largo y, entre paréntesis, cuántos lleva la pieza.
+ */
+const CLAVE_DE_TEXTO: Record<string, { clave: string; nombre: string }> = {
+  titulo: { clave: 'titulo', nombre: 'Título' },
+  'titulo anuncio': { clave: 'titulo', nombre: 'Título' },
+  'titulo largo': { clave: 'tituloLargo', nombre: 'Título largo' },
+  descripcion: { clave: 'descripcion', nombre: 'Descripción' },
+  'descripcion anuncio': { clave: 'descripcion', nombre: 'Descripción' },
+  negocio: { clave: 'negocio', nombre: 'Nombre del negocio' },
+  ruta: { clave: 'ruta', nombre: 'Ruta de la URL' },
+  cta: { clave: 'cta', nombre: 'Llamado a la acción' },
+  'tarjeta titulo': { clave: 'tarjetaTitulo', nombre: 'Título de tarjeta' },
+  // DV360 los nombra distinto.
+  'titulo corto': { clave: 'titulo', nombre: 'Título' },
+  anunciante: { clave: 'negocio', nombre: 'Nombre del negocio' },
+  cuerpo: { clave: 'descripcion', nombre: 'Descripción' },
+  'cuerpo largo': { clave: 'descripcionLarga', nombre: 'Descripción larga' },
+  'card headline': { clave: 'tarjetaTitulo', nombre: 'Título de tarjeta' },
+  'card description': { clave: 'tarjetaDescripcion', nombre: 'Descripción de tarjeta' },
+  // Los que van dentro del arte (columna «En la pieza»): banners, intersticiales y videos sin textos de plataforma.
+  titular: { clave: 'titular', nombre: 'Titular' },
+  'llamado a la accion': { clave: 'llamado', nombre: 'Llamado a la acción' },
+};
+const sinTildes = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+const textosEnColumna = (v: unknown, zona: ZonaDeCampo = ZonaDeCampo.PLATAFORMA): CampoPlaneado[] => {
+  const s = texto(v);
+  if (!s) return [];
+  return s.split('·').flatMap(tramo => {
+    const m = /^(.+?)\s*(?:\((\d+)\s*-\s*(\d+)\))?\s*:\s*(\d+)\s*$/.exec(tramo.trim());
+    const def = m ? CLAVE_DE_TEXTO[sinTildes(m[1])] : undefined;
+    if (!m || !def) return [];
+    const cuantos = m[3] ? Number(m[3]) : 1;
+    return [{ clave: def.clave, nombre: def.nombre, zona, minimo: null, maximo: Number(m[4]), ...(cuantos > 1 ? { repeticiones: cuantos } : {}) }];
+  });
+};
 
 /**
  * La pieza de una ubicación (meta.md: «se asignan a la pieza que ya se produce»). Un rango que empieza en
@@ -164,13 +209,19 @@ const DETALLES: [string, string][] = [
 /** Agrupa las filas por pieza maestra. Lo que no se puede leer va a `errores` y no se carga. */
 export const leerPlanilla = (p: PlanillaDeMedio): { formatos: FormatoPlaneado[]; errores: string[] } => {
   const errores: string[] = [];
-  const grupos = new Map<string, { tipo: TipoDeArchivo; proporcion: string; filas: Record<string, unknown>[] }>();
+  const grupos = new Map<string, { tipo: TipoDeArchivo; proporcion: string; filas: Record<string, unknown>[]; nombre?: string }>();
   p.especificaciones.forEach((fila, i) => {
     const n = i + 2; // la fila 1 es el encabezado
     const tipo = TIPOS[String(fila['Formato'] ?? '').trim().toLowerCase()];
     const aspecto = texto(fila['Relación de aspecto']);
-    if (!tipo) return errores.push(`Fila ${n}: formato «${fila['Formato']}» desconocido (Imagen o Video)`);
+    if (!tipo) return errores.push(`Fila ${n}: formato «${fila['Formato']}» desconocido (Imagen, Video, Texto o HTML5)`);
     if (!texto(fila['Ubicación'])) return errores.push(`Fila ${n}: falta la ubicación`);
+    // Una planilla que ya dice la pieza (Google, 2026-11-25) la respeta: no se deduce de la proporción.
+    const pieza = texto(fila['Pieza']);
+    if (pieza) {
+      grupos.set(pieza, { tipo, proporcion: aspecto ?? '', filas: [...(grupos.get(pieza)?.filas ?? []), fila], nombre: pieza });
+      return;
+    }
     const proporcion = aspecto ? piezaDe(aspecto) : null;
     if (!proporcion) return errores.push(`Fila ${n}: no se reconoce la proporción «${aspecto ?? ''}»`);
     const clave = `${tipo} ${proporcion}`;
@@ -187,7 +238,7 @@ export const leerPlanilla = (p: PlanillaDeMedio): { formatos: FormatoPlaneado[];
       : null;
   };
 
-  const formatos: FormatoPlaneado[] = [...grupos.values()].map(({ tipo, proporcion, filas }) => {
+  const formatos: FormatoPlaneado[] = [...grupos.values()].map(({ tipo, proporcion, filas, nombre: nombreDePieza }) => {
     const ubicaciones: UbicacionPlaneada[] = filas.map(f => {
       const formato = String(f['Formato']).trim();
       const nombre = String(f['Ubicación']).trim();
@@ -198,16 +249,26 @@ export const leerPlanilla = (p: PlanillaDeMedio): { formatos: FormatoPlaneado[];
         nombre,
         proporcion: String(f['Relación de aspecto']).trim(),
         resolucion: texto(f['Resolución recomendada (px)']),
-        detalles: Object.fromEntries(DETALLES.map(([col, k]) => [k, texto(f[col])]).filter(([, v]) => v)) as Record<string, string>,
+        detalles: Object.fromEntries(
+          // Con la pieza explícita (Google, DV360) cada ubicación dice además su archivo y su peso: no siempre son
+          // los de la pieza. Meta no los agrega, para que su biblioteca no cambie de versión.
+          [...DETALLES, ...(texto(f['Pieza']) ? ([['Tipo de archivo', 'archivos'], ['Peso máximo', 'peso']] as const) : [])]
+            .map(([col, k]) => [k, texto(f[col])])
+            .filter(([, v]) => v)
+        ) as Record<string, string>,
         zonaSegura: zona(formato, nombre),
         urlFuente: texto(f['URL fuente']),
         alerta: numeroAlerta,
         alertaTexto: alerta ? `${alerta.inconsistencia} · ${alerta.accion}` : null,
         porConfirmar: Boolean(numeroAlerta),
-        campos: CAMPOS.flatMap(c => {
-          const l = largo(f[c.columna]);
-          return l ? [{ clave: c.clave, nombre: c.nombre, zona: ZonaDeCampo.PLATAFORMA, ...l }] : [];
-        }),
+        campos: [
+          ...CAMPOS.flatMap(c => {
+            const l = largo(f[c.columna]);
+            return l ? [{ clave: c.clave, nombre: c.nombre, zona: ZonaDeCampo.PLATAFORMA, ...l }] : [];
+          }),
+          ...textosEnColumna(f['Textos']),
+          ...textosEnColumna(f['En la pieza'], ZonaDeCampo.PIEZA),
+        ],
       };
     });
     // El lienzo de la pieza: la resolución recomendada más común; si todas son mínimas, la mínima.
@@ -223,7 +284,7 @@ export const leerPlanilla = (p: PlanillaDeMedio): { formatos: FormatoPlaneado[];
       return v.length ? Math.max(...v) : null;
     };
     return {
-      nombre: `${tipo === 'IMAGEN' ? 'Imagen' : 'Video'} ${proporcion}`,
+      nombre: nombreDePieza ?? `${tipo === 'IMAGEN' ? 'Imagen' : 'Video'} ${proporcion}`,
       tipoArchivo: tipo,
       proporcion,
       anchoPx: lienzo?.ancho ?? null,
@@ -262,7 +323,7 @@ const huella = (f: Omit<FormatoPlaneado, 'nombre' | 'tipoArchivo' | 'proporcion'
   );
 
 const INCLUDE_VERSION = {
-  ubicaciones: { orderBy: { orden: 'asc' as const }, include: { campos: { orderBy: { clave: 'asc' as const } } } },
+  ubicaciones: { orderBy: { orden: 'asc' as const }, include: { campos: { orderBy: { orden: 'asc' as const } } } },
 } satisfies Prisma.FormatoVersionInclude;
 
 type VersionGuardada = Prisma.FormatoVersionGetPayload<{ include: typeof INCLUDE_VERSION }>;
@@ -274,7 +335,11 @@ const desdeLaBase = (v: VersionGuardada) =>
     archivos: v.archivos,
     pesoMaximo: v.pesoMaximo,
     guia: v.guia as FormatoPlaneado['guia'],
-    ubicaciones: v.ubicaciones.map(u => ({
+    ubicaciones: v.ubicaciones.map(ubicacionDesdeLaBase),
+  });
+
+/** Una ubicación guardada, como la deja `leerPlanilla`: para comparar versiones y heredar la revisión. */
+const ubicacionDesdeLaBase = (u: VersionGuardada['ubicaciones'][number]): UbicacionPlaneada => ({
       plataforma: u.plataforma,
       nombre: u.nombre,
       proporcion: u.proporcion,
@@ -285,12 +350,12 @@ const desdeLaBase = (v: VersionGuardada) =>
       alerta: u.alerta,
       alertaTexto: u.alertaTexto,
       porConfirmar: u.porConfirmar,
-      campos: CAMPOS.flatMap(c => {
-        const x = u.campos.find(k => k.clave === c.clave);
-        return x ? [{ clave: x.clave, nombre: x.nombre, zona: x.zona, minimo: x.minimo, maximo: x.maximo }] : [];
-      }),
-    })),
-  });
+      // En el orden en que se guardaron, con las repeticiones solo cuando son más de una: igual que al leer.
+      campos: [...u.campos]
+        .sort((a, b) => a.orden - b.orden)
+        .map(x => ({ clave: x.clave, nombre: x.nombre, zona: x.zona, minimo: x.minimo, maximo: x.maximo, ...(x.repeticiones > 1 ? { repeticiones: x.repeticiones } : {}) })),
+});
+const huellaDeUbicacion = (u: UbicacionPlaneada) => JSON.stringify(canonico(u));
 
 type Db = Prisma.TransactionClient | typeof prisma;
 
@@ -336,6 +401,7 @@ export const planificarCarga = async (workspaceId: string, p: PlanillaDeMedio) =
 export const aplicarCarga = async (workspaceId: string, p: PlanillaDeMedio, autorId: string | null): Promise<PlanDeCarga> =>
   prisma.$transaction(async tx => {
     const { plan, leida } = await planificarCon(tx, workspaceId, p);
+    const canalDe = (f: FormatoPlaneado) => (f.ubicaciones.some(u => u.campos.length) ? (p.canal ?? Platform.META_ADS) : null);
     const medio = await tx.medio.upsert({
       where: { workspaceId_nombre: { workspaceId, nombre: p.medio } },
       create: { workspaceId, nombre: p.medio, clase: p.clase ?? ClaseDeMedio.PAGOS },
@@ -349,12 +415,17 @@ export const aplicarCarga = async (workspaceId: string, p: PlanillaDeMedio, auto
       if (paso.accion === 'igual') continue;
       const formato = await tx.formato.upsert({
         where: { medioId_nombre: { medioId: medio.id, nombre: f.nombre } },
-        // Las columnas de la planilla son los tres textos de Meta Ads: lo que se carga aquí lo escribe ese canal
-        // del motor (F4, 2026-11-23). Un formato que ya tenía canal lo conserva.
-        create: { workspaceId, medioId: medio.id, nombre: f.nombre, tipoArchivo: f.tipoArchivo, proporcion: f.proporcion, canal: Platform.META_ADS },
+        // Los textos de plataforma de la pieza los escribe el canal de la planilla (Meta Ads si no dice; F4,
+        // 2026-11-23). Una pieza sin textos (un logo, un banner) no lleva canal. Un formato con canal lo conserva.
+        create: { workspaceId, medioId: medio.id, nombre: f.nombre, tipoArchivo: f.tipoArchivo, proporcion: f.proporcion || null, canal: canalDe(f) },
         update: {},
       });
-      if (!formato.canal) await tx.formato.update({ where: { id: formato.id }, data: { canal: Platform.META_ADS } });
+      if (!formato.canal && canalDe(f)) await tx.formato.update({ where: { id: formato.id }, data: { canal: canalDe(f) } });
+      // Lo que el equipo ya revisó y no cambió conserva su revisión en la versión nueva.
+      const anterior = await tx.formatoVersion.findFirst({ where: { formatoId: formato.id }, orderBy: { numero: 'desc' }, include: INCLUDE_VERSION });
+      const revisadas = new Map(
+        (anterior?.ubicaciones ?? []).filter(u => u.revision).map(u => [huellaDeUbicacion(ubicacionDesdeLaBase(u)), u])
+      );
       const version = await tx.formatoVersion.create({
         data: {
           formatoId: formato.id,
@@ -384,6 +455,10 @@ export const aplicarCarga = async (workspaceId: string, p: PlanillaDeMedio, auto
             alerta: u.alerta,
             alertaTexto: u.alertaTexto,
             porConfirmar: u.porConfirmar,
+            ...(() => {
+              const r = revisadas.get(huellaDeUbicacion(u));
+              return r ? { revision: r.revision, revisionNota: r.revisionNota, revisadaPorId: r.revisadaPorId, revisadaEn: r.revisadaEn } : {};
+            })(),
           },
         });
         if (u.campos.length) {

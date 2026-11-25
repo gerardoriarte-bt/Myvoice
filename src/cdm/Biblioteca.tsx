@@ -1,8 +1,8 @@
 import React from 'react';
-import { AlertTriangle, ArrowLeft } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, CheckCircle2, ChevronDown, Circle, MessageSquareWarning } from 'lucide-react';
 import { SCREENS } from '../../screens';
 import { cdmApi } from '../../services/api';
-import type { MedioDetalle, MedioResumen } from '../../types';
+import type { MedioDetalle, MedioResumen, RevisionDeUbicacion } from '../../types';
 import CargarPlanilla from './CargarPlanilla';
 import GuiaVisual from './GuiaVisual';
 import { CLASES, ClaseDeMedio, nombreDeClase } from './clases';
@@ -99,6 +99,8 @@ export default function Biblioteca({ puedeEditar }: { puedeEditar: boolean }) {
       <div className="mt-auto flex flex-wrap items-center gap-2 pt-3">
         <span className={`rounded px-1.5 py-0.5 text-[11px] font-semibold ${ESTADO[m.estado].clase}`}>{ESTADO[m.estado].texto}</span>
         {m.porConfirmar > 0 && <span className="text-[11.5px] text-amber-700">{m.porConfirmar} por confirmar</span>}
+        {m.conObservacion > 0 && <span className="text-[11.5px] text-red-700">{m.conObservacion} con algo mal</span>}
+        {m.sinValidar > 0 && <span className="text-[11.5px] text-[#86868B]">{m.sinValidar} sin validar</span>}
         {m.sinCampos && <span className="text-[11.5px] text-[#86868B]">sin campos de texto</span>}
         <span className="ml-auto text-[12px] font-semibold text-[#047857]">Ver →</span>
       </div>
@@ -192,6 +194,7 @@ function Medio({
   const [medio, setMedio] = React.useState<MedioDetalle | null>(null);
   const [error, setError] = React.useState(false);
   const [guia, setGuia] = React.useState(false);
+  const [soloPendientes, setSoloPendientes] = React.useState(false);
   const [aviso, setAviso] = React.useState<string | null>(null);
   React.useEffect(() => {
     cdmApi.medio(id).then(setMedio).catch(() => setError(true));
@@ -223,6 +226,13 @@ function Medio({
 
   const ubicaciones = medio.formatos.reduce((s, f) => s + f.ubicaciones.length, 0);
   const porConfirmar = medio.formatos.reduce((s, f) => s + f.ubicaciones.filter(u => u.porConfirmar).length, 0);
+  const todas = medio.formatos.flatMap(f => f.ubicaciones);
+  const validadas = todas.filter(u => u.revision?.estado === 'VALIDADA').length;
+  const conObservacion = todas.filter(u => u.revision?.estado === 'CON_OBSERVACION').length;
+  // La respuesta de revisar una ubicación se aplica aquí, sin volver a leer el medio.
+  const alRevisar = (id: string, revision: Revision) =>
+    setMedio({ ...medio, formatos: medio.formatos.map(f => ({ ...f, ubicaciones: f.ubicaciones.map(u => (u.id === id ? { ...u, revision } : u)) })) });
+  const visibles = (f: MedioDetalle['formatos'][number]) => (soloPendientes ? f.ubicaciones.filter(u => u.revision?.estado !== 'VALIDADA') : f.ubicaciones);
   const plataformas = [...new Set(medio.formatos.flatMap(f => f.ubicaciones.map(u => u.plataforma)))];
   const fuente = medio.formatos.find(f => f.fuente);
 
@@ -261,6 +271,19 @@ function Medio({
             : `${medio.formatos.length} ${medio.formatos.length === 1 ? 'formato' : 'formatos'}`}
           {fuente?.fuenteFecha ? ` · ${fuente.fuente ?? 'guía'}, ${fecha(fuente.fuenteFecha)}` : ''}
         </p>
+        {todas.length > 0 && (
+          <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px]">
+            <span className={validadas === todas.length ? 'text-emerald-700' : 'text-[#3A3A3C]'}>
+              {validadas} de {todas.length} ubicaciones validadas
+            </span>
+            {conObservacion > 0 && <span className="text-red-700">{conObservacion} con algo mal</span>}
+            {validadas < todas.length && (
+              <label className="inline-flex items-center gap-1 text-[#6E6E73]">
+                <input type="checkbox" checked={soloPendientes} onChange={e => setSoloPendientes(e.target.checked)} /> Solo lo que falta
+              </label>
+            )}
+          </p>
+        )}
         {porConfirmar > 0 && (
           <p className="mt-1 inline-flex items-center gap-1 text-[12px] text-amber-700">
             <AlertTriangle className="h-3.5 w-3.5" /> {porConfirmar} {porConfirmar === 1 ? 'ubicación' : 'ubicaciones'} por confirmar: la guía
@@ -312,7 +335,7 @@ function Medio({
       )}
 
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 xl:grid-cols-3">
-        {medio.formatos.map(f => {
+        {medio.formatos.filter(f => !soloPendientes || visibles(f).length > 0).map(f => {
           const zona = f.guia?.zonaSegura;
           const pendientes = f.ubicaciones.filter(u => u.porConfirmar).length;
           return (
@@ -333,21 +356,26 @@ function Medio({
                 {pendientes > 0 && <span className="rounded bg-amber-50 px-1.5 py-0.5 text-[11px] font-semibold text-amber-700">{pendientes} por confirmar</span>}
               </div>
               <ul className="mt-2 space-y-0.5">
-                {f.ubicaciones.map(u => (
-                  <li key={u.id} className="flex items-center gap-1.5 text-[12px] text-[#3A3A3C]" title={u.alertaTexto ?? undefined}>
-                    {u.porConfirmar && <AlertTriangle className="h-3 w-3 shrink-0 text-amber-600" />}
-                    <span className="truncate">{u.nombre}</span>
-                  </li>
+                {visibles(f).map(u => (
+                  <UbicacionRevisable key={u.id} u={u} puedeEditar={puedeEditar} onRevisada={r => alRevisar(u.id, r)} />
                 ))}
               </ul>
-              {f.campos.length > 0 && (
-                <div className="mt-3 border-t border-[rgba(0,0,0,0.06)] pt-2">
-                  <div className="text-[10px] font-semibold uppercase tracking-[0.06em] text-[#86868B]">Campos de texto · de la plataforma</div>
+              {(['PIEZA', 'PLATAFORMA'] as const).map(zonaDeCampo => {
+                const deZona = f.campos.filter(c => (zonaDeCampo === 'PIEZA' ? c.zona === 'PIEZA' : c.zona !== 'PIEZA'));
+                if (!deZona.length) return null;
+                return (
+                <div key={zonaDeCampo} className="mt-3 border-t border-[rgba(0,0,0,0.06)] pt-2">
+                  <div className="text-[10px] font-semibold uppercase tracking-[0.06em] text-[#86868B]">
+                    Campos de texto · {zonaDeCampo === 'PIEZA' ? 'en la pieza' : 'de la plataforma'}
+                  </div>
                   <ul className="mt-1 space-y-1">
-                    {f.campos.map(c => (
+                    {deZona.map(c => (
                       <li key={c.clave} className="text-[12px]">
                         <div className="flex items-baseline justify-between gap-2">
-                          <span className="text-[#3A3A3C]">{c.nombre}</span>
+                          <span className="text-[#3A3A3C]">
+                            {c.repeticiones > 1 ? `${c.repeticiones} × ` : ''}
+                            {c.nombre}
+                          </span>
                           <span className="font-semibold text-[#1D1D1F] tabular-nums">
                             {c.desde == null ? '—' : c.desde === c.hasta ? c.hasta : `${c.desde} a ${c.hasta}`}
                           </span>
@@ -357,7 +385,8 @@ function Medio({
                     ))}
                   </ul>
                 </div>
-              )}
+                );
+              })}
               {f.camposDelFormato.length > 0 && <CamposDelFormato campos={f.camposDelFormato} />}
               {f.canal && <p className="mt-2 text-[11px] text-[#86868B]">Lo escribe Copywriting como «{f.canal}».</p>}
               <p className="mt-2 text-[11.5px] text-[#86868B]">
@@ -406,5 +435,156 @@ function CamposDelFormato({ campos }: { campos: MedioDetalle['formatos'][number]
         );
       })}
     </div>
+  );
+}
+
+type Ubicacion = MedioDetalle['formatos'][number]['ubicaciones'][number];
+type Revision = Ubicacion['revision'];
+
+const DETALLE: [string, string][] = [
+  ['archivos', 'Archivo'],
+  ['peso', 'Peso'],
+  ['duracion', 'Duración'],
+  ['anchoMinimo', 'Ancho mínimo'],
+  ['altoMinimo', 'Alto mínimo'],
+  ['tolerancia', 'Tolerancia'],
+  ['video', 'Video'],
+  ['subtitulos', 'Subtítulos'],
+  ['sonido', 'Sonido'],
+  ['otras', 'Otras'],
+];
+
+/**
+ * Una ubicación que el equipo valida en la herramienta (2026-11-25): al abrirla muestra lo que dice la guía —medidas,
+ * archivo, duración y sus textos— y se marca «Está bien» o «Algo está mal» con una nota. Hecho sin el `.pen`.
+ */
+function UbicacionRevisable({ u, puedeEditar, onRevisada }: { u: Ubicacion; puedeEditar: boolean; onRevisada: (r: Revision) => void }) {
+  const [abierta, setAbierta] = React.useState(false);
+  const [nota, setNota] = React.useState<string | null>(null);
+  const [ocupado, setOcupado] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+  const estado = u.revision?.estado;
+
+  const revisar = async (revision: RevisionDeUbicacion | null, texto?: string) => {
+    setOcupado(true);
+    setError(null);
+    try {
+      await cdmApi.revisarUbicacion(u.id, revision, texto);
+      onRevisada(revision ? { estado: revision, nota: texto ?? null, por: 'Tú', en: new Date().toISOString() } : null);
+      setNota(null);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'No se pudo guardar');
+    } finally {
+      setOcupado(false);
+    }
+  };
+
+  const filas = [
+    ['Proporción', u.proporcion],
+    ['Medidas', u.resolucion],
+    ...DETALLE.map(([k, nombre]) => [nombre, u.detalles?.[k] ?? null]),
+  ].filter((f): f is [string, string] => Boolean(f[1]));
+
+  return (
+    <li className="text-[12px] text-[#3A3A3C]">
+      <button type="button" onClick={() => setAbierta(!abierta)} className="flex w-full items-center gap-1.5 text-left hover:text-[#1D1D1F]" title={u.alertaTexto ?? undefined}>
+        {estado === 'VALIDADA' ? (
+          <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-600" aria-label="Validada" />
+        ) : estado === 'CON_OBSERVACION' ? (
+          <MessageSquareWarning className="h-3.5 w-3.5 shrink-0 text-red-600" aria-label="Algo está mal" />
+        ) : (
+          <Circle className="h-3.5 w-3.5 shrink-0 text-[#C7C7CC]" aria-label="Sin validar" />
+        )}
+        {u.porConfirmar && <AlertTriangle className="h-3 w-3 shrink-0 text-amber-600" />}
+        <span className="min-w-0 flex-1 truncate">{u.nombre}</span>
+        <ChevronDown className={`h-3 w-3 shrink-0 text-[#86868B] transition-transform ${abierta ? 'rotate-180' : ''}`} />
+      </button>
+      {abierta && (
+        <div className="mb-2 ml-5 mt-1 space-y-2 rounded-lg bg-[#F5F5F7] p-2.5">
+          <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-[11.5px]">
+            <dt className="text-[#86868B]">Plataforma</dt>
+            <dd>{u.plataforma}</dd>
+            {filas.map(([k, v]) => (
+              <React.Fragment key={k}>
+                <dt className="text-[#86868B]">{k}</dt>
+                <dd>{v}</dd>
+              </React.Fragment>
+            ))}
+            {u.campos.length > 0 && (
+              <>
+                <dt className="text-[#86868B]">Textos</dt>
+                <dd>{u.campos.map(c => `${c.repeticiones > 1 ? `${c.repeticiones} × ` : ''}${c.nombre} ${c.maximo ?? '—'}`).join(' · ')}</dd>
+              </>
+            )}
+          </dl>
+          {u.alertaTexto && <p className="text-[11.5px] text-amber-700">{u.alertaTexto}</p>}
+          {u.urlFuente && (
+            <a href={u.urlFuente} target="_blank" rel="noreferrer" className="text-[11.5px] text-[#0071E3] hover:underline">
+              Ver la guía de la plataforma
+            </a>
+          )}
+          {u.revision && (
+            <p className={`text-[11.5px] ${estado === 'VALIDADA' ? 'text-emerald-700' : 'text-red-700'}`}>
+              {estado === 'VALIDADA' ? 'Validada' : `Algo está mal: ${u.revision.nota}`}
+              {u.revision.por ? ` · ${u.revision.por}` : ''}
+              {u.revision.en ? `, ${fecha(u.revision.en)}` : ''}
+            </p>
+          )}
+          {puedeEditar &&
+            (nota !== null ? (
+              <div className="space-y-1.5">
+                <textarea
+                  value={nota}
+                  onChange={e => setNota(e.target.value)}
+                  rows={2}
+                  autoFocus
+                  placeholder="Qué está mal y cómo es en realidad: «el título es de 30, no de 40»"
+                  className="w-full rounded-md border border-[rgba(0,0,0,0.12)] bg-white px-2 py-1 text-[12px]"
+                />
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    disabled={ocupado || !nota.trim()}
+                    onClick={() => void revisar('CON_OBSERVACION', nota.trim())}
+                    className="rounded-md bg-red-600 px-2.5 py-1 text-[11.5px] font-semibold text-white disabled:opacity-40"
+                  >
+                    Guardar
+                  </button>
+                  <button type="button" onClick={() => setNota(null)} className="rounded-md px-2 py-1 text-[11.5px] text-[#6E6E73] hover:bg-white">
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {estado !== 'VALIDADA' && (
+                  <button
+                    type="button"
+                    disabled={ocupado}
+                    onClick={() => void revisar('VALIDADA')}
+                    className="rounded-md bg-[#047857] px-2.5 py-1 text-[11.5px] font-semibold text-white disabled:opacity-40"
+                  >
+                    Está bien
+                  </button>
+                )}
+                <button
+                  type="button"
+                  disabled={ocupado}
+                  onClick={() => setNota(u.revision?.nota ?? '')}
+                  className="rounded-md border border-[rgba(0,0,0,0.12)] bg-white px-2.5 py-1 text-[11.5px] font-semibold text-[#1D1D1F] disabled:opacity-40"
+                >
+                  Algo está mal
+                </button>
+                {u.revision && (
+                  <button type="button" disabled={ocupado} onClick={() => void revisar(null)} className="px-1 text-[11.5px] text-[#6E6E73] hover:underline">
+                    Deshacer
+                  </button>
+                )}
+              </div>
+            ))}
+          {error && <p className="text-[11.5px] text-red-600">{error}</p>}
+        </div>
+      )}
+    </li>
   );
 }

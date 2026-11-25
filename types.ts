@@ -791,9 +791,14 @@ export interface MedioResumen {
   plataformas: string[];
   proporciones: string[];
   porConfirmar: number;
+  /** Las ubicaciones que el equipo todavía no revisó, y las que marcó con algo mal (2026-11-25). */
+  sinValidar: number;
+  conObservacion: number;
   sinCampos: boolean;
   actualizado: { fuente: string | null; fecha: string } | null;
 }
+
+export type RevisionDeUbicacion = 'VALIDADA' | 'CON_OBSERVACION';
 
 /** B2: un medio con cada pieza maestra en su última versión. */
 export interface MedioDetalle {
@@ -821,10 +826,26 @@ export interface MedioDetalle {
       proporcion: string;
       porConfirmar: boolean;
       alertaTexto: string | null;
+      resolucion: string | null;
       detalles: Record<string, string> | null;
       zonaSegura: { superior: number | null; inferior: number | null; lados: number | null; restriccion?: string | null } | null;
+      urlFuente: string | null;
+      /** Los textos de plataforma de esta ubicación, con su largo y cuántos. */
+      campos: { clave: string; nombre: string; maximo: number | null; repeticiones: number }[];
+      /** La revisión del equipo en la herramienta; null = sin revisar. */
+      revision: { estado: RevisionDeUbicacion; nota: string | null; por: string | null; en: string | null } | null;
     }[];
-    campos: { clave: string; nombre: string; desde: number | null; hasta: number | null; masCortoEn: string | null; enUbicaciones: number }[];
+    campos: {
+      clave: string;
+      nombre: string;
+      /** Dentro del arte (`PIEZA`) o en la plataforma; cuántos lleva la pieza. */
+      zona: 'PIEZA' | 'PLATAFORMA' | 'INDICACION';
+      repeticiones: number;
+      desde: number | null;
+      hasta: number | null;
+      masCortoEn: string | null;
+      enUbicaciones: number;
+    }[];
     /** Los campos que no dependen de una ubicación: los de los canales de My Voice (F2c). */
     camposDelFormato: {
       clave: string;

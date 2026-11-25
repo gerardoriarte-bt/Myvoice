@@ -47,7 +47,8 @@ export default function EscribirPedido({ pedido, campanaId, brief, marca, onGuar
       }),
       // Qué textos lleva la pieza y su largo, según las ubicaciones que eligió CDM (Meta Ads: un video 4:5 no lleva
       // descripción, y el texto principal de Stories es más corto que el del feed).
-      textosDelPedido: pedido.textos.map(t => ({ slot: t.clave, max: t.maximo })),
+      // Cuántos de cada texto también manda la biblioteca (Google: «Título (3-15)», 2026-11-25).
+      textosDelPedido: pedido.textos.map(t => ({ slot: t.clave, max: t.maximo, porPieza: t.repeticiones ?? null })),
     }),
     [brief, marca, platform, pedido, slides]
   );

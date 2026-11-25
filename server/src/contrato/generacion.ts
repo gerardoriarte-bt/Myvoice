@@ -32,6 +32,8 @@ export enum Platform {
   GOOGLE_DISPLAY = 'Google Display',
   RICH_MEDIA = 'Rich Media',
   META_ADS = 'Meta Ads',
+  /** Google en CDM (2026-11-25): PMax, Demand Gen, Display responsivo y YouTube. */
+  GOOGLE_RECURSOS = 'Google Recursos',
   POP_UP = 'Pop up',
   PUSH = 'Push Notification',
   EMAIL = 'Email',
@@ -75,7 +77,8 @@ export interface CopyParameters {
    * F4, desde un pedido de CDM (2026-11-23): qué textos lleva la pieza y con qué largo, según las ubicaciones que
    * eligió la línea. Por id de slot; el motor deja afuera los slots que no vienen y usa el máximo que llega.
    */
-  textosDelPedido?: { slot: string; max: number | null }[];
+  /** `porPieza`: cuántos de ese texto lleva la pieza, si la biblioteca lo dice («Título (3-15)» → 15). */
+  textosDelPedido?: { slot: string; max: number | null; porPieza?: number | null }[];
   clientId: string;
   /**
    * Brief (perfil de ADN) elegido en el formulario. Sin esto el consumidor

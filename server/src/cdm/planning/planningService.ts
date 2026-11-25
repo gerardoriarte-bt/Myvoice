@@ -83,7 +83,9 @@ const textosDe = (l: LineaConFormato) => {
     if (c.ubicacionId && elegidas && !elegidas.has(c.ubicacionId)) continue;
     const previo = porClave.get(c.clave);
     const maximo = previo ? (previo.maximo == null ? c.maximo : c.maximo == null ? previo.maximo : Math.min(previo.maximo, c.maximo)) : c.maximo;
-    porClave.set(c.clave, { nombre: c.nombre, maximo, repeticiones: c.repeticiones, orden: previo?.orden ?? c.orden });
+    // El largo, el más corto; cuántos, los que pida la que más pide (5 títulos sirven donde basta 1).
+    const repeticiones = Math.max(previo?.repeticiones ?? 0, c.repeticiones);
+    porClave.set(c.clave, { nombre: c.nombre, maximo, repeticiones, orden: previo?.orden ?? c.orden });
   }
   return [...porClave.entries()].sort((a, b) => a[1].orden - b[1].orden).map(([clave, t]) => ({ clave, ...t }));
 };

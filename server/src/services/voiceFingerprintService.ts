@@ -1,4 +1,5 @@
 import { createAIClient, resolveModel, serverAIConfig, WorkspaceAIConfig, jsonObjectFormat, stripJsonFence, samplingParams, MAX_TOKENS, TIEMPOS, chatCompletionConRetry } from "./aiClient.js";
+import { extractUsage, type UsageEntry } from "./pricing.js";
 
 export interface DeterministicStats {
   sampleSize: number;          // # de textos analizados
@@ -101,7 +102,9 @@ Formato:
 
 export const computeBrandFingerprint = async (
   texts: string[],
-  aiConfig?: WorkspaceAIConfig
+  aiConfig?: WorkspaceAIConfig,
+  /** Lo que costó la llamada, para Control (2026-11-25). No se guarda en el fingerprint. */
+  alUsar?: (uso: UsageEntry | null) => Promise<void> | void
 ): Promise<BrandFingerprint> => {
   const cleaned = texts.map(t => (t || "").trim()).filter(Boolean);
   if (cleaned.length < 3) {
@@ -127,6 +130,7 @@ export const computeBrandFingerprint = async (
     },
     { etapa: "fingerprint", timeoutMs: TIEMPOS.llamada.extraccion, intentosMax: 2 }
   );
+  await alUsar?.(extractUsage(response, model, "fingerprint"));
 
   const raw = response.choices[0].message.content;
   if (!raw) throw new Error("La IA devolvió respuesta vacía.");

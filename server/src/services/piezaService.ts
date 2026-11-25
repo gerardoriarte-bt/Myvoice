@@ -1360,9 +1360,9 @@ export const piezasDeCampana = async (campanaId: string) =>
   (
     await prisma.pieza.findMany({
       where: { projectId: campanaId, canceladaEn: null },
-      select: { id: true, estado: true, slots: { select: { savedVariationId: true } } },
+      select: { id: true, estado: true, platform: true, slots: { select: { savedVariationId: true } } },
     })
-  ).map(p => ({ id: p.id, estado: p.estado, copyIds: p.slots.map(s => s.savedVariationId).filter((id): id is string => !!id) }));
+  ).map(p => ({ id: p.id, estado: p.estado, platform: p.platform, copyIds: p.slots.map(s => s.savedVariationId).filter((id): id is string => !!id) }));
 
 /**
  * F5: las piezas listas de una marca, para Implementación (por contrato). Lo que el trafficker necesita de cada

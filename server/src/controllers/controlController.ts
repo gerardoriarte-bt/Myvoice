@@ -1,5 +1,5 @@
 import { formatosConCanal } from '../cdm/planning/planningService.js';
-import { listChannels, producePieza } from '../channels/registry.js';
+import { listChannels, producePieza, getChannelSpec } from '../channels/registry.js';
 import { Response } from 'express';
 import { ModuloPlataforma, Prisma, WorkspaceRole } from '@prisma/client';
 import { AuthRequest, handleTenantError } from '../middleware/auth.js';
@@ -239,6 +239,8 @@ export const formatosDesalineados = async (_req: AuthRequest, res: Response) => 
     const problemas = formatos.flatMap(f => {
       const donde = { workspace: f.medio.workspace.name, medio: f.medio.nombre, formato: f.nombre, canal: f.canal!, tipoArchivo: f.tipoArchivo };
       if (!conocidos.has(f.canal!)) return [{ ...donde, problema: `El canal «${f.canal}» no existe en el motor` }];
+      // Un canal mixto (Google Recursos) escribe para piezas y para solo texto: ahí decide el formato.
+      if (getChannelSpec(f.canal!)?.mixto) return [];
       const soloTexto = f.tipoArchivo === 'TEXTO';
       if (soloTexto && producePieza(f.canal!))
         return [{ ...donde, problema: 'El formato es de solo texto, pero su canal produce pieza de diseño' }];
