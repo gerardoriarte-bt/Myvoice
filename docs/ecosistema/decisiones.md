@@ -409,8 +409,12 @@ dónde se está (marca, campaña, paso) se contradecía entre pantallas. Gerardo
       escribía directo en el ADN). Toda propuesta se aprueba, corrige o descarta; no cuenta hasta aprobarse.
     - **El costo queda en Control** (`ConsumoIa`): la entrevista y la lectura del manual suman al gasto del mes y aparecen
       por marca y por etapa.
-    - **Sigue (fase 2):** que cada texto generado diga de qué secciones del ADN sale y qué alertas tuvo, con «Mejorar esta
-      sección» y, al rechazar, una propuesta de cambio al ADN para aprobar.
+    - **De dónde sale cada texto (fase 2, el mismo día):**
+      - arriba de los resultados, «De dónde sale»: las secciones que guiaron el copy y su estado; lo débil o vacío lleva
+        a mejorarlo;
+      - cada alerta dice su sección («Tono distinto · Voz y personalidad →») y lleva a ella en Marca › ADN;
+      - «¿No suena a la marca?»: el equipo dice qué está mal y la IA propone esa sección corregida, con lo que cambió y
+        por qué. Queda para aprobar; el texto se guarda además como ejemplo de lo que no se quiere.
 
 ## Antes (2026-10-27), siguen vigentes con los nombres nuevos
 

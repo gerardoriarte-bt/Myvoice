@@ -1,10 +1,11 @@
 import React from 'react';
 import Info from './ui/Info';
 import { ArrowLeft, Check, ChevronLeft, ChevronRight, Image as ImageIcon, MessageSquareText, Palette, Pencil, Plus, RefreshCw } from 'lucide-react';
-import { CampaignSpine, CopyVariation } from '../types';
+import { CampaignSpine, ClaveAdn, CopyVariation } from '../types';
+import MejorarAdnDesdeTexto from '../src/myvoice/MejorarAdnDesdeTexto';
+import { NOMBRE_SECCION, SECCIONES_QUE_GUIAN, alertasDelAdn } from '../src/myvoice/trazasDelAdn';
 import { PlatformIcon } from './ui/platformIcons';
-import { etiquetaDelEditor } from '../etiquetasDelEditor';
-import { libraryApi } from '../services/api';
+import { clientApi, libraryApi } from '../services/api';
 import { esCarrusel, nombreDePieza, nombreDePiezas } from '../piezas';
 import QuienAprueba, { PersonaQueAprueba } from './QuienAprueba';
 
@@ -31,6 +32,13 @@ interface Props {
   /** Sin estos dos (en un pedido de CDM, F4), no hay «Ajustar» ni «Otro medio»: el pedido ya fijó el medio. */
   onAjustar?: () => void;
   onOtroMedio?: () => void;
+  /**
+   * De dónde sale cada texto (fase 2 de la decisión 35, 2026-11-25): con la marca, se muestra qué secciones del ADN
+   * guiaron el copy y su estado, cada alerta dice su sección, y «¿No suena a la marca?» propone mejorar el ADN.
+   */
+  clientId?: string;
+  /** Lleva a esa sección en Marca › ADN. */
+  onIrAlAdn?: (clave: ClaveAdn) => void;
 }
 
 const Pasos: React.FC<{ activo: number }> = ({ activo }) => (
@@ -67,6 +75,8 @@ const ResultadosPorPieza: React.FC<Props> = ({
   onOtra,
   onAjustar,
   onOtroMedio,
+  clientId,
+  onIrAlAdn,
 }) => {
   const piezas = React.useMemo(() => {
     const porIndice = new Map<number, CopyVariation[]>();
@@ -85,6 +95,19 @@ const ResultadosPorPieza: React.FC<Props> = ({
   /** «Otro medio» con piezas sin guardar: la próxima generación reemplaza esta pantalla. */
   const [pidiendoOtro, setPidiendoOtro] = React.useState(false);
   const [reescribiendo, setReescribiendo] = React.useState<string | null>(null);
+  /** El estado de cada sección del ADN de la marca, para «De dónde sale». */
+  const [estadoAdn, setEstadoAdn] = React.useState<Partial<Record<ClaveAdn, 'VACIA' | 'DEBIL' | 'COMPLETA'>> | null>(null);
+  /** El texto que el equipo marcó como «no suena a la marca». */
+  const [mejorando, setMejorando] = React.useState<CopyVariation | null>(null);
+  React.useEffect(() => {
+    if (!clientId) return setEstadoAdn(null);
+    clientApi
+      .adn(clientId)
+      .then((a: { completitud?: { secciones: { clave: ClaveAdn; estado: 'VACIA' | 'DEBIL' | 'COMPLETA' }[] } }) =>
+        setEstadoAdn(Object.fromEntries((a.completitud?.secciones ?? []).map(s => [s.clave, s.estado])))
+      )
+      .catch(() => setEstadoAdn(null));
+  }, [clientId]);
 
   React.useEffect(() => setActual(a => Math.min(a, Math.max(0, piezas.length - 1))), [piezas.length]);
   React.useEffect(() => {
@@ -142,16 +165,33 @@ const ResultadosPorPieza: React.FC<Props> = ({
 
   const Pie: React.FC<{ v: CopyVariation }> = ({ v }) => {
     const largo = conEdicion(v).content.length;
-    const marcas = [...(v.editorFlags ?? []).map(etiquetaDelEditor), ...(v.budgetOk === false ? ['Excede el límite'] : [])];
+    // Cada alerta con la sección del ADN que la explica (2026-11-25); la de la sección lleva a mejorarla.
+    const alertas = [
+      ...alertasDelAdn(v),
+      ...(v.budgetOk === false && !(v.editorFlags ?? []).includes('budget-violation') ? [{ seccion: null, mensaje: 'Excede el límite' }] : []),
+    ];
     return (
       <div className="mt-auto space-y-1.5 pt-2">
-        {marcas.length > 0 && (
+        {alertas.length > 0 && (
           <div className="flex flex-wrap gap-1">
-            {marcas.slice(0, 2).map(m => (
-              <span key={m} className="rounded bg-amber-50 px-1.5 py-0.5 text-[9.5px] font-semibold text-amber-700">
-                {m}
-              </span>
-            ))}
+            {alertas.slice(0, 3).map(a =>
+              a.seccion && onIrAlAdn ? (
+                <button
+                  key={a.mensaje}
+                  type="button"
+                  onClick={() => onIrAlAdn(a.seccion!)}
+                  title={`Viene de «${NOMBRE_SECCION[a.seccion]}» del ADN: ábrela para mejorarla`}
+                  className="rounded bg-amber-50 px-1.5 py-0.5 text-left text-[9.5px] font-semibold text-amber-700 hover:bg-amber-100"
+                >
+                  {a.mensaje} <span className="font-normal">· {NOMBRE_SECCION[a.seccion]} →</span>
+                </button>
+              ) : (
+                <span key={a.mensaje} className="rounded bg-amber-50 px-1.5 py-0.5 text-[9.5px] font-semibold text-amber-700">
+                  {a.mensaje}
+                  {a.seccion ? <span className="font-normal"> · {NOMBRE_SECCION[a.seccion]}</span> : null}
+                </span>
+              )
+            )}
           </div>
         )}
         <div className="flex items-center justify-between">
@@ -180,6 +220,15 @@ const ResultadosPorPieza: React.FC<Props> = ({
                 title="Otra versión de este texto, que encaje con los demás de la pieza"
               >
                 <RefreshCw className={`h-3 w-3 ${reescribiendo === v.id ? 'animate-spin' : ''}`} /> Otra
+              </button>
+            )}
+            {clientId && (
+              <button
+                onClick={() => setMejorando(conEdicion(v))}
+                className="text-[10.5px] font-semibold text-violet-600 hover:underline"
+                title="Dile a la IA qué está mal y propone cómo corregir el ADN"
+              >
+                ¿No suena a la marca?
               </button>
             )}
             {!bloqueada && (
@@ -219,6 +268,32 @@ const ResultadosPorPieza: React.FC<Props> = ({
       <div className="flex items-center justify-between">
         <Pasos activo={1} />
       </div>
+
+      {/* De dónde sale (2026-11-25): las secciones del ADN que guiaron el copy, con su estado; lo débil se mejora. */}
+      {estadoAdn && (
+        <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-4 py-2.5">
+          <span className="mr-1 text-[10.5px] font-bold uppercase tracking-wide text-gray-400">De dónde sale</span>
+          {SECCIONES_QUE_GUIAN.map(clave => {
+            const estado = estadoAdn[clave] ?? 'VACIA';
+            const estilo =
+              estado === 'COMPLETA' ? 'bg-emerald-50 text-emerald-800' : estado === 'DEBIL' ? 'bg-amber-50 text-amber-800' : 'bg-gray-100 text-gray-500';
+            const etiqueta = `${NOMBRE_SECCION[clave]}${estado === 'DEBIL' ? ' · débil' : estado === 'VACIA' ? ' · vacía' : ''}`;
+            return estado !== 'COMPLETA' && onIrAlAdn ? (
+              <button key={clave} type="button" onClick={() => onIrAlAdn(clave)} className={`rounded-full px-2 py-0.5 text-[11px] font-semibold hover:underline ${estilo}`}>
+                {etiqueta} →
+              </button>
+            ) : (
+              <span key={clave} className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${estilo}`}>
+                {etiqueta}
+              </span>
+            );
+          })}
+          <Info texto="El ADN de la marca que leyó el motor para escribir. Lo débil o vacío se nota en el copy: mejóralo y la próxima generación sale mejor. «Productos» solo lo usa la revisión." />
+        </div>
+      )}
+      {mejorando && clientId && (
+        <MejorarAdnDesdeTexto clientId={clientId} texto={mejorando} onCerrar={() => setMejorando(null)} onIrAlAdn={onIrAlAdn} />
+      )}
 
       {/* El pedido: de dónde salió esto y cómo volver. */}
       <div className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-2.5">

@@ -129,6 +129,7 @@ router.post('/clients/:id/adn/revision/:clave', ...inWorkspace, clientController
 router.post('/clients/:id/adn/confirmar', ...inWorkspace, clientController.postConfirmarAdn);
 router.get('/clients/:id/adn/asistente', ...inWorkspace, clientController.getAsistenteAdn);
 router.post('/clients/:id/adn/asistente', ...inWorkspace, clientController.postAsistenteAdn);
+router.post('/clients/:id/adn/mejora', ...inWorkspace, clientController.postMejoraAdn);
 // ADN 2.0 (docs/plan-adn-2.md): una sección a la vez, lo propuesto por la IA y la lista de audiencias.
 router.put('/clients/:id/adn/secciones/:clave', ...inWorkspace, clientController.putSeccionAdn);
 router.post('/clients/:id/adn/secciones/:clave/revisada', ...inWorkspace, clientController.postSeccionRevisada);

@@ -252,7 +252,7 @@ export const getUsageAnalytics = async (req: AuthRequest, res: Response) => {
     });
     const adnPorCliente = new Map<string, number>();
     const adnPorEtapa = new Map<string, { costUsd: number; tokens: number }>();
-    const NOMBRE_ETAPA: Record<string, string> = { 'asistente-adn': 'ADN: entrevista con IA', 'extraccion-pdf': 'ADN: lectura del manual' };
+    const NOMBRE_ETAPA: Record<string, string> = { 'asistente-adn': 'ADN: entrevista con IA', 'extraccion-pdf': 'ADN: lectura del manual', 'mejora-adn': 'ADN: mejora desde un texto' };
     for (const c of consumos) {
       const costo = aNumero(c.costUsd);
       if (c.clientId) adnPorCliente.set(c.clientId, (adnPorCliente.get(c.clientId) ?? 0) + costo);

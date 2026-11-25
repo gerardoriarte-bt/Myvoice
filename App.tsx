@@ -12,7 +12,7 @@ import PromptPreview from './components/PromptPreview';
 import UserManager from './components/UserManager';
 import UserHeader from './components/UserHeader';
 import NotificationSystem, { Notification, NotificationType } from './components/NotificationSystem';
-import { CopyParameters, CopyVariation, ReviewSession, SavedVariation, BrandConfig, Client, User, WorkspaceMember, WorkspaceSummary, canManageWorkspace, ContentDNAProfile } from './types';
+import { ClaveAdn, CopyParameters, CopyVariation, ReviewSession, SavedVariation, BrandConfig, Client, User, WorkspaceMember, WorkspaceSummary, canManageWorkspace, ContentDNAProfile } from './types';
 import TableroProduccion from './components/produccion/TableroProduccion';
 import CrearPiezasModal from './components/produccion/CrearPiezasModal';
 import PedidosDeCopy from './src/myvoice/PedidosDeCopy';
@@ -193,6 +193,13 @@ const App: React.FC = () => {
   const [campanaId, setCampanaId] = React.useState<string | null>(() => leerRuta(window.location.pathname).campanaId);
   /** Sube con cada «+ Nueva campaña» del encabezado: Marca › Campañas abre el brief vacío (2026-11-24). */
   const [nuevaCampana, setNuevaCampana] = React.useState(0);
+  /** La sección del ADN a la que se llega desde un texto generado (de dónde sale, 2026-11-25). */
+  const [adnEnfocado, setAdnEnfocado] = React.useState<{ clave: ClaveAdn; n: number } | null>(null);
+  const irAlAdn = (clientId: string, clave: ClaveAdn) => {
+    setActiveClientId(clientId);
+    setAdnEnfocado(prev => ({ clave, n: (prev?.n ?? 0) + 1 }));
+    setActiveTab('adn');
+  };
   React.useEffect(() => {
     if (!plataforma) {
       // Recién apagado (la sesión guardada todavía decía encendido): la ruta vuelve a «/».
@@ -834,6 +841,8 @@ const App: React.FC = () => {
                 platform={String(lastParams?.platforms?.[0] ?? variations[0].platform)}
                 slides={lastParams?.slides}
                 dnaProfileId={lastParams?.dnaProfileId}
+                clientId={activeClientId ?? undefined}
+                onIrAlAdn={plataforma && activeClientId ? clave => irAlAdn(activeClientId, clave) : undefined}
                 savedContentList={savedVariations.map(s => s.content)}
                 savedConjuntos={savedVariations.map(s => s.conjuntoId).filter((c): c is string => !!c)}
                 onGuardar={async textos => {
@@ -1179,6 +1188,7 @@ const App: React.FC = () => {
           briefs={dnaProfiles}
           puedeGenerar={escribe(activeClient.id)}
           onAviso={(m, tipo) => addNotification(m, tipo)}
+          onIrAlAdn={clave => irAlAdn(activeClient.id, clave)}
           onVerCopy={campana => {
             setCampanaId(campana);
             setActiveTab('saved');
@@ -1219,6 +1229,7 @@ const App: React.FC = () => {
             onAbrirMarca={setActiveClientId}
             onCambio={() => void recargarMarcas()}
             soloLectura={!actuaEn(currentUser, isAdmin, PASOS[0], activeClient.id)}
+            enfocar={adnEnfocado}
           />
           {/* Un solo ADN (2026-11-24): el manual y el fingerprint son fuentes del ADN y viven con él. */}
           <section className="space-y-2">

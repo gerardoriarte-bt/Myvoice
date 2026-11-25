@@ -457,6 +457,10 @@ async function main() {
       method: 'POST',
       body: JSON.stringify({ respuestas: { tratamiento: 'TU' } }),
     });
+    await expectDenied('POST /clients/:id/adn/mejora de A', `/clients/${A.client.id}/adn/mejora`, B.token, {
+      method: 'POST',
+      body: JSON.stringify({ seccion: 'voz', texto: 'x', motivo: 'x' }),
+    });
     // «Mi cola» cruza marcas, pero nunca empresas (2026-11-25).
     const colaB = await api('/implementacion/mi-cola', B.token);
     record(

@@ -58,6 +58,16 @@ export const NOVEDADES: Novedad[] = [
     ],
   },
   {
+    id: 'de-donde-sale-el-copy',
+    fecha: '2026-11-25',
+    titulo: 'De dónde sale cada texto, y cómo mejorarlo',
+    cambios: [
+      'Arriba de lo generado, «De dónde sale» muestra las secciones del ADN que guiaron el copy y cuáles están débiles o vacías.',
+      'Cada alerta dice de qué sección viene (por ejemplo, «Tono distinto · Voz y personalidad») y te lleva a ella.',
+      '«¿No suena a la marca?», en cada texto: cuéntale a la IA qué está mal y te propone cómo corregir el ADN. Tú lo apruebas.',
+    ],
+  },
+  {
     id: 'mi-cola',
     fecha: '2026-11-25',
     titulo: 'Mi cola: lo que te toca, en todas las marcas',

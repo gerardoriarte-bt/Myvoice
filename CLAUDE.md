@@ -379,7 +379,11 @@ sections gets byte-identical prompts. **Since 2026-11-25 the ★ sections are ma
 answers 409 while any ★ section is incomplete (`esencialesQueFaltan`; `GET /clients` carries `adn.esenciales`); «Completar con IA»
 (`/clients/:id/adn/asistente`) asks one question per missing section and the AI drafts only the answered ones; the PDF manual now leaves
 proposals too instead of writing the DNA. Everything lands in `SeccionAdn.propuesta` / IA_PROPUESTA audiences and only counts once
-someone approves it. Their cost goes to `ConsumoIa` (`comun/consumoIa.ts`), which Control adds to the spend.
+someone approves it. Their cost goes to `ConsumoIa` (`comun/consumoIa.ts`), which Control adds to the spend. **Where each text
+comes from** (phase 2): `src/myvoice/trazasDelAdn.ts` maps every hit and critic flag to its DNA section; `ResultadosPorPieza` shows
+«De dónde sale» (the sections that guided the writer, with their state) and each alert with its section, and «¿No suena a la
+marca?» (`POST /clients/:id/adn/mejora`, `proponerMejora`) has the AI propose that section corrected from the rejected text — again
+a proposal to approve, plus the usual negative example.
 **A submarca inherits only once its mother's DNA is
 confirmed** (`Client.adnConfirmadoEn`, `docs/plan-revision-adn.md`): `comun/adn/revisionAdn.ts` drives
 the review (each of the 5 sections «está bien» or corrected — a correction writes the column — then
