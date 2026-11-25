@@ -7,6 +7,7 @@ import { copyDeCampana } from '../myvoice/pedidosDeCopy.js';
 import { conjuntosSinPiezaDeCampana } from '../myvoice/copyParaProduccion.js';
 import { piezasDeCampana } from '../services/piezaService.js';
 import { pasoImplementacion, quienesMontan } from '../implementacion/anuncios.js';
+import { claseDeCanal } from '../channels/registry.js';
 import { SELECT_APROBADORES, quienesAprueban } from '../comun/aprobadores.js';
 
 /**
@@ -124,17 +125,30 @@ const pasosDeCampana = async (clientId: string, campanaId: string | null, conImp
   ]);
   // A quién le toca: lo que espera la aprobación final, a los aprobadores (autorizan o mandan el enlace); lo que espera
   // montarse, al trafficker y al community de la marca.
-  const montadores = [...montan.trafficker, ...montan.community.filter(c => !montan.trafficker.some(t => t.id === c.id))];
-  // Si nadie tiene Trafficker ni Community para la marca, monta quien administra: se nombra, para que no quede sin dueño.
-  const administran = montadores.length
-    ? []
-    : (
+  // Quién monta lo que está por montar, según su clase (decisión 29; Gerardo, 2026-11-25): lo de redes sociales lo
+  // publica el community; lo demás lo monta el trafficker. Si falta quien tenga la función, lo hace quien administra.
+  const plataformaDe = new Map<string, string>([
+    ...piezas.map(p => [p.id, p.platform] as [string, string]),
+    ...copy.filter(c => c.conjuntoId).map(c => [c.conjuntoId!, c.platform] as [string, string]),
+  ]);
+  const clases = new Set([...imp.porMontarDe.piezas, ...imp.porMontarDe.conjuntos].map(id => claseDeCanal(plataformaDe.get(id) ?? '')));
+  const hayRedes = clases.has('REDES_SOCIALES');
+  const hayOtras = [...clases].some(c => c !== 'REDES_SOCIALES');
+  const faltaFuncion = (hayRedes && !montan.community.length) || (hayOtras && !montan.trafficker.length);
+  const administran = faltaFuncion
+    ? (
         await prisma.membership.findMany({
           where: { workspaceId: campana.workspaceId, role: { in: ['OWNER', 'ADMIN'] } },
           select: { user: { select: { id: true, name: true } } },
         })
-      ).map(m => ({ id: m.user.id, nombre: m.user.name }));
-  const quienesDeImplementacion = imp.porAprobar > 0 ? aprueban : imp.conElCliente > 0 ? [] : montadores.length ? montadores : administran;
+      ).map(m => ({ id: m.user.id, nombre: m.user.name }))
+    : [];
+  const sinRepetir = (ps: { id: string; nombre: string }[]) => [...new Map(ps.map(p => [p.id, p])).values()];
+  const montadores = sinRepetir([
+    ...(hayOtras ? (montan.trafficker.length ? montan.trafficker : administran) : []),
+    ...(hayRedes ? (montan.community.length ? montan.community : administran) : []),
+  ]);
+  const quienesDeImplementacion = imp.porAprobar > 0 ? aprueban : imp.conElCliente > 0 ? [] : montadores;
   // Contra lo planeado en la sábana, si la hay: con 1 de 3 montado, la campaña no terminó aunque el único anuncio
   // que existe esté montado (2026-11-24).
   const total = Math.max(imp.listas, planeadas ?? 0);

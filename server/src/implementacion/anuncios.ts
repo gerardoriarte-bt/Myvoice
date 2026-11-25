@@ -377,15 +377,21 @@ export const guardarDestino = async (tenant: TenantContext, id: string, body: { 
 export const pasoImplementacion = async (piezas: { id: string; estado: string }[], conjuntosSoloTexto: string[] = []) => {
   const listas = piezas.filter(p => p.estado === 'LISTA').map(p => p.id);
   const total = listas.length + conjuntosSoloTexto.length;
-  if (!total) return { listas: 0, montados: 0, conNovedad: 0, porAprobar: 0, conElCliente: 0, porMontar: 0 };
+  if (!total) return { listas: 0, montados: 0, conNovedad: 0, porAprobar: 0, conElCliente: 0, porMontar: 0, porMontarDe: { piezas: [] as string[], conjuntos: [] as string[] } };
   const deEstos = { OR: [{ piezaId: { in: listas } }, { conjuntoId: { in: conjuntosSoloTexto } }] };
   const porEstado = new Map(
     (await prisma.anuncio.groupBy({ by: ['estado'], where: deEstos, _count: { _all: true } })).map(g => [g.estado, g._count._all])
   );
   const n = (e: string) => porEstado.get(e as never) ?? 0;
+  // Qué está por montar (2026-11-25): la plataforma mira su canal para nombrar a quien lo monta o lo publica.
+  const porMontarFilas = await prisma.anuncio.findMany({ where: { ...deEstos, estado: 'POR_MONTAR' }, select: { piezaId: true, conjuntoId: true } });
+  const porMontarDe = {
+    piezas: porMontarFilas.map(f => f.piezaId).filter((id): id is string => !!id),
+    conjuntos: porMontarFilas.map(f => f.conjuntoId).filter((id): id is string => !!id),
+  };
   const conFila = [...porEstado.values()].reduce((t, c) => t + c, 0);
   // Sin fila todavía = por aprobar: nada se monta sin la aprobación final (2026-11-24).
-  return { listas: total, montados: n('MONTADO'), conNovedad: n('CON_NOVEDAD'), porAprobar: total - conFila + n('POR_APROBAR'), conElCliente: n('CON_EL_CLIENTE'), porMontar: n('POR_MONTAR') };
+  return { listas: total, montados: n('MONTADO'), conNovedad: n('CON_NOVEDAD'), porAprobar: total - conFila + n('POR_APROBAR'), conElCliente: n('CON_EL_CLIENTE'), porMontar: n('POR_MONTAR'), porMontarDe };
 };
 
 // --------------------------------------------------------------- la aprobación final (2026-11-24)

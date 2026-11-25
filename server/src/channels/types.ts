@@ -21,6 +21,8 @@ export interface SlotSpec {
   zona?: ZonaSlot;
   /** Solo para leer lo guardado con el modelo anterior: el motor ya no lo genera. */
   legado?: boolean;
+  /** Solo se escribe si un pedido de CDM lo pide (2026-11-25): rutas, CTA o tarjetas de Google. */
+  soloSiSePide?: boolean;
   unit: SlotUnit;
   /** hard ceiling — anything above is invalid */
   max?: number;
@@ -89,6 +91,11 @@ export interface ChannelSpec {
   guidance: string;
   /** null = no produce pieza de diseño; ver PiezaSpec */
   pieza: PiezaSpec | null;
+  /**
+   * El formato de CDM decide si lleva pieza de diseño (2026-11-25): el canal escribe para piezas con imagen y para
+   * formatos de solo texto (Google Recursos). Sin línea de CDM, cuenta como que produce pieza.
+   */
+  mixto?: boolean;
 }
 
 export interface ChannelGenerationResult {

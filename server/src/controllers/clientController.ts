@@ -700,7 +700,9 @@ export const computeFingerprint = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    const fingerprint = await computeBrandFingerprint(allTexts, serverAIConfig());
+    const fingerprint = await computeBrandFingerprint(allTexts, serverAIConfig(), uso =>
+      registrarConsumo({ workspaceId: req.tenant!.workspaceId, clientId: id, etapa: 'fingerprint', uso, autorId: req.tenant!.userId })
+    );
     const updated = await prisma.client.update({
       where: { id },
       data: { brandFingerprint: fingerprint as any, brandFingerprintAt: new Date() },

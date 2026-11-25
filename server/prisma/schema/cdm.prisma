@@ -100,6 +100,11 @@ model FormatoVersion {
   @@unique([formatoId, numero])
 }
 
+enum RevisionDeUbicacion {
+  VALIDADA
+  CON_OBSERVACION
+}
+
 /// Dónde aparece la pieza (Feed de Instagram, Facebook Reels…), con lo que la guía dice de cada una.
 model Ubicacion {
   id               String  @id @default(uuid())
@@ -118,6 +123,13 @@ model Ubicacion {
   alerta           Int?
   alertaTexto      String?
   porConfirmar     Boolean @default(false)
+  /// El equipo la valida en la Biblioteca (2026-11-25): la planilla de Google y DV360 llegó sin validar. NULL = sin
+  /// revisar; una nota dice qué está mal. Quién, por id: el nombre se lee al mostrarla. Una versión nueva la
+  /// hereda si la ubicación no cambió.
+  revision         RevisionDeUbicacion?
+  revisionNota     String?
+  revisadaPorId    String?
+  revisadaEn       DateTime?
 
   version FormatoVersion @relation(fields: [formatoVersionId], references: [id], onDelete: Cascade)
   campos  CampoDeTexto[]

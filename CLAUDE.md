@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 My Voice is a multi-brand copy generation engine: a React SPA at the repo root and an
 Express + Prisma + PostgreSQL API under `server/`. It takes a brand DNA profile (brief) and
-produces channel-specific ad copy across 15 channels (Meta Ads since 2026-11-23), then routes it through an internal
+produces channel-specific ad copy across 16 channels (Meta Ads since 2026-11-23, Google Recursos since 2026-11-25), then routes it through an internal
 library and a client approval portal.
 
 Codebase language: **code and comments are in Spanish** (user-facing strings, error messages,
@@ -149,6 +149,13 @@ Changing a char limit means editing the spec, not a prompt. The one exception is
 `textosDelPedido` (which slots the piece carries and their max, from the placements chosen in CDM), and
 `specParaGeneracion` narrows the spec with it — so prompt, validators and fixer all see the request's lengths. Meta Ads'
 six master pieces come from the Meta sheet (`cargarPlanilla` sets `canal: 'Meta Ads'`), not from `cdm:canales`.
+Google's 24 and DV360's 27 (2026-11-25, `docs/ecosistema/cdm/biblioteca/google.md`) come from the format validation sheet via
+`scripts/cdm-desde-validacion.cjs`: the sheet carries an explicit `Pieza`, an `En la pieza` column (in-art texts, an assumption) and a `Textos` column with counts
+(«Título (3-15): 30» → `repeticiones`), and its `canal` is `Google Recursos` — one **mixed** channel (`ChannelSpec.mixto`:
+the format decides whether there is a design piece) whose slots a request narrows in length *and* count
+(`textosDelPedido.porPieza`; `soloSiSePide` slots only appear when requested). Nothing in that sheet was validated: the team
+validates each placement in the Biblioteca (`Ubicacion.revision` VALIDADA | CON_OBSERVACION with a note, `PUT /cdm/biblioteca/ubicaciones/:id/revision`,
+Planning or admin); a new version inherits the review of every placement that did not change.
 
 **A generation is one medium and a number of pieces** (`docs/plan-piezas-por-medio.md`, since
 2026-11-05): «5 carruseles de 6 slides». The director makes one angle per piece; `runGeneration`

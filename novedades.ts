@@ -48,6 +48,16 @@ export interface Novedad {
 
 export const NOVEDADES: Novedad[] = [
   {
+    id: 'google-en-la-biblioteca',
+    fecha: '2026-11-25',
+    titulo: 'Google y DV360 en la biblioteca de CDM',
+    cambios: [
+      'La biblioteca tiene ahora las piezas de Google (Performance Max, Demand Gen, YouTube y Display) y de DV360 (display, HTML5, rich media, native, video, YouTube y CTV): imágenes, videos, carruseles, banners e intersticiales, cada una con sus ubicaciones.',
+      'Al planear, cada línea pide los textos que lleva su pieza (títulos, descripciones, rutas o el titular del banner) con el largo y la cantidad de sus ubicaciones, y My Voice los escribe.',
+      'Cada ubicación se valida en la biblioteca: ábrela, revisa medidas, archivo y textos, y marca «Está bien» o «Algo está mal» con una nota.',
+    ],
+  },
+  {
     id: 'adn-esencial-con-ia',
     fecha: '2026-11-25',
     titulo: 'Lo esencial del ADN, obligatorio y con ayuda de la IA',

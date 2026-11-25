@@ -34,8 +34,8 @@ export const avanceDeLineas = async (tenant: TenantContext, lineaIds: string[]) 
  * sobre su propia tabla; la plataforma y Producción no la leen directo.
  */
 export const copyDeCampana = async (campanaId: string) =>
-  (await prisma.savedVariation.findMany({ where: { projectId: campanaId }, select: { id: true, isApproved: true, platform: true } })).map(
-    c => ({ id: c.id, isApproved: c.isApproved, conPieza: Boolean(getPiezaSpec(c.platform)) })
+  (await prisma.savedVariation.findMany({ where: { projectId: campanaId }, select: { id: true, isApproved: true, platform: true, conjuntoId: true } })).map(
+    c => ({ id: c.id, isApproved: c.isApproved, conPieza: Boolean(getPiezaSpec(c.platform)), platform: c.platform, conjuntoId: c.conjuntoId })
   );
 
 /**

@@ -7,6 +7,7 @@ import type {
   PasoDeProceso,
   MarcaDeControl,
   MedioDetalle,
+  RevisionDeUbicacion,
   MedioResumen,
   PlanDeCarga,
   PlanningDetalle,
@@ -166,6 +167,9 @@ export const cdmApi = {
     apiRequest(`/cdm/biblioteca/medios/${id}/clase`, { method: 'PUT', body: JSON.stringify({ clase }) }),
   cambiarEstado: (id: string, estado: 'BORRADOR' | 'ACTIVO' | 'OCULTO') =>
     apiRequest(`/cdm/biblioteca/medios/${id}/estado`, { method: 'PUT', body: JSON.stringify({ estado }) }),
+  /** Validar una ubicación en la herramienta; `null` la vuelve a sin revisar. */
+  revisarUbicacion: (id: string, revision: RevisionDeUbicacion | null, nota?: string) =>
+    apiRequest(`/cdm/biblioteca/ubicaciones/${id}/revision`, { method: 'PUT', body: JSON.stringify({ revision, nota }) }),
 };
 
 export const analyticsApi = {

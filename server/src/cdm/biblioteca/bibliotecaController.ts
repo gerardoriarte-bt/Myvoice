@@ -46,6 +46,8 @@ export const listarMedios = async (req: AuthRequest, res: Response) => {
           plataformas: [...new Set(ubicaciones.map(u => u.plataforma))],
           proporciones: [...new Set(m.formatos.map(f => f.proporcion).filter((p): p is string => Boolean(p)))],
           porConfirmar: ubicaciones.filter(u => u.porConfirmar).length,
+          sinValidar: ubicaciones.filter(u => !u.revision).length,
+          conObservacion: ubicaciones.filter(u => u.revision === 'CON_OBSERVACION').length,
           sinCampos: versiones.some(v => !v.campos.length && !v.ubicaciones.some(u => u.campos.length)),
           actualizado: masNueva ? { fuente: masNueva.fuente, fecha: (masNueva.fuenteFecha ?? masNueva.createdAt).toISOString() } : null,
         };
@@ -65,6 +67,11 @@ export const detalleDeMedio = async (req: AuthRequest, res: Response) => {
     const medio = await prisma.medio.findUnique({ where: { id: req.params.id }, include: { formatos: { include: ultimaVersion } } });
     // De otra agencia responde 404, como todo lo ajeno.
     if (!medio || medio.workspaceId !== req.tenant!.workspaceId) return res.status(404).json({ error: 'Medio no encontrado' });
+    // Quién revisó cada ubicación, con su nombre: la revisión guarda solo el id.
+    const ids = [...new Set(medio.formatos.flatMap(f => f.versiones[0]?.ubicaciones.map(u => u.revisadaPorId) ?? []).filter((x): x is string => Boolean(x)))];
+    const nombres = new Map(
+      (await prisma.user.findMany({ where: { id: { in: ids } }, select: { id: true, name: true } })).map(u => [u.id, u.name])
+    );
     res.json({
       id: medio.id,
       nombre: medio.nombre,
@@ -74,20 +81,27 @@ export const detalleDeMedio = async (req: AuthRequest, res: Response) => {
         .filter(f => f.versiones[0])
         .map(f => {
           const v = f.versiones[0];
-          const claves = new Map<string, { nombre: string; largos: { maximo: number | null; minimo: number | null; ubicacion: string }[] }>();
+          const claves = new Map<
+            string,
+            { nombre: string; zona: string; repeticiones: number; largos: { maximo: number | null; minimo: number | null; ubicacion: string }[] }
+          >();
           for (const u of v.ubicaciones) {
             for (const c of u.campos) {
-              const e = claves.get(c.clave) ?? { nombre: c.nombre, largos: [] };
+              const e = claves.get(c.clave) ?? { nombre: c.nombre, zona: c.zona, repeticiones: 0, largos: [] };
               e.largos.push({ maximo: c.maximo, minimo: c.minimo, ubicacion: u.nombre });
+              // Cuántos lleva la pieza: los que pide la ubicación que más pide, como el pedido de copy.
+              e.repeticiones = Math.max(e.repeticiones, c.repeticiones);
               claves.set(c.clave, e);
             }
           }
-          const campos = [...claves.entries()].map(([clave, { nombre, largos }]) => {
+          const campos = [...claves.entries()].map(([clave, { nombre, zona, repeticiones, largos }]) => {
             const maximos = largos.map(l => l.maximo).filter((x): x is number => x != null);
             const corto = maximos.length ? largos.find(l => l.maximo === Math.min(...maximos)) : undefined;
             return {
               clave,
               nombre,
+              zona,
+              repeticiones,
               desde: maximos.length ? Math.min(...maximos) : null,
               hasta: maximos.length ? Math.max(...maximos) : null,
               // Solo se dice quién lo acota cuando hay rango y la acota una sola ubicación del grupo.
@@ -115,8 +129,21 @@ export const detalleDeMedio = async (req: AuthRequest, res: Response) => {
               proporcion: u.proporcion,
               porConfirmar: u.porConfirmar,
               alertaTexto: u.alertaTexto,
+              resolucion: u.resolucion,
               detalles: u.detalles,
               zonaSegura: u.zonaSegura,
+              urlFuente: u.urlFuente,
+              campos: [...u.campos]
+                .sort((a, b) => a.orden - b.orden)
+                .map(c => ({ clave: c.clave, nombre: c.nombre, maximo: c.maximo, repeticiones: c.repeticiones })),
+              revision: u.revision
+                ? {
+                    estado: u.revision,
+                    nota: u.revisionNota,
+                    por: u.revisadaPorId ? (nombres.get(u.revisadaPorId) ?? null) : null,
+                    en: u.revisadaEn?.toISOString() ?? null,
+                  }
+                : null,
             })),
             campos,
             camposDelFormato: v.campos.map(c => ({
@@ -216,5 +243,37 @@ export const cambiarClaseDeMedio = async (req: AuthRequest, res: Response) => {
     res.json(await prisma.medio.update({ where: { id: medio.id }, data: { clase: clase as ClaseDeMedio }, select: { id: true, clase: true } }));
   } catch (error) {
     handleTenantError(error, res, 'Error al cambiar la clase del medio');
+  }
+};
+
+/**
+ * Validar una ubicación en la herramienta (2026-11-25): la planilla de Google y DV360 llegó sin validar y el equipo
+ * la revisa aquí, una por una. «Está bien», «Algo está mal» con una nota, o volver a sin revisar. Es de Planning.
+ */
+export const revisarUbicacion = async (req: AuthRequest, res: Response) => {
+  const { revision, nota } = (req.body ?? {}) as { revision?: unknown; nota?: unknown };
+  if (revision !== null && revision !== 'VALIDADA' && revision !== 'CON_OBSERVACION') return res.status(400).json({ error: 'Revisión inválida' });
+  const texto = typeof nota === 'string' ? nota.trim().slice(0, 1000) : '';
+  if (revision === 'CON_OBSERVACION' && !texto) return res.status(400).json({ error: 'Cuenta qué está mal' });
+  try {
+    const ubicacion = await prisma.ubicacion.findUnique({
+      where: { id: req.params.id },
+      select: { id: true, version: { select: { formato: { select: { medio: { select: { workspaceId: true } } } } } } },
+    });
+    // De otra agencia responde 404, como todo lo ajeno.
+    if (!ubicacion || ubicacion.version.formato.medio.workspaceId !== req.tenant!.workspaceId) {
+      return res.status(404).json({ error: 'Ubicación no encontrada' });
+    }
+    await exigirPlanning(req.tenant!);
+    const r = await prisma.ubicacion.update({
+      where: { id: ubicacion.id },
+      data: revision
+        ? { revision, revisionNota: revision === 'CON_OBSERVACION' ? texto : null, revisadaPorId: req.tenant!.userId, revisadaEn: new Date() }
+        : { revision: null, revisionNota: null, revisadaPorId: null, revisadaEn: null },
+      select: { id: true, revision: true, revisionNota: true, revisadaEn: true },
+    });
+    res.json(r);
+  } catch (error) {
+    handleTenantError(error, res, 'Error al revisar la ubicación');
   }
 };
