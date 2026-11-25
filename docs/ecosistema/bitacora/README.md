@@ -53,4 +53,4 @@ Módulos: parte común · My Voice · CDM   (los que se tocaron)
 - [2026-11-20](./2026-11-20.md) · F3b, varios aprobadores con «Por aprobar» (decisiones 30 y 31) y los pedidos de copy (F4), sin el `.pen`.
 - [2026-11-23](./2026-11-23.md) · Copy: el flujo primero, el enlace para el cliente a la vista y la aprobación desde Equipo.
 - [2026-11-24](./2026-11-24.md) · Implementación de punta a punta: la aprobación final, el reporte, la eficiencia, «Ahora» y una campaña es su brief.
-- [2026-11-25](./2026-11-25.md) · Mi cola, el historial de la marca con nombres y el ADN esencial con la IA que propone.
+- [2026-11-25](./2026-11-25.md) · Mi cola, el ADN esencial con la IA que propone, de dónde sale cada texto, y Google y DV360 en la biblioteca con validación por ubicación.
