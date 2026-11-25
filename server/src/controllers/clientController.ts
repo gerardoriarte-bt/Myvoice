@@ -14,7 +14,7 @@ import {
 } from '../lib/tenancy.js';
 import { normalizarNombre } from '../lib/nombreDeMarca.js';
 import { unirMarcas } from '../services/unirMarcas.js';
-import { entrevistar, preguntasDeEntrevista, proponer } from '../comun/adn/propuestas.js';
+import { entrevistar, preguntasDeEntrevista, proponer, proponerMejora } from '../comun/adn/propuestas.js';
 import { registrarConsumo } from '../comun/consumoIa.js';
 import { prisma } from '../lib/prisma.js';
 import { claveGuiaDeMarca, storage } from '../lib/storage.js';
@@ -742,5 +742,15 @@ export const postAsistenteAdn = async (req: AuthRequest, res: Response) => {
     res.json(await entrevistar(req.params.id, req.body?.respuestas, req.tenant!.userId, req.tenant!.workspaceId));
   } catch (error) {
     handleTenantError(error, res, 'Error al proponer el ADN');
+  }
+};
+
+/** «¿No suena a la marca?» (2026-11-25): la IA propone la sección del ADN corregida desde un texto rechazado. */
+export const postMejoraAdn = async (req: AuthRequest, res: Response) => {
+  try {
+    await assertClientInWorkspace(req.tenant!, req.params.id);
+    res.json(await proponerMejora(req.params.id, req.body ?? {}, req.tenant!.userId, req.tenant!.workspaceId));
+  } catch (error) {
+    handleTenantError(error, res, 'Error al proponer la mejora del ADN');
   }
 };

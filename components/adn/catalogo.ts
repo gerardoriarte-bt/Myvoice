@@ -72,6 +72,7 @@ export const FUENTES: Record<string, string> = {
   'copy-aprobado': 'copy aprobado',
   url: 'sitio web',
   entrevista: 'entrevista',
+  'copy-rechazado': 'un texto que no sonó a la marca',
 };
 
 export const DESCRIPTORES: { clave: 'quienEs' | 'queLeImporta' | 'queLaFrena' | 'comoHabla'; nombre: string }[] = [

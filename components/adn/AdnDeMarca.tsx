@@ -38,6 +38,8 @@ interface Props {
    * edición, de «Está bien» ni de propuestas. El servidor lo vuelve a decidir (`comun/permisos.ts`).
    */
   soloLectura?: boolean;
+  /** Llegar a una sección (desde un texto generado, 2026-11-25): se resalta y se lleva a la vista al cargar. */
+  enfocar?: { clave: ClaveAdn; n: number } | null;
 }
 
 type Edicion =
@@ -81,7 +83,7 @@ const Anillo: React.FC<{ porcentaje: number; minimo: number; apta: boolean }> = 
   );
 };
 
-const AdnDeMarca: React.FC<Props> = ({ clientId, marca, madreDeclarada, submarcas, pideRevision, onAbrirMarca, onCambio, recarga, soloLectura }) => {
+const AdnDeMarca: React.FC<Props> = ({ clientId, marca, madreDeclarada, submarcas, pideRevision, onAbrirMarca, onCambio, recarga, soloLectura, enfocar }) => {
   const [adn, setAdn] = React.useState<Adn | null>(null);
   const [error, setError] = React.useState<string | null>(null);
   const [edicion, setEdicion] = React.useState<Edicion | null>(null);
@@ -106,6 +108,17 @@ const AdnDeMarca: React.FC<Props> = ({ clientId, marca, madreDeclarada, submarca
   React.useEffect(() => {
     cargar();
   }, [cargar, recarga]);
+  // Desde un texto generado se llega a la sección que lo explica: se lleva a la vista y se resalta un momento.
+  React.useEffect(() => {
+    if (!enfocar || !adn) return;
+    const el = document.getElementById(`adn-${enfocar.clave}`);
+    if (!el) return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    el.classList.add('ring-2', 'ring-violet-500', 'ring-offset-2');
+    const t = setTimeout(() => el.classList.remove('ring-2', 'ring-violet-500', 'ring-offset-2'), 2400);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [enfocar?.n, adn === null]);
 
   if (!adn) return error ? <p className="text-[12px] text-red-600">{error}</p> : <p className="text-[12px] text-gray-400">Cargando el ADN…</p>;
 

@@ -19,7 +19,7 @@ import { seccion, type ClaveAdn, type DescriptoresAudiencia } from './secciones.
  * «Descartar»).
  */
 
-export type FuenteDePropuesta = 'pdf' | 'entrevista';
+export type FuenteDePropuesta = 'pdf' | 'entrevista' | 'copy-rechazado';
 export type Propuestas = Partial<Record<Exclude<ClaveAdn, 'audiencias' | 'asiSuena'>, string>>;
 export interface AudienciaPropuesta {
   nombre: string;
@@ -229,3 +229,77 @@ export const esencialesQueFaltan = async (clientId: string) =>
   completitudAdn(await resolverAdn(clientId))
     .secciones.filter(s => s.critica && s.estado !== 'COMPLETA')
     .map(s => ({ clave: s.clave, nombre: s.nombre, motivo: s.motivo }));
+
+// ------------------------------------------------- mejorar el ADN desde un texto (2026-11-25, fase 2)
+
+/** Las secciones que se pueden mejorar desde un texto generado. Audiencias y así suena se trabajan en su editor. */
+export const MEJORABLES: ClaveAdn[] = ['propuestaDeValor', 'voz', 'tratamiento', 'prohibiciones', 'reglasDeEstilo', 'frasesIntocables', 'keywords', 'productos'];
+
+/**
+ * «¿No suena a la marca?»: con el texto que el equipo rechazó y lo que dice que está mal, la IA propone la sección del
+ * ADN corregida —completa, no solo el cambio— para que el próximo copy no repita el problema. Queda como propuesta;
+ * alguien la aprueba en Marca › ADN. En las secciones que suman (prohibiciones, keywords, frases) propone la lista
+ * propia de la marca con lo nuevo agregado: nunca quita lo que hereda de la madre.
+ */
+export const proponerMejora = async (
+  clientId: string,
+  datos: { seccion?: unknown; texto?: unknown; motivo?: unknown },
+  autorId: string,
+  workspaceId: string
+) => {
+  const clave = typeof datos.seccion === 'string' && MEJORABLES.includes(datos.seccion as ClaveAdn) ? (datos.seccion as ClaveAdn) : null;
+  const def = clave ? seccion(clave) : null;
+  const texto = typeof datos.texto === 'string' ? datos.texto.trim().slice(0, 3000) : '';
+  const motivo = typeof datos.motivo === 'string' ? datos.motivo.trim().slice(0, 1000) : '';
+  if (!clave || !def) throw new TenantError('Elige qué sección del ADN mejorar', 400);
+  if (!texto || !motivo) throw new TenantError('Falta el texto o qué está mal en él', 400);
+
+  const marca = await prisma.client.findUniqueOrThrow({ where: { id: clientId }, select: { name: true, industry: true } });
+  const suma = def.modos.length === 1 && def.modos[0] === 'SUMA';
+  const propia = await prisma.seccionAdn.findUnique({ where: { clientId_clave: { clientId, clave } }, select: { contenido: true } });
+  const actual = suma
+    ? ((propia?.contenido as { texto?: string } | null)?.texto ?? '')
+    : (await resolverAdn(clientId)).secciones[clave]?.texto ?? '';
+
+  const config = serverAIConfig();
+  const openai = createAIClient(config);
+  const respuesta = await chatCompletionConRetry(
+    openai,
+    {
+      model: resolveModel(config, false),
+      messages: [
+        {
+          role: 'system',
+          content:
+            'Eres estratega de marca en Colombia. Ajustas una sección del ADN de una marca para que el copy generado no repita un problema que el equipo señaló. Cambias lo mínimo: conservas lo que ya dice la sección y agregas la precisión, la regla o el término que evita el problema. No inventas datos de la marca. Escribes en español de Colombia. Respondes SOLO en JSON válido.',
+        },
+        {
+          role: 'user',
+          content: `Marca: ${marca.name} (rubro: ${marca.industry}).
+Sección: ${def.nombre}${suma ? ` (una lista separada por «${def.separador ?? ', '}»; devuelve la lista completa con lo nuevo agregado)` : ''}.
+${clave === 'tratamiento' ? 'Devuelve solo TU, USTED o VOS.\n' : ''}
+Lo que dice hoy:
+${actual || '(vacía)'}
+
+Texto generado que el equipo rechazó:
+${texto}
+
+Qué está mal, según el equipo:
+${motivo}
+
+Devuelve { "texto": "la sección corregida", "porque": "una frase: qué cambiaste y por qué" }.`,
+        },
+      ],
+      response_format: jsonObjectFormat(openai),
+      temperature: 0.2,
+    },
+    { etapa: 'mejora-adn', timeoutMs: TIEMPOS.llamada.extraccion, intentosMax: 2 }
+  );
+  await registrarConsumo({ workspaceId, clientId, etapa: 'mejora-adn', uso: extractUsage(respuesta, resolveModel(config, false), 'mejora-adn'), autorId });
+  const raw = respuesta.choices[0].message.content;
+  if (!raw) throw new TenantError('La IA no devolvió nada: inténtalo de nuevo', 502);
+  const r = JSON.parse(stripJsonFence(raw)) as { texto?: unknown; porque?: unknown };
+  const nuevo = Array.isArray(r.texto) ? r.texto.join(def.separador ?? '\n') : typeof r.texto === 'string' ? r.texto : '';
+  const hecho = await proponer(clientId, { [clave]: nuevo } as Propuestas, [], 'copy-rechazado', autorId);
+  return { seccion: clave, nombre: def.nombre, propuesta: hecho.secciones.length ? nuevo : null, porque: typeof r.porque === 'string' ? r.porque : null };
+};

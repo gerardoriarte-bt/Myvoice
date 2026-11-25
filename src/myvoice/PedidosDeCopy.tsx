@@ -1,6 +1,6 @@
 import React from 'react';
 import { copywritingApi } from '../../services/api';
-import type { CampanaConPedidos, Client, ContentDNAProfile, EstadoPedido, EtapaDeFunnel, PedidoDeCopy } from '../../types';
+import type { ClaveAdn, CampanaConPedidos, Client, ContentDNAProfile, EstadoPedido, EtapaDeFunnel, PedidoDeCopy } from '../../types';
 import EscribirPedido from './EscribirPedido';
 
 /**
@@ -34,9 +34,10 @@ interface Props {
   puedeGenerar: boolean;
   onVerCopy: (campanaId: string) => void;
   onAviso: (mensaje: string, tipo: 'success' | 'error' | 'info' | 'warning') => void;
+  onIrAlAdn?: (clave: ClaveAdn) => void;
 }
 
-export default function PedidosDeCopy({ marcaId, marcas, briefs, puedeGenerar, onVerCopy, onAviso }: Props) {
+export default function PedidosDeCopy({ marcaId, marcas, briefs, puedeGenerar, onVerCopy, onAviso, onIrAlAdn }: Props) {
   const [campanas, setCampanas] = React.useState<CampanaConPedidos[] | null>(null);
   const [error, setError] = React.useState<string | null>(null);
   const [pestana, setPestana] = React.useState<EstadoPedido>('POR_ESCRIBIR');
@@ -173,6 +174,7 @@ export default function PedidosDeCopy({ marcaId, marcas, briefs, puedeGenerar, o
                               brief={brief}
                               marca={marcas.find(m => m.id === marcaId)}
                               onAviso={onAviso}
+                              onIrAlAdn={onIrAlAdn}
                               onGuardado={cuantas => {
                                 onAviso(`${cuantas} ${cuantas === 1 ? 'pieza guardada' : 'piezas guardadas'} en el pedido, por aprobar`, 'success');
                                 leer();

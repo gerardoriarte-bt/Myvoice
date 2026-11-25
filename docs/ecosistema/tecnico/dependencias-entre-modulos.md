@@ -1,6 +1,6 @@
 # Dependencias entre módulos (generado)
 
-Generado el 2026-11-25 desde el commit `a6bf968` con `bash scripts/mapa/actualizar.sh`. **No se edita a mano**: se corrige `scripts/mapa/modulos.json` y se vuelve a generar.
+Generado el 2026-11-25 desde el commit `a1cd7df` con `bash scripts/mapa/actualizar.sh`. **No se edita a mano**: se corrige `scripts/mapa/modulos.json` y se vuelve a generar.
 
 Cada fila es un archivo que usa algo de otro archivo de **otro módulo** (importa, llama o referencia un tipo). Módulos según la decisión 12; reglas en [spec-plataforma.md](./spec-plataforma.md) § 2.
 
@@ -10,13 +10,13 @@ Cada fila es un archivo que usa algo de otro archivo de **otro módulo** (import
 |---|---|---|---|---|---|---|---|
 | **Plataforma** | · | 36 | 32 | 10 | 13 | 11 | 39 |
 | **Parte común** | · | · | · | · | · | · | 57 |
-| **My Voice** | · | 43 | · | · | · | · | 132 |
+| **My Voice** | · | 43 | · | · | · | · | 137 |
 | **Producción** | · | 14 | 3 | · | · | · | 23 |
 | **CDM** | · | 9 | · | · | · | · | 20 |
 | **Implementación** | · | 4 | 2 | 1 | 1 | · | 11 |
 | **Compartido** | · | · | · | · | · | · | · |
 
-- **Hay que invertir**: 0 · **pasan por el contrato**: 77 · **permitidas**: 384
+- **Hay que invertir**: 0 · **pasan por el contrato**: 77 · **permitidas**: 389
 
 ## Hay que invertir (0)
 
@@ -108,7 +108,7 @@ Un módulo lee la parte común. Está bien, pero solo por `contrato/`: esta list
 | Producción | `server/src/services/piezaService.ts` | My Voice | `server/src/channels/registry.ts` | esFormatoValido(), esSlotDeInstruccion(), formatoPorDefecto(), getChannelSpec() |
 | Producción | `server/src/services/piezaService.ts` | My Voice | `server/src/myvoice/copyParaProduccion.ts` | copyOriginal(), copyParaCrear(), copyParaProduccion.ts, copyParaProponer() |
 
-## Permitidas (384)
+## Permitidas (389)
 
 El arranque importa de todos, y todos usan la infraestructura compartida.
 
@@ -117,7 +117,7 @@ El arranque importa de todos, y todos usan la infraestructura compartida.
 | CDM | Compartido | 20 |
 | Parte común | Compartido | 57 |
 | Implementación | Compartido | 11 |
-| My Voice | Compartido | 132 |
+| My Voice | Compartido | 137 |
 | Plataforma | CDM | 13 |
 | Plataforma | Compartido | 39 |
 | Plataforma | Parte común | 36 |

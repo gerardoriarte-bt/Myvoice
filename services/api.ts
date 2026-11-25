@@ -276,6 +276,12 @@ export const clientApi = {
     id: string
   ): Promise<{ clave: string; seccion: string; pregunta: string; ayuda: string; opciones?: { valor: string; nombre: string }[] }[]> =>
     apiRequest(`/clients/${id}/adn/asistente`),
+  /** «¿No suena a la marca?»: la IA propone la sección del ADN corregida desde un texto rechazado. Gasta crédito. */
+  mejoraAdn: (
+    id: string,
+    datos: { seccion: string; texto: string; motivo: string }
+  ): Promise<{ seccion: string; nombre: string; propuesta: string | null; porque: string | null }> =>
+    apiRequest(`/clients/${id}/adn/mejora`, { method: 'POST', body: JSON.stringify(datos) }),
   /** Con las respuestas, la IA deja una propuesta por sección para aprobar. Gasta crédito. */
   entrevistaAdn: (id: string, respuestas: Record<string, string>): Promise<{ secciones: string[]; audiencias: number }> =>
     apiRequest(`/clients/${id}/adn/asistente`, { method: 'POST', body: JSON.stringify({ respuestas }) }),

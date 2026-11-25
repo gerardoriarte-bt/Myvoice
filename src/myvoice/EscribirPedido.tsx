@@ -3,7 +3,7 @@ import { Loader2 } from 'lucide-react';
 import ResultadosPorPieza from '../../components/ResultadosPorPieza';
 import { CANTIDAD, SLIDES, acotar, nombreDePiezas } from '../../piezas';
 import { generationApi, libraryApi } from '../../services/api';
-import type { CampaignSpine, Client, ContentDNAProfile, CopyParameters, CopyVariation, Platform, PedidoDeCopy } from '../../types';
+import type { ClaveAdn, CampaignSpine, Client, ContentDNAProfile, CopyParameters, CopyVariation, Platform, PedidoDeCopy } from '../../types';
 import { ETAPA_DEL_MOTOR, parametrosDelBrief } from './parametrosDelBrief';
 
 const ETAPA_NOMBRE = { RECONOCIMIENTO: 'Reconocimiento', CONSIDERACION: 'Consideración', CONVERSION: 'Conversión', RETENCION: 'Retención' } as const;
@@ -22,9 +22,11 @@ interface Props {
   onGuardado: (cuantas: number) => void;
   onCerrar: () => void;
   onAviso: (mensaje: string, tipo: 'success' | 'error' | 'info' | 'warning') => void;
+  /** Lleva a una sección del ADN (de dónde sale cada texto, 2026-11-25). */
+  onIrAlAdn?: (clave: ClaveAdn) => void;
 }
 
-export default function EscribirPedido({ pedido, campanaId, brief, marca, onGuardado, onCerrar, onAviso }: Props) {
+export default function EscribirPedido({ pedido, campanaId, brief, marca, onGuardado, onCerrar, onAviso, onIrAlAdn }: Props) {
   const [fase, setFase] = React.useState<'concepto' | 'escribiendo' | 'listo' | 'error'>('concepto');
   const [detalle, setDetalle] = React.useState<string | null>(null);
   const [spine, setSpine] = React.useState<CampaignSpine | null>(null);
@@ -133,6 +135,8 @@ export default function EscribirPedido({ pedido, campanaId, brief, marca, onGuar
             platform={platform}
             slides={params.slides}
             dnaProfileId={brief.id}
+            clientId={brief.clientId}
+            onIrAlAdn={onIrAlAdn}
             savedContentList={[]}
             savedConjuntos={guardados}
             onGuardar={guardar}

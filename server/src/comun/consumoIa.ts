@@ -9,7 +9,7 @@ import type { UsageEntry } from '../services/pricing.js';
 export const registrarConsumo = async (datos: {
   workspaceId: string;
   clientId?: string | null;
-  etapa: 'asistente-adn' | 'extraccion-pdf';
+  etapa: 'asistente-adn' | 'extraccion-pdf' | 'mejora-adn';
   uso: UsageEntry | null;
   autorId?: string | null;
 }) => {
