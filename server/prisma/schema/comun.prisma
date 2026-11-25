@@ -457,3 +457,22 @@ model ModuloDeMarca {
 
   @@unique([clientId, modulo])
 }
+
+/// Lo que se gasta en IA fuera del motor de copy y de la auditoría de piezas (2026-11-25): la entrevista y la
+/// extracción del manual que proponen el ADN. Solo lo lee Control (decisión 27: los costos son del super admin).
+model ConsumoIa {
+  id               String   @id @default(uuid())
+  workspaceId      String
+  clientId         String?
+  /// asistente-adn · extraccion-pdf
+  etapa            String
+  model            String
+  promptTokens     Int      @default(0)
+  completionTokens Int      @default(0)
+  cachedTokens     Int      @default(0)
+  costUsd          Decimal  @db.Decimal(12, 6)
+  autorId          String?
+  createdAt        DateTime @default(now())
+
+  @@index([workspaceId, createdAt])
+}

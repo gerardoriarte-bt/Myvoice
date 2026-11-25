@@ -59,7 +59,8 @@ export type ScreenId =
   | 'pedidos'
   | 'implementacion'
   | 'reporteImplementacion'
-  | 'campanas';
+  | 'campanas'
+  | 'miCola';
 
 /**
  * Cinco etapas, no cuatro: cuando entra la pieza, «producir» dejaba de
@@ -298,6 +299,16 @@ export const SCREENS: Record<ScreenId, ScreenDef> = {
    * Las piezas que esperan algo de quien mira, de todas las marcas: la entrada de Diseño con la plataforma
    * por procesos (D1). Es la vista «Lo mío» del tablero de Producción, con su propia entrada en el menú.
    */
+  /** F5: lo que le toca a quien mira en Implementación, de todas las marcas, por fecha de salida (2026-11-25). */
+  miCola: {
+    id: 'miCola',
+    name: 'Mi cola',
+    description: 'Lo que te toca montar, publicar, autorizar o corregir, de todas las marcas, por fecha de salida.',
+    icon: ListChecks,
+    stage: 'producir',
+    adminOnly: false,
+    soloPorProcesos: true,
+  },
   loMio: {
     id: 'loMio',
     name: 'Lo mío',

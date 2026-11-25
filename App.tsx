@@ -18,6 +18,7 @@ import CrearPiezasModal from './components/produccion/CrearPiezasModal';
 import PedidosDeCopy from './src/myvoice/PedidosDeCopy';
 import Implementacion from './src/implementacion/Implementacion';
 import ReporteDeImplementacion from './src/implementacion/ReporteDeImplementacion';
+import MiCola from './src/implementacion/MiCola';
 import ManualYHuella from './components/adn/ManualYHuella';
 import PorAprobar from './src/plataforma/PorAprobar';
 import Bandeja, { DestinoAviso } from './components/Bandeja';
@@ -94,12 +95,6 @@ const MOCK_DNA: ContentDNAProfile[] = [
   }
 ];
 
-/** Lo que My Voice muestra dentro de la marca: Marcas ofrece el espacio y la plataforma lo llena. */
-const ESPACIOS_DE_MARCA: EspaciosDeMarca = {
-  juntoAlBrief: (client, borrador) => <PromptPreview client={client} draft={borrador} />,
-  campanas: client => <GenerationHistory initialClientId={client.id} />,
-};
-
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = React.useState(false);
   // La lista de pantallas vive en screens.ts y en ningún otro lado: repetirla
@@ -148,6 +143,15 @@ const App: React.FC = () => {
   const [savedVariations, setSavedVariations] = React.useState<SavedVariation[]>([]);
   const [clients, setClients] = React.useState<Client[]>([]);
   const [dnaProfiles, setDnaProfiles] = React.useState<ContentDNAProfile[]>([]);
+  /** Lo que My Voice muestra dentro de la marca: Marcas ofrece el espacio y la plataforma lo llena. */
+  const espaciosDeMarca: EspaciosDeMarca = React.useMemo(
+    () => ({
+      juntoAlBrief: (client, borrador) => <PromptPreview client={client} draft={borrador} />,
+      // Con las marcas y las campañas: sin ellas cada fila mostraba el id de la marca y «Perfil ADN» (2026-11-25).
+      campanas: client => <GenerationHistory initialClientId={client.id} clients={clients} dnaProfiles={dnaProfiles} />,
+    }),
+    [clients, dnaProfiles]
+  );
   const [users, setUsers] = React.useState<WorkspaceMember[]>([]);
   const [currentUser, setCurrentUser] = React.useState<User | null>(null);
   /** Cerrado con Escape o afuera: no cuenta como visto, vuelve en la próxima sesión. */
@@ -787,8 +791,14 @@ const App: React.FC = () => {
               onClientChange={setActiveClientId}
               onNavigateToClients={() => setActiveTab('clients')}
               onIrAlAdn={clientId => {
-                setRevisarAdnDe(clientId);
-                setActiveTab('clients');
+                // Con el marco por procesos el ADN tiene su pantalla (decisión 34): allá está «Completar con IA».
+                if (plataforma) {
+                  setActiveClientId(clientId);
+                  setActiveTab('adn');
+                } else {
+                  setRevisarAdnDe(clientId);
+                  setActiveTab('clients');
+                }
               }}
               miembros={users}
               puedeEditarAprobacion={isAdmin}
@@ -997,7 +1007,7 @@ const App: React.FC = () => {
             }
           }}
           onAbrirMarca={setActiveClientId}
-          espacios={ESPACIOS_DE_MARCA}
+          espacios={espaciosDeMarca}
           revisarAdnDe={revisarAdnDe}
           onRevisionAbierta={() => setRevisarAdnDe(null)}
           onAdnCorregido={() => recargarMarcas()}
@@ -1148,6 +1158,16 @@ const App: React.FC = () => {
           onAviso={(m, tipo) => addNotification(m, tipo)}
         />
       )}
+      {activeTab === 'miCola' && plataforma && (
+        <MiCola
+          onAviso={(m, tipo) => addNotification(m, tipo)}
+          onIrALaCampana={(clientId, campana) => {
+            setActiveClientId(clientId);
+            setCampanaId(campana);
+            setActiveTab('implementacion');
+          }}
+        />
+      )}
       {activeTab === 'reporteImplementacion' && plataforma && activeClient && (
         <ReporteDeImplementacion key={activeClient.id} marcaId={activeClient.id} campanaId={campanaId} onElegirCampana={setCampanaId} />
       )}
@@ -1252,8 +1272,13 @@ const App: React.FC = () => {
       }}
       onIrAlTablero={() => setActiveTab('produccion')}
       onIrAlAdn={clientId => {
-        setRevisarAdnDe(clientId);
-        setActiveTab('clients');
+        if (plataforma) {
+          setActiveClientId(clientId);
+          setActiveTab('adn');
+        } else {
+          setRevisarAdnDe(clientId);
+          setActiveTab('clients');
+        }
       }}
       onIrAlPlanning={clientId => {
         // Los avisos del planning (F3) llevan a los plannings de su marca: arriba está lo que pide atención.

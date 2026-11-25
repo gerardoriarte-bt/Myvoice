@@ -127,6 +127,8 @@ router.get('/clients/:id/adn/revision', ...inWorkspace, clientController.getRevi
 // `exigirPaso(…, 'ADN', …)` después de la guarda de tenencia.
 router.post('/clients/:id/adn/revision/:clave', ...inWorkspace, clientController.postRevisarSeccion);
 router.post('/clients/:id/adn/confirmar', ...inWorkspace, clientController.postConfirmarAdn);
+router.get('/clients/:id/adn/asistente', ...inWorkspace, clientController.getAsistenteAdn);
+router.post('/clients/:id/adn/asistente', ...inWorkspace, clientController.postAsistenteAdn);
 // ADN 2.0 (docs/plan-adn-2.md): una sección a la vez, lo propuesto por la IA y la lista de audiencias.
 router.put('/clients/:id/adn/secciones/:clave', ...inWorkspace, clientController.putSeccionAdn);
 router.post('/clients/:id/adn/secciones/:clave/revisada', ...inWorkspace, clientController.postSeccionRevisada);
@@ -180,6 +182,7 @@ router.post('/implementacion/anuncios/:id/devolver', ...inWorkspace, anunciosCon
 router.post('/implementacion/anuncios/:id/reabrir', ...inWorkspace, anunciosController.reabrir);
 router.put('/implementacion/anuncios/:id/destino', ...inWorkspace, anunciosController.destino);
 router.post('/implementacion/autorizar', ...inWorkspace, anunciosController.autorizar);
+router.get('/implementacion/mi-cola', ...inWorkspace, anunciosController.miCola);
 router.get('/campanas/:id/reporte-implementacion', ...inWorkspace, reporteDeImplementacion);
 router.post('/implementacion/enlace', ...inWorkspace, anunciosController.enlace);
 router.post('/projects', ...inWorkspace, savedController.createProject);

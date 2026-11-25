@@ -261,7 +261,14 @@ export interface Client {
   /** Tú, vos o usted. NULL = no lo eligió: rige el default del país (en Colombia, usted). */
   tratamiento?: 'TU' | 'VOS' | 'USTED' | null;
   /** Calculado por GET /clients: la completitud del ADN resuelto (docs/plan-adn-2.md, ADN-5). */
-  adn?: { porcentaje: number; minimo: number; apta: boolean; faltan: { clave: ClaveAdn; nombre: string }[] };
+  adn?: {
+    porcentaje: number;
+    minimo: number;
+    apta: boolean;
+    faltan: { clave: ClaveAdn; nombre: string }[];
+    /** Las ★ que no están completas: bloquean generar (2026-11-25). */
+    esenciales?: { clave: ClaveAdn; nombre: string }[];
+  };
 }
 
 // ------------------------------------------------------------ ADN 2.0 (docs/plan-adn-2.md)
@@ -1158,4 +1165,10 @@ export interface EficienciaDeControl {
     cambiosDelCliente: number;
     ajustesInternos: number;
   }[];
+}
+
+/** «Mi cola» (F5, 2026-11-25): un anuncio que le toca a quien mira, con su marca y qué hay que hacer. */
+export interface AnuncioEnCola extends AnuncioParaMontar {
+  marca: string;
+  tarea: 'montar' | 'publicar' | 'autorizar' | 'corregir';
 }

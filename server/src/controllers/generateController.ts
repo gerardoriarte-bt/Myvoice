@@ -1,7 +1,7 @@
 
 import { Response } from 'express';
 import { AuthRequest, handleTenantError } from '../middleware/auth.js';
-import { assertDnaProfileInWorkspace, TenantContext } from '../lib/tenancy.js';
+import { assertDnaProfileInWorkspace, TenantContext, TenantError } from '../lib/tenancy.js';
 import { exigirPaso } from '../comun/permisos.js';
 import { generateCopyWithOpenAI, streamGenerateCopyWithOpenAI, generateForChannel, buildBrief, cantidadValida } from '../services/openaiService.js';
 import { randomUUID } from 'node:crypto';
@@ -10,6 +10,7 @@ import { UsageEntry, UsageTotal, aggregateUsage } from '../services/pricing.js';
 import { assertQuotaAvailable, recordUsage } from '../services/usageService.js';
 import { prisma } from '../lib/prisma.js';
 import { decryptWorkspaceApiKey } from '../lib/workspaceSecret.js';
+import { esencialesQueFaltan } from '../comun/adn/propuestas.js';
 import { getChannelSpec, specParaGeneracion } from '../channels/registry.js';
 import { parametrosDeGeneracion } from '../services/parametrosDeGeneracion.js';
 
@@ -134,6 +135,11 @@ async function buildGenerationContext(dnaProfileId: string, tenant: TenantContex
   // Generar gasta crédito y escribe el copy de la marca: quien administra o quien tiene la función Copy para
   // esa marca (Gerardo, 2026-11-23: «el copy sobre todo genera los textos»). Siempre estricto, sin modo observar.
   await exigirPaso(tenant, 'COPY', client.id);
+  // Lo esencial del ADN es obligatorio (Gerardo, 2026-11-25): sin las secciones ★ completas el copy sale genérico, así
+  // que no se genera. La pantalla dice cuáles faltan y ofrece completarlas con la IA.
+  const faltan = await esencialesQueFaltan(client.id);
+  if (faltan.length)
+    throw new TenantError(`Para generar, completa lo esencial del ADN de ${client.name}: ${faltan.map(f => f.nombre).join(', ')}.`, 409);
 
   const { params: generationParams, adnVersion } = await parametrosDeGeneracion(dnaProfile, client);
 

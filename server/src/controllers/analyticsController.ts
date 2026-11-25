@@ -245,13 +245,30 @@ export const getUsageAnalytics = async (req: AuthRequest, res: Response) => {
     }
     const costoAuditoria = [...auditoriaPorCliente.values()].reduce((s, n) => s + n, 0);
 
+    // La IA del ADN —la entrevista y la extracción del manual— se cobra fuera del motor (2026-11-25).
+    const consumos = await prisma.consumoIa.findMany({
+      where: { workspaceId, createdAt: { gte: desde, lt: hasta }, ...(clientId ? { clientId } : {}) },
+      select: { clientId: true, etapa: true, costUsd: true, promptTokens: true, completionTokens: true },
+    });
+    const adnPorCliente = new Map<string, number>();
+    const adnPorEtapa = new Map<string, { costUsd: number; tokens: number }>();
+    const NOMBRE_ETAPA: Record<string, string> = { 'asistente-adn': 'ADN: entrevista con IA', 'extraccion-pdf': 'ADN: lectura del manual' };
+    for (const c of consumos) {
+      const costo = aNumero(c.costUsd);
+      if (c.clientId) adnPorCliente.set(c.clientId, (adnPorCliente.get(c.clientId) ?? 0) + costo);
+      const etapa = NOMBRE_ETAPA[c.etapa] ?? c.etapa;
+      const previo = adnPorEtapa.get(etapa) ?? { costUsd: 0, tokens: 0 };
+      adnPorEtapa.set(etapa, { costUsd: previo.costUsd + costo, tokens: previo.tokens + c.promptTokens + c.completionTokens });
+    }
+    const costoAdn = consumos.reduce((s, c) => s + aNumero(c.costUsd), 0);
+
     const promptTokens = agregado._sum.promptTokens ?? 0;
     const completionTokens = agregado._sum.completionTokens ?? 0;
     const cachedTokens = agregado._sum.cachedTokens ?? 0;
 
     const total = {
       generaciones: agregado._count._all,
-      costUsd: aNumero(agregado._sum.costUsd) + costoAuditoria,
+      costUsd: aNumero(agregado._sum.costUsd) + costoAuditoria + costoAdn,
       promptTokens,
       cachedTokens,
       cacheWriteTokens: agregado._sum.cacheWriteTokens ?? 0,
@@ -273,7 +290,7 @@ export const getUsageAnalytics = async (req: AuthRequest, res: Response) => {
           clientId: fila.clientId,
           clientName: nombreCliente.get(fila.clientId) ?? fila.clientId,
           generaciones: fila._count._all,
-          costUsd: aNumero(fila._sum.costUsd) + (auditoriaPorCliente.get(fila.clientId) ?? 0),
+          costUsd: aNumero(fila._sum.costUsd) + (auditoriaPorCliente.get(fila.clientId) ?? 0) + (adnPorCliente.get(fila.clientId) ?? 0),
           promptTokens: prompt,
           completionTokens: fila._sum.completionTokens ?? 0,
           cacheHitRate: prompt > 0 ? Number((cached / prompt).toFixed(3)) : 0,
@@ -283,7 +300,12 @@ export const getUsageAnalytics = async (req: AuthRequest, res: Response) => {
     // Una marca que solo auditó piezas en el periodo (sin generar) igual gastó.
     for (const [id, costo] of auditoriaPorCliente) {
       if (porCliente.some(c => c.clientId === id)) continue;
-      porCliente.push({ clientId: id, clientName: nombreCliente.get(id) ?? id, generaciones: 0, costUsd: costo, promptTokens: 0, completionTokens: 0, cacheHitRate: 0 });
+      porCliente.push({ clientId: id, clientName: nombreCliente.get(id) ?? id, generaciones: 0, costUsd: costo + (adnPorCliente.get(id) ?? 0), promptTokens: 0, completionTokens: 0, cacheHitRate: 0 });
+    }
+    // Una marca que solo completó su ADN con IA en el periodo también gastó.
+    for (const [id, costo] of adnPorCliente) {
+      if (porCliente.some(c => c.clientId === id)) continue;
+      porCliente.push({ clientId: id, clientName: nombreCliente.get(id) ?? 'Marca', generaciones: 0, costUsd: costo, promptTokens: 0, completionTokens: 0, cacheHitRate: 0 });
     }
 
     const porPeriodo = porPeriodoRaw.map(fila => ({
@@ -316,6 +338,7 @@ export const getUsageAnalytics = async (req: AuthRequest, res: Response) => {
       }
     }
     if (costoAuditoria > 0) acumuladoEtapa.set('auditoría de piezas', { costUsd: costoAuditoria, tokens: 0 });
+    for (const [etapa, v] of adnPorEtapa) acumuladoEtapa.set(etapa, v);
     const porEtapa = Array.from(acumuladoEtapa.entries())
       .map(([etapa, valores]) => ({
         etapa,

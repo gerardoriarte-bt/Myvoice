@@ -32,3 +32,6 @@ export const destino = accion(req => anuncios.guardarDestino(req.tenant!, req.pa
 /** La aprobación final: autorizar (campaña interna) o el enlace para el cliente (campaña con cliente). */
 export const autorizar = accion(req => anuncios.autorizar(req.tenant!, req.body?.ids), 'Error al autorizar la implementación');
 export const enlace = accion(req => anuncios.enlaceParaElCliente(req.tenant!, req.body?.campanaId), 'Error al crear el enlace para el cliente');
+
+/** «Mi cola»: lo que le toca a quien mira, en todas las marcas con Implementación. */
+export const miCola = accion(req => anuncios.miCola(req.tenant!), 'Error al leer tu cola');

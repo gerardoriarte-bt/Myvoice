@@ -83,7 +83,7 @@ Cada función con su estado en las tres pistas. Se actualiza en el mismo PR que 
 | Responsable, cliente | Aprobación final antes de montar: enlace del cliente con arte, copy, destino y fechas, o «Autorizar implementación» | ○ | ✓ | ✓ | F5 (2), 2026-11-24 · decisión 32, sin el `.pen` |
 | Copy, responsable | Copy dice qué sigue: Aprobado → En producción o Directo a Implementación, barra «Siguiente paso» | ○ | ✓ | ✓ | F5, 2026-11-24 (#120), sin el `.pen` |
 | Responsable | Reporte de implementación e historial de aprobaciones (T5) | ○ | ✓ | ✓ | fase B, 2026-11-24, sin el `.pen`; el historial es una vista de lectura |
-| Trafficker | Mi cola de todas las marcas | ○ | ○ | ○ | |
+| Trafficker, community, responsable | Mi cola de todas las marcas: montar, publicar, autorizar y corregir, por fecha de salida | ○ | ✓ | ✓ | F5, 2026-11-25, sin el `.pen` |
 
 ## IA
 

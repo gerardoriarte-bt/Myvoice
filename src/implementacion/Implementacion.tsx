@@ -256,7 +256,8 @@ export default function Implementacion({ marcaId, campanaId, onAviso }: Props) {
   );
 }
 
-function Detalle({
+/** El anuncio abierto: lo usan Anuncios y «Mi cola». */
+export function Detalle({
   a,
   onCambio,
   onAviso,

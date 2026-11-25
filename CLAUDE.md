@@ -333,7 +333,9 @@ formats whose type disagrees with their channel (`GET /control/formatos`). **The
 `REDES_SOCIALES` is published by `COMMUNITY`, the rest mounted by `TRAFFICKER`; each sees only theirs (admins see
 all). Destination/UTM live on the sábana line (Planning pastes them, no new version) or, without a sábana, on the
 `Anuncio`. Step ⑤ shows on brands with
-the `IMPLEMENTACION` module. **The report (T5)** is `plataforma/reporteImplementacion.ts` (`GET /campanas/:id/reporte-implementacion`):
+the `IMPLEMENTACION` module. **«Mi cola»** (`miCola`, `GET /implementacion/mi-cola`, 2026-11-25) is the step's first screen:
+what the viewer must mount, publish, authorize or fix across every brand with the module, by launch date, opened with
+the same `Detalle` as Anuncios. **The report (T5)** is `plataforma/reporteImplementacion.ts` (`GET /campanas/:id/reporte-implementacion`):
 it asks each module for its part (`sabanaParaReporte`, `aprobacionesDeCopyDeCampana`, `decisionesDePiezasDeCampana`,
 `anunciosParaReporte`) and returns planned vs mounted per sábana line, its deviations, and one approval history merged
 on read (no migration); the front delivers it as Excel or a printable page. Internal copy approvals are logged in
@@ -373,7 +375,12 @@ Since F4 the engine reads them (`parametrosDeGeneracion`): «what is not touched
 `comun/adn/estilo.ts` (exact phrases, emojis, ¡¿, price format, sustained caps → `adnHits`, fixed like `oficioHits`);
 products are a limit for the critic and fixer only — in the writer's prompt they turned the copy into a feature list
 (`verify:calidad -- --adn2`, 2026-11-12); curated «así suena» examples replace the last 5 approved. A brand without these
-sections gets byte-identical prompts. **A submarca inherits only once its mother's DNA is
+sections gets byte-identical prompts. **Since 2026-11-25 the ★ sections are mandatory and the AI proposes** (`comun/adn/propuestas.ts`): `buildGenerationContext`
+answers 409 while any ★ section is incomplete (`esencialesQueFaltan`; `GET /clients` carries `adn.esenciales`); «Completar con IA»
+(`/clients/:id/adn/asistente`) asks one question per missing section and the AI drafts only the answered ones; the PDF manual now leaves
+proposals too instead of writing the DNA. Everything lands in `SeccionAdn.propuesta` / IA_PROPUESTA audiences and only counts once
+someone approves it. Their cost goes to `ConsumoIa` (`comun/consumoIa.ts`), which Control adds to the spend.
+**A submarca inherits only once its mother's DNA is
 confirmed** (`Client.adnConfirmadoEn`, `docs/plan-revision-adn.md`): `comun/adn/revisionAdn.ts` drives
 the review (each of the 5 sections «está bien» or corrected — a correction writes the column — then
 confirm), Marcas shows an amber banner and a chip on the mother, and OWNER/ADMIN get one

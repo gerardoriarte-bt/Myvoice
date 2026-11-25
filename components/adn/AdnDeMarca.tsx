@@ -1,4 +1,5 @@
 import React from 'react';
+import EntrevistaAdn from './EntrevistaAdn';
 import { ArrowUpRight, Check, Lock, Pencil, Sparkles, Star } from 'lucide-react';
 import type { AdnDeMarca as Adn, ClaveAdn, ContenidoSeccionAdn } from '../../types';
 import { clientApi } from '../../services/api';
@@ -85,6 +86,9 @@ const AdnDeMarca: React.FC<Props> = ({ clientId, marca, madreDeclarada, submarca
   const [error, setError] = React.useState<string | null>(null);
   const [edicion, setEdicion] = React.useState<Edicion | null>(null);
   const [ocupado, setOcupado] = React.useState<string | null>(null);
+  /** «Completar con IA»: la entrevista abierta y lo que dejó propuesto (2026-11-25). */
+  const [entrevista, setEntrevista] = React.useState(false);
+  const [propuestoAhora, setPropuestoAhora] = React.useState<string | null>(null);
 
   const cargar = React.useCallback(
     () =>
@@ -400,6 +404,15 @@ const AdnDeMarca: React.FC<Props> = ({ clientId, marca, madreDeclarada, submarca
             )}
           </p>
         </div>
+        {!completitud.apta && !soloLectura && (
+          <button
+            type="button"
+            onClick={() => setEntrevista(true)}
+            className="flex shrink-0 items-center gap-1.5 rounded-lg bg-violet-600 px-3.5 py-2 text-[12.5px] font-semibold text-white hover:bg-violet-700"
+          >
+            <Sparkles className="h-4 w-4" /> Completar con IA
+          </button>
+        )}
         <p className="hidden w-[220px] shrink-0 text-right text-[11.5px] leading-relaxed text-gray-500 md:block">
           {madre
             ? `Submarca de ${madre.name}: hereda su ADN confirmado.`
@@ -413,6 +426,31 @@ const AdnDeMarca: React.FC<Props> = ({ clientId, marca, madreDeclarada, submarca
       </div>
 
       {error && <p className="text-[12px] text-red-600">{error}</p>}
+      {propuestoAhora && <p className="rounded-lg bg-violet-50 px-3 py-2 text-[12.5px] text-violet-900">{propuestoAhora}</p>}
+      {entrevista && (
+        <EntrevistaAdn
+          clientId={clientId}
+          marca={marca}
+          onCerrar={() => setEntrevista(false)}
+          onPropuesto={async r => {
+            setEntrevista(false);
+            const total = r.secciones.length + r.audiencias;
+            setPropuestoAhora(
+              total
+                ? `La IA dejó ${total} ${total === 1 ? 'propuesta' : 'propuestas'}. Revísalas una por una: apruébalas, corrígelas o descártalas.${r.audiencias ? ' Las audiencias propuestas están en su sección.' : ''}`
+                : 'La IA no tuvo nada nuevo que proponer con esas respuestas.'
+            );
+            // Se relee y se abre la primera propuesta, para revisarlas de una vez.
+            const nuevo = (await clientApi.adn(clientId).catch(() => null)) as Adn | null;
+            if (nuevo) {
+              setAdn(nuevo);
+              onCambio?.();
+              const primera = r.secciones.find(c => (nuevo.filas as Record<string, { propuesta?: unknown } | undefined>)[c]?.propuesta);
+              if (primera) setEdicion({ tipo: 'propuesta', clave: primera as never });
+            }
+          }}
+        />
+      )}
 
       {GRUPOS.map(g => (
         <section key={g.id}>
