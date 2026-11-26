@@ -820,11 +820,21 @@ export const piezasPlaneadasDeCampana = async (campanaId: string) => {
 /**
  * Eficiencia (super admin, 2026-11-24): por campaña, cuándo se creó y se aprobó su sábana, cuántas versiones tuvo y
  * cuántas veces la devolvieron el equipo y el cliente. Por encima de los workspaces: lo llama solo Control.
+ *
+ * Desde 2026-11-26 también lo planeado, que es contra lo que se mide si el resto terminó: las líneas de la sábana
+ * aprobada con sus piezas y si son de solo texto (van directo a Implementación) o esperan una pieza de diseño.
  */
 export const eficienciaDeSabanas = async (campanaIds: string[]) => {
   const ps = await prisma.planning.findMany({
     where: { campanaId: { in: campanaIds } },
-    select: { campanaId: true, version: true, estado: true, createdAt: true, eventos: { select: { tipo: true, createdAt: true } } },
+    select: {
+      campanaId: true,
+      version: true,
+      estado: true,
+      createdAt: true,
+      eventos: { select: { tipo: true, createdAt: true } },
+      lineas: { select: { id: true, piezas: true, formato: { select: { tipoArchivo: true } } } },
+    },
   });
   return new Map(
     ps.map(p => {
@@ -832,11 +842,15 @@ export const eficienciaDeSabanas = async (campanaIds: string[]) => {
       return [
         p.campanaId,
         {
-          creada: p.createdAt.toISOString(),
+          // Lo primero que pasó: la fila o su primer evento, si alguno quedó con fecha anterior (datos sembrados).
+          creada: new Date(Math.min(p.createdAt.getTime(), ...p.eventos.map(e => e.createdAt.getTime()))).toISOString(),
           aprobada: p.estado === 'APROBADO' && aprobada.length ? new Date(Math.max(...aprobada)).toISOString() : null,
           versiones: p.version,
           devueltaPorEquipo: p.eventos.filter(e => e.tipo === 'DEVUELTO').length,
           devueltaPorCliente: p.eventos.filter(e => e.tipo === 'DEVUELTO_POR_CLIENTE').length,
+          // Solo cuenta lo planeado de una sábana aprobada: un borrador todavía puede cambiar.
+          lineas: p.estado === 'APROBADO' ? p.lineas.map(l => ({ id: l.id, piezas: l.piezas, soloTexto: l.formato.tipoArchivo === 'TEXTO' })) : [],
+          ultimaActividad: new Date(Math.max(p.createdAt.getTime(), ...p.eventos.map(e => e.createdAt.getTime()))).toISOString(),
         },
       ];
     })

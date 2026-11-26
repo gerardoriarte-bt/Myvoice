@@ -350,7 +350,14 @@ on read (no migration); the front delivers it as Excel or a printable page. Inte
 `services/aprobacion.ts`) because `SavedVariation` only keeps the current one. **Control › Eficiencia**
 (`plataforma/eficiencia.ts`, `GET /control/eficiencia`, super admin only) measures each campaign's phases
 (planning, copy, production, final approval, mounting), the client's and the team's adjustments, and its AI cost,
-again asking each module (`eficienciaDe*`) and computing on read.
+again asking each module (`eficienciaDe*`) and computing on read. **Since 2026-11-26 it is the baseline's measurement**
+(`docs/ecosistema/datos/medicion.md` fixes every definition): a phase ends when *everything expected* is done (what the
+sábana asked or, without one, what exists — every ad Implementación lists, not just rows someone touched), in business
+hours (`plataforma/horasHabiles.ts`: Mon–Fri 8–18 Bogotá, Colombian holidays) and wall-clock; only campaigns with
+activity in workspaces with `cuentaEnMetricas` count. **Control › Uso** (`plataforma/uso.ts`) reads `UsoDiario`, which
+`requireWorkspace` feeds per person, Bogotá day and area (`comun/usoDiario.ts`, in memory, flushed each minute; the
+one-minute polls don't count, super admins are excluded). Refine and failed generations now land in `ConsumoIa` with
+the campaign's `projectId`.
 
 **`screens.ts` is the single source of screen names and of the stage order**, and the stages are
 the process: Preparar · Escribir · Aprobar · Producir · Medir · Administrar. They were reordered

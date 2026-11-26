@@ -631,27 +631,53 @@ export const anunciosParaReporte = async (tenant: TenantContext, clientId: strin
 /**
  * Eficiencia (super admin, 2026-11-24): por campaña, cuándo se mandó a aprobar lo primero, cuándo quedó aprobado lo
  * último, cuándo se montó lo primero y lo último, cuántos cambios pidió el cliente y cuántas novedades hubo.
+ *
+ * Desde 2026-11-26 cuenta **todos** los anuncios de la campaña, no solo los que ya tienen fila: la fila nace cuando
+ * alguien actúa sobre el anuncio, así que antes una campaña con 3 montados y 7 sin tocar salía «terminada». Se arma
+ * la misma lista que ve Implementación, como quien administra cada workspace. Y la aprobación final se mide igual en
+ * los dos modos: desde que el primer anuncio quedó listo para aprobar (su pieza aceptada o, sin pieza, su copy
+ * aprobado) hasta que el último quedó aprobado; antes, en una campaña interna, iba de la primera autorización a la
+ * última y daba casi cero.
  */
-export const eficienciaDeAnuncios = async (campanaIds: string[]) => {
-  const anuncios = await prisma.anuncio.findMany({
-    where: { OR: [{ projectId: { in: campanaIds } }, { pieza: { projectId: { in: campanaIds } } }] },
-    select: { projectId: true, estado: true, pieza: { select: { projectId: true } }, eventos: { select: { tipo: true, createdAt: true } } },
+export const eficienciaDeAnuncios = async (campanas: { id: string; workspaceId: string }[]) => {
+  const ids = campanas.map(c => c.id);
+  const porWorkspace = [...new Set(campanas.map(c => c.workspaceId))];
+  const candidatos = (
+    await Promise.all(
+      // Un usuario que no existe y es dueño: ve todo, sin el filtro por función del trafficker o del community.
+      porWorkspace.map(workspaceId => armar({ workspaceId, userId: 'control', role: 'OWNER' }, {}))
+    )
+  ).flat();
+  const filas = await prisma.anuncio.findMany({
+    where: { OR: [{ projectId: { in: ids } }, { pieza: { projectId: { in: ids } } }] },
+    select: { projectId: true, pieza: { select: { projectId: true } }, eventos: { select: { tipo: true, createdAt: true } } },
   });
-  const t = (xs: Date[], f: (...n: number[]) => number) => (xs.length ? new Date(f(...xs.map(x => x.getTime()))).toISOString() : null);
+  const t = (xs: number[], f: (...n: number[]) => number) => (xs.length ? new Date(f(...xs)).toISOString() : null);
+  const APROBADO = ['POR_MONTAR', 'MONTADO', 'CON_NOVEDAD'];
   return new Map(
-    campanaIds.map(id => {
-      const suyos = anuncios.filter(a => (a.projectId ?? a.pieza?.projectId) === id);
-      const ev = (tipos: string[]) => suyos.flatMap(a => a.eventos.filter(e => tipos.includes(e.tipo)).map(e => e.createdAt));
+    ids.map(id => {
+      const suyos = candidatos.filter(a => a.campana?.id === id);
+      const suyas = filas.filter(a => (a.projectId ?? a.pieza?.projectId) === id);
+      const ev = (tipos: string[]) => suyas.flatMap(a => a.eventos.filter(e => tipos.includes(e.tipo)).map(e => e.createdAt.getTime()));
+      // Cuándo quedó listo para aprobar cada uno: la pieza aceptada o, sin pieza, el último texto aprobado.
+      const listoEn = suyos
+        .map(a => {
+          const copy = a.aprobaciones.copy.map(x => (x.en ? Date.parse(x.en) : 0)).filter(Boolean);
+          return a.aprobaciones.pieza ? Date.parse(a.aprobaciones.pieza.en) : copy.length ? Math.max(...copy) : null;
+        })
+        .filter((x): x is number => x !== null);
       return [
         id,
         {
           anuncios: suyos.length,
+          aprobados: suyos.filter(a => APROBADO.includes(a.estado)).length,
           montados: suyos.filter(a => a.estado === 'MONTADO').length,
-          primerEnvio: t(ev(['ENVIADO_AL_CLIENTE', 'AUTORIZADO']), Math.min),
+          primerListo: t(listoEn, Math.min),
           primeraAprobacion: t(ev(['APROBADO_CLIENTE', 'AUTORIZADO']), Math.min),
           ultimaAprobacion: t(ev(['APROBADO_CLIENTE', 'AUTORIZADO']), Math.max),
           primerMontado: t(ev(['MONTADO']), Math.min),
           ultimoMontado: t(ev(['MONTADO']), Math.max),
+          ultimaActividad: t(suyas.flatMap(a => a.eventos.map(e => e.createdAt.getTime())), Math.max),
           cambiosDelCliente: ev(['CAMBIOS_CLIENTE']).length,
           novedades: ev(['DEVUELTO']).length,
         },

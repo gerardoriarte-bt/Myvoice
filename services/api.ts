@@ -21,7 +21,7 @@ import type {
   PorAprobar,
   AprobadoresDeCampana,
   CampanaConPedidos,
-  AnuncioParaMontar, AnuncioEnCola, ReporteImplementacion, EficienciaDeControl,
+  AnuncioParaMontar, AnuncioEnCola, ReporteImplementacion, EficienciaDeControl, UsoDeControl,
 } from '../types';
 
 
@@ -118,12 +118,18 @@ export const controlApi = {
   /** La eficiencia del flujo por campaña: tiempos por fase, ajustes del cliente y del equipo, y costo de IA. */
   eficiencia: (dias: number, workspaceId?: string): Promise<EficienciaDeControl> =>
     apiRequest(`/control/eficiencia?dias=${dias}${workspaceId ? `&workspaceId=${encodeURIComponent(workspaceId)}` : ''}`),
+  /** La adopción: quién usa la herramienta, qué días y en qué áreas (2026-11-26). */
+  uso: (dias: number, workspaceId?: string): Promise<UsoDeControl> =>
+    apiRequest(`/control/uso?dias=${dias}${workspaceId ? `&workspaceId=${encodeURIComponent(workspaceId)}` : ''}`),
   /** El verificador: formatos de la biblioteca que no coinciden con su canal (pieza o solo texto). */
   formatos: (): Promise<{ revisados: number; problemas: { workspace: string; medio: string; formato: string; canal: string; tipoArchivo: string; problema: string }[] }> =>
     apiRequest('/control/formatos'),
   workspaces: (): Promise<{ periodo: string; workspaces: WorkspaceDeControl[] }> => apiRequest('/control/workspaces'),
   cambiarPlataforma: (workspaceId: string, encendida: boolean) =>
     apiRequest(`/control/workspaces/${workspaceId}/plataforma`, { method: 'PUT', body: JSON.stringify({ encendida }) }),
+  /** Si el workspace entra en Eficiencia y Uso: se apaga en los de prueba y capacitación. */
+  cambiarMetricas: (workspaceId: string, cuenta: boolean) =>
+    apiRequest(`/control/workspaces/${workspaceId}/metricas`, { method: 'PUT', body: JSON.stringify({ cuenta }) }),
   usuarios: (): Promise<UsuarioDeControl[]> => apiRequest('/control/usuarios'),
   guardarMembresia: (userId: string, workspaceId: string, role: string) =>
     apiRequest('/control/membresias', { method: 'PUT', body: JSON.stringify({ userId, workspaceId, role }) }),
@@ -375,7 +381,7 @@ export const presetApi = {
 };
 
 export const refineApi = {
-  refine: (data: { variations: any[], instruction: string, clientId: string }) =>
+  refine: (data: { variations: any[], instruction: string, clientId: string, dnaProfileId?: string }) =>
     apiRequest('/copy/refine', { method: 'POST', body: JSON.stringify(data) }),
 };
 

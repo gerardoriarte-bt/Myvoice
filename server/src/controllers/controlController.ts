@@ -31,6 +31,7 @@ export const listarWorkspaces = async (_req: AuthRequest, res: Response) => {
           slug: true,
           plan: true,
           plataformaPorProcesos: true,
+          cuentaEnMetricas: true,
           _count: { select: { memberships: true, clients: true } },
         },
         orderBy: { name: 'asc' },
@@ -63,6 +64,7 @@ export const listarWorkspaces = async (_req: AuthRequest, res: Response) => {
           slug: w.slug,
           plan: plan.label,
           plataformaPorProcesos: w.plataformaPorProcesos,
+          cuentaEnMetricas: w.cuentaEnMetricas,
           personas: w._count.memberships,
           marcas: w._count.clients,
           gastoUsd: Number(gastoUsd.toFixed(4)),
@@ -84,6 +86,26 @@ export const cambiarPlataforma = async (req: AuthRequest, res: Response) => {
       where: { id: req.params.id },
       data: { plataformaPorProcesos: encendida },
       select: { id: true, plataformaPorProcesos: true },
+    });
+    res.json(ws);
+  } catch (error) {
+    if ((error as { code?: string })?.code === 'P2025') return res.status(404).json({ error: 'Workspace no encontrado' });
+    handleTenantError(error, res, 'Error al cambiar el interruptor');
+  }
+};
+
+/**
+ * Si el trabajo de un workspace entra en Eficiencia y Uso (2026-11-26). Se apaga en los de prueba y capacitación para
+ * que no ensucien la línea base; el gasto de IA del mes lo sigue mostrando, porque se pagó igual.
+ */
+export const cambiarMetricas = async (req: AuthRequest, res: Response) => {
+  const { cuenta } = req.body as { cuenta?: unknown };
+  if (typeof cuenta !== 'boolean') return res.status(400).json({ error: 'cuenta tiene que ser true o false' });
+  try {
+    const ws = await prisma.workspace.update({
+      where: { id: req.params.id },
+      data: { cuentaEnMetricas: cuenta },
+      select: { id: true, cuentaEnMetricas: true },
     });
     res.json(ws);
   } catch (error) {

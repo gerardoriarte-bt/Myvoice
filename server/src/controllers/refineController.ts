@@ -5,6 +5,8 @@ import { serverAIConfig, createAIClient, resolveModel, jsonObjectFormat, stripJs
 import { createSemaphore } from '../services/openaiService.js';
 import { prisma } from '../lib/prisma.js';
 import { decryptWorkspaceApiKey } from '../lib/workspaceSecret.js';
+import { extractUsage, type UsageEntry } from '../services/pricing.js';
+import { registrarConsumo, unirUsos } from '../comun/consumoIa.js';
 
 interface CopyVariation {
   id: string;
@@ -56,10 +58,12 @@ const armarLotes = (variations: CopyVariation[]): Array<{ platform: string; indi
 };
 
 export async function refineVariations(req: AuthRequest, res: Response): Promise<void> {
-  const { variations, instruction, clientId } = req.body as {
+  const { variations, instruction, clientId, dnaProfileId } = req.body as {
     variations: CopyVariation[];
     instruction: string;
     clientId: string;
+    /** La campaña (su brief) a la que se carga el costo; sin ella, queda como gasto de la marca. */
+    dnaProfileId?: string;
   };
 
   if (!Array.isArray(variations) || variations.length === 0 || !instruction || !clientId) {
@@ -80,11 +84,15 @@ export async function refineVariations(req: AuthRequest, res: Response): Promise
     PRESUPUESTO_TOTAL_MS
   );
   const { señal, limpiar } = unirSignals(abortoCliente.signal, abortoPresupuesto.signal);
+  // Lo que cuesta refinar (2026-11-26): antes no quedaba en ninguna parte y Control mostraba menos gasto del real.
+  const usos: UsageEntry[] = [];
+  let paraRegistrar: { workspaceId: string; clientId: string } | null = null;
 
   try {
     // Sin esta guarda, cualquiera podía refinar contra el clientId de otro
     // tenant y gastar con la API key de ese workspace.
     const client = await assertClientInWorkspace(req.tenant!, clientId);
+    paraRegistrar = { workspaceId: client.workspaceId, clientId: client.id };
 
     let aiConfig = serverAIConfig();
 
@@ -146,6 +154,8 @@ export async function refineVariations(req: AuthRequest, res: Response): Promise
           }
         );
 
+        const uso = extractUsage(response, writerModel, `refinar:${lote.platform}`);
+        if (uso) usos.push(uso);
         const parsed = JSON.parse(stripJsonFence(response.choices[0].message.content || ''));
         const devueltas: Array<{ i?: unknown; content?: unknown }> = Array.isArray(parsed?.variations) ? parsed.variations : [];
         const esperados = new Set(lote.indices);
@@ -190,5 +200,12 @@ export async function refineVariations(req: AuthRequest, res: Response): Promise
   } finally {
     clearTimeout(temporizador);
     limpiar();
+    if (paraRegistrar && usos.length) {
+      const campana =
+        typeof dnaProfileId === 'string' && dnaProfileId
+          ? await prisma.project.findFirst({ where: { dnaProfileId, workspaceId: paraRegistrar.workspaceId }, select: { id: true } }).catch(() => null)
+          : null;
+      await registrarConsumo({ ...paraRegistrar, etapa: 'refinar', uso: unirUsos(usos, 'refinar'), autorId: req.tenant!.userId, projectId: campana?.id ?? null });
+    }
   }
 }

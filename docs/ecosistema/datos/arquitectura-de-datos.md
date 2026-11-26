@@ -32,7 +32,7 @@ Implementación. F1 a F5 suman unas 15 tablas, todas aditivas.
 
 | Tabla | Qué guarda | Estado |
 |---|---|---|
-| `Workspace` | La empresa; `plataformaPorProcesos` elige el marco | hoy |
+| `Workspace` | La empresa; `plataformaPorProcesos` elige el marco; `cuentaEnMetricas` lo deja fuera de Eficiencia y Uso (prueba, capacitación) | hoy |
 | `User`, `Membership`, `WorkspaceInvite` | Personas y su acceso; `User.superAdmin` | hoy |
 | `Client` | La marca, con `marcaMadreId` | hoy |
 | `SeccionAdn`, `AdnVersion`, `AudienciaDeMarca` | ADN 2.0 por secciones, sus versiones y las audiencias | hoy |
@@ -41,6 +41,8 @@ Implementación. F1 a F5 suman unas 15 tablas, todas aditivas.
 | `Notificacion` | Avisos | hoy · F4 suma `modulo`, `campanaId`, `destino` |
 | `ModuloDeMarca` | Qué módulos tiene encendidos la marca (CDM, Implementación) | nuevo · F1 |
 | `CampanaAudiencia` | Audiencias del ADN elegidas para la campaña | nuevo · F3 |
+| `ConsumoIa` | IA fuera del motor de copy (ADN, manual, fingerprint, refinar, generaciones fallidas), con `projectId` cuando es de una campaña | hoy (2026-11-25/26) |
+| `UsoDiario` | Uso de la herramienta por persona, día de Bogotá y área: lecturas y acciones ([medición](./medicion.md)) | hoy (2026-11-26) |
 
 ### CDM (todo nuevo)
 
@@ -145,6 +147,7 @@ Las dos deudas se pagan antes de F4, cuando el copy empieza a llegar por línea.
 | Hecho (2026-11-20) · F4 (1) | `SavedVariation.lineaDePlanningId`. **Sin `EncargoRecibido` ni `LineaDeEncargo`:** un pedido es la línea de la sábana aprobada y su estado se calcula al leer | My Voice |
 | Por hacer | `Project` + fechas; `CampanaAudiencia`; `FormatoUsado`; `Notificacion` + `modulo`, `campanaId`, `destino` | Parte común, My Voice |
 | Hecho (2026-11-23) · F5 (1) | `Anuncio`, `AnuncioEvento` (`implementacion.prisma`); `LineaDePlanning` + `destino`, `utm`. El historial de aprobaciones será una vista de lectura, sin tabla (decisión 28) | Implementación, CDM |
+| Hecho (2026-11-26) · medición | `Workspace.cuentaEnMetricas` (Capacitación queda en `false`), `ConsumoIa.projectId`, `UsoDiario` | Parte común |
 
 Cada migración pasa el chequeo de deriva de CI (`migrate diff`) y `verify:isolation` con sus rutas nuevas.
 

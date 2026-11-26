@@ -621,7 +621,7 @@ const App: React.FC = () => {
     const clientId = lastParams?.clientId;
     if (!clientId || variations.length === 0) return;
     try {
-      const result = await refineApi.refine({ variations, instruction, clientId });
+      const result = await refineApi.refine({ variations, instruction, clientId, dnaProfileId: lastParams?.dnaProfileId });
       if (result?.variations?.length > 0) {
         setVariations(result.variations);
         const fallidos: string[] = result.failedPlatforms ?? [];

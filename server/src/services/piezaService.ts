@@ -1447,12 +1447,16 @@ export const decisionesDePiezasDeCampana = async (campanaId: string) =>
 /**
  * Eficiencia (super admin, 2026-11-24): por campaña, cuándo se creó la primera pieza y se aceptó la última, cuántas
  * devolvió el equipo y cuántas el cliente, cuántas versiones de arte se subieron y cuánto costó auditarlas.
+ *
+ * Desde 2026-11-26 dice cuántas están listas: la fase termina cuando lo están todas (y, con sábana, todas las
+ * planeadas), no con la primera aceptada como antes, que daba producciones más cortas que las reales.
  */
 export const eficienciaDePiezas = async (campanaIds: string[]) => {
   const piezas = await prisma.pieza.findMany({
     where: { projectId: { in: campanaIds }, canceladaEn: null },
     select: {
       projectId: true,
+      estado: true,
       createdAt: true,
       eventos: { select: { tipo: true, autorId: true, createdAt: true } },
       versiones: { select: { costoUsd: true } },
@@ -1462,12 +1466,16 @@ export const eficienciaDePiezas = async (campanaIds: string[]) => {
     campanaIds.map(id => {
       const suyas = piezas.filter(p => p.projectId === id);
       const eventos = suyas.flatMap(p => p.eventos);
-      const aceptadas = eventos.filter(e => e.tipo === 'ACEPTADA').map(e => e.createdAt.getTime());
+      // Las de campañas «del cliente» de antes del 2026-11-24 terminaban con la aprobación del cliente.
+      const aceptadas = eventos.filter(e => e.tipo === 'ACEPTADA' || e.tipo === 'APROBADA_CLIENTE').map(e => e.createdAt.getTime());
       const versiones = suyas.flatMap(p => p.versiones);
+      const tiempos = [...suyas.map(p => p.createdAt.getTime()), ...eventos.map(e => e.createdAt.getTime())];
       return [
         id,
         {
           piezas: suyas.length,
+          listas: suyas.filter(p => p.estado === PiezaEstado.LISTA).length,
+          ultimaActividad: tiempos.length ? new Date(Math.max(...tiempos)).toISOString() : null,
           primera: suyas.length ? new Date(Math.min(...suyas.map(p => p.createdAt.getTime()))).toISOString() : null,
           ultimaAceptada: aceptadas.length ? new Date(Math.max(...aceptadas)).toISOString() : null,
           devueltasPorEquipo: eventos.filter(e => e.tipo === 'DEVUELTA' && e.autorId).length,

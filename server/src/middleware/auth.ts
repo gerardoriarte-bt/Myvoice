@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import { WorkspaceRole } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import { TenantContext, canManage } from '../lib/tenancy.js';
+import { anotarUso } from '../comun/usoDiario.js';
 
 // Sin fallback a propósito. Con un secreto conocido cualquiera puede firmar un
 // token con el workspace y el rol que quiera, y todo el aislamiento se cae.
@@ -82,6 +83,8 @@ export const requireWorkspace = async (req: AuthRequest, res: Response, next: Ne
     };
     req.tenant = tenant;
     req.user = tenant;
+    // El uso de la herramienta, para la línea base (2026-11-26): solo suma en memoria, no toca la base aquí.
+    anotarUso(tenant, req.method, req.path);
     next();
   } catch (error) {
     console.error('requireWorkspace error:', error);
