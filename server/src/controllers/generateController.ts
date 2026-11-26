@@ -11,6 +11,7 @@ import { assertQuotaAvailable, recordUsage } from '../services/usageService.js';
 import { prisma } from '../lib/prisma.js';
 import { decryptWorkspaceApiKey } from '../lib/workspaceSecret.js';
 import { esencialesQueFaltan } from '../comun/adn/propuestas.js';
+import { registrarConsumo } from '../comun/consumoIa.js';
 import { getChannelSpec, specParaGeneracion } from '../channels/registry.js';
 import { parametrosDeGeneracion } from '../services/parametrosDeGeneracion.js';
 
@@ -77,6 +78,35 @@ const registrarGeneracion = async (datos: DatosGeneracion): Promise<void> => {
   } catch (e) {
     console.error('registrarGeneracion error:', e);
   }
+};
+
+/**
+ * Lo que gastó una generación que falló antes de terminar (2026-11-26): el pipeline lo adjunta al error
+ * (`usoParcial`) y aquí se carga a la campaña como `generacion-fallida`. Antes esos tokens no quedaban en ninguna parte.
+ */
+const registrarFallida = async (req: AuthRequest, dnaProfileId: unknown, error: unknown) => {
+  const parcial = (error as { usoParcial?: UsageTotal } | null)?.usoParcial;
+  if (!parcial || typeof dnaProfileId !== 'string') return;
+  const campana = await prisma.project
+    .findFirst({ where: { dnaProfileId, workspaceId: req.tenant!.workspaceId }, select: { id: true, clientId: true } })
+    .catch(() => null);
+  await registrarConsumo({
+    workspaceId: req.tenant!.workspaceId,
+    clientId: campana?.clientId ?? null,
+    projectId: campana?.id ?? null,
+    etapa: 'generacion-fallida',
+    autorId: req.tenant!.userId,
+    uso: {
+      model: 'varios',
+      stage: 'generacion-fallida',
+      promptTokens: parcial.promptTokens,
+      cachedTokens: parcial.cachedTokens,
+      cacheWriteTokens: parcial.cacheWriteTokens,
+      completionTokens: parcial.completionTokens,
+      costUsd: parcial.costUsd,
+      costEstimated: parcial.costEstimated,
+    },
+  });
 };
 
 /**
@@ -231,6 +261,7 @@ export const generateCopy = async (req: AuthRequest, res: Response) => {
     const { usage: _usage, ...sinCosto } = result;
     res.json(sinCosto);
   } catch (error: any) {
+    await registrarFallida(req, dnaProfileId, error);
     if (error?.statusCode) {
       return res.status(error.statusCode).json({ error: error.message });
     }
@@ -333,6 +364,7 @@ export const generateCopyStream = async (req: AuthRequest, res: Response) => {
     });
 
   } catch (error: any) {
+    await registrarFallida(req, dnaProfileId, error);
     if (error?.statusCode && !res.headersSent) {
       return res.status(error.statusCode).json({ error: error.message });
     }

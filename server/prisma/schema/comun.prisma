@@ -27,6 +27,9 @@ model Workspace {
   /// filas, rutas y menú por paso. Apagado, el workspace ve la app como hoy. Elige el marco, no duplica
   /// pantallas; se prende primero en «LoBueno · Capacitación».
   plataformaPorProcesos Boolean            @default(false)
+  /// Si su trabajo entra en las métricas de Control (Eficiencia y Uso, 2026-11-26). Se apaga en los workspaces de
+  /// prueba y capacitación para que no ensucien la línea base.
+  cuentaEnMetricas      Boolean            @default(true)
   createdAt             DateTime           @default(now())
   updatedAt             DateTime           @default(now()) @updatedAt
   clients               Client[]
@@ -464,8 +467,10 @@ model ConsumoIa {
   id               String   @id @default(uuid())
   workspaceId      String
   clientId         String?
-  /// asistente-adn · extraccion-pdf
+  /// asistente-adn · extraccion-pdf · mejora-adn · fingerprint · refinar · generacion-fallida
   etapa            String
+  /// La campaña a la que se le carga, cuando hay una (refinar, una generación que falló). NULL = gasto de la marca.
+  projectId        String?
   model            String
   promptTokens     Int      @default(0)
   completionTokens Int      @default(0)
@@ -475,4 +480,24 @@ model ConsumoIa {
   createdAt        DateTime @default(now())
 
   @@index([workspaceId, createdAt])
+  @@index([projectId])
+}
+
+/// El uso de la herramienta por persona, día y área (2026-11-26): para medir la adopción contra la línea base. Lo
+/// escribe `comun/usoDiario.ts` sumando en memoria y guardando cada minuto. `acciones` son los pedidos que cambian algo
+/// (no GET); `lecturas`, los que solo leen, sin contar el sondeo de «Por aprobar» y la bandeja. `dia` es el de Bogotá.
+model UsoDiario {
+  id          String   @id @default(uuid())
+  workspaceId String
+  userId      String
+  dia         DateTime @db.Date
+  /// marca · cdm · copy · aprobacion · produccion · implementacion · reporte · general
+  area        String
+  lecturas    Int      @default(0)
+  acciones    Int      @default(0)
+  primeraVez  DateTime @default(now())
+  ultimaVez   DateTime @default(now())
+
+  @@unique([workspaceId, userId, dia, area])
+  @@index([dia])
 }

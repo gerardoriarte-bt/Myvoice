@@ -3,6 +3,7 @@ import { SCREENS } from '../../screens';
 import { controlApi } from '../../services/api';
 import { GastoDeIA } from '../../components/Analytics';
 import Eficiencia from './Eficiencia';
+import Uso from './Uso';
 import { WORKSPACE_ROLE_LABELS, type MarcaDeControl, type UsuarioDeControl, type WorkspaceDeControl, type WorkspaceRole } from '../../types';
 
 /**
@@ -11,7 +12,7 @@ import { WORKSPACE_ROLE_LABELS, type MarcaDeControl, type UsuarioDeControl, type
  * IA y la eficiencia del flujo (2026-11-24). Es la única pantalla que muestra costos. El servidor responde 404 a quien no es super admin.
  */
 
-type Pestana = 'workspaces' | 'marcas' | 'usuarios' | 'gasto' | 'eficiencia';
+type Pestana = 'workspaces' | 'marcas' | 'usuarios' | 'gasto' | 'eficiencia' | 'uso';
 const ROLES: WorkspaceRole[] = ['OWNER', 'ADMIN', 'MEMBER'];
 const contar = (n: number, uno: string, varios: string) => `${n} ${n === 1 ? uno : varios}`;
 const usd = (n: number) => `USD ${n.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -75,6 +76,7 @@ export default function Control() {
               ['usuarios', 'Usuarios'],
               ['gasto', 'Gasto de IA'],
               ['eficiencia', 'Eficiencia'],
+              ['uso', 'Uso'],
             ] as [Pestana, string][]
           ).map(([id, nombre]) => (
             <button
@@ -103,7 +105,7 @@ export default function Control() {
       </div>
 
       {pestana === 'workspaces' && (
-        <Tabla columnas={['Workspace', 'Personas · marcas', 'Plataforma por procesos', 'Gasto del mes', 'Cuota']}>
+        <Tabla columnas={['Workspace', 'Personas · marcas', 'Plataforma por procesos', 'Cuenta en métricas', 'Gasto del mes', 'Cuota']}>
           {workspaces.map(w => {
             const pct = w.cuotaUsd ? Math.min(100, Math.round((w.gastoUsd / w.cuotaUsd) * 100)) : 0;
             return (
@@ -133,6 +135,24 @@ export default function Control() {
                     </button>
                     <span className={`text-[12.5px] font-semibold ${w.plataformaPorProcesos ? 'text-emerald-700' : 'text-[#86868B]'}`}>
                       {w.plataformaPorProcesos ? 'Encendida' : 'Apagada'}
+                    </span>
+                  </label>
+                </td>
+                {/* Prueba y capacitación quedan fuera de Eficiencia y Uso para no ensuciar la línea base (2026-11-26). */}
+                <td className="px-4 py-3">
+                  <label className="inline-flex items-center gap-2 cursor-pointer">
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={w.cuentaEnMetricas}
+                      aria-label={`${w.name} cuenta en las métricas`}
+                      onClick={() => void hacer(() => controlApi.cambiarMetricas(w.id, !w.cuentaEnMetricas))}
+                      className={`relative w-[34px] h-5 rounded-full transition-colors ${w.cuentaEnMetricas ? 'bg-emerald-500' : 'bg-[#D1D1D6]'}`}
+                    >
+                      <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${w.cuentaEnMetricas ? 'translate-x-[14px]' : ''}`} />
+                    </button>
+                    <span className={`text-[12.5px] font-semibold ${w.cuentaEnMetricas ? 'text-emerald-700' : 'text-[#86868B]'}`}>
+                      {w.cuentaEnMetricas ? 'Cuenta' : 'Prueba'}
                     </span>
                   </label>
                 </td>
@@ -202,6 +222,8 @@ export default function Control() {
       )}
 
       {pestana === 'eficiencia' && <Eficiencia workspaces={workspaces} />}
+
+      {pestana === 'uso' && <Uso workspaces={workspaces} />}
 
       {pestana === 'gasto' && (
         <div className="space-y-4">

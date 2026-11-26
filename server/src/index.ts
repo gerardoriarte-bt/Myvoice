@@ -48,6 +48,7 @@ import { almacenamientoExterno, initStorage } from './lib/storage.js';
 import multer from 'multer';
 import routes from './routes/index.js';
 import { rescatarAuditoriasTrabadas } from './services/piezaService.js';
+import { empezarARegistrarUso } from './comun/usoDiario.js';
 import { avisarAdnPorRevisar } from './comun/adn/revisionAdn.js';
 
 const app = express();
@@ -94,6 +95,7 @@ app.listen(PORT, () => {
   // Una auditoría cortada por el reinicio dejaría su pieza en «Auditando» para
   // siempre: se cierra y la pieza pasa a revisión (piezaService).
   rescatarAuditoriasTrabadas().catch(e => console.error('[auditoria] rescate al arrancar:', e));
+  empezarARegistrarUso();
   // Cada marca madre sin el ADN confirmado le pide la revisión a quienes administran (una sola vez).
   avisarAdnPorRevisar()
     .then(n => n && console.log(`[adn] ${n} aviso(s) de ADN por revisar`))

@@ -232,12 +232,16 @@ export const aprobacionesDeCopyDeCampana = async (campanaId: string) => {
  * Eficiencia (super admin, 2026-11-24): por campaña, cuándo se escribió el primer copy y cuándo quedó aprobado el
  * último, cuántas piezas de copy pidió cambiar el cliente, cuántas veces el equipo revocó o reeditó lo aprobado,
  * cuántas rondas con el cliente hubo y cuánto costó generarlo. Solo lo ve Control.
+ *
+ * Cuándo termina el copy (2026-11-26): con sábana aprobada, cuando cada línea tiene aprobadas las piezas que pidió —
+ * una alternativa guardada y descartada ya no deja la fase abierta para siempre—; sin sábana, cuando todo lo guardado
+ * está aprobado, que es lo único que se sabe.
  */
-export const eficienciaDeCopy = async (campanas: { id: string; dnaProfileId: string | null }[]) => {
+export const eficienciaDeCopy = async (campanas: { id: string; dnaProfileId: string | null; lineas: { id: string; piezas: number }[] }[]) => {
   const ids = campanas.map(c => c.id);
   const copy = await prisma.savedVariation.findMany({
     where: { projectId: { in: ids } },
-    select: { id: true, projectId: true, conjuntoId: true, savedAt: true, isApproved: true, aprobadoEn: true },
+    select: { id: true, projectId: true, conjuntoId: true, lineaDePlanningId: true, savedAt: true, isApproved: true, aprobadoEn: true },
   });
   const deCampana = new Map(copy.map(v => [v.id, v.projectId!]));
   const [feedbacks, eventos, sesiones, costos] = await Promise.all([
@@ -263,15 +267,33 @@ export const eficienciaDeCopy = async (campanas: { id: string; dnaProfileId: str
     campanas.map(c => {
       const suyos = copy.filter(v => v.projectId === c.id);
       const suyo = (id: string | null) => !!id && deCampana.get(id) === c.id;
-      const aprobados = suyos.filter(v => v.isApproved && v.aprobadoEn).map(v => v.aprobadoEn!.getTime());
+      const aprobadosDe = (vs: typeof suyos) => vs.filter(v => v.isApproved && v.aprobadoEn).map(v => v.aprobadoEn!.getTime());
       const rechazos = feedbacks.filter(f => suyo(f.savedVariationId) && f.decision === 'REJECTED');
+      const piezas = new Set(suyos.map(v => v.conjuntoId ?? v.id)).size;
+      const aprobadas = new Set(suyos.filter(v => v.isApproved).map(v => v.conjuntoId ?? v.id)).size;
+      // Con sábana se mide contra lo pedido en cada línea; sin ella, contra lo guardado.
+      const conSabana = c.lineas.length > 0;
+      const deLineas = suyos.filter(v => v.lineaDePlanningId && c.lineas.some(l => l.id === v.lineaDePlanningId));
+      const pedidas = c.lineas.reduce((t, l) => t + l.piezas, 0);
+      const listasPorLinea = c.lineas.map(l =>
+        Math.min(l.piezas, new Set(deLineas.filter(v => v.lineaDePlanningId === l.id && v.isApproved).map(v => v.conjuntoId ?? v.id)).size)
+      );
+      const termino = conSabana ? listasPorLinea.every((n, i) => n >= c.lineas[i].piezas) : piezas > 0 && aprobadas === piezas;
+      const aprobados = aprobadosDe(conSabana ? deLineas : suyos);
+      const tiempos = suyos.flatMap(v => [v.savedAt.getTime(), ...(v.aprobadoEn ? [v.aprobadoEn.getTime()] : [])]);
       return [
         c.id,
         {
           primero: suyos.length ? new Date(Math.min(...suyos.map(v => v.savedAt.getTime()))).toISOString() : null,
           ultimoAprobado: aprobados.length ? new Date(Math.max(...aprobados)).toISOString() : null,
-          piezas: new Set(suyos.map(v => v.conjuntoId ?? v.id)).size,
-          aprobadas: new Set(suyos.filter(v => v.isApproved).map(v => v.conjuntoId ?? v.id)).size,
+          termino,
+          /** Lo que se mide: las piezas pedidas en la sábana o, sin ella, las guardadas. */
+          esperadas: conSabana ? pedidas : piezas,
+          listas: conSabana ? listasPorLinea.reduce((t, n) => t + n, 0) : aprobadas,
+          conSabana,
+          ultimaActividad: tiempos.length ? new Date(Math.max(...tiempos)).toISOString() : null,
+          piezas,
+          aprobadas,
           // Por pieza de copy: los 10 títulos de un Google Ads rechazados son un pedido de cambio, no diez.
           cambiosDelCliente: new Set(rechazos.map(f => `${f.reviewSubmissionId}:${conjuntoDe.get(f.savedVariationId!)}`)).size,
           revocadas: new Set(eventos.filter(e => suyo(e.savedVariationId) && e.tipo === 'DESAPROBADO').map(e => conjuntoDe.get(e.savedVariationId))).size,

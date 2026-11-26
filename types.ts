@@ -115,6 +115,8 @@ export interface WorkspaceDeControl {
   slug: string;
   plan: string;
   plataformaPorProcesos: boolean;
+  /** Si su trabajo entra en Eficiencia y Uso (2026-11-26); apagado en prueba y capacitación. */
+  cuentaEnMetricas: boolean;
   personas: number;
   marcas: number;
   gastoUsd: number;
@@ -1141,19 +1143,41 @@ export interface ReporteImplementacion {
   }[];
 }
 
-/** Control › Eficiencia (super admin, 2026-11-24): el tiempo de cada fase, los ajustes y el costo, por campaña. */
+/** Control › Eficiencia (super admin, 2026-11-24; medición corregida el 2026-11-26): el tiempo de cada fase, los ajustes y el costo, por campaña. */
 export type FaseDeEficiencia = 'planeacion' | 'copy' | 'produccion' | 'aprobacionFinal' | 'montaje';
+export interface MedidaDeEficiencia {
+  horas: number | null;
+  horasHabiles: number | null;
+  enCurso: boolean;
+  /** Cuánto de lo esperado está hecho (copy aprobado, piezas listas, anuncios aprobados o montados). */
+  avance: { listas: number; esperadas: number } | null;
+}
+export interface ResumenDeFase {
+  terminadas: number;
+  abiertas: number;
+  mediana: number | null;
+  p75: number | null;
+  medianaHabiles: number | null;
+  p75Habiles: number | null;
+  edadAbiertasHabiles: number | null;
+}
 export interface EficienciaDeControl {
   dias: number;
+  desde: string;
   resumen: {
     campanas: number;
+    sinActividad: number;
     terminadas: number;
-    medianaTotalHoras: number | null;
-    medianaPorFase: Record<FaseDeEficiencia, number | null>;
+    total: ResumenDeFase;
+    porFase: Record<FaseDeEficiencia, ResumenDeFase>;
     cambiosDelCliente: number;
     campanasConCambiosDelCliente: number;
     ajustesInternos: number;
+    piezasDeCopy: number;
+    piezas: number;
     montados: number;
+    generaciones: number;
+    generacionesFallidas: number;
     costoUsd: number;
     costoPorMontadoUsd: number | null;
   };
@@ -1164,8 +1188,12 @@ export interface EficienciaDeControl {
     workspace: string;
     modoAprobacion: 'INTERNA' | 'CLIENTE';
     creada: string;
-    total: { horas: number | null; enCurso: boolean };
-    fases: Record<FaseDeEficiencia, { horas: number | null; enCurso: boolean } | null>;
+    conSabana: boolean;
+    conImplementacion: boolean;
+    terminaEn: 'montaje' | 'produccion' | 'copy';
+    ultimaActividad: string | null;
+    total: MedidaDeEficiencia;
+    fases: Record<FaseDeEficiencia, MedidaDeEficiencia | null>;
     revisiones: Record<
       | 'sabanaDevueltaPorEquipo'
       | 'sabanaDevueltaPorCliente'
@@ -1181,11 +1209,51 @@ export interface EficienciaDeControl {
       | 'novedadesAlMontar',
       number
     >;
-    volumen: { piezasDeCopy: number; piezas: number; anuncios: number; montados: number; generaciones: number };
-    costoUsd: { copy: number; auditoria: number; total: number };
+    volumen: {
+      lineasDeSabana: number;
+      piezasPlaneadas: number;
+      piezasDeCopy: number;
+      piezas: number;
+      anuncios: number;
+      montados: number;
+      generaciones: number;
+      generacionesFallidas: number;
+    };
+    costoUsd: { copy: number; auditoria: number; refinar: number; fallidas: number; total: number };
     cambiosDelCliente: number;
     ajustesInternos: number;
   }[];
+}
+
+/** Control › Uso (super admin, 2026-11-26): la adopción de la herramienta, de `UsoDiario`. */
+export type AreaDeUso = 'marca' | 'cdm' | 'copy' | 'aprobacion' | 'produccion' | 'implementacion' | 'reporte' | 'general';
+export interface UsoDeControl {
+  dias: number;
+  desde: string;
+  primerDato: string | null;
+  resumen: {
+    conAcceso: number;
+    activosPeriodo: number;
+    adopcion: number | null;
+    activos7: number;
+    activos30: number;
+    promedioDiarioHabil: number | null;
+    acciones: number;
+  };
+  porDia: { dia: string; habil: boolean; personas: number; acciones: number }[];
+  porArea: { area: AreaDeUso; personas: number; acciones: number; lecturas: number }[];
+  porPersona: {
+    id: string;
+    nombre: string;
+    email: string;
+    workspaces: string[];
+    diasActivos: number;
+    acciones: number;
+    lecturas: number;
+    ultimoDia: string | null;
+    porArea: Record<AreaDeUso, number>;
+  }[];
+  porWorkspace: { id: string; nombre: string; conAcceso: number; activos: number; acciones: number }[];
 }
 
 /** «Mi cola» (F5, 2026-11-25): un anuncio que le toca a quien mira, con su marca y qué hay que hacer. */

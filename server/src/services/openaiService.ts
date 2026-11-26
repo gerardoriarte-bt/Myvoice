@@ -418,6 +418,10 @@ const runGeneration = async (
 
     emit({ type: "usage", payload: aggregateUsage(usage) });
     emit({ type: "done" });
+  } catch (error) {
+    // Lo gastado hasta el fallo también se cobró (2026-11-26): viaja en el error para que el controlador lo registre.
+    if (error && typeof error === "object" && usage.length) (error as { usoParcial?: unknown }).usoParcial = aggregateUsage(usage);
+    throw error;
   } finally {
     clearTimeout(tGeneracion);
     limpiarGeneracion();
